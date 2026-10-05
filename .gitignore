@@ -6,3 +6,4 @@ frontend/dist/
 .DS_Store
 backend/data/
 .playwright-mcp/
+.logs/

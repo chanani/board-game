@@ -23,6 +23,15 @@ docker compose up -d --build
 ## 개발 환경에서 실행
 필요: Java 21, Maven 3.9+, Node 24
 
+한 번에 켜기 (백엔드 + 프론트엔드, Ctrl+C로 함께 종료):
+```bash
+./start.sh
+# → http://localhost:5173
+# 8080/5173이 사용 중이면 다음 빈 포트를 자동으로 씁니다. 로그: .logs/
+# 포트 지정: BACKEND_PORT=9090 FRONTEND_PORT=3000 ./start.sh
+```
+
+따로 켜기:
 ```bash
 # 백엔드 (H2 파일 DB: backend/data/)
 mvn -f backend/pom.xml spring-boot:run
