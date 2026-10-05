@@ -14,6 +14,8 @@
 docker compose up -d --build
 # http://localhost:8000
 ```
+- 첫 시작은 1분 정도 걸릴 수 있습니다. 준비될 때까지 기다리려면 `docker compose up -d --build --wait`
+- 외부에 공개하기 전에 `DB_PASSWORD` / `DB_ROOT_PASSWORD`를 직접 지정하세요. 이 값은 MySQL 볼륨을 처음 만들 때만 적용되며, 나중에 바꾸려면 `docker compose down -v`(데이터 삭제)가 필요합니다.
 - 다른 포트: `PORT=9000 docker compose up -d --build`
 - HTTPS 리버스 프록시 뒤에서 운영할 때: `COOKIE_SECURE=true`, `ALLOWED_ORIGINS=https://your.domain` 지정
 - 종료: `docker compose down` (데이터 유지) / `docker compose down -v` (DB 삭제)
