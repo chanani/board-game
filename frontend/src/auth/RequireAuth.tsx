@@ -1,4 +1,5 @@
 import { Navigate, Outlet } from 'react-router-dom';
+import { RealtimeProvider } from '../realtime/RealtimeContext';
 import { useAuth } from './AuthContext';
 
 export function RequireAuth() {
@@ -9,5 +10,9 @@ export function RequireAuth() {
   if (!member) {
     return <Navigate to="/login" replace />;
   }
-  return <Outlet />;
+  return (
+    <RealtimeProvider>
+      <Outlet />
+    </RealtimeProvider>
+  );
 }

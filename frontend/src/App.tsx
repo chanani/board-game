@@ -5,6 +5,7 @@ import { Layout } from './components/Layout';
 import { ToastProvider } from './components/Toast';
 import { LobbyPage } from './pages/LobbyPage';
 import { LoginPage } from './pages/LoginPage';
+import { RoomPage } from './pages/RoomPage';
 import { SignupPage } from './pages/SignupPage';
 
 export default function App() {
@@ -17,6 +18,7 @@ export default function App() {
           <Route element={<RequireAuth />}>
             <Route element={<Layout />}>
               <Route path="/" element={<LobbyPage />} />
+              <Route path="/rooms/:code" element={<RoomPage />} />
             </Route>
           </Route>
         </Routes>
