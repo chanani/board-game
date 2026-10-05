@@ -107,6 +107,10 @@ public class PaperSafariGame {
         return tokens.countOf(player);
     }
 
+    public boolean isSeated(PlayerId player) {
+        return seats.contains(player);
+    }
+
     public PaperSafariView viewFor(PlayerId viewer) {
         RoundResultView result = lastRoundResult().map(RoundResult::toView).orElse(null);
         Long winnerId = winner().map(PlayerId::value).orElse(null);

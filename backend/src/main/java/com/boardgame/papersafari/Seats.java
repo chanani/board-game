@@ -52,6 +52,10 @@ public class Seats {
         return seated.size();
     }
 
+    public boolean contains(PlayerId player) {
+        return seated.contains(player);
+    }
+
     public void requireSeated(PlayerId player) {
         indexOf(player);
     }
