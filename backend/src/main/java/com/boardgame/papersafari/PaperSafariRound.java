@@ -42,8 +42,23 @@ public class PaperSafariRound {
     public void swapAt(PlayerId player, Position position) {
         turn.require(player, TurnPhase.PLACE);
         DrawnCard drawn = turn.drawn();
-        table.discard(boards.replace(player, position, drawn.card()));
+        Card replaced = boards.replace(player, position, drawn.card());
+        sendAway(player, position, replaced, drawn);
+        if (drawn.triggersElephant() && boards.hasFaceDown(player)) {
+            turn.awaitPeek();
+            return;
+        }
         finishTurn();
+    }
+
+    public void peekAt(PlayerId player, Position position) {
+        turn.require(player, TurnPhase.PEEK);
+        boards.peek(player, position);
+        finishTurn();
+    }
+
+    public boolean knows(PlayerId player, Position position) {
+        return boards.knows(player, position);
     }
 
     public void discardDrawn(PlayerId player) {
@@ -96,6 +111,19 @@ public class PaperSafariRound {
             return;
         }
         turn.beginPlaying();
+    }
+
+    private void sendAway(PlayerId player, Position position, Card replaced, DrawnCard drawn) {
+        if (drawn.triggersTarzan()) {
+            pushToLeft(player, position, replaced);
+            return;
+        }
+        table.discard(replaced);
+    }
+
+    private void pushToLeft(PlayerId player, Position position, Card card) {
+        PlayerId left = turn.leftOf(player);
+        table.discard(boards.replace(left, position, card));
     }
 
     private void finishTurn() {
