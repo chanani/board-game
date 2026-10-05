@@ -5,6 +5,7 @@ import { Layout } from './components/Layout';
 import { ToastProvider } from './components/Toast';
 import { LobbyPage } from './pages/LobbyPage';
 import { LoginPage } from './pages/LoginPage';
+import { RecordsPage } from './pages/RecordsPage';
 import { RoomPage } from './pages/RoomPage';
 import { SignupPage } from './pages/SignupPage';
 
@@ -19,6 +20,8 @@ export default function App() {
             <Route element={<Layout />}>
               <Route path="/" element={<LobbyPage />} />
               <Route path="/rooms/:code" element={<RoomPage />} />
+              <Route path="/records" element={<RecordsPage />} />
+              <Route path="/records/:memberId" element={<RecordsPage />} />
             </Route>
           </Route>
         </Routes>

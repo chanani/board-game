@@ -1,0 +1,68 @@
+import { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
+import { messageOf } from '../api/http';
+import { recordsApi } from '../api/records';
+import type { MemberStats, Ranking, RecentMatch } from '../api/types';
+import { useAuth } from '../auth/AuthContext';
+import { Panel } from '../components/ui';
+import { useToast } from '../components/Toast';
+import { RankingList } from '../records/RankingList';
+import { RecentMatches } from '../records/RecentMatches';
+import { StatSummary } from '../records/StatSummary';
+
+const GAME = 'PAPER_SAFARI' as const;
+type Tab = 'records' | 'ranking';
+
+export function RecordsPage() {
+  const params = useParams();
+  const { member } = useAuth();
+  const toast = useToast();
+  const memberId = params.memberId ? Number(params.memberId) : (member?.id ?? 0);
+  const isMe = !params.memberId || memberId === member?.id;
+  const [tab, setTab] = useState<Tab>('records');
+  const [stats, setStats] = useState<MemberStats | null>(null);
+  const [matches, setMatches] = useState<RecentMatch[]>([]);
+  const [rankings, setRankings] = useState<Ranking[]>([]);
+
+  useEffect(() => {
+    const load = isMe ? recordsApi.me() : recordsApi.member(memberId);
+    load.then(setStats).catch((error) => toast.show(messageOf(error)));
+    recordsApi.matches(memberId, GAME, 10).then(setMatches).catch((error) => toast.show(messageOf(error)));
+    recordsApi.rankings(GAME).then(setRankings).catch((error) => toast.show(messageOf(error)));
+  }, [memberId, isMe, toast]);
+
+  const tabClass = (value: Tab) =>
+    `rounded-lg px-3 py-1.5 text-sm ${tab === value ? 'bg-safari-600 font-semibold text-white' : 'bg-white text-stone-600 ring-1 ring-stone-200'}`;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-bold">{isMe ? '내 전적' : `${stats?.nickname ?? ''}님의 전적`}</h1>
+        <div className="flex gap-2">
+          <button type="button" className={tabClass('records')} onClick={() => setTab('records')}>전적</button>
+          <button type="button" className={tabClass('ranking')} onClick={() => setTab('ranking')}>순위표</button>
+        </div>
+      </div>
+      {tab === 'records' ? (
+        <>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {stats?.stats.map((stat) => (
+              <Panel key={stat.gameType}>
+                <StatSummary stat={stat} />
+              </Panel>
+            ))}
+          </div>
+          <Panel>
+            <h2 className="mb-2 font-bold">최근 경기</h2>
+            <RecentMatches matches={matches} ownerId={memberId} />
+          </Panel>
+        </>
+      ) : (
+        <Panel>
+          <h2 className="mb-2 font-bold">페이퍼 사파리 순위표 (5판 이상)</h2>
+          <RankingList rankings={rankings} />
+        </Panel>
+      )}
+    </div>
+  );
+}
