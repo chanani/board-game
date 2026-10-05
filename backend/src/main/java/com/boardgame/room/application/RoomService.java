@@ -130,7 +130,7 @@ public class RoomService {
         if (!room.isPlaying(targetId)) {
             throw new BusinessException(ErrorCode.NOT_A_PLAYER);
         }
-        if (presence.isConnected(targetId) || presence.offlineFor(targetId, clock.instant()).compareTo(FORFEIT_GRACE) < 0) {
+        if (!presence.isOfflineAtLeast(targetId, clock.instant(), FORFEIT_GRACE)) {
             throw new BusinessException(ErrorCode.FORFEIT_NOT_ALLOWED_YET);
         }
         List<GameOutcome> outcomes = room.leave(targetId);

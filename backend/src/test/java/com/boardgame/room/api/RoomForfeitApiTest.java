@@ -85,9 +85,9 @@ class RoomForfeitApiTest {
         User host = ApiUsers.create(mockMvc);
         User guest = ApiUsers.create(mockMvc);
         String code = startedRoom(host, guest);
-        presence.connected(host.id());
-        presence.connected(guest.id());
-        presence.disconnected(guest.id(), clock.instant());
+        presence.connected(host.id(), "h1");
+        presence.connected(guest.id(), "g1");
+        presence.disconnected(guest.id(), "g1", clock.instant());
 
         clock.advance(Duration.ofSeconds(30));
         mockMvc.perform(get("/api/rooms/{code}", code).session(host.session()))
@@ -117,7 +117,7 @@ class RoomForfeitApiTest {
         User host = ApiUsers.create(mockMvc);
         User guest = ApiUsers.create(mockMvc);
         String code = startedRoom(host, guest);
-        presence.connected(guest.id());
+        presence.connected(guest.id(), "g1");
 
         clock.advance(Duration.ofMinutes(5));
 
@@ -148,5 +148,31 @@ class RoomForfeitApiTest {
         forfeit(host, code, stranger)
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("NOT_A_PLAYER"));
+    }
+
+    @Test
+    void 한_번도_연결하지_않은_사람은_기권_처리할_수_없다() throws Exception {
+        User host = ApiUsers.create(mockMvc);
+        User guest = ApiUsers.create(mockMvc);
+        String code = startedRoom(host, guest);
+
+        clock.advance(Duration.ofMinutes(5));
+
+        forfeit(host, code, guest)
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("FORFEIT_NOT_ALLOWED_YET"));
+    }
+
+    @Test
+    void 정확히_60초가_지나면_기권_처리할_수_있다() throws Exception {
+        User host = ApiUsers.create(mockMvc);
+        User guest = ApiUsers.create(mockMvc);
+        String code = startedRoom(host, guest);
+        presence.connected(guest.id(), "g1");
+        presence.disconnected(guest.id(), "g1", clock.instant());
+
+        clock.advance(Duration.ofSeconds(60));
+
+        forfeit(host, code, guest).andExpect(status().isNoContent());
     }
 }
