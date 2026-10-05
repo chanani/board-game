@@ -80,6 +80,15 @@ class GlobalExceptionHandlerTest {
                 .andExpect(jsonPath("$.code").value("METHOD_NOT_ALLOWED"));
     }
 
+    @Test
+    void 지원하지_않는_Content_Type은_INVALID_INPUT() throws Exception {
+        mockMvc.perform(post("/test/errors/body")
+                        .contentType(MediaType.TEXT_PLAIN)
+                        .content("hello"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+    }
+
     @RestController
     @RequestMapping("/test/errors")
     public static class ErrorTestController {
