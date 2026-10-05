@@ -1,0 +1,155 @@
+package com.boardgame.room.application;
+
+import com.boardgame.common.error.BusinessException;
+import com.boardgame.common.error.ErrorCode;
+import com.boardgame.common.security.LoginMember;
+import com.boardgame.game.GameOutcome;
+import com.boardgame.game.GameSessionFactories;
+import com.boardgame.game.GameType;
+import com.boardgame.game.event.GameStartedEvent;
+import com.boardgame.room.api.CreateRoomRequest;
+import com.boardgame.room.api.RoomResponse;
+import com.boardgame.room.api.RoomSummaryResponse;
+import com.boardgame.room.domain.Participant;
+import com.boardgame.room.domain.Room;
+import com.boardgame.room.domain.RoomCode;
+import com.boardgame.room.domain.RoomCodeGenerator;
+import com.boardgame.room.domain.RoomGame;
+import com.boardgame.room.domain.RoomName;
+import com.boardgame.room.domain.RoomProfile;
+import com.boardgame.room.domain.RoomRegistry;
+import java.time.Clock;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.Stream;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.stereotype.Service;
+
+@Service
+public class RoomService {
+
+    private final RoomRegistry registry;
+    private final RoomCodeGenerator codeGenerator;
+    private final GameSessionFactories sessionFactories;
+    private final RoomNotifier notifier;
+    private final OutcomePublisher outcomePublisher;
+    private final ApplicationEventPublisher eventPublisher;
+    private final Clock clock;
+
+    public RoomService(RoomRegistry registry, RoomCodeGenerator codeGenerator, GameSessionFactories sessionFactories,
+                       RoomNotifier notifier, OutcomePublisher outcomePublisher,
+                       ApplicationEventPublisher eventPublisher, Clock clock) {
+        this.registry = registry;
+        this.codeGenerator = codeGenerator;
+        this.sessionFactories = sessionFactories;
+        this.notifier = notifier;
+        this.outcomePublisher = outcomePublisher;
+        this.eventPublisher = eventPublisher;
+        this.clock = clock;
+    }
+
+    public synchronized RoomResponse create(LoginMember member, CreateRoomRequest request) {
+        requireNotInAnyRoom(member.id());
+        RoomProfile profile = new RoomProfile(newCode(), new RoomName(request.name()), requireGameType(request));
+        Room room = Room.open(profile, participantOf(member));
+        registry.save(room);
+        return broadcast(room);
+    }
+
+    public synchronized List<RoomSummaryResponse> waitingRooms(GameType gameType) {
+        return registry.all().stream()
+                .filter(room -> room.isWaitingFor(gameType))
+                .map(RoomSummaryResponse::from)
+                .toList();
+    }
+
+    public synchronized RoomResponse join(String rawCode, LoginMember member) {
+        Room room = find(rawCode);
+        requireNotInOtherRoom(member.id(), room);
+        room.join(participantOf(member));
+        registry.save(room);
+        return broadcast(room);
+    }
+
+    public synchronized void leave(String rawCode, long memberId) {
+        Room room = find(rawCode);
+        List<GameOutcome> outcomes = room.leave(memberId);
+        registry.save(room);
+        outcomePublisher.publish(room, outcomes, clock.instant());
+        broadcastUnlessEmpty(room);
+    }
+
+    private void broadcastUnlessEmpty(Room room) {
+        if (room.isEmpty()) {
+            return;
+        }
+        broadcast(room);
+    }
+
+    public synchronized RoomResponse start(String rawCode, long memberId) {
+        Room room = find(rawCode);
+        GameType gameType = room.gameType();
+        RoomGame game = room.start(memberId, memberIds -> sessionFactories.create(gameType, memberIds),
+                UUID.randomUUID().toString(), clock.instant());
+        eventPublisher.publishEvent(
+                new GameStartedEvent(game.matchKey(), gameType, room.memberIds(), game.startedAt()));
+        return broadcast(room);
+    }
+
+    public synchronized RoomResponse get(String rawCode) {
+        return RoomResponse.from(find(rawCode));
+    }
+
+    public synchronized Optional<RoomResponse> myRoom(long memberId) {
+        return registry.findByMember(memberId).map(RoomResponse::from);
+    }
+
+    private RoomResponse broadcast(Room room) {
+        RoomResponse response = RoomResponse.from(room);
+        notifier.roomUpdated(response);
+        room.memberIds().forEach(memberId -> sendView(room, memberId));
+        return response;
+    }
+
+    private void sendView(Room room, long memberId) {
+        room.viewFor(memberId).ifPresent(view -> notifier.gameUpdated(memberId, view));
+    }
+
+    private Room find(String rawCode) {
+        return registry.get(RoomCode.parse(rawCode));
+    }
+
+    private RoomCode newCode() {
+        return Stream.generate(codeGenerator::next)
+                .filter(code -> !registry.exists(code))
+                .findFirst()
+                .orElseThrow();
+    }
+
+    private GameType requireGameType(CreateRoomRequest request) {
+        if (request.gameType() == null) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT);
+        }
+        return request.gameType();
+    }
+
+    private void requireNotInAnyRoom(long memberId) {
+        if (registry.findByMember(memberId).isPresent()) {
+            throw new BusinessException(ErrorCode.ALREADY_IN_ROOM);
+        }
+    }
+
+    private void requireNotInOtherRoom(long memberId, Room room) {
+        boolean inOtherRoom = registry.findByMember(memberId)
+                .filter(current -> !current.code().equals(room.code()))
+                .isPresent();
+        if (inOtherRoom) {
+            throw new BusinessException(ErrorCode.ALREADY_IN_ROOM);
+        }
+    }
+
+    private Participant participantOf(LoginMember member) {
+        return new Participant(member.id(), member.nickname());
+    }
+}
