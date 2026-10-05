@@ -43,10 +43,10 @@ function build({ phase, current, held = null, mine = faceDown() }: Setup): Paper
 
 const nicknameOf = (memberId: number) => room.members.find((member) => member.id === memberId)?.nickname ?? '떠난 플레이어';
 
-function tableFor(view: PaperSafariSessionView, send: () => void, targetRoom: Room = room, onForfeit: (id: number) => void = vi.fn(), now = 0) {
+function tableFor(view: PaperSafariSessionView, send: () => void, targetRoom: Room = room, onForfeit: (id: number) => void = vi.fn(), now = 0, errorSeq = 0) {
   return (
     <PaperSafariTable view={view} room={targetRoom} meId={ME} log={[]} send={send} nicknameOf={nicknameOf}
-      receivedAt={0} now={now} onForfeit={onForfeit} onCloseGameOver={vi.fn()} />
+      receivedAt={0} now={now} errorSeq={errorSeq} onForfeit={onForfeit} onCloseGameOver={vi.fn()} />
   );
 }
 
@@ -169,6 +169,18 @@ describe('PaperSafariTable 중복 행동 방지', () => {
     await userEvent.click(screen.getByRole('button', { name: '덱에서 뽑기' }));
 
     rerender(tableFor(build({ phase: 'DRAW', current: ME }), send));
+    await userEvent.click(screen.getByRole('button', { name: '덱에서 뽑기' }));
+
+    expect(send).toHaveBeenCalledTimes(2);
+  });
+
+  it('서버 오류가 오면 바로 다시 행동할 수 있다', async () => {
+    const send = vi.fn();
+    const view = build({ phase: 'DRAW', current: ME });
+    const { rerender } = render(tableFor(view, send));
+    await userEvent.click(screen.getByRole('button', { name: '덱에서 뽑기' }));
+
+    rerender(tableFor(view, send, room, vi.fn(), 0, 1));
     await userEvent.click(screen.getByRole('button', { name: '덱에서 뽑기' }));
 
     expect(send).toHaveBeenCalledTimes(2);

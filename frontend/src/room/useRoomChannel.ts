@@ -18,6 +18,7 @@ export function useRoomChannel(code: string) {
   const [view, setView] = useState<PaperSafariSessionView | null>(null);
   const [log, setLog] = useState<string[]>([]);
   const [missing, setMissing] = useState(false);
+  const [errorSeq, setErrorSeq] = useState(0);
   const viewRef = useRef<PaperSafariSessionView | null>(null);
   const roomRef = useRef<Room | null>(null);
   const topicSeenRef = useRef(0);
@@ -91,7 +92,10 @@ export function useRoomChannel(code: string) {
         acceptRoom(body as Room);
       }),
       realtime.subscribe('/user/queue/game', (body) => acceptView(body as PaperSafariSessionView)),
-      realtime.subscribe('/user/queue/errors', (body) => toast.show((body as ApiErrorBody).message)),
+      realtime.subscribe('/user/queue/errors', (body) => {
+        toast.show((body as ApiErrorBody).message);
+        setErrorSeq((current) => current + 1);
+      }),
     ];
     return () => offs.forEach((off) => off());
   }, [code, realtime, acceptRoom, acceptView, toast]);
@@ -132,5 +136,5 @@ export function useRoomChannel(code: string) {
     [code, realtime, toast],
   );
 
-  return { room, receivedAt, view, log, missing, send, nicknameOf };
+  return { room, receivedAt, view, log, missing, send, nicknameOf, errorSeq };
 }

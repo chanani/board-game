@@ -17,6 +17,7 @@ type Props = {
   log: string[];
   receivedAt: number;
   now: number;
+  errorSeq: number;
   nicknameOf: (memberId: number) => string;
   onForfeit: (memberId: number) => void;
   send: (action: GameAction) => void;
@@ -42,14 +43,14 @@ function instruction(phase: string, myTurn: boolean, needsFlip: boolean, current
   return '엿볼 내 뒷면 카드를 고르세요.';
 }
 
-export function PaperSafariTable({ view, room, meId, log, receivedAt, now, nicknameOf, onForfeit, send: rawSend, onCloseGameOver }: Props) {
+export function PaperSafariTable({ view, room, meId, log, receivedAt, now, errorSeq, nicknameOf, onForfeit, send: rawSend, onCloseGameOver }: Props) {
   const game = view.game;
   const round = game.round;
   const pendingUntil = useRef(0);
 
   useEffect(() => {
     pendingUntil.current = 0;
-  }, [view]);
+  }, [view, errorSeq]);
 
   const send = (action: GameAction) => {
     if (Date.now() < pendingUntil.current) {

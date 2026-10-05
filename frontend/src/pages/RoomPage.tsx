@@ -14,7 +14,7 @@ export function RoomPage() {
   const { member } = useAuth();
   const navigate = useNavigate();
   const toast = useToast();
-  const { room, receivedAt, view, log, missing, send, nicknameOf } = useRoomChannel(code);
+  const { room, receivedAt, view, log, missing, send, nicknameOf, errorSeq } = useRoomChannel(code);
   const [now, setNow] = useState(() => Date.now());
   const [confirmLeave, setConfirmLeave] = useState(false);
   const [dismissedGameOver, setDismissedGameOver] = useState(false);
@@ -97,6 +97,7 @@ export function RoomPage() {
           log={log}
           receivedAt={receivedAt}
           now={now}
+          errorSeq={errorSeq}
           nicknameOf={nicknameOf}
           onForfeit={(memberId) => run(() => roomsApi.forfeit(code, memberId))}
           send={send}
