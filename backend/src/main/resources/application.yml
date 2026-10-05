@@ -13,6 +13,7 @@ spring:
       path: /h2-console
 
 server:
+  port: 8899
   servlet:
     encoding:
       charset: UTF-8

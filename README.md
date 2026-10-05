@@ -23,26 +23,27 @@ docker compose up -d --build
 ## 개발 환경에서 실행
 필요: Java 21, Maven 3.9+, Node 24
 
-한 번에 켜기 (백엔드 + 프론트엔드, Ctrl+C로 함께 종료):
+한 번에 켜기/끄기 (백엔드 8899 + 프론트엔드 5177):
 ```bash
-./start.sh
-# → http://localhost:5173
-# 8080/5173이 사용 중이면 다음 빈 포트를 자동으로 씁니다. 로그: .logs/
-# 포트 지정: BACKEND_PORT=9090 FRONTEND_PORT=3000 ./start.sh
+./start.sh   # → http://localhost:5177  (Ctrl+C로 종료)
+./stop.sh    # 다른 터미널에서 종료할 때
 ```
+- 포트가 사용 중이면 다음 빈 포트를 자동으로 씁니다. 실제 포트는 시작 메시지와 `.logs/server.state`에 있어요.
+- 포트 지정: `BACKEND_PORT=9090 FRONTEND_PORT=3000 ./start.sh`
+- 로그: `.logs/backend.log`, `.logs/frontend.log`
 
 따로 켜기:
 ```bash
-# 백엔드 (H2 파일 DB: backend/data/)
+# 백엔드 (포트 8899, H2 파일 DB: backend/data/)
 mvn -f backend/pom.xml spring-boot:run
-# H2 콘솔이 필요하면: mvn -f backend/pom.xml spring-boot:run -Dspring-boot.run.profiles=local  → http://localhost:8080/h2-console
+# H2 콘솔이 필요하면: mvn -f backend/pom.xml spring-boot:run -Dspring-boot.run.profiles=local  → http://localhost:8899/h2-console
 
-# 프론트엔드 (다른 터미널)
+# 프론트엔드 (다른 터미널, 포트 5177)
 npm --prefix frontend install
 npm --prefix frontend run dev
-# http://localhost:5173  (/api, /ws 는 8080으로 프록시)
+# http://localhost:5177  (/api, /ws 는 8899로 프록시)
 ```
-친구 두 명을 한 컴퓨터에서 흉내 내려면 `http://localhost:5173`와 `http://127.0.0.1:5173`을 각각 다른 계정으로 여세요(쿠키가 분리됩니다).
+친구 두 명을 한 컴퓨터에서 흉내 내려면 `http://localhost:5177`와 `http://127.0.0.1:5177`을 각각 다른 계정으로 여세요(쿠키가 분리됩니다).
 
 ## 테스트
 ```bash
