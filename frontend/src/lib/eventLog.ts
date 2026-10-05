@@ -55,6 +55,9 @@ export function describeChanges(prev: PaperSafariView | null, next: PaperSafariV
   if (!prev) {
     return [];
   }
+  if (prev.status === 'GAME_OVER' && next.status !== 'GAME_OVER') {
+    return ['새 게임을 시작해요'];
+  }
   return [
     ...newRound(prev, next),
     ...heldChanges(prev, next, nicknameOf),

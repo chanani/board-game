@@ -61,4 +61,10 @@ describe('describeChanges', () => {
     const next = view({ roundNumber: 2, round: { phase: 'SETUP_FLIP' } });
     expect(describeChanges(draw, next, nick)).toEqual(['2라운드를 시작해요']);
   });
+
+  it('끝난 게임 뒤 새 게임이 시작되면 알린다', () => {
+    const over = view({ status: 'GAME_OVER', winnerId: 1, round: { phase: 'ROUND_OVER' } });
+    const fresh = view({ roundNumber: 1, round: { phase: 'SETUP_FLIP' } });
+    expect(describeChanges(over, fresh, nick)).toEqual(['새 게임을 시작해요']);
+  });
 });

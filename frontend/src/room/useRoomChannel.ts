@@ -20,6 +20,7 @@ export function useRoomChannel(code: string) {
   const [missing, setMissing] = useState(false);
   const viewRef = useRef<PaperSafariSessionView | null>(null);
   const roomRef = useRef<Room | null>(null);
+  const topicSeenRef = useRef(0);
 
   const acceptRoom = useCallback((next: Room) => {
     roomRef.current = next;
@@ -45,18 +46,45 @@ export function useRoomChannel(code: string) {
   );
 
   useEffect(() => {
+    viewRef.current = null;
+    roomRef.current = null;
+    setRoom(null);
+    setView(null);
+    setLog([]);
+    setMissing(false);
+  }, [code]);
+
+  useEffect(() => {
+    if (!connected && roomRef.current) {
+      return;
+    }
+    let cancelled = false;
+    const seenBefore = topicSeenRef.current;
     roomsApi
       .get(code)
-      .then(acceptRoom)
+      .then((next) => {
+        if (!cancelled && topicSeenRef.current === seenBefore) {
+          acceptRoom(next);
+        }
+      })
       .catch((error) => {
+        if (cancelled) {
+          return;
+        }
         toast.show(messageOf(error));
         setMissing(true);
       });
-  }, [code, acceptRoom, toast]);
+    return () => {
+      cancelled = true;
+    };
+  }, [code, connected, acceptRoom, toast]);
 
   useEffect(() => {
     const offs = [
-      realtime.subscribe(`/topic/rooms/${code}`, (body) => acceptRoom(body as Room)),
+      realtime.subscribe(`/topic/rooms/${code}`, (body) => {
+        topicSeenRef.current += 1;
+        acceptRoom(body as Room);
+      }),
       realtime.subscribe('/user/queue/game', (body) => acceptView(body as PaperSafariSessionView)),
       realtime.subscribe('/user/queue/errors', (body) => toast.show((body as ApiErrorBody).message)),
     ];
@@ -82,6 +110,13 @@ export function useRoomChannel(code: string) {
     }, SYNC_RETRY_MS);
     return () => window.clearInterval(timer);
   }, [code, connected, realtime]);
+
+  const status = room?.status;
+  useEffect(() => {
+    if (status === 'PLAYING' && connected && !viewRef.current) {
+      realtime.publish(`/app/rooms/${code}/sync`, {});
+    }
+  }, [status, code, connected, realtime]);
 
   const send = useCallback(
     (action: GameAction) => {

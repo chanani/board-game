@@ -25,6 +25,10 @@ export function RoomPage() {
   }, []);
 
   useEffect(() => {
+    setConfirmLeave(false);
+  }, [room?.status]);
+
+  useEffect(() => {
     if (room?.status === 'PLAYING') {
       setDismissedGameOver(false);
     }
@@ -63,7 +67,12 @@ export function RoomPage() {
       return;
     }
     run(async () => {
-      await roomsApi.leave(code);
+      try {
+        await roomsApi.leave(code);
+      } catch (error) {
+        setConfirmLeave(false);
+        throw error;
+      }
       navigate('/', { replace: true });
     });
   };
