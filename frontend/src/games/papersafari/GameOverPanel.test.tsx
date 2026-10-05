@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import type { PaperSafariView } from '../../api/types';
 import { GameOverPanel } from './GameOverPanel';
@@ -17,9 +17,10 @@ describe('GameOverPanel', () => {
   it('마지막 라운드의 점수와 결과를 보여준다', () => {
     render(<GameOverPanel game={game} meId={1} nicknameOf={(id) => names[id]} onClose={vi.fn()} />);
 
-    expect(screen.getByText('마지막 라운드 결과')).toBeInTheDocument();
-    expect(screen.getByText(/12점/)).toBeInTheDocument();
-    expect(screen.getByText(/25점/)).toBeInTheDocument();
-    expect(screen.getAllByTestId('slot')).toHaveLength(12);
+    const dialog = screen.getByRole('dialog', { name: '게임 종료' });
+    expect(within(dialog).getByText('마지막 라운드 결과')).toBeInTheDocument();
+    expect(within(dialog).getByText(/12점/)).toBeInTheDocument();
+    expect(within(dialog).getByText(/25점/)).toBeInTheDocument();
+    expect(within(dialog).getAllByTestId('slot')).toHaveLength(12);
   });
 });

@@ -2,7 +2,10 @@ import { useState, type FormEvent } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { messageOf } from '../api/http';
 import { SignupLoginError, useAuth } from '../auth/AuthContext';
+import { motion } from 'motion/react';
+import { Felt } from '../components/Felt';
 import { Button, Panel, TextInput } from '../components/ui';
+import { CardFace } from '../games/papersafari/CardFace';
 import { useToast } from '../components/Toast';
 
 export function SignupPage() {
@@ -41,8 +44,14 @@ export function SignupPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4">
-      <Panel className="w-full max-w-sm">
+    <div className="flex min-h-screen items-center justify-center p-4">
+      <Felt className="relative w-full max-w-md px-6 py-10">
+        <div aria-hidden="true" className="pointer-events-none absolute -left-6 -top-8 z-10 flex">
+          <div className="-rotate-12"><CardFace card={{ kind: 'NUMBER', value: 9 }} faceUp known size="md" /></div>
+          <div className="-ml-4 rotate-6"><CardFace card={{ kind: 'FOX', value: -2 }} faceUp known size="md" /></div>
+        </div>
+        <motion.div initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
+      <Panel>
         <h1 className="mb-6 text-2xl font-bold text-safari-700">회원가입</h1>
         <form className="space-y-4" onSubmit={handleSubmit}>
           <TextInput id="loginId" label="아이디" hint="4~20자 영문과 숫자" value={loginId} onChange={(e) => setLoginId(e.target.value)} autoComplete="username" required />
@@ -54,6 +63,8 @@ export function SignupPage() {
           이미 계정이 있나요? <Link to="/login" className="font-semibold text-safari-700">로그인</Link>
         </p>
       </Panel>
+        </motion.div>
+      </Felt>
     </div>
   );
 }

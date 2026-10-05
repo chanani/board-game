@@ -83,8 +83,8 @@ export function RoomPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold">{room.name}</h1>
-          <p className="text-sm text-stone-500">{room.gameTypeName} · {playing ? '게임 중' : '대기 중'}</p>
+          <h1 className="text-xl font-black text-cream-50 drop-shadow">{room.name}</h1>
+          <p className="text-sm text-cream-200">{room.gameTypeName} · {playing ? '게임 중' : '대기 중'}</p>
         </div>
         <Button variant="danger" onClick={leave}>
           {confirmLeave ? '정말 나갈까요? (기권 처리)' : '나가기'}

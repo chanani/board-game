@@ -61,12 +61,12 @@ export function RecordsPage() {
   }
 
   const tabClass = (value: Tab) =>
-    `rounded-lg px-3 py-1.5 text-sm ${tab === value ? 'bg-safari-600 font-semibold text-white' : 'bg-white text-stone-600 ring-1 ring-stone-200'}`;
+    `rounded-lg px-3 py-1.5 text-sm ${tab === value ? 'bg-mustard-400 font-bold text-wood-800 shadow-[0_3px_0_var(--color-mustard-600)]' : 'bg-cream-50 text-wood-700'}`;
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">{isMe ? '내 전적' : `${stats?.nickname ?? ''}님의 전적`}</h1>
+        <h1 className="text-xl font-black text-cream-50 drop-shadow">{isMe ? '내 전적' : `${stats?.nickname ?? ''}님의 전적`}</h1>
         <div className="flex gap-2">
           <button type="button" className={tabClass('records')} onClick={() => setTab('records')}>전적</button>
           <button type="button" className={tabClass('ranking')} onClick={() => setTab('ranking')}>순위표</button>
