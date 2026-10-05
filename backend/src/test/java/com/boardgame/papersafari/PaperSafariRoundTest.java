@@ -216,4 +216,46 @@ class PaperSafariRoundTest {
         assertThat(round.phase()).isEqualTo(TurnPhase.DRAW);
         assertThat(round.currentPlayer()).isEqualTo(ALICE);
     }
+
+    @Test
+    void 나간_사람은_차례_순환에서_빠진다() {
+        PaperSafariRound round = round(THREE,
+                stack(List.of(WINNER_HAND, LOSER_HAND, LOSER_HAND), Card.number(7), zeros(5)));
+        flipFirst(round, THREE);
+        round.drawFromDeck(ALICE);
+
+        round.leave(ALICE);
+
+        round.drawFromDeck(BOB);
+        round.discardDrawn(BOB);
+        assertThat(round.currentPlayer()).isEqualTo(CAROL);
+
+        round.drawFromDeck(CAROL);
+        round.discardDrawn(CAROL);
+        assertThat(round.currentPlayer()).isEqualTo(BOB);
+    }
+
+    @Test
+    void 차례가_아닌_사람이_나가도_순환에서_빠진다() {
+        PaperSafariRound round = round(THREE,
+                stack(List.of(WINNER_HAND, LOSER_HAND, LOSER_HAND), Card.number(7), zeros(5)));
+        flipFirst(round, THREE);
+
+        round.leave(BOB);
+
+        round.drawFromDeck(ALICE);
+        round.discardDrawn(ALICE);
+        assertThat(round.currentPlayer()).isEqualTo(CAROL);
+
+        round.drawFromDeck(CAROL);
+        round.discardDrawn(CAROL);
+        assertThat(round.currentPlayer()).isEqualTo(ALICE);
+    }
+
+    @Test
+    void 참가자가_아니면_나갈_수_없다() {
+        PaperSafariRound round = newRound(zeros(3));
+
+        assertError(() -> round.leave(CAROL), ErrorCode.NOT_A_PLAYER);
+    }
 }

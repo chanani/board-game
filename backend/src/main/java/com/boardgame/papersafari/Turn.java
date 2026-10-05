@@ -79,6 +79,13 @@ public class Turn {
     }
 
     public Optional<DrawnCard> leave(PlayerId player) {
+        seats.requireSeated(player);
+        Optional<DrawnCard> released = releaseCurrent(player);
+        seats.remove(player);
+        return released;
+    }
+
+    private Optional<DrawnCard> releaseCurrent(PlayerId player) {
         if (!current.equals(player)) {
             return Optional.empty();
         }
