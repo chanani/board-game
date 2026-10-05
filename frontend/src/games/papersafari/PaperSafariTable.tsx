@@ -15,7 +15,7 @@ type Props = {
   onCloseGameOver: () => void;
 };
 
-function instruction(phase: string, myTurn: boolean, needsFlip: boolean, currentName: string): string {
+function instruction(phase: string, myTurn: boolean, needsFlip: boolean, currentName: string, canDiscard: boolean): string {
   if (phase === 'SETUP_FLIP') {
     return needsFlip ? '내 카드 1장을 골라 뒤집어 주세요.' : '다른 사람이 카드를 뒤집기를 기다리는 중…';
   }
@@ -29,7 +29,7 @@ function instruction(phase: string, myTurn: boolean, needsFlip: boolean, current
     return '덱 또는 버린 카드 더미에서 카드를 가져오세요.';
   }
   if (phase === 'PLACE') {
-    return '교체할 내 카드를 누르거나, 버리기를 누르세요.';
+    return canDiscard ? '교체할 내 카드를 누르거나, 버리기를 누르세요.' : '교체할 내 카드를 눌러 주세요. (이 카드는 버릴 수 없어요)';
   }
   return '엿볼 내 뒷면 카드를 고르세요.';
 }
@@ -111,7 +111,7 @@ export function PaperSafariTable({ view, room, meId, log, send, onCloseGameOver 
             <p className="mt-1 text-xs text-stone-500">버린 카드</p>
           </div>
         </div>
-        <p className="font-medium">{instruction(round.phase, myTurn, needsFlip, nicknameOf(round.currentPlayerId))}</p>
+        <p className="font-medium">{instruction(round.phase, myTurn, needsFlip, nicknameOf(round.currentPlayerId), canDiscard)}</p>
       </Panel>
 
       {myBoard ? (
