@@ -2,6 +2,7 @@ package com.boardgame.common.error;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.HttpMediaTypeNotAcceptableException;
@@ -41,6 +42,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     public ResponseEntity<ErrorResponse> handleMethodNotAllowed(HttpRequestMethodNotSupportedException exception) {
         return respond(ErrorCode.METHOD_NOT_ALLOWED);
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleDataConflict(DataIntegrityViolationException exception) {
+        log.warn("데이터 무결성 충돌: {}", exception.getMostSpecificCause().getMessage());
+        return respond(ErrorCode.DATA_CONFLICT);
     }
 
     @ExceptionHandler(Exception.class)

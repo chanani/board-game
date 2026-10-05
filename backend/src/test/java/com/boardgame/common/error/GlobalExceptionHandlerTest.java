@@ -89,6 +89,14 @@ class GlobalExceptionHandlerTest {
                 .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
     }
 
+    @Test
+    void 데이터_무결성_충돌은_409_DATA_CONFLICT() throws Exception {
+        mockMvc.perform(get("/test/errors/conflict"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("DATA_CONFLICT"))
+                .andExpect(jsonPath("$.message").value("요청이 다른 요청과 겹쳤습니다. 잠시 후 다시 시도해 주세요."));
+    }
+
     @RestController
     @RequestMapping("/test/errors")
     public static class ErrorTestController {
@@ -109,6 +117,11 @@ class GlobalExceptionHandlerTest {
 
         @GetMapping("/number")
         public void number(@RequestParam int value) {
+        }
+
+        @GetMapping("/conflict")
+        public void conflict() {
+            throw new org.springframework.dao.DataIntegrityViolationException("duplicate key login_id");
         }
     }
 }
