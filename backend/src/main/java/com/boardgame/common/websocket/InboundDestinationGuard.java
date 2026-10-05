@@ -22,12 +22,17 @@ public class InboundDestinationGuard implements ChannelInterceptor {
     }
 
     private boolean isForbidden(StompCommand command, String destination) {
-        if (destination == null) {
-            return false;
-        }
         if (StompCommand.SEND.equals(command)) {
-            return destination.startsWith("/topic/") || destination.startsWith("/queue/");
+            return destination == null || isBrokerOrUserDestination(destination);
         }
-        return StompCommand.SUBSCRIBE.equals(command) && destination.startsWith("/queue/");
+        if (StompCommand.SUBSCRIBE.equals(command)) {
+            return destination == null || destination.startsWith("/queue");
+        }
+        return false;
+    }
+
+    private boolean isBrokerOrUserDestination(String destination) {
+        return destination.startsWith("/topic") || destination.startsWith("/queue")
+                || destination.startsWith("/user");
     }
 }

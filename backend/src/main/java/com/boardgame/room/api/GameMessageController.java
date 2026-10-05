@@ -9,6 +9,7 @@ import com.boardgame.room.application.RoomService;
 import java.security.Principal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.messaging.converter.MessageConversionException;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageExceptionHandler;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -41,6 +42,12 @@ public class GameMessageController {
     @SendToUser(destinations = "/queue/errors", broadcast = false)
     public ErrorResponse handleBusiness(BusinessException exception) {
         return ErrorResponse.of(exception.errorCode());
+    }
+
+    @MessageExceptionHandler(MessageConversionException.class)
+    @SendToUser(destinations = "/queue/errors", broadcast = false)
+    public ErrorResponse handleMalformedPayload(MessageConversionException exception) {
+        return ErrorResponse.of(ErrorCode.INVALID_INPUT);
     }
 
     @MessageExceptionHandler(Exception.class)

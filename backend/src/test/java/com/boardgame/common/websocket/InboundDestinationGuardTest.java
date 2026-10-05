@@ -53,4 +53,35 @@ class InboundDestinationGuardTest {
         assertThat(guard.preSend(mine, null)).isSameAs(mine);
         assertThat(guard.preSend(room, null)).isSameAs(room);
     }
+
+    @Test
+    void 브로커_접두사와_user_직접_SEND는_모두_거부한다() {
+        for (String destination : new String[]{"/topic", "/topicX", "/queue", "/user/2/queue/game"}) {
+            assertThatThrownBy(() -> guard.preSend(message(StompCommand.SEND, destination), null))
+                    .isInstanceOf(MessageDeliveryException.class);
+        }
+    }
+
+    @Test
+    void queue_접두사_구독은_거부한다() {
+        assertThatThrownBy(() -> guard.preSend(message(StompCommand.SUBSCRIBE, "/queue"), null))
+                .isInstanceOf(MessageDeliveryException.class);
+    }
+
+    @Test
+    void 목적지_없는_SEND와_SUBSCRIBE는_거부한다() {
+        assertThatThrownBy(() -> guard.preSend(message(StompCommand.SEND, null), null))
+                .isInstanceOf(MessageDeliveryException.class);
+        assertThatThrownBy(() -> guard.preSend(message(StompCommand.SUBSCRIBE, null), null))
+                .isInstanceOf(MessageDeliveryException.class);
+    }
+
+    @Test
+    void 에러_큐_구독과_목적지_없는_CONNECT는_허용한다() {
+        Message<?> errors = message(StompCommand.SUBSCRIBE, "/user/queue/errors");
+        Message<?> connect = message(StompCommand.CONNECT, null);
+
+        assertThat(guard.preSend(errors, null)).isSameAs(errors);
+        assertThat(guard.preSend(connect, null)).isSameAs(connect);
+    }
 }
