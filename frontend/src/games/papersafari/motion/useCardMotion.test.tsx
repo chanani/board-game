@@ -17,11 +17,21 @@ const drawn = (seq: number, animate = true): ViewTransition => ({
   seq, animate, from: game(1, null), to: game(1, { playerId: 2, source: 'DECK', card: null }, 'PLACE'),
 });
 
-function container(): HTMLElement {
+type Box = { x: number; y: number; width: number; height: number };
+const CARD: Box = { x: 0, y: 0, width: 64, height: 90 };
+
+function stubRect(el: HTMLElement, box: Box) {
+  el.getBoundingClientRect = () => ({
+    ...box, left: box.x, top: box.y, right: box.x + box.width, bottom: box.y + box.height, toJSON: () => box,
+  }) as DOMRect;
+}
+
+function container(rects: Record<string, Box> = {}): HTMLElement {
   const root = document.createElement('div');
   ['deck', 'discard', 'hand:2', 'hand:1'].forEach((key) => {
     const el = document.createElement('div');
     el.dataset.zone = key;
+    stubRect(el, rects[key] ?? CARD);
     root.appendChild(el);
   });
   document.body.appendChild(root);
@@ -76,6 +86,26 @@ describe('useCardMotion', () => {
 
   it('위치를 모르는 영역이면 유령 없이 넘어간다', () => {
     const ref = { current: document.createElement('div') };
+    const transition = drawn(1);
+    const { result } = renderHook(() => useCardMotion(ref, transition));
+
+    expect(result.current.ghosts).toHaveLength(0);
+    expect(result.current.hidden.size).toBe(0);
+  });
+
+  it('한쪽 영역의 높이가 0이면 다른 쪽 크기로 그 중심에서 날아간다', () => {
+    const ref = { current: container({ 'hand:2': { x: 200, y: 100, width: 48, height: 0 } }) };
+    const transition = drawn(1);
+    const { result } = renderHook(() => useCardMotion(ref, transition));
+
+    expect(result.current.ghosts).toHaveLength(1);
+    expect(result.current.ghosts[0].from).toEqual(CARD);
+    expect(result.current.ghosts[0].to).toEqual({ x: 192, y: 55, width: 64, height: 90 });
+  });
+
+  it('양쪽 영역 모두 크기가 없으면 유령도 숨김도 없다', () => {
+    const empty = { x: 10, y: 10, width: 0, height: 0 };
+    const ref = { current: container({ deck: empty, 'hand:2': { ...empty, width: 48 } }) };
     const transition = drawn(1);
     const { result } = renderHook(() => useCardMotion(ref, transition));
 

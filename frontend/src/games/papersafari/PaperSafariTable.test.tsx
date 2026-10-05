@@ -243,9 +243,12 @@ it('재동기화로 받은 화면(animate=false)은 날아다니는 카드를 �
 });
 
 it('상대가 덱에서 뽑으면 유령 카드가 날아간다', () => {
+  const card = { x: 0, y: 0, left: 0, top: 0, right: 64, bottom: 90, width: 64, height: 90, toJSON: () => ({}) } as DOMRect;
+  const rect = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue(card);
   const from = build({ phase: 'DRAW', current: OPPONENT });
   const to = build({ phase: 'PLACE', current: OPPONENT, held: { playerId: OPPONENT, source: 'DECK', card: null } });
   render(<PaperSafariTable {...baseProps(to)} transition={{ seq: 1, from: from.game, to: to.game, animate: true }} />);
 
   expect(screen.getByTestId('ghost-layer')).toBeInTheDocument();
+  rect.mockRestore();
 });

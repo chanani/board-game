@@ -26,6 +26,33 @@ function rectOf(root: HTMLElement | null, zone: Zone): Rect | null {
   return { x: box.left, y: box.top, width: box.width, height: box.height };
 }
 
+function hasArea(rect: Rect): boolean {
+  return rect.width > 0 && rect.height > 0;
+}
+
+function sizedLike(rect: Rect, model: Rect): Rect {
+  const cx = rect.x + rect.width / 2;
+  const cy = rect.y + rect.height / 2;
+  return { x: cx - model.width / 2, y: cy - model.height / 2, width: model.width, height: model.height };
+}
+
+// 빈 손 영역처럼 크기가 0인 쪽은 반대쪽 카드 크기로, 그 중심에 맞춘다. 양쪽 다 0이면 날릴 수 없다.
+export function normalizeEnds(from: Rect | null, to: Rect | null): { from: Rect; to: Rect } | null {
+  if (!from || !to) {
+    return null;
+  }
+  if (hasArea(from) && hasArea(to)) {
+    return { from, to };
+  }
+  if (hasArea(to)) {
+    return { from: sizedLike(from, to), to };
+  }
+  if (hasArea(from)) {
+    return { from, to: sizedLike(to, from) };
+  }
+  return null;
+}
+
 function soundOfTravel(move: Extract<Move, { kind: 'travel' }>): SoundName {
   return move.from.kind === 'deck' || move.from.kind === 'discard' ? 'draw' : 'place';
 }
@@ -89,9 +116,8 @@ export function useCardMotion(containerRef: RefObject<HTMLElement | null>, trans
     const plan = planOf(movesFor(transition));
     const root = containerRef.current;
     const flights = plan.flights.flatMap((flight) => {
-      const from = rectOf(root, flight.from);
-      const to = rectOf(root, flight.to);
-      return from && to ? [{ ...flight, fromRect: from, toRect: to, id: nextId.current++ }] : [];
+      const ends = normalizeEnds(rectOf(root, flight.from), rectOf(root, flight.to));
+      return ends ? [{ ...flight, fromRect: ends.from, toRect: ends.to, id: nextId.current++ }] : [];
     });
     if (flights.length > 0) {
       setGhosts(flights.map((flight) => ({ id: flight.id, card: flight.card, from: flight.fromRect, to: flight.toRect, delay: flight.delay })));
