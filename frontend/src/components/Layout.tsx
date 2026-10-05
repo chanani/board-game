@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate, useOutlet } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { messageOf } from '../api/http';
 import { useSound } from '../lib/sound';
@@ -37,6 +37,7 @@ export function Layout() {
   const toast = useToast();
   const disconnected = useShowDisconnected();
   const location = useLocation();
+  const outlet = useOutlet();
   const { muted, toggleMuted } = useSound();
 
   const handleLogout = async () => {
@@ -78,7 +79,7 @@ export function Layout() {
       <main className="mx-auto max-w-6xl px-4 py-6">
         <AnimatePresence mode="wait">
           <motion.div key={location.pathname} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}>
-            <Outlet />
+            {outlet}
           </motion.div>
         </AnimatePresence>
       </main>

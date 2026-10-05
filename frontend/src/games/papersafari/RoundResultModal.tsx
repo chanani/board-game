@@ -36,6 +36,7 @@ export function RoundResultModal({ view, meId, nicknameOf, onReady }: Props) {
     return () => window.clearTimeout(timer);
   }, [revealed, total]);
 
+  const done = revealed >= total;
   const staged = (board: BoardView, boardIndex: number): BoardView => ({
     ...board,
     slots: board.slots.map((slot, slotIndex) => (boardIndex * SLOTS_PER_BOARD + slotIndex < revealed ? slot : { ...slot, faceUp: false })),
@@ -50,7 +51,7 @@ export function RoundResultModal({ view, meId, nicknameOf, onReady }: Props) {
             className={`flex justify-between rounded-lg px-3 py-2 text-sm ${result.outcome === 'WIN' ? 'bg-mustard-300/60' : 'bg-cream-200/60'}`}>
             <span className="font-medium">{result.outcome === 'WIN' ? '🎀 ' : ''}{nicknameOf(result.playerId)}</span>
             <span>
-              <RollingNumber value={result.score} />점 · <strong className={result.outcome === 'WIN' ? 'text-safari-700' : ''}>{resultLabel(result.outcome)}</strong>
+              {done ? <><RollingNumber value={result.score} />점</> : '…'} · <strong className={result.outcome === 'WIN' ? 'text-safari-700' : ''}>{resultLabel(result.outcome)}</strong>
             </span>
           </motion.li>
         ))}
@@ -61,7 +62,7 @@ export function RoundResultModal({ view, meId, nicknameOf, onReady }: Props) {
             <PlayerBoard board={staged(board, boardIndex)} nickname={nicknameOf(board.playerId)} tokens={game.tokens[String(board.playerId)] ?? 0} active={false} size="sm" />
             <p className="mt-1 text-center text-xs text-cream-50">
               열 점수{' '}
-              {[0, 1, 2]
+              {!done ? '…' : [0, 1, 2]
                 .map((column) => {
                   const top = cardAt(board, column, 0);
                   const bottom = cardAt(board, column, 1);

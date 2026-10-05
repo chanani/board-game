@@ -1,6 +1,6 @@
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { PaperSafariSessionView } from '../../api/types';
 import { RoundResultModal } from './RoundResultModal';
 
@@ -33,5 +33,27 @@ describe('RoundResultModal', () => {
     await userEvent.click(screen.getByRole('button', { name: '다음 라운드 준비' }));
 
     expect(onReady).toHaveBeenCalledOnce();
+  });
+
+  describe('공개 연출', () => {
+    afterEach(() => vi.useRealTimers());
+
+    it('카드가 모두 공개된 뒤에야 점수를 보여준다', () => {
+      vi.useFakeTimers();
+      render(<RoundResultModal view={view} meId={1} nicknameOf={nicknameOf} onReady={vi.fn()} />);
+      const dialog = screen.getByRole('dialog', { name: '2라운드 결과' });
+
+      expect(dialog).not.toHaveTextContent('9점');
+      expect(dialog).not.toHaveTextContent('열 점수 1');
+      expect(screen.getByRole('button', { name: '다음 라운드 준비' })).toBeEnabled();
+
+      for (let step = 0; step < 12; step += 1) {
+        act(() => { vi.advanceTimersByTime(120); });
+      }
+
+      expect(dialog).toHaveTextContent('9점');
+      expect(dialog).toHaveTextContent('열 점수');
+      expect(dialog).toHaveTextContent('+');
+    });
   });
 });
