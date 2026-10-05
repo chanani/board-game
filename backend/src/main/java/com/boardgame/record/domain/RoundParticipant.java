@@ -11,9 +11,11 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 
 @Entity
-@Table(name = "round_participant")
+@Table(name = "round_participant",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"round_id", "member_id"}))
 public class RoundParticipant {
 
     @Id

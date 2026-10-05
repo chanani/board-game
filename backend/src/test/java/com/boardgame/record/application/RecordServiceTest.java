@@ -150,4 +150,15 @@ class RecordServiceTest {
         assertThat(matchRepository.findByMatchKey(matchKey)).isEmpty();
         assertThat(statRepository.findById(new MemberGameStatId(alice, GameType.PAPER_SAFARI))).isEmpty();
     }
+
+    @Test
+    void 시작_참가자_목록에_중복이_있어도_한_번만_참가한다() {
+        events.publishEvent(new GameStartedEvent(matchKey, GameType.PAPER_SAFARI, List.of(alice, bob, alice), STARTED));
+
+        complete();
+
+        GameMatch match = matchRepository.findByMatchKey(matchKey).orElseThrow();
+        assertThat(participantRepository.findByMatch(match)).hasSize(2);
+        assertThat(statOf(alice).matches().wins()).isEqualTo(1);
+    }
 }

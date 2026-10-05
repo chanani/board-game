@@ -28,10 +28,10 @@ import java.util.stream.IntStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@Transactional
 public class RecordService {
 
     private static final Logger log = LoggerFactory.getLogger(RecordService.class);
@@ -55,14 +55,16 @@ public class RecordService {
         this.clock = clock;
     }
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void recordStart(GameStartedEvent event) {
         if (matchRepository.findByMatchKey(event.matchKey()).isPresent()) {
             return;
         }
         GameMatch match = matchRepository.save(GameMatch.start(event.matchKey(), event.gameType(), event.startedAt()));
-        joinAll(match, event.memberIds());
+        joinAll(match, event.memberIds().stream().distinct().toList());
     }
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void recordRound(RoundCompletedEvent event) {
         Optional<GameMatch> found = matchRepository.findByMatchKey(event.matchKey());
         if (found.isEmpty()) {
@@ -78,6 +80,7 @@ public class RecordService {
         round.entries().forEach(entry -> recordRoundEntry(saved, entry, event.gameType()));
     }
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void recordCompletion(GameCompletedEvent event) {
         GameMatch match = matchRepository.findByMatchKey(event.matchKey())
                 .orElseGet(() -> startFromCompletion(event));
@@ -86,14 +89,14 @@ public class RecordService {
         }
         match.finish(event.endedAt());
         Map<Long, MatchParticipant> participants = participantRepository.findByMatch(match).stream()
-                .collect(Collectors.toMap(MatchParticipant::memberId, Function.identity()));
+                .collect(Collectors.toMap(MatchParticipant::memberId, Function.identity(), (first, second) -> first));
         event.result().entries().forEach(entry -> recordMatchEntry(participants, match, entry, event.gameType()));
     }
 
     private GameMatch startFromCompletion(GameCompletedEvent event) {
         GameMatch match = matchRepository.save(GameMatch.start(event.matchKey(), event.gameType(), event.startedAt()));
-        List<Long> memberIds = event.result().entries().stream().map(MatchEntry::memberId).toList();
-        joinAll(match, memberIds);
+        event.result().entries().forEach(entry ->
+                participantRepository.save(MatchParticipant.join(match, entry.memberId(), entry.seat())));
         return match;
     }
 
