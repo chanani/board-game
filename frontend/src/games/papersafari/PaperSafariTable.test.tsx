@@ -44,11 +44,15 @@ function build({ phase, current, held = null, mine = faceDown() }: Setup): Paper
 
 const nicknameOf = (memberId: number) => room.members.find((member) => member.id === memberId)?.nickname ?? '떠난 플레이어';
 
+function baseProps(view: PaperSafariSessionView, send: () => void = vi.fn(), targetRoom: Room = room, onForfeit: (id: number) => void = vi.fn(), now = 0, errorSeq = 0) {
+  return {
+    view, room: targetRoom, meId: ME, log: [], send, nicknameOf,
+    receivedAt: 0, now, errorSeq, onForfeit, onCloseGameOver: vi.fn(),
+  };
+}
+
 function tableFor(view: PaperSafariSessionView, send: () => void, targetRoom: Room = room, onForfeit: (id: number) => void = vi.fn(), now = 0, errorSeq = 0) {
-  return (
-    <PaperSafariTable view={view} room={targetRoom} meId={ME} log={[]} send={send} nicknameOf={nicknameOf}
-      receivedAt={0} now={now} errorSeq={errorSeq} onForfeit={onForfeit} onCloseGameOver={vi.fn()} />
-  );
+  return <PaperSafariTable {...baseProps(view, send, targetRoom, onForfeit, now, errorSeq)} />;
 }
 
 function renderTable(setup: Setup) {
@@ -228,4 +232,20 @@ it('들고 있는 카드와 모든 자리의 손 자리표가 있다', () => {
   ['hand:1', 'hand:2', 'deck', 'discard', 'slot:1:0:0'].forEach((zone) => {
     expect(document.querySelector(`[data-zone="${zone}"]`)).not.toBeNull();
   });
+});
+
+it('재동기화로 받은 화면(animate=false)은 날아다니는 카드를 만들지 않는다', () => {
+  const from = build({ phase: 'DRAW', current: OPPONENT });
+  const to = build({ phase: 'PLACE', current: OPPONENT, held: { playerId: OPPONENT, source: 'DECK', card: null } });
+  render(<PaperSafariTable {...baseProps(to)} transition={{ seq: 1, from: from.game, to: to.game, animate: false }} />);
+
+  expect(screen.queryByTestId('ghost-layer')).not.toBeInTheDocument();
+});
+
+it('상대가 덱에서 뽑으면 유령 카드가 날아간다', () => {
+  const from = build({ phase: 'DRAW', current: OPPONENT });
+  const to = build({ phase: 'PLACE', current: OPPONENT, held: { playerId: OPPONENT, source: 'DECK', card: null } });
+  render(<PaperSafariTable {...baseProps(to)} transition={{ seq: 1, from: from.game, to: to.game, animate: true }} />);
+
+  expect(screen.getByTestId('ghost-layer')).toBeInTheDocument();
 });

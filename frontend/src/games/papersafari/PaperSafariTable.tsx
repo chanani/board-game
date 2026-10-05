@@ -10,6 +10,11 @@ import { PC_QUERY, useMediaQuery } from '../../lib/useMediaQuery';
 import { RoundResultModal } from './RoundResultModal';
 import { canForfeit, offlineSecondsNow } from '../../lib/format';
 import { estimateBoard } from './score';
+import { useSound } from '../../lib/sound';
+import type { ViewTransition } from '../../room/useRoomChannel';
+import { GhostLayer } from './motion/GhostLayer';
+import { HiddenZonesContext } from './motion/ZoneAnchor';
+import { useCardMotion } from './motion/useCardMotion';
 
 const PENDING_MS = 3000;
 
@@ -45,6 +50,7 @@ type Props = {
   onForfeit: (memberId: number) => void;
   send: (action: GameAction) => void;
   onCloseGameOver: () => void;
+  transition?: ViewTransition | null;
 };
 
 function instruction(phase: string, myTurn: boolean, needsFlip: boolean, currentName: string, canDiscard: boolean): string {
@@ -66,11 +72,33 @@ function instruction(phase: string, myTurn: boolean, needsFlip: boolean, current
   return '엿볼 내 뒷면 카드를 고르세요.';
 }
 
-export function PaperSafariTable({ view, room, meId, log, receivedAt, now, errorSeq, nicknameOf, onForfeit, send: rawSend, onCloseGameOver }: Props) {
+export function PaperSafariTable({ view, room, meId, log, receivedAt, now, errorSeq, nicknameOf, onForfeit, send: rawSend, onCloseGameOver, transition }: Props) {
   const game = view.game;
   const round = game.round;
   const pendingUntil = useRef(0);
   const wide = useMediaQuery(PC_QUERY);
+  const myTurn = round.currentPlayerId === meId;
+  const containerRef = useRef<HTMLDivElement>(null);
+  const { ghosts, hidden } = useCardMotion(containerRef, transition ?? null);
+  const { play } = useSound();
+  const wasMyTurn = useRef(false);
+
+  useEffect(() => {
+    const now = myTurn && round.phase === 'DRAW';
+    if (now && !wasMyTurn.current) {
+      play('myTurn');
+    }
+    wasMyTurn.current = now;
+  }, [myTurn, round.phase, play]);
+
+  const phase = round.phase;
+  const myOutcome = game.lastRoundResult?.players.find((player) => player.playerId === meId)?.outcome;
+  useEffect(() => {
+    if (phase !== 'ROUND_OVER' || !myOutcome) {
+      return;
+    }
+    play(myOutcome === 'WIN' ? 'roundWin' : 'roundLose');
+  }, [phase, myOutcome, play]);
 
   useEffect(() => {
     pendingUntil.current = 0;
@@ -93,7 +121,6 @@ export function PaperSafariTable({ view, room, meId, log, receivedAt, now, error
   const opponents = seatOrder(round.boards.map((board) => board.playerId), meId)
     .map(boardOf)
     .filter((board): board is BoardView => board !== undefined && board.playerId !== meId);
-  const myTurn = round.currentPlayerId === meId;
   const needsFlip = round.phase === 'SETUP_FLIP' && Boolean(myBoard) && !myBoard?.slots.some((slot) => slot.faceUp);
   const held = round.held;
   const canDiscard = myTurn && round.phase === 'PLACE' && held !== null && held.source === 'DECK' && held.card?.kind !== 'TARZAN';
@@ -162,11 +189,14 @@ export function PaperSafariTable({ view, room, meId, log, receivedAt, now, error
   const Layout = wide ? TableRound : TableRail;
 
   return (
-    <div className="space-y-4">
-      <Layout {...tableProps} />
+    <HiddenZonesContext.Provider value={hidden}>
+      <div ref={containerRef} className="space-y-4">
+        <Layout {...tableProps} />
+      </div>
+      <GhostLayer ghosts={ghosts} />
       {round.phase === 'ROUND_OVER' ? (
         <RoundResultModal view={view} meId={meId} nicknameOf={nicknameOf} onReady={() => send({ type: 'READY' })} />
       ) : null}
-    </div>
+    </HiddenZonesContext.Provider>
   );
 }

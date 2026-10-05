@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError, messageOf } from '../api/http';
 import { roomsApi } from '../api/rooms';
-import type { ApiErrorBody, GameAction, PaperSafariSessionView, Room } from '../api/types';
+import type { ApiErrorBody, GameAction, PaperSafariSessionView, PaperSafariView, Room } from '../api/types';
 import { useToast } from '../components/Toast';
 import { describeChanges } from '../lib/eventLog';
 import { useRealtime } from '../realtime/RealtimeContext';
@@ -9,6 +9,8 @@ import { useRealtime } from '../realtime/RealtimeContext';
 const MAX_LOG = 5;
 const SYNC_RETRY_MS = 1000;
 const SYNC_MAX_TRIES = 5;
+
+export type ViewTransition = { seq: number; from: PaperSafariView | null; to: PaperSafariView; animate: boolean };
 
 export function useRoomChannel(code: string) {
   const { realtime, connected } = useRealtime();
@@ -19,7 +21,10 @@ export function useRoomChannel(code: string) {
   const [log, setLog] = useState<string[]>([]);
   const [missing, setMissing] = useState(false);
   const [errorSeq, setErrorSeq] = useState(0);
+  const [transition, setTransition] = useState<ViewTransition | null>(null);
   const viewRef = useRef<PaperSafariSessionView | null>(null);
+  const syncPendingRef = useRef(false);
+  const seqRef = useRef(0);
   const roomRef = useRef<Room | null>(null);
   const topicSeenRef = useRef(0);
   const namesRef = useRef(new Map<number, string>());
@@ -39,6 +44,10 @@ export function useRoomChannel(code: string) {
   const acceptView = useCallback(
     (next: PaperSafariSessionView) => {
       const lines = describeChanges(viewRef.current?.game ?? null, next.game, nicknameOf);
+      const animate = !syncPendingRef.current;
+      syncPendingRef.current = false;
+      seqRef.current += 1;
+      setTransition({ seq: seqRef.current, from: viewRef.current?.game ?? null, to: next.game, animate });
       viewRef.current = next;
       setView(next);
       if (lines.length > 0) {
@@ -56,6 +65,8 @@ export function useRoomChannel(code: string) {
     setView(null);
     setLog([]);
     setMissing(false);
+    setTransition(null);
+    syncPendingRef.current = false;
   }, [code]);
 
   useEffect(() => {
@@ -107,6 +118,7 @@ export function useRoomChannel(code: string) {
     let tries = 0;
     const sync = () => {
       tries += 1;
+      syncPendingRef.current = true;
       realtime.publish(`/app/rooms/${code}/sync`, {});
     };
     sync();
@@ -123,6 +135,7 @@ export function useRoomChannel(code: string) {
   const status = room?.status;
   useEffect(() => {
     if (status === 'PLAYING' && connected && !viewRef.current) {
+      syncPendingRef.current = true;
       realtime.publish(`/app/rooms/${code}/sync`, {});
     }
   }, [status, code, connected, realtime]);
@@ -136,5 +149,5 @@ export function useRoomChannel(code: string) {
     [code, realtime, toast],
   );
 
-  return { room, receivedAt, view, log, missing, send, nicknameOf, errorSeq };
+  return { room, receivedAt, view, transition, log, missing, send, nicknameOf, errorSeq };
 }

@@ -2,7 +2,7 @@ import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from '../api/http';
 import { roomsApi } from '../api/rooms';
-import type { Room } from '../api/types';
+import type { PaperSafariSessionView, Room } from '../api/types';
 import { useRoomChannel } from './useRoomChannel';
 
 type Handler = (body: unknown) => void;
@@ -36,6 +36,14 @@ const room = (name: string, status: Room['status'] = 'WAITING'): Room => ({
   hostId: 1,
   maxPlayers: 4,
   members: [],
+});
+
+const sessionView = (roundNumber: number): PaperSafariSessionView => ({
+  readyPlayerIds: [],
+  game: {
+    viewerId: 1, status: 'IN_ROUND', roundNumber, tokens: {}, lastRoundResult: null, winnerId: null,
+    round: { phase: 'DRAW', currentPlayerId: 1, deckSize: 30, discardTop: null, held: null, boards: [] },
+  },
 });
 
 describe('useRoomChannel', () => {
@@ -125,5 +133,21 @@ describe('useRoomChannel', () => {
 
     expect(result.current.nicknameOf(2)).toBe('플레이어2');
     expect(result.current.nicknameOf(99)).toBe('떠난 플레이어');
+  });
+
+  it('동기화 요청 직후 받은 화면은 animate=false, 이후 푸시는 animate=true', async () => {
+    vi.spyOn(roomsApi, 'get').mockResolvedValue(room('방', 'PLAYING'));
+    state.connected = true;
+    const { result } = renderHook(() => useRoomChannel('ABCDEF'));
+    await act(async () => {});
+    expect(state.publish).toHaveBeenCalledWith('/app/rooms/ABCDEF/sync', {});
+
+    act(() => state.handlers.get('/user/queue/game')?.(sessionView(1)));
+    expect(result.current.transition?.animate).toBe(false);
+
+    act(() => state.handlers.get('/user/queue/game')?.(sessionView(2)));
+    expect(result.current.transition?.animate).toBe(true);
+    expect(result.current.transition?.from?.roundNumber).toBe(1);
+    expect(result.current.transition?.to.roundNumber).toBe(2);
   });
 });

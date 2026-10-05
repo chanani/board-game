@@ -15,7 +15,7 @@ export function RoomPage() {
   const { member } = useAuth();
   const navigate = useNavigate();
   const toast = useToast();
-  const { room, receivedAt, view, log, missing, send, nicknameOf, errorSeq } = useRoomChannel(code);
+  const { room, receivedAt, view, transition, log, missing, send, nicknameOf, errorSeq } = useRoomChannel(code);
   const [now, setNow] = useState(() => Date.now());
   const [confirmLeave, setConfirmLeave] = useState(false);
   const [dismissedGameOver, setDismissedGameOver] = useState(false);
@@ -103,6 +103,7 @@ export function RoomPage() {
           onForfeit={(memberId) => run(() => roomsApi.forfeit(code, memberId))}
           send={send}
           onCloseGameOver={() => setDismissedGameOver(true)}
+          transition={transition}
         />
       ) : playing ? (
         <Panel>게임 화면을 불러오는 중…</Panel>
