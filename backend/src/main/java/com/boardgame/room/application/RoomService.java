@@ -3,6 +3,7 @@ package com.boardgame.room.application;
 import com.boardgame.common.error.BusinessException;
 import com.boardgame.common.error.ErrorCode;
 import com.boardgame.common.security.LoginMember;
+import com.boardgame.game.GameAction;
 import com.boardgame.game.GameOutcome;
 import com.boardgame.game.GameSessionFactories;
 import com.boardgame.game.GameType;
@@ -103,6 +104,19 @@ public class RoomService {
 
     public synchronized Optional<RoomResponse> myRoom(long memberId) {
         return registry.findByMember(memberId).map(RoomResponse::from);
+    }
+
+    public synchronized void act(String rawCode, long memberId, GameAction action) {
+        Room room = find(rawCode);
+        List<GameOutcome> outcomes = room.act(memberId, action);
+        outcomePublisher.publish(room, outcomes, clock.instant());
+        broadcast(room);
+    }
+
+    public synchronized void sync(String rawCode, long memberId) {
+        Room room = find(rawCode);
+        room.requireMember(memberId);
+        sendView(room, memberId);
     }
 
     private RoomResponse broadcast(Room room) {

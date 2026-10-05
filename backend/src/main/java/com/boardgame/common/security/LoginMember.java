@@ -10,6 +10,10 @@ public record LoginMember(long id, String nickname) implements Principal, Serial
         return new LoginMember(member.id(), member.nicknameValue());
     }
 
+    public static long idOf(Principal principal) {
+        return Long.parseLong(principal.getName());
+    }
+
     @Override
     public String getName() {
         return String.valueOf(id);
