@@ -8,6 +8,11 @@ public enum ErrorCode {
     NOT_FOUND(HttpStatus.NOT_FOUND, "요청한 경로를 찾을 수 없습니다."),
     METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "지원하지 않는 요청 방식입니다."),
 
+    INVALID_LOGIN_ID(HttpStatus.BAD_REQUEST, "아이디는 4~20자의 영문과 숫자만 사용할 수 있습니다."),
+    INVALID_NICKNAME(HttpStatus.BAD_REQUEST, "닉네임은 2~10자로 입력해 주세요."),
+    INVALID_PASSWORD(HttpStatus.BAD_REQUEST, "비밀번호는 8~64자로 입력해 주세요."),
+    INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED, "아이디 또는 비밀번호가 올바르지 않습니다."),
+
     INVALID_PLAYER_COUNT(HttpStatus.BAD_REQUEST, "페이퍼 사파리는 2~5명이 플레이할 수 있습니다."),
     NOT_A_PLAYER(HttpStatus.FORBIDDEN, "이 게임의 참가자가 아닙니다."),
     NOT_YOUR_TURN(HttpStatus.CONFLICT, "지금은 당신의 차례가 아닙니다."),

@@ -4,3 +4,4 @@ frontend/dist/
 .idea/
 *.iml
 .DS_Store
+backend/data/
