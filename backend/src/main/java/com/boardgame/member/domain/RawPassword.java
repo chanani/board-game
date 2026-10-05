@@ -20,16 +20,21 @@ public final class RawPassword {
         if (isOutOfRange(value)) {
             throw new BusinessException(ErrorCode.INVALID_PASSWORD);
         }
-        return new RawPassword(value);
+        RawPassword password = new RawPassword(value);
+        if (password.exceedsBcryptLimit()) {
+            throw new BusinessException(ErrorCode.INVALID_PASSWORD);
+        }
+        return password;
     }
 
     private static boolean isOutOfRange(String value) {
         if (value == null) {
             return true;
         }
-        if (value.length() < MIN_LENGTH || value.length() > MAX_LENGTH) {
-            return true;
-        }
+        return value.length() < MIN_LENGTH || value.length() > MAX_LENGTH;
+    }
+
+    public boolean exceedsBcryptLimit() {
         return value.getBytes(StandardCharsets.UTF_8).length > MAX_BYTES;
     }
 

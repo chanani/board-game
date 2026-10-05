@@ -199,4 +199,15 @@ class AuthApiTest {
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
     }
+
+    @Test
+    void GET으로는_로그아웃되지_않는다() throws Exception {
+        signUp("alice01", "앨리스", "password1");
+        MockHttpSession session = loggedInSession("alice01", "password1");
+
+        mockMvc.perform(get("/api/auth/logout").session(session));
+
+        mockMvc.perform(get("/api/members/me").session(session))
+                .andExpect(status().isOk());
+    }
 }
