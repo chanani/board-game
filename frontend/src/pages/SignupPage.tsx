@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { messageOf } from '../api/http';
-import { useAuth } from '../auth/AuthContext';
+import { SignupLoginError, useAuth } from '../auth/AuthContext';
 import { Button, Panel, TextInput } from '../components/ui';
 import { useToast } from '../components/Toast';
 
@@ -18,6 +18,15 @@ export function SignupPage() {
     return <Navigate to="/" replace />;
   }
 
+  const handleFailure = (error: unknown) => {
+    if (error instanceof SignupLoginError) {
+      toast.show('가입은 완료됐어요. 로그인해 주세요.', 'info');
+      navigate('/login', { replace: true });
+      return;
+    }
+    toast.show(messageOf(error));
+  };
+
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     setSubmitting(true);
@@ -25,7 +34,7 @@ export function SignupPage() {
       await signup(loginId, nickname, password);
       navigate('/', { replace: true });
     } catch (error) {
-      toast.show(messageOf(error));
+      handleFailure(error);
     } finally {
       setSubmitting(false);
     }

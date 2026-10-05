@@ -10,6 +10,12 @@ type AuthState = {
   logout: () => Promise<void>;
 };
 
+export class SignupLoginError extends Error {
+  constructor() {
+    super('가입은 완료됐지만 자동 로그인에 실패했어요.');
+  }
+}
+
 const AuthContext = createContext<AuthState | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -30,7 +36,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signup = useCallback(async (loginId: string, nickname: string, password: string) => {
     await authApi.signup(loginId, nickname, password);
-    setMember(await authApi.login(loginId, password));
+    try {
+      setMember(await authApi.login(loginId, password));
+    } catch {
+      throw new SignupLoginError();
+    }
   }, []);
 
   const logout = useCallback(async () => {
