@@ -5,6 +5,8 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import java.io.Serializable;
 import java.util.Objects;
 
@@ -15,6 +17,7 @@ public class MemberGameStatId implements Serializable {
     private long memberId;
 
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "game_type", nullable = false, length = 30)
     private GameType gameType;
 

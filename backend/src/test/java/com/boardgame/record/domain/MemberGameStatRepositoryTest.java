@@ -47,4 +47,14 @@ class MemberGameStatRepositoryTest {
         assertThat(loaded.matches().total()).isZero();
         assertThat(loaded.rounds().counts().total()).isZero();
     }
+
+    @Test
+    void 게임_종류는_문자열_컬럼으로_저장된다() {
+        Object type = entityManager.getEntityManager().createNativeQuery(
+                "select data_type from information_schema.columns "
+                        + "where table_name = 'MEMBER_GAME_STAT' and column_name = 'GAME_TYPE'")
+                .getSingleResult();
+
+        assertThat(type).isEqualTo("CHARACTER VARYING");
+    }
 }

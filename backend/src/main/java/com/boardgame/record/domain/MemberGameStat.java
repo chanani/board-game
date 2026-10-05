@@ -5,10 +5,12 @@ import com.boardgame.game.ResultType;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "member_game_stat")
+@Table(name = "member_game_stat",
+        indexes = @Index(name = "idx_member_game_stat_game_type", columnList = "game_type"))
 public class MemberGameStat {
 
     public static final int RANKING_MIN_MATCHES = 5;

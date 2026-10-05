@@ -65,6 +65,9 @@ public class RecordQueryService {
     }
 
     public List<RecentMatchResponse> recentMatches(long memberId, GameType gameType, int limit) {
+        if (!memberRepository.existsById(memberId)) {
+            throw new BusinessException(ErrorCode.MEMBER_NOT_FOUND);
+        }
         int size = Math.clamp(limit, MIN_LIMIT, MAX_LIMIT);
         List<MatchParticipant> mine = participantRepository.findFinishedByMember(memberId, gameType,
                 PageRequest.of(0, size));

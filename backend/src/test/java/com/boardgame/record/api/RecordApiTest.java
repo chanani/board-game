@@ -162,6 +162,40 @@ class RecordApiTest {
     }
 
     @Test
+    void 없는_회원의_최근_경기는_404() throws Exception {
+        User alice = ApiUsers.create(mockMvc);
+
+        mockMvc.perform(get("/api/records/members/{id}/matches", 999_999_999L).session(alice.session()))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("MEMBER_NOT_FOUND"));
+    }
+
+    @Test
+    void 승률이_같으면_판수가_많은_사람이_위다() throws Exception {
+        User dave = ApiUsers.create(mockMvc);
+        User erin = ApiUsers.create(mockMvc);
+        User fillerOne = ApiUsers.create(mockMvc);
+        User fillerTwo = ApiUsers.create(mockMvc);
+        for (int index = 0; index < 4; index++) {
+            playMatch(dave, fillerOne, index);
+        }
+        playMatch(fillerOne, dave, 10);
+        for (int index = 0; index < 8; index++) {
+            playMatch(erin, fillerTwo, 20 + index);
+        }
+        playMatch(fillerTwo, erin, 40);
+        playMatch(fillerTwo, erin, 41);
+
+        String body = mockMvc.perform(get("/api/records/rankings").param("gameType", "PAPER_SAFARI")
+                        .session(dave.session()))
+                .andReturn().getResponse().getContentAsString();
+
+        List<Integer> daveRank = JsonPath.read(body, "$[?(@.memberId == %d)].rank".formatted(dave.id()));
+        List<Integer> erinRank = JsonPath.read(body, "$[?(@.memberId == %d)].rank".formatted(erin.id()));
+        org.assertj.core.api.Assertions.assertThat(erinRank.get(0)).isLessThan(daveRank.get(0));
+    }
+
+    @Test
     void 실제_방에서_기권으로_끝난_게임도_전적에_반영된다() throws Exception {
         User host = ApiUsers.create(mockMvc);
         User guest = ApiUsers.create(mockMvc);
