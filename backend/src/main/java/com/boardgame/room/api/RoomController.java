@@ -64,4 +64,11 @@ public class RoomController {
     public RoomResponse start(@PathVariable String code, @AuthenticationPrincipal LoginMember member) {
         return roomService.start(code, member.id());
     }
+
+    @PostMapping("/{code}/members/{memberId}/forfeit")
+    public ResponseEntity<Void> forfeit(@PathVariable String code, @PathVariable long memberId,
+                                        @AuthenticationPrincipal LoginMember member) {
+        roomService.forfeitDisconnected(code, member.id(), memberId);
+        return ResponseEntity.noContent().build();
+    }
 }

@@ -20,6 +20,7 @@ import com.boardgame.room.domain.RoomName;
 import com.boardgame.room.domain.RoomProfile;
 import com.boardgame.room.domain.RoomRegistry;
 import java.time.Clock;
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -30,6 +31,8 @@ import org.springframework.stereotype.Service;
 @Service
 public class RoomService {
 
+    private static final Duration FORFEIT_GRACE = Duration.ofSeconds(60);
+
     private final RoomRegistry registry;
     private final RoomCodeGenerator codeGenerator;
     private final GameSessionFactories sessionFactories;
@@ -37,10 +40,11 @@ public class RoomService {
     private final OutcomePublisher outcomePublisher;
     private final ApplicationEventPublisher eventPublisher;
     private final Clock clock;
+    private final PresenceTracker presence;
 
     public RoomService(RoomRegistry registry, RoomCodeGenerator codeGenerator, GameSessionFactories sessionFactories,
                        RoomNotifier notifier, OutcomePublisher outcomePublisher,
-                       ApplicationEventPublisher eventPublisher, Clock clock) {
+                       ApplicationEventPublisher eventPublisher, Clock clock, PresenceTracker presence) {
         this.registry = registry;
         this.codeGenerator = codeGenerator;
         this.sessionFactories = sessionFactories;
@@ -48,6 +52,7 @@ public class RoomService {
         this.outcomePublisher = outcomePublisher;
         this.eventPublisher = eventPublisher;
         this.clock = clock;
+        this.presence = presence;
     }
 
     public synchronized RoomResponse create(LoginMember member, CreateRoomRequest request) {
@@ -99,11 +104,11 @@ public class RoomService {
     }
 
     public synchronized RoomResponse get(String rawCode) {
-        return RoomResponse.from(find(rawCode));
+        return response(find(rawCode));
     }
 
     public synchronized Optional<RoomResponse> myRoom(long memberId) {
-        return registry.findByMember(memberId).map(RoomResponse::from);
+        return registry.findByMember(memberId).map(this::response);
     }
 
     public synchronized void act(String rawCode, long memberId, GameAction action) {
@@ -119,8 +124,35 @@ public class RoomService {
         sendView(room, memberId);
     }
 
+    public synchronized void forfeitDisconnected(String rawCode, long requesterId, long targetId) {
+        Room room = find(rawCode);
+        room.requireMember(requesterId);
+        if (!room.isPlaying(targetId)) {
+            throw new BusinessException(ErrorCode.NOT_A_PLAYER);
+        }
+        if (presence.isConnected(targetId) || presence.offlineFor(targetId, clock.instant()).compareTo(FORFEIT_GRACE) < 0) {
+            throw new BusinessException(ErrorCode.FORFEIT_NOT_ALLOWED_YET);
+        }
+        List<GameOutcome> outcomes = room.leave(targetId);
+        registry.save(room);
+        outcomePublisher.publish(room, outcomes, clock.instant());
+        broadcastUnlessEmpty(room);
+    }
+
+    public synchronized void presenceChanged(long memberId) {
+        registry.findByMember(memberId).ifPresent(this::broadcastRoomOnly);
+    }
+
+    private void broadcastRoomOnly(Room room) {
+        notifier.roomUpdated(response(room));
+    }
+
+    private RoomResponse response(Room room) {
+        return RoomResponse.from(room, presence, clock.instant());
+    }
+
     private RoomResponse broadcast(Room room) {
-        RoomResponse response = RoomResponse.from(room);
+        RoomResponse response = response(room);
         notifier.roomUpdated(response);
         room.memberIds().forEach(memberId -> sendView(room, memberId));
         return response;

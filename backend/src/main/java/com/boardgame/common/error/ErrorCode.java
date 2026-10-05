@@ -25,6 +25,7 @@ public enum ErrorCode {
     ROOM_ALREADY_PLAYING(HttpStatus.CONFLICT, "이미 게임이 진행 중인 방입니다."),
     GAME_NOT_STARTED(HttpStatus.CONFLICT, "게임이 시작되지 않았습니다."),
     INVALID_ROOM_NAME(HttpStatus.BAD_REQUEST, "방 이름은 1~20자로 입력해 주세요."),
+    FORFEIT_NOT_ALLOWED_YET(HttpStatus.CONFLICT, "연결이 끊긴 지 60초가 지나야 기권 처리할 수 있습니다."),
 
     INVALID_PLAYER_COUNT(HttpStatus.BAD_REQUEST, "페이퍼 사파리는 2~5명이 플레이할 수 있습니다."),
     NOT_A_PLAYER(HttpStatus.FORBIDDEN, "이 게임의 참가자가 아닙니다."),
