@@ -13,12 +13,12 @@ public class RoundSequence {
     }
 
     public static RoundSequence begin(RoundFactory factory, Seats seats) {
-        return new RoundSequence(factory, factory.create(seats, RoundNumber.FIRST), RoundNumber.FIRST);
+        return new RoundSequence(factory, factory.create(seats), RoundNumber.FIRST);
     }
 
     public void next(Seats seats) {
         number = number.next();
-        current = factory.create(seats, number);
+        current = factory.create(seats);
     }
 
     public PaperSafariRound current() {

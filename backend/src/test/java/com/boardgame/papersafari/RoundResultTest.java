@@ -41,6 +41,13 @@ class RoundResultTest {
         assertThat(result.winner()).contains(a);
     }
 
+    @Test
+    void 결과의_참가자_목록을_순서대로_돌려준다() {
+        RoundResult result = RoundResult.of(scores(5, 12, 8));
+
+        assertThat(result.players()).containsExactly(a, b, c);
+    }
+
     private Map<PlayerId, Score> scores(int first, int second, int third) {
         Map<PlayerId, Score> scores = new LinkedHashMap<>();
         scores.put(a, new Score(first));

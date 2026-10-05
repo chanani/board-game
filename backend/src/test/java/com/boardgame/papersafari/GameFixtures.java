@@ -18,7 +18,7 @@ final class GameFixtures {
     }
 
     static PaperSafariGame game(List<PlayerId> players, List<List<Card>> roundStacks) {
-        return PaperSafariGame.start(players, new RoundFactory(StackedShuffler.rounds(roundStacks), 0));
+        return PaperSafariGame.start(players, new RoundFactory(StackedShuffler.rounds(roundStacks), count -> 0));
     }
 
     // ALICE·BOB 2인 라운드: winner는 1점, 상대는 51점

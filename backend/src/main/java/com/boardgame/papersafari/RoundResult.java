@@ -20,6 +20,10 @@ public class RoundResult {
         return new RoundResult(new LinkedHashMap<>(scores));
     }
 
+    public List<PlayerId> players() {
+        return List.copyOf(scores.keySet());
+    }
+
     public Optional<PlayerId> winner() {
         List<PlayerId> lowest = lowestPlayers();
         if (lowest.size() != 1) {

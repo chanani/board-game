@@ -58,6 +58,22 @@ class SeatsTest {
         assertError(() -> seats.remove(c), ErrorCode.NOT_A_PLAYER);
     }
 
+    @Test
+    void 떠난_사람의_다음은_원래_순서상_다음_남은_사람이다() {
+        Seats seats = Seats.of(List.of(a, b, c));
+
+        seats.remove(b);
+        assertThat(seats.next(b)).isEqualTo(c);
+
+        seats.remove(c);
+        assertThat(seats.next(b)).isEqualTo(a);
+    }
+
+    @Test
+    void 중복된_플레이어로는_좌석을_만들_수_없다() {
+        assertError(() -> Seats.of(List.of(a, a)), ErrorCode.INVALID_INPUT);
+    }
+
     private List<PlayerId> players(int count) {
         return LongStream.rangeClosed(1, count).mapToObj(PlayerId::new).toList();
     }
