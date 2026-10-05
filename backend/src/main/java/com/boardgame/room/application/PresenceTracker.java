@@ -4,6 +4,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.springframework.stereotype.Component;
@@ -29,6 +30,17 @@ public class PresenceTracker {
         }
         sessions.remove(memberId);
         disconnectedAt.put(memberId, at);
+    }
+
+    public synchronized void baseline(List<Long> memberIds, Instant now) {
+        memberIds.forEach(memberId -> baselineOne(memberId, now));
+    }
+
+    private void baselineOne(long memberId, Instant now) {
+        if (sessions.containsKey(memberId)) {
+            return;
+        }
+        disconnectedAt.put(memberId, now);
     }
 
     public synchronized boolean isConnected(long memberId) {

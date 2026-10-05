@@ -3,7 +3,11 @@ package com.boardgame.papersafari;
 import static com.boardgame.common.error.ErrorAssertions.assertError;
 import static com.boardgame.papersafari.Fixtures.ALICE;
 import static com.boardgame.papersafari.Fixtures.FIRST;
+import static com.boardgame.papersafari.Fixtures.LOSER_HAND;
 import static com.boardgame.papersafari.Fixtures.REST;
+import static com.boardgame.papersafari.Fixtures.WINNER_HAND;
+import static com.boardgame.papersafari.Fixtures.stack;
+import static com.boardgame.papersafari.Fixtures.zeros;
 import static com.boardgame.papersafari.GameFixtures.roundWonBy;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -24,6 +28,7 @@ class PaperSafariSessionTest {
 
     private static final long A = 1L;
     private static final long B = 2L;
+    private static final long C = 3L;
 
     private PaperSafariSession session(List<List<Card>> rounds) {
         return new PaperSafariSession(List.of(A, B), new RoundFactory(StackedShuffler.rounds(rounds), count -> 0));
@@ -45,25 +50,41 @@ class PaperSafariSessionTest {
         return sessionView(session, memberId).game();
     }
 
-    // finisher가 0으로 5칸을 채워 라운드를 끝낸다. other는 자기 차례에 뽑아서 버린다. 마지막 행동의 결과를 돌려준다.
-    private List<GameOutcome> playRound(PaperSafariSession session, long finisher, long other) {
-        act(session, A, "FLIP", FIRST);
-        act(session, B, "FLIP", FIRST);
+    private PaperSafariSession threePlayerSession(List<List<Card>> rounds) {
+        return new PaperSafariSession(List.of(A, B, C),
+                new RoundFactory(StackedShuffler.rounds(rounds), count -> 0));
+    }
+
+    private List<Card> threePlayerRound() {
+        return stack(List.of(WINNER_HAND, LOSER_HAND, LOSER_HAND), Card.number(7), zeros(15));
+    }
+
+    // finisher가 0으로 5칸을 채워 라운드를 끝낸다. 다른 참가자는 자기 차례에 뽑아서 버린다. 마지막 행동의 결과를 돌려준다.
+    private List<GameOutcome> playRound(PaperSafariSession session, long finisher, long... others) {
+        flipAll(session, finisher, others);
         List<GameOutcome> last = List.of();
         for (Position position : REST) {
-            passIfTurnOf(session, other);
+            passUntilTurnOf(session, finisher);
             act(session, finisher, "DRAW_DECK");
             last = act(session, finisher, "SWAP", position);
         }
         return last;
     }
 
-    private void passIfTurnOf(PaperSafariSession session, long player) {
-        if (view(session, player).round().currentPlayerId() != player) {
-            return;
+    private void flipAll(PaperSafariSession session, long finisher, long... others) {
+        act(session, finisher, "FLIP", FIRST);
+        for (long other : others) {
+            act(session, other, "FLIP", FIRST);
         }
-        act(session, player, "DRAW_DECK");
-        act(session, player, "DISCARD");
+    }
+
+    private void passUntilTurnOf(PaperSafariSession session, long finisher) {
+        long current = view(session, A).round().currentPlayerId();
+        while (current != finisher) {
+            act(session, current, "DRAW_DECK");
+            act(session, current, "DISCARD");
+            current = view(session, A).round().currentPlayerId();
+        }
     }
 
     private void readyAll(PaperSafariSession session) {
@@ -165,5 +186,33 @@ class PaperSafariSessionTest {
         assertThat(outcomes.get(0)).isEqualTo(new GameCompleted(List.of(
                 new MatchEntry(A, ResultType.WIN, 1, 0),
                 new MatchEntry(B, ResultType.LOSE, 0, 1))));
+    }
+
+    @Test
+    void 세_명_중_한_명이_라운드_중_기권하면_결과_없이_계속된다() {
+        PaperSafariSession session = threePlayerSession(List.of(threePlayerRound()));
+        flipAll(session, A, B, C);
+
+        List<GameOutcome> outcomes = session.forfeit(C);
+
+        assertThat(outcomes).isEmpty();
+        assertThat(session.isPlaying(A)).isTrue();
+        assertThat(session.isPlaying(C)).isFalse();
+        assertThat(session.isFinished()).isFalse();
+    }
+
+    @Test
+    void 라운드_종료_후_준비하지_않은_사람이_기권하면_나머지로_다음_라운드가_시작된다() {
+        PaperSafariSession session = threePlayerSession(List.of(threePlayerRound(), threePlayerRound()));
+        playRound(session, A, B, C);
+        act(session, A, "READY");
+        act(session, B, "READY");
+        assertThat(view(session, A).roundNumber()).isEqualTo(1);
+
+        List<GameOutcome> outcomes = session.forfeit(C);
+
+        assertThat(outcomes).isEmpty();
+        assertThat(view(session, A).roundNumber()).isEqualTo(2);
+        assertThat(view(session, A).round().phase()).isEqualTo(TurnPhase.SETUP_FLIP);
     }
 }

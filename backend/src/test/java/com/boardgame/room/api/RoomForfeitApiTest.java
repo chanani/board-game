@@ -151,16 +151,42 @@ class RoomForfeitApiTest {
     }
 
     @Test
-    void 한_번도_연결하지_않은_사람은_기권_처리할_수_없다() throws Exception {
+    void 연결하지_않은_참가자도_게임_시작_60초_뒤에는_기권_처리된다() throws Exception {
         User host = ApiUsers.create(mockMvc);
         User guest = ApiUsers.create(mockMvc);
         String code = startedRoom(host, guest);
 
-        clock.advance(Duration.ofMinutes(5));
-
+        clock.advance(Duration.ofSeconds(59));
         forfeit(host, code, guest)
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("FORFEIT_NOT_ALLOWED_YET"));
+
+        clock.advance(Duration.ofSeconds(1));
+        forfeit(host, code, guest).andExpect(status().isNoContent());
+        mockMvc.perform(get("/api/rooms/{code}", code).session(host.session()))
+                .andExpect(jsonPath("$.status").value("WAITING"));
+    }
+
+    @Test
+    void 대기_중인_방에서_끊긴_방장을_내보낼_수_있다() throws Exception {
+        User host = ApiUsers.create(mockMvc);
+        User guest = ApiUsers.create(mockMvc);
+        String body = mockMvc.perform(post("/api/rooms").session(host.session())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\": \"대기 방\", \"gameType\": \"PAPER_SAFARI\"}"))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        String code = JsonPath.read(body, "$.code");
+        mockMvc.perform(post("/api/rooms/{code}/join", code).session(guest.session())).andExpect(status().isOk());
+        presence.connected(host.id(), "h1");
+        presence.disconnected(host.id(), "h1", clock.instant());
+
+        clock.advance(Duration.ofSeconds(61));
+        forfeit(guest, code, host).andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/api/rooms/{code}", code).session(guest.session()))
+                .andExpect(jsonPath("$.hostId").value(guest.id()))
+                .andExpect(jsonPath("$.members.length()").value(1));
     }
 
     @Test

@@ -141,6 +141,8 @@ class RoomTest {
         assertThat(room.leave(2L)).containsExactly(new GameCompleted(List.of()));
         assertThat(room.status()).isEqualTo(RoomStatus.WAITING);
         assertThat(room.memberIds()).containsExactly(1L);
+        assertThat(created.get().forfeitCalls()).containsExactly(2L);
+        assertError(() -> room.leave(2L), ErrorCode.NOT_IN_ROOM);
     }
 
     @Test

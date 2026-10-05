@@ -216,6 +216,32 @@ class RoomApiTest {
     }
 
     @Test
+    void 한_게임의_시작과_종료_이벤트는_같은_매치_키이고_재대결은_새_키다() throws Exception {
+        User host = ApiUsers.create(mockMvc);
+        User guest = ApiUsers.create(mockMvc);
+        User third = ApiUsers.create(mockMvc);
+        String code = createdCode(host);
+        join(guest, code);
+        start(host, code);
+        leave(guest, code).andExpect(status().isNoContent());
+
+        join(third, code);
+        start(host, code);
+
+        String firstStartKey = events.stream(GameStartedEvent.class)
+                .filter(event -> event.memberIds().contains(host.id()) && event.memberIds().contains(guest.id()))
+                .findFirst().orElseThrow().matchKey();
+        String completedKey = events.stream(GameCompletedEvent.class)
+                .filter(event -> event.result().entries().stream().anyMatch(entry -> entry.memberId() == host.id()))
+                .findFirst().orElseThrow().matchKey();
+        String rematchKey = events.stream(GameStartedEvent.class)
+                .filter(event -> event.memberIds().contains(third.id()))
+                .findFirst().orElseThrow().matchKey();
+        assertThat(completedKey).isEqualTo(firstStartKey);
+        assertThat(rematchKey).isNotEqualTo(firstStartKey);
+    }
+
+    @Test
     void 내_방을_조회하고_마지막_사람이_나가면_방이_사라진다() throws Exception {
         User host = ApiUsers.create(mockMvc);
         String code = createdCode(host);

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class PresenceTrackerTest {
@@ -76,5 +77,31 @@ class PresenceTrackerTest {
 
         assertThat(tracker.isOfflineAtLeast(1L, T0.plusSeconds(59), Duration.ofSeconds(60))).isFalse();
         assertThat(tracker.isOfflineAtLeast(1L, T0.plusSeconds(60), Duration.ofSeconds(60))).isTrue();
+    }
+
+    @Test
+    void 기준선은_연결한_적_없는_참가자를_지금부터_끊긴_것으로_본다() {
+        tracker.baseline(List.of(1L), T0);
+
+        assertThat(tracker.offlineFor(1L, T0.plusSeconds(61))).isEqualTo(Duration.ofSeconds(61));
+    }
+
+    @Test
+    void 기준선은_연결_중인_참가자에게_영향을_주지_않는다() {
+        tracker.connected(1L, "s1");
+
+        tracker.baseline(List.of(1L), T0);
+
+        assertThat(tracker.offlineFor(1L, T0.plusSeconds(61))).isEqualTo(Duration.ZERO);
+    }
+
+    @Test
+    void 기준선은_오래된_끊긴_시각을_덮어쓴다() {
+        tracker.connected(1L, "s1");
+        tracker.disconnected(1L, "s1", T0);
+
+        tracker.baseline(List.of(1L), T0.plusSeconds(600));
+
+        assertThat(tracker.offlineFor(1L, T0.plusSeconds(630))).isEqualTo(Duration.ofSeconds(30));
     }
 }

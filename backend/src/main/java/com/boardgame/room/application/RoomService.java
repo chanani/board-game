@@ -60,6 +60,7 @@ public class RoomService {
         RoomProfile profile = new RoomProfile(newCode(), new RoomName(request.name()), requireGameType(request));
         Room room = Room.open(profile, participantOf(member));
         registry.save(room);
+        presence.baseline(room.memberIds(), clock.instant());
         return broadcast(room);
     }
 
@@ -75,6 +76,7 @@ public class RoomService {
         requireNotInOtherRoom(member.id(), room);
         room.join(participantOf(member));
         registry.save(room);
+        presence.baseline(room.memberIds(), clock.instant());
         return broadcast(room);
     }
 
@@ -82,8 +84,8 @@ public class RoomService {
         Room room = find(rawCode);
         List<GameOutcome> outcomes = room.leave(memberId);
         registry.save(room);
-        outcomePublisher.publish(room, outcomes, clock.instant());
         broadcastUnlessEmpty(room);
+        outcomePublisher.publish(room, outcomes, clock.instant());
     }
 
     private void broadcastUnlessEmpty(Room room) {
@@ -98,9 +100,11 @@ public class RoomService {
         GameType gameType = room.gameType();
         RoomGame game = room.start(memberId, memberIds -> sessionFactories.create(gameType, memberIds),
                 UUID.randomUUID().toString(), clock.instant());
+        presence.baseline(room.memberIds(), clock.instant());
+        RoomResponse response = broadcast(room);
         eventPublisher.publishEvent(
                 new GameStartedEvent(game.matchKey(), gameType, room.memberIds(), game.startedAt()));
-        return broadcast(room);
+        return response;
     }
 
     public synchronized RoomResponse get(String rawCode) {
@@ -114,8 +118,8 @@ public class RoomService {
     public synchronized void act(String rawCode, long memberId, GameAction action) {
         Room room = find(rawCode);
         List<GameOutcome> outcomes = room.act(memberId, action);
-        outcomePublisher.publish(room, outcomes, clock.instant());
         broadcast(room);
+        outcomePublisher.publish(room, outcomes, clock.instant());
     }
 
     public synchronized void sync(String rawCode, long memberId) {
@@ -127,16 +131,19 @@ public class RoomService {
     public synchronized void forfeitDisconnected(String rawCode, long requesterId, long targetId) {
         Room room = find(rawCode);
         room.requireMember(requesterId);
-        if (!room.isPlaying(targetId)) {
+        if (!room.contains(targetId)) {
             throw new BusinessException(ErrorCode.NOT_A_PLAYER);
+        }
+        if (requesterId == targetId) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT);
         }
         if (!presence.isOfflineAtLeast(targetId, clock.instant(), FORFEIT_GRACE)) {
             throw new BusinessException(ErrorCode.FORFEIT_NOT_ALLOWED_YET);
         }
         List<GameOutcome> outcomes = room.leave(targetId);
         registry.save(room);
-        outcomePublisher.publish(room, outcomes, clock.instant());
         broadcastUnlessEmpty(room);
+        outcomePublisher.publish(room, outcomes, clock.instant());
     }
 
     public synchronized void presenceChanged(long memberId) {

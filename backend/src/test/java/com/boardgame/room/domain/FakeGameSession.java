@@ -14,6 +14,7 @@ public class FakeGameSession implements GameSession {
     private final List<Long> players;
     private final Set<Long> forfeited = new HashSet<>();
     private final List<GameAction> actions = new ArrayList<>();
+    private final List<Long> forfeitCalls = new ArrayList<>();
     private boolean finished;
 
     public FakeGameSession(List<Long> players) {
@@ -28,6 +29,7 @@ public class FakeGameSession implements GameSession {
 
     @Override
     public List<GameOutcome> forfeit(long memberId) {
+        forfeitCalls.add(memberId);
         forfeited.add(memberId);
         if (players.size() - forfeited.size() > 1) {
             return List.of();
@@ -53,6 +55,10 @@ public class FakeGameSession implements GameSession {
 
     public void finish() {
         finished = true;
+    }
+
+    public List<Long> forfeitCalls() {
+        return forfeitCalls;
     }
 
     public List<GameAction> actions() {
