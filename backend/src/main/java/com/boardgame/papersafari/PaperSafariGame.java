@@ -2,6 +2,8 @@ package com.boardgame.papersafari;
 
 import com.boardgame.common.error.BusinessException;
 import com.boardgame.common.error.ErrorCode;
+import com.boardgame.papersafari.view.PaperSafariView;
+import com.boardgame.papersafari.view.RoundResultView;
 import java.util.List;
 import java.util.Optional;
 
@@ -103,6 +105,19 @@ public class PaperSafariGame {
 
     public TokenCount tokensOf(PlayerId player) {
         return tokens.countOf(player);
+    }
+
+    public PaperSafariView viewFor(PlayerId viewer) {
+        RoundResultView result = lastRoundResult().map(RoundResult::toView).orElse(null);
+        Long winnerId = winner().map(PlayerId::value).orElse(null);
+        return new PaperSafariView(
+                viewer.value(),
+                status(),
+                roundNumber().value(),
+                round().viewFor(viewer),
+                tokens.toView(),
+                result,
+                winnerId);
     }
 
     private PaperSafariRound round() {

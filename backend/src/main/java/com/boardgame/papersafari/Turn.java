@@ -2,6 +2,7 @@ package com.boardgame.papersafari;
 
 import com.boardgame.common.error.BusinessException;
 import com.boardgame.common.error.ErrorCode;
+import com.boardgame.papersafari.view.HeldView;
 import java.util.Optional;
 
 public class Turn {
@@ -83,6 +84,12 @@ public class Turn {
         Optional<DrawnCard> released = releaseCurrent(player);
         seats.remove(player);
         return released;
+    }
+
+    public HeldView heldViewFor(PlayerId viewer) {
+        return step.held()
+                .map(drawn -> HeldView.of(current, drawn, current.equals(viewer)))
+                .orElse(null);
     }
 
     private Optional<DrawnCard> releaseCurrent(PlayerId player) {

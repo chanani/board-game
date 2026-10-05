@@ -2,7 +2,10 @@ package com.boardgame.papersafari;
 
 import com.boardgame.common.error.BusinessException;
 import com.boardgame.common.error.ErrorCode;
+import com.boardgame.papersafari.view.BoardView;
+import com.boardgame.papersafari.view.SlotView;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 public class PlayerBoards {
@@ -77,5 +80,23 @@ public class PlayerBoards {
             throw new BusinessException(ErrorCode.NOT_A_PLAYER);
         }
         return board;
+    }
+
+    public List<BoardView> viewFor(PlayerId viewer) {
+        return boards.entrySet().stream()
+                .map(entry -> boardView(viewer, entry.getKey(), entry.getValue()))
+                .toList();
+    }
+
+    private BoardView boardView(PlayerId viewer, PlayerId owner, Board board) {
+        List<SlotView> slots = Position.all().stream()
+                .map(position -> slotView(viewer, owner, board, position))
+                .toList();
+        return new BoardView(owner.value(), slots);
+    }
+
+    private SlotView slotView(PlayerId viewer, PlayerId owner, Board board, Position position) {
+        boolean known = viewer.equals(owner) && knownCards.knows(owner, position);
+        return SlotView.of(position, board.slotAt(position), known);
     }
 }

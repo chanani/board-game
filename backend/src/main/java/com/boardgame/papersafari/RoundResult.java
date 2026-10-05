@@ -1,5 +1,7 @@
 package com.boardgame.papersafari;
 
+import com.boardgame.papersafari.view.PlayerResultView;
+import com.boardgame.papersafari.view.RoundResultView;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -50,5 +52,16 @@ public class RoundResult {
                 .filter(entry -> entry.getValue().equals(lowest))
                 .map(Map.Entry::getKey)
                 .toList();
+    }
+
+    public RoundResultView toView() {
+        List<PlayerResultView> players = scores.keySet().stream()
+                .map(this::playerView)
+                .toList();
+        return new RoundResultView(players);
+    }
+
+    private PlayerResultView playerView(PlayerId player) {
+        return new PlayerResultView(player.value(), scoreOf(player).value(), outcomeOf(player));
     }
 }

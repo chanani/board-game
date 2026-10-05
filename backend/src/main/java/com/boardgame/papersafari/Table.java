@@ -1,5 +1,6 @@
 package com.boardgame.papersafari;
 
+import com.boardgame.papersafari.view.CardView;
 import java.util.List;
 import java.util.Optional;
 
@@ -47,6 +48,10 @@ public class Table {
 
     public Optional<Card> discardTop() {
         return discardPile.top();
+    }
+
+    public CardView discardTopView() {
+        return discardPile.top().map(CardView::of).orElse(null);
     }
 
     private void refillIfEmpty() {

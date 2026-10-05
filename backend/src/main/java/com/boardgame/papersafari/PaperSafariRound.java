@@ -2,6 +2,7 @@ package com.boardgame.papersafari;
 
 import com.boardgame.common.error.BusinessException;
 import com.boardgame.common.error.ErrorCode;
+import com.boardgame.papersafari.view.RoundView;
 import java.util.Optional;
 
 public class PaperSafariRound {
@@ -111,6 +112,16 @@ public class PaperSafariRound {
 
     public int deckSize() {
         return table.deckSize();
+    }
+
+    public RoundView viewFor(PlayerId viewer) {
+        return new RoundView(
+                turn.phase(),
+                currentPlayer().value(),
+                table.deckSize(),
+                table.discardTopView(),
+                turn.heldViewFor(viewer),
+                boards.viewFor(viewer));
     }
 
     private void startPlayingIfReady() {
