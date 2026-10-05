@@ -6,14 +6,16 @@ describe('CardFace', () => {
   it('값이 없으면 뒷면으로 그린다', () => {
     render(<CardFace card={null} faceUp={false} known={false} />);
 
-    expect(screen.getByLabelText('뒷면 카드')).toBeInTheDocument();
+    expect(screen.getByLabelText('뒷면 카드')).toHaveAttribute('data-side', 'back');
   });
 
-  it('숫자 카드는 이모지와 숫자를 보여준다', () => {
+  it('숫자 카드는 동물 그림과 숫자를 보여준다', () => {
     render(<CardFace card={{ kind: 'NUMBER', value: 7 }} faceUp known={false} />);
 
-    expect(screen.getByLabelText('7 카드')).toHaveTextContent('🐊');
-    expect(screen.getByLabelText('7 카드')).toHaveTextContent('7');
+    const card = screen.getByLabelText('7 카드');
+    expect(card).toHaveAttribute('data-side', 'front');
+    expect(card.querySelector('[data-art="crocodile"]')).not.toBeNull();
+    expect(card).toHaveTextContent('7');
   });
 
   it('특수 카드는 이름을 보여준다', () => {
@@ -25,6 +27,14 @@ describe('CardFace', () => {
   it('엿본 카드는 엿봄 표시를 한다', () => {
     render(<CardFace card={{ kind: 'FOX', value: -2 }} faceUp={false} known />);
 
-    expect(screen.getByLabelText('여우 -2 카드 (엿봄)')).toHaveTextContent('👁');
+    const card = screen.getByLabelText('여우 -2 카드 (엿봄)');
+    expect(card).toHaveTextContent('👁');
+    expect(card).toHaveAttribute('data-side', 'back');
+  });
+
+  it('누를 수 없는 카드는 비활성이다', () => {
+    render(<CardFace card={{ kind: 'NUMBER', value: 1 }} faceUp known={false} />);
+
+    expect(screen.getByLabelText('1 카드')).toBeDisabled();
   });
 });

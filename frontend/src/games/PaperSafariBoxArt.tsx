@@ -1,3 +1,5 @@
+import { Lion } from './papersafari/cards/art/Lion';
+
 export function PaperSafariBoxArt() {
   return (
     <svg viewBox="0 0 120 150" className="h-full w-full" aria-hidden="true">
@@ -17,7 +19,7 @@ export function PaperSafariBoxArt() {
         stroke="#fffaf0" strokeWidth="3" paintOrder="stroke">페이퍼</text>
       <text x="60" y="46" textAnchor="middle" fontFamily="Georgia, serif" fontWeight="900" fontSize="17" fill="#7a2e0a"
         stroke="#fffaf0" strokeWidth="3" paintOrder="stroke">사파리</text>
-      <g data-box-hero="true"><text x="60" y="128" textAnchor="middle" fontSize="44">🦁</text></g>
+      <g data-box-hero="true" transform="translate(32 92) scale(0.56)"><Lion /></g>
     </svg>
   );
 }

@@ -1,18 +1,18 @@
 import type { CardView } from '../../api/types';
 
-const NUMBER_EMOJI = ['🐁', '🐇', '🐒', '🦓', '🦒', '🐆', '🦛', '🐊', '🦏', '🦁'];
+const NUMBER_NAMES = ['쥐', '토끼', '원숭이', '얼룩말', '기린', '치타', '하마', '악어', '코뿔소', '사자'];
 const SPECIAL = {
-  ELEPHANT: { emoji: '🐘', name: '코끼리' },
-  TARZAN: { emoji: '🧔', name: '타잔' },
-  FOX: { emoji: '🦊', name: '여우' },
-  WILD: { emoji: '❓', name: '와일드' },
+  ELEPHANT: { name: '코끼리' },
+  TARZAN: { name: '타잔' },
+  FOX: { name: '여우' },
+  WILD: { name: '와일드' },
 } as const;
 
-export function cardEmoji(card: CardView): string {
+export function animalName(card: CardView): string {
   if (card.kind === 'NUMBER') {
-    return NUMBER_EMOJI[card.value] ?? '🃏';
+    return NUMBER_NAMES[card.value] ?? '카드';
   }
-  return SPECIAL[card.kind].emoji;
+  return SPECIAL[card.kind].name;
 }
 
 export function cardName(card: CardView): string | null {
