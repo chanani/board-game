@@ -1,0 +1,16 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Pretendard", system-ui, -apple-system, sans-serif;
+  --color-cream: #faf6ee;
+  --color-safari-50: #eef7ef;
+  --color-safari-100: #d7ecd9;
+  --color-safari-300: #8cc597;
+  --color-safari-500: #3f8f4f;
+  --color-safari-600: #347a42;
+  --color-safari-700: #2b6436;
+}
+
+body {
+  @apply bg-cream text-stone-800 antialiased;
+}
