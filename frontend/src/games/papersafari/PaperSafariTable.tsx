@@ -1,14 +1,37 @@
-import { useEffect, useRef } from 'react';
-import type { GameAction, PaperSafariSessionView, Room, SlotView } from '../../api/types';
+import { useEffect, useRef, type ReactNode } from 'react';
+import type { BoardView, GameAction, PaperSafariSessionView, Room, SlotView } from '../../api/types';
 import { Button, Panel } from '../../components/ui';
-import { CardFace } from './CardFace';
 import { GameOverPanel } from './GameOverPanel';
-import { PlayerBoard } from './PlayerBoard';
+import { TableRail } from './layout/TableRail';
+import { TableRound } from './layout/TableRound';
+import { seatOrder } from './layout/seats';
+import type { Presence } from './layout/Seat';
+import { PC_QUERY, useMediaQuery } from '../../lib/useMediaQuery';
 import { RoundResultModal } from './RoundResultModal';
 import { canForfeit, offlineSecondsNow } from '../../lib/format';
 import { estimateBoard } from './score';
 
 const PENDING_MS = 3000;
+
+export type TableProps = {
+  view: PaperSafariSessionView;
+  meId: number;
+  opponents: BoardView[];
+  myBoard: BoardView | undefined;
+  nicknameOf: (memberId: number) => string;
+  presenceOf: (memberId: number) => Presence;
+  tokensOf: (memberId: number) => number;
+  canClickSlot: (slot: SlotView) => boolean;
+  clickSlot: (slot: SlotView) => void;
+  drawable: boolean;
+  send: (action: GameAction) => void;
+  canDiscard: boolean;
+  myTurn: boolean;
+  estimate: { score: number; hidden: number } | null;
+  instructionText: string;
+  log: string[];
+  footer: ReactNode;
+};
 
 type Props = {
   view: PaperSafariSessionView;
@@ -47,6 +70,7 @@ export function PaperSafariTable({ view, room, meId, log, receivedAt, now, error
   const game = view.game;
   const round = game.round;
   const pendingUntil = useRef(0);
+  const wide = useMediaQuery(PC_QUERY);
 
   useEffect(() => {
     pendingUntil.current = 0;
@@ -65,14 +89,17 @@ export function PaperSafariTable({ view, room, meId, log, receivedAt, now, error
   }
 
   const myBoard = round.boards.find((board) => board.playerId === meId);
-  const others = round.boards.filter((board) => board.playerId !== meId);
+  const boardOf = (playerId: number) => round.boards.find((board) => board.playerId === playerId);
+  const opponents = seatOrder(round.boards.map((board) => board.playerId), meId)
+    .map(boardOf)
+    .filter((board): board is BoardView => board !== undefined && board.playerId !== meId);
   const myTurn = round.currentPlayerId === meId;
   const needsFlip = round.phase === 'SETUP_FLIP' && Boolean(myBoard) && !myBoard?.slots.some((slot) => slot.faceUp);
   const held = round.held;
   const canDiscard = myTurn && round.phase === 'PLACE' && held !== null && held.source === 'DECK' && held.card?.kind !== 'TARZAN';
   const estimate = myBoard ? estimateBoard(myBoard) : null;
   const memberOf = (memberId: number) => room.members.find((member) => member.id === memberId);
-  const presenceOf = (memberId: number) => {
+  const presenceOf = (memberId: number): Presence => {
     const member = memberOf(memberId);
     if (!member) {
       return {};
@@ -112,77 +139,31 @@ export function PaperSafariTable({ view, room, meId, log, receivedAt, now, error
   };
 
   const drawable = myTurn && round.phase === 'DRAW';
+  const instructionText = instruction(round.phase, myTurn, needsFlip, nicknameOf(round.currentPlayerId), canDiscard);
+
+  const footer = myBoard ? (
+    <div className="flex items-center justify-between gap-3">
+      <Button variant="secondary" disabled={!canDiscard} onClick={() => send({ type: 'DISCARD' })}>버리기</Button>
+      {estimate ? (
+        <span className="rounded-full bg-black/35 px-3 py-1 text-sm text-cream-50">
+          현재 예상 점수 <strong className="text-lg text-mustard-400">{estimate.score}</strong>
+          {estimate.hidden > 0 ? <span className="text-cream-200/80"> (+ 가려진 {estimate.hidden}장)</span> : null}
+        </span>
+      ) : null}
+    </div>
+  ) : (
+    <Panel className="text-center text-sm text-stone-500">이번 게임을 지켜보는 중이에요.</Panel>
+  );
+
+  const tableProps: TableProps = {
+    view, meId, opponents, myBoard, nicknameOf, presenceOf, tokensOf, canClickSlot, clickSlot, drawable, send,
+    canDiscard, myTurn, estimate, instructionText, log, footer,
+  };
+  const Layout = wide ? TableRound : TableRail;
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-3 overflow-x-auto pb-1 sm:grid sm:grid-cols-2 sm:overflow-visible lg:grid-cols-4">
-        {others.map((board) => (
-          <div key={board.playerId} className="min-w-56">
-            <PlayerBoard board={board} nickname={nicknameOf(board.playerId)} tokens={tokensOf(board.playerId)}
-              active={round.currentPlayerId === board.playerId} size="sm" {...presenceOf(board.playerId)} />
-          </div>
-        ))}
-      </div>
-
-      <Panel className="flex flex-col items-center gap-3">
-        <p className="text-sm text-stone-500">{game.roundNumber}라운드</p>
-        <div className="flex items-end gap-6">
-          <div className="text-center">
-            <button type="button" aria-label="덱에서 뽑기" disabled={!drawable} onClick={() => send({ type: 'DRAW_DECK' })}
-              className="flex h-24 w-16 items-center justify-center rounded-xl bg-safari-600 text-2xl text-white shadow ring-1 ring-safari-700 transition enabled:hover:-translate-y-0.5 disabled:opacity-60">
-              🌿
-            </button>
-            <p className="mt-1 text-xs text-stone-500">덱 {round.deckSize}장</p>
-          </div>
-          <div className="text-center">
-            {round.discardTop ? (
-              <CardFace card={round.discardTop} faceUp known={false}
-                onClick={drawable ? () => send({ type: 'DRAW_DISCARD' }) : undefined} />
-            ) : (
-              <div className="h-24 w-16 rounded-xl border-2 border-dashed border-stone-300" />
-            )}
-            <p className="mt-1 text-xs text-stone-500">버린 카드</p>
-          </div>
-        </div>
-        <p className="font-medium">{instruction(round.phase, myTurn, needsFlip, nicknameOf(round.currentPlayerId), canDiscard)}</p>
-      </Panel>
-
-      {myBoard ? (
-        <div className="mx-auto max-w-md space-y-3">
-          {held ? (
-            <div className="flex items-center justify-center gap-3">
-              <span className="text-sm text-stone-500">
-                {held.playerId === meId ? '들고 있는 카드' : `${nicknameOf(held.playerId)}님이 ${held.source === 'DECK' ? '덱' : '버린 카드 더미'}에서 가져온 카드`}
-              </span>
-              <CardFace card={held.card} faceUp={held.card !== null} known={false} size="sm" />
-            </div>
-          ) : null}
-          <PlayerBoard board={myBoard} nickname={`${nicknameOf(meId)} (나)`} tokens={tokensOf(meId)} active={myTurn}
-            onSlotClick={clickSlot} canClick={canClickSlot} />
-          <div className="flex items-center justify-between">
-            <Button variant="secondary" disabled={!canDiscard} onClick={() => send({ type: 'DISCARD' })}>버리기</Button>
-            {estimate ? (
-              <span className="text-sm text-stone-600">
-                현재 예상 점수 <strong className="text-lg text-safari-700">{estimate.score}</strong>
-                {estimate.hidden > 0 ? <span className="text-stone-400"> (+ 가려진 {estimate.hidden}장)</span> : null}
-              </span>
-            ) : null}
-          </div>
-        </div>
-      ) : (
-        <Panel className="text-center text-sm text-stone-500">이번 게임을 지켜보는 중이에요.</Panel>
-      )}
-
-      <Panel>
-        <h3 className="mb-1 text-sm font-bold">진행 기록</h3>
-        <ul className="space-y-0.5 text-sm text-stone-600">
-          {log.length === 0 ? <li className="text-stone-400">아직 기록이 없어요.</li> : null}
-          {log.map((line, index) => (
-            <li key={`${index}-${line}`}>{line}</li>
-          ))}
-        </ul>
-      </Panel>
-
+      <Layout {...tableProps} />
       {round.phase === 'ROUND_OVER' ? (
         <RoundResultModal view={view} meId={meId} nicknameOf={nicknameOf} onReady={() => send({ type: 'READY' })} />
       ) : null}

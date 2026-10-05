@@ -1,7 +1,8 @@
-import { render, screen, within } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import type { BoardView, CardView, HeldView, PaperSafariSessionView, Room, SlotView, TurnPhase } from '../../api/types';
+import { setMediaMatches } from '../../test/media';
 import { PaperSafariTable } from './PaperSafariTable';
 
 const ME = 1;
@@ -184,5 +185,47 @@ describe('PaperSafariTable 중복 행동 방지', () => {
     await userEvent.click(screen.getByRole('button', { name: '덱에서 뽑기' }));
 
     expect(send).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe.each([
+  ['PC', true],
+  ['모바일', false],
+])('%s 배치에서도 행동 규칙이 같다', (_, wide) => {
+  it('DRAW: 내 차례에 덱에서 뽑으면 DRAW_DECK을 보낸다', async () => {
+    setMediaMatches(wide);
+    const send = renderTable({ phase: 'DRAW', current: ME });
+
+    await userEvent.click(screen.getByRole('button', { name: '덱에서 뽑기' }));
+
+    expect(send).toHaveBeenCalledWith({ type: 'DRAW_DECK' });
+  });
+
+  it('PLACE: 내 카드를 누르면 SWAP을 보낸다', async () => {
+    setMediaMatches(wide);
+    const send = renderTable({ phase: 'PLACE', current: ME, held: { playerId: ME, source: 'DECK', card: { kind: 'NUMBER', value: 3 } } });
+
+    await userEvent.click(mySlotButtons()[0]);
+
+    expect(send).toHaveBeenCalledWith({ type: 'SWAP', column: 0, row: 0 });
+  });
+});
+
+it('게임 중 화면 폭이 바뀌어도 내 판이 마지막 슬롯 6개다', () => {
+  renderTable({ phase: 'DRAW', current: ME });
+  expect(screen.getAllByTestId('slot')).toHaveLength(12);
+
+  act(() => setMediaMatches(false));
+
+  expect(screen.getAllByTestId('slot')).toHaveLength(12);
+  expect(mySlotButtons()).toHaveLength(6);
+});
+
+it('들고 있는 카드와 모든 자리의 손 자리표가 있다', () => {
+  renderTable({ phase: 'PLACE', current: ME, held: { playerId: ME, source: 'DECK', card: { kind: 'NUMBER', value: 3 } } });
+
+  expect(screen.getByLabelText('들고 있는 카드')).toBeInTheDocument();
+  ['hand:1', 'hand:2', 'deck', 'discard', 'slot:1:0:0'].forEach((zone) => {
+    expect(document.querySelector(`[data-zone="${zone}"]`)).not.toBeNull();
   });
 });
