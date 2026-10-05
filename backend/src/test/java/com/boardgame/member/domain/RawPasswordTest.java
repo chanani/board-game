@@ -30,6 +30,11 @@ class RawPasswordTest {
     }
 
     @Test
+    void 가입용_비밀번호가_72바이트를_넘으면_INVALID_PASSWORD() {
+        assertError(() -> RawPassword.of("가".repeat(25)), ErrorCode.INVALID_PASSWORD);
+    }
+
+    @Test
     void 로그인용_비밀번호는_검증하지_않고_null은_빈_문자열이다() {
         assertThat(RawPassword.unchecked("abc").value()).isEqualTo("abc");
         assertThat(RawPassword.unchecked(null).value()).isEmpty();

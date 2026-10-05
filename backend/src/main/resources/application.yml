@@ -17,3 +17,8 @@ server:
     encoding:
       charset: UTF-8
       force: true
+    session:
+      timeout: 7d
+      cookie:
+        http-only: true
+        same-site: lax
