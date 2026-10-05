@@ -72,7 +72,9 @@ export function useRoomChannel(code: string) {
           return;
         }
         toast.show(messageOf(error));
-        setMissing(true);
+        if (!roomRef.current) {
+          setMissing(true);
+        }
       });
     return () => {
       cancelled = true;

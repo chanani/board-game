@@ -80,4 +80,21 @@ describe('useRoomChannel', () => {
 
     expect(state.publish).toHaveBeenCalledWith('/app/rooms/ABCDEF/sync', {});
   });
+
+  it('방을 이미 불러온 뒤 다시 가져오기가 실패해도 방을 잃지 않는다', async () => {
+    const get = vi.spyOn(roomsApi, 'get').mockResolvedValueOnce(room('방'));
+    const { result, rerender } = renderHook(() => useRoomChannel('ABCDEF'));
+    await act(async () => {});
+    expect(result.current.room?.name).toBe('방');
+
+    get.mockRejectedValueOnce(new Error('network'));
+    state.connected = true;
+    rerender();
+    await act(async () => {});
+
+    expect(get).toHaveBeenCalledTimes(2);
+    expect(toast.show).toHaveBeenCalled();
+    expect(result.current.missing).toBe(false);
+    expect(result.current.room?.name).toBe('방');
+  });
 });

@@ -5,6 +5,7 @@ import { roomsApi } from '../api/rooms';
 import { useAuth } from '../auth/AuthContext';
 import { Button, Panel } from '../components/ui';
 import { useToast } from '../components/Toast';
+import { PaperSafariTable } from '../games/papersafari/PaperSafariTable';
 import { useRoomChannel } from '../room/useRoomChannel';
 import { WaitingRoom } from '../room/WaitingRoom';
 
@@ -88,8 +89,15 @@ export function RoomPage() {
           {confirmLeave ? '정말 나갈까요? (기권 처리)' : '나가기'}
         </Button>
       </div>
-      {showGame ? (
-        <Panel>게임이 진행 중이에요.</Panel>
+      {showGame && view ? (
+        <PaperSafariTable
+          view={view}
+          room={room}
+          meId={meId}
+          log={log}
+          send={send}
+          onCloseGameOver={() => setDismissedGameOver(true)}
+        />
       ) : (
         <WaitingRoom
           room={room}
@@ -100,8 +108,6 @@ export function RoomPage() {
           onForfeit={(memberId) => run(() => roomsApi.forfeit(code, memberId))}
         />
       )}
-      {log.length > 0 && !showGame ? null : null}
-      <span className="hidden">{send.length}{String(setDismissedGameOver.length)}</span>
     </div>
   );
 }
