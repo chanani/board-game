@@ -125,6 +125,20 @@ class PaperSafariGameTest {
     }
 
     @Test
+    void 라운드가_끝난_뒤_승자가_기권해도_라운드_결과는_바뀌지_않는다() {
+        PaperSafariGame game = game(TWO, List.of(roundWonBy(ALICE)));
+        playRound(game, ALICE, BOB);
+
+        game.forfeit(ALICE);
+
+        assertThat(game.status()).isEqualTo(GameStatus.GAME_OVER);
+        assertThat(game.winner()).contains(BOB);
+        assertThat(game.lastRoundResult()).hasValueSatisfying(result ->
+                assertThat(result.winner()).contains(ALICE));
+        assertThat(game.tokensOf(ALICE)).isEqualTo(new TokenCount(1));
+    }
+
+    @Test
     void 참가자가_아니면_기권할_수_없다() {
         PaperSafariGame game = game(TWO, List.of(roundWonBy(ALICE)));
 

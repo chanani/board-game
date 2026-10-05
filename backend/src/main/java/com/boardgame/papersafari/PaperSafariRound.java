@@ -71,8 +71,15 @@ public class PaperSafariRound {
 
     public void leave(PlayerId player) {
         turn.leave(player).ifPresent(drawn -> table.discard(drawn.card()));
-        boards.remove(player);
+        removeBoardUnlessOver(player);
         startPlayingIfReady();
+    }
+
+    private void removeBoardUnlessOver(PlayerId player) {
+        if (isOver()) {
+            return;
+        }
+        boards.remove(player);
     }
 
     public boolean isOver() {
