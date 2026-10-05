@@ -57,6 +57,7 @@ describe('PaperSafariTable 단계별 행동 제한', () => {
     const send = renderTable({ phase: 'SETUP_FLIP', current: ME });
     const opponentSlots = screen.getAllByTestId('slot').slice(0, 6);
 
+    expect(mySlotButtons().filter((button) => !(button as HTMLButtonElement).disabled)).toHaveLength(6);
     opponentSlots.forEach((slot) => expect(within(slot).getByRole('button')).toBeDisabled());
     await userEvent.click(mySlotButtons()[3]);
 
@@ -67,6 +68,7 @@ describe('PaperSafariTable 단계별 행동 제한', () => {
     renderTable({ phase: 'DRAW', current: OPPONENT });
 
     expect(screen.getByRole('button', { name: '덱에서 뽑기' })).toBeDisabled();
+    mySlotButtons().forEach((button) => expect(button).toBeDisabled());
   });
 
   it('DRAW: 내 차례에 덱에서 뽑으면 DRAW_DECK을 보낸다', async () => {
@@ -105,11 +107,11 @@ describe('PaperSafariTable 단계별 행동 제한', () => {
     const mine = faceUpNumbers().map((slot) => (slot.column === 2 ? { ...slot, faceUp: false, card: null } : slot));
     const send = renderTable({ phase: 'PEEK', current: ME, mine });
     const buttons = mySlotButtons();
+    expect(screen.getAllByLabelText('뒷면 카드').filter((button) => !(button as HTMLButtonElement).disabled)).toHaveLength(2);
 
     buttons.filter((button) => button.getAttribute('aria-label') !== '뒷면 카드').forEach((button) => expect(button).toBeDisabled());
     await userEvent.click(screen.getAllByLabelText('뒷면 카드').filter((button) => !(button as HTMLButtonElement).disabled)[0]);
 
     expect(send).toHaveBeenCalledWith({ type: 'PEEK', column: 2, row: 0 });
-    expect(screen.getAllByLabelText('뒷면 카드').filter((button) => !(button as HTMLButtonElement).disabled)).toHaveLength(2);
   });
 });

@@ -17,19 +17,48 @@ export function RecordsPage() {
   const params = useParams();
   const { member } = useAuth();
   const toast = useToast();
-  const memberId = params.memberId ? Number(params.memberId) : (member?.id ?? 0);
-  const isMe = !params.memberId || memberId === member?.id;
+  const rawId = params.memberId;
+  const memberId = rawId === undefined ? (member?.id ?? 0) : Number(rawId);
+  const validId = rawId === undefined || (Number.isInteger(memberId) && memberId > 0);
+  const isMe = rawId === undefined || memberId === member?.id;
   const [tab, setTab] = useState<Tab>('records');
   const [stats, setStats] = useState<MemberStats | null>(null);
   const [matches, setMatches] = useState<RecentMatch[]>([]);
   const [rankings, setRankings] = useState<Ranking[]>([]);
 
   useEffect(() => {
+    setStats(null);
+    setMatches([]);
+    if (!validId) {
+      return;
+    }
+    let cancelled = false;
+    const fail = (error: unknown) => {
+      if (!cancelled) {
+        toast.show(messageOf(error));
+      }
+    };
     const load = isMe ? recordsApi.me() : recordsApi.member(memberId);
-    load.then(setStats).catch((error) => toast.show(messageOf(error)));
-    recordsApi.matches(memberId, GAME, 10).then(setMatches).catch((error) => toast.show(messageOf(error)));
-    recordsApi.rankings(GAME).then(setRankings).catch((error) => toast.show(messageOf(error)));
-  }, [memberId, isMe, toast]);
+    load.then((result) => { if (!cancelled) setStats(result); }).catch(fail);
+    recordsApi.matches(memberId, GAME, 10).then((result) => { if (!cancelled) setMatches(result); }).catch(fail);
+    return () => {
+      cancelled = true;
+    };
+  }, [memberId, isMe, validId, toast]);
+
+  useEffect(() => {
+    let cancelled = false;
+    recordsApi.rankings(GAME)
+      .then((result) => { if (!cancelled) setRankings(result); })
+      .catch((error) => { if (!cancelled) toast.show(messageOf(error)); });
+    return () => {
+      cancelled = true;
+    };
+  }, [toast]);
+
+  if (!validId) {
+    return <Panel>잘못된 회원 주소예요.</Panel>;
+  }
 
   const tabClass = (value: Tab) =>
     `rounded-lg px-3 py-1.5 text-sm ${tab === value ? 'bg-safari-600 font-semibold text-white' : 'bg-white text-stone-600 ring-1 ring-stone-200'}`;
