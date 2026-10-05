@@ -41,9 +41,18 @@ function build({ phase, current, held = null, mine = faceDown() }: Setup): Paper
   };
 }
 
+const nicknameOf = (memberId: number) => room.members.find((member) => member.id === memberId)?.nickname ?? '떠난 플레이어';
+
+function tableFor(view: PaperSafariSessionView, send: () => void, targetRoom: Room = room, onForfeit: (id: number) => void = vi.fn(), now = 0) {
+  return (
+    <PaperSafariTable view={view} room={targetRoom} meId={ME} log={[]} send={send} nicknameOf={nicknameOf}
+      receivedAt={0} now={now} onForfeit={onForfeit} onCloseGameOver={vi.fn()} />
+  );
+}
+
 function renderTable(setup: Setup) {
   const send = vi.fn();
-  render(<PaperSafariTable view={build(setup)} room={room} meId={ME} log={[]} send={send} onCloseGameOver={vi.fn()} />);
+  render(tableFor(build(setup), send));
   return send;
 }
 
@@ -98,8 +107,13 @@ describe('PaperSafariTable 단계별 행동 제한', () => {
     expect(screen.getByText('교체할 내 카드를 누르거나, 버리기를 누르세요.')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: '버리기' }));
     expect(send).toHaveBeenCalledWith({ type: 'DISCARD' });
+  });
+
+  it('PLACE: 덱에서 뽑은 숫자 카드로 내 카드와 교체할 수 있다', async () => {
+    const send = renderTable({ phase: 'PLACE', current: ME, held: { playerId: ME, source: 'DECK', card: { kind: 'NUMBER', value: 7 } }, mine: faceUpNumbers() });
 
     await userEvent.click(mySlotButtons()[2]);
+
     expect(send).toHaveBeenCalledWith({ type: 'SWAP', column: 2, row: 0 });
   });
 
@@ -113,5 +127,50 @@ describe('PaperSafariTable 단계별 행동 제한', () => {
     await userEvent.click(screen.getAllByLabelText('뒷면 카드').filter((button) => !(button as HTMLButtonElement).disabled)[0]);
 
     expect(send).toHaveBeenCalledWith({ type: 'PEEK', column: 2, row: 0 });
+  });
+});
+
+describe('PaperSafariTable 접속 상태와 내보내기', () => {
+  const offlineRoom = (seconds: number): Room => ({
+    ...room,
+    members: [room.members[0], { ...room.members[1], connected: false, offlineSeconds: seconds }],
+  });
+
+  it('60초 이상 끊긴 상대는 내보내기 버튼이 보이고 누르면 onForfeit을 부른다', async () => {
+    const onForfeit = vi.fn();
+    render(tableFor(build({ phase: 'DRAW', current: ME }), vi.fn(), offlineRoom(60), onForfeit));
+
+    await userEvent.click(screen.getByRole('button', { name: '내보내기' }));
+
+    expect(onForfeit).toHaveBeenCalledWith(OPPONENT);
+  });
+
+  it('60초 미만이면 끊긴 시간만 보이고 버튼은 없다', () => {
+    render(tableFor(build({ phase: 'DRAW', current: ME }), vi.fn(), offlineRoom(30)));
+
+    expect(screen.getByText('연결 끊김 30초')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '내보내기' })).not.toBeInTheDocument();
+  });
+});
+
+describe('PaperSafariTable 중복 행동 방지', () => {
+  it('덱을 빠르게 두 번 눌러도 DRAW_DECK은 한 번만 보낸다', async () => {
+    const send = renderTable({ phase: 'DRAW', current: ME });
+
+    await userEvent.click(screen.getByRole('button', { name: '덱에서 뽑기' }));
+    await userEvent.click(screen.getByRole('button', { name: '덱에서 뽑기' }));
+
+    expect(send).toHaveBeenCalledTimes(1);
+  });
+
+  it('새 화면 정보가 오면 다시 행동할 수 있다', async () => {
+    const send = vi.fn();
+    const { rerender } = render(tableFor(build({ phase: 'DRAW', current: ME }), send));
+    await userEvent.click(screen.getByRole('button', { name: '덱에서 뽑기' }));
+
+    rerender(tableFor(build({ phase: 'DRAW', current: ME }), send));
+    await userEvent.click(screen.getByRole('button', { name: '덱에서 뽑기' }));
+
+    expect(send).toHaveBeenCalledTimes(2);
   });
 });

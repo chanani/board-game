@@ -1,5 +1,6 @@
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { ApiError } from '../api/http';
 import { roomsApi } from '../api/rooms';
 import type { Room } from '../api/types';
 import { useRoomChannel } from './useRoomChannel';
@@ -96,5 +97,33 @@ describe('useRoomChannel', () => {
     expect(toast.show).toHaveBeenCalled();
     expect(result.current.missing).toBe(false);
     expect(result.current.room?.name).toBe('방');
+  });
+
+  it('다시 가져오기가 404면 방을 불러온 뒤에도 missing이 된다', async () => {
+    const get = vi.spyOn(roomsApi, 'get').mockResolvedValueOnce(room('방'));
+    const { result, rerender } = renderHook(() => useRoomChannel('ABCDEF'));
+    await act(async () => {});
+
+    get.mockRejectedValueOnce(new ApiError(404, 'ROOM_NOT_FOUND', '없는 방'));
+    state.connected = true;
+    rerender();
+    await act(async () => {});
+
+    expect(result.current.missing).toBe(true);
+  });
+
+  it('떠난 플레이어도 마지막으로 본 닉네임으로 부른다', async () => {
+    const withMembers = (ids: number[]): Room => ({
+      ...room('방'),
+      members: ids.map((id) => ({ id, nickname: `플레이어${id}`, host: id === 1, connected: true, offlineSeconds: 0 })),
+    });
+    vi.spyOn(roomsApi, 'get').mockResolvedValue(withMembers([1, 2]));
+    const { result } = renderHook(() => useRoomChannel('ABCDEF'));
+    await act(async () => {});
+
+    act(() => state.handlers.get('/topic/rooms/ABCDEF')?.(withMembers([1])));
+
+    expect(result.current.nicknameOf(2)).toBe('플레이어2');
+    expect(result.current.nicknameOf(99)).toBe('떠난 플레이어');
   });
 });

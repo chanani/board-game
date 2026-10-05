@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { authApi } from '../api/auth';
+import { request } from '../api/http';
 import { AuthProvider, SignupLoginError, useAuth } from './AuthContext';
 
 function Consumer() {
@@ -55,5 +56,20 @@ describe('AuthProvider.signup', () => {
 
     await waitFor(() => expect(screen.getByTestId('outcome')).toHaveTextContent('ok'));
     expect(screen.getByTestId('member')).toHaveTextContent('앨리스');
+  });
+});
+
+describe('AuthProvider 세션 만료', () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it('401 응답을 받으면 회원 정보를 비운다', async () => {
+    vi.spyOn(authApi, 'me').mockResolvedValue(alice);
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({ status: 401, code: 'UNAUTHORIZED', message: 'x' }), { status: 401 }));
+    render(<AuthProvider><Consumer /></AuthProvider>);
+    await waitFor(() => expect(screen.getByTestId('member')).toHaveTextContent('앨리스'));
+
+    await request('/api/rooms').catch(() => undefined);
+
+    await waitFor(() => expect(screen.getByTestId('member')).toHaveTextContent('none'));
   });
 });

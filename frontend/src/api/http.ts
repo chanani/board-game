@@ -31,6 +31,15 @@ function toApiError(status: number, data: unknown): ApiError {
   return new ApiError(status, 'UNKNOWN', '알 수 없는 오류가 발생했어요.');
 }
 
+type UnauthorizedHandler = () => void;
+
+const SESSION_PATHS = ['/api/members/me', '/api/auth/login'];
+let unauthorizedHandler: UnauthorizedHandler | null = null;
+
+export function setUnauthorizedHandler(handler: UnauthorizedHandler | null): void {
+  unauthorizedHandler = handler;
+}
+
 export async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const hasBody = options.body !== undefined;
   const response = await fetch(path, {
@@ -43,6 +52,9 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
     return undefined as T;
   }
   const data = parse(await response.text());
+  if (response.status === 401 && !SESSION_PATHS.includes(path)) {
+    unauthorizedHandler?.();
+  }
   if (!response.ok) {
     throw toApiError(response.status, data);
   }

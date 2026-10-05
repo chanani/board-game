@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ApiError, messageOf, request } from './http';
+import { ApiError, messageOf, request, setUnauthorizedHandler } from './http';
 
 function jsonResponse(body: unknown, status: number): Response {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
@@ -50,5 +50,35 @@ describe('request', () => {
   it('메시지는 ApiError면 서버 메시지, 아니면 네트워크 안내다', () => {
     expect(messageOf(new ApiError(400, 'X', '잘못됨'))).toBe('잘못됨');
     expect(messageOf(new TypeError('fetch failed'))).toBe('네트워크 오류가 발생했어요. 잠시 후 다시 시도해 주세요.');
+  });
+});
+
+describe('세션 만료 처리', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    setUnauthorizedHandler(null);
+  });
+
+  const unauthorized = () => jsonResponse({ status: 401, code: 'UNAUTHORIZED', message: '로그인이 필요합니다.' }, 401);
+
+  it('일반 요청이 401이면 핸들러를 부르고 에러를 던진다', async () => {
+    const handler = vi.fn();
+    setUnauthorizedHandler(handler);
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(unauthorized());
+
+    await expect(request('/api/rooms')).rejects.toMatchObject({ status: 401 });
+
+    expect(handler).toHaveBeenCalledTimes(1);
+  });
+
+  it('로그인과 내 정보 조회의 401은 핸들러를 부르지 않는다', async () => {
+    const handler = vi.fn();
+    setUnauthorizedHandler(handler);
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async () => unauthorized());
+
+    await expect(request('/api/auth/login', { method: 'POST', body: {} })).rejects.toMatchObject({ status: 401 });
+    await expect(request('/api/members/me')).rejects.toMatchObject({ status: 401 });
+
+    expect(handler).not.toHaveBeenCalled();
   });
 });

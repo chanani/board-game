@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { authApi } from '../api/auth';
+import { setUnauthorizedHandler } from '../api/http';
 import type { Member } from '../api/types';
 
 type AuthState = {
@@ -21,6 +22,11 @@ const AuthContext = createContext<AuthState | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [member, setMember] = useState<Member | null>(null);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setUnauthorizedHandler(() => setMember(null));
+    return () => setUnauthorizedHandler(null);
+  }, []);
 
   useEffect(() => {
     authApi

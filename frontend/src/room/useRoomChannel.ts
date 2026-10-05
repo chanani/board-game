@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { messageOf } from '../api/http';
+import { ApiError, messageOf } from '../api/http';
 import { roomsApi } from '../api/rooms';
 import type { ApiErrorBody, GameAction, PaperSafariSessionView, Room } from '../api/types';
 import { useToast } from '../components/Toast';
@@ -21,15 +21,17 @@ export function useRoomChannel(code: string) {
   const viewRef = useRef<PaperSafariSessionView | null>(null);
   const roomRef = useRef<Room | null>(null);
   const topicSeenRef = useRef(0);
+  const namesRef = useRef(new Map<number, string>());
 
   const acceptRoom = useCallback((next: Room) => {
     roomRef.current = next;
+    next.members.forEach((member) => namesRef.current.set(member.id, member.nickname));
     setRoom(next);
     setReceivedAt(Date.now());
   }, []);
 
   const nicknameOf = useCallback(
-    (memberId: number) => roomRef.current?.members.find((member) => member.id === memberId)?.nickname ?? '떠난 플레이어',
+    (memberId: number) => namesRef.current.get(memberId) ?? '떠난 플레이어',
     [],
   );
 
@@ -48,6 +50,7 @@ export function useRoomChannel(code: string) {
   useEffect(() => {
     viewRef.current = null;
     roomRef.current = null;
+    namesRef.current = new Map();
     setRoom(null);
     setView(null);
     setLog([]);
@@ -72,7 +75,7 @@ export function useRoomChannel(code: string) {
           return;
         }
         toast.show(messageOf(error));
-        if (!roomRef.current) {
+        if (!roomRef.current || (error instanceof ApiError && error.status === 404)) {
           setMissing(true);
         }
       });
@@ -129,5 +132,5 @@ export function useRoomChannel(code: string) {
     [code, realtime, toast],
   );
 
-  return { room, receivedAt, view, log, missing, send };
+  return { room, receivedAt, view, log, missing, send, nicknameOf };
 }

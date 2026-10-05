@@ -1,16 +1,24 @@
+import { useEffect, useRef } from 'react';
 import type { GameAction, PaperSafariSessionView, Room, SlotView } from '../../api/types';
 import { Button, Panel } from '../../components/ui';
 import { CardFace } from './CardFace';
 import { GameOverPanel } from './GameOverPanel';
 import { PlayerBoard } from './PlayerBoard';
 import { RoundResultModal } from './RoundResultModal';
+import { canForfeit, offlineSecondsNow } from '../../lib/format';
 import { estimateBoard } from './score';
+
+const PENDING_MS = 3000;
 
 type Props = {
   view: PaperSafariSessionView;
   room: Room;
   meId: number;
   log: string[];
+  receivedAt: number;
+  now: number;
+  nicknameOf: (memberId: number) => string;
+  onForfeit: (memberId: number) => void;
   send: (action: GameAction) => void;
   onCloseGameOver: () => void;
 };
@@ -34,10 +42,22 @@ function instruction(phase: string, myTurn: boolean, needsFlip: boolean, current
   return '엿볼 내 뒷면 카드를 고르세요.';
 }
 
-export function PaperSafariTable({ view, room, meId, log, send, onCloseGameOver }: Props) {
+export function PaperSafariTable({ view, room, meId, log, receivedAt, now, nicknameOf, onForfeit, send: rawSend, onCloseGameOver }: Props) {
   const game = view.game;
   const round = game.round;
-  const nicknameOf = (memberId: number) => room.members.find((member) => member.id === memberId)?.nickname ?? '떠난 플레이어';
+  const pendingUntil = useRef(0);
+
+  useEffect(() => {
+    pendingUntil.current = 0;
+  }, [view]);
+
+  const send = (action: GameAction) => {
+    if (Date.now() < pendingUntil.current) {
+      return;
+    }
+    pendingUntil.current = Date.now() + PENDING_MS;
+    rawSend(action);
+  };
 
   if (game.status === 'GAME_OVER') {
     return <GameOverPanel game={game} meId={meId} nicknameOf={nicknameOf} onClose={onCloseGameOver} />;
@@ -50,6 +70,18 @@ export function PaperSafariTable({ view, room, meId, log, send, onCloseGameOver 
   const held = round.held;
   const canDiscard = myTurn && round.phase === 'PLACE' && held !== null && held.source === 'DECK' && held.card?.kind !== 'TARZAN';
   const estimate = myBoard ? estimateBoard(myBoard) : null;
+  const memberOf = (memberId: number) => room.members.find((member) => member.id === memberId);
+  const presenceOf = (memberId: number) => {
+    const member = memberOf(memberId);
+    if (!member) {
+      return {};
+    }
+    return {
+      connected: member.connected,
+      offlineSeconds: offlineSecondsNow(member, receivedAt, now),
+      onForfeit: canForfeit(member, meId, receivedAt, now) ? () => onForfeit(memberId) : undefined,
+    };
+  };
   const tokensOf = (memberId: number) => game.tokens[String(memberId)] ?? 0;
 
   const canClickSlot = (slot: SlotView): boolean => {
@@ -86,7 +118,7 @@ export function PaperSafariTable({ view, room, meId, log, send, onCloseGameOver 
         {others.map((board) => (
           <div key={board.playerId} className="min-w-56">
             <PlayerBoard board={board} nickname={nicknameOf(board.playerId)} tokens={tokensOf(board.playerId)}
-              active={round.currentPlayerId === board.playerId} size="sm" />
+              active={round.currentPlayerId === board.playerId} size="sm" {...presenceOf(board.playerId)} />
           </div>
         ))}
       </div>

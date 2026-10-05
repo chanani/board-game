@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { messageOf } from '../api/http';
 import { recordsApi } from '../api/records';
@@ -20,6 +20,7 @@ export function LobbyPage() {
   const [name, setName] = useState(`${member?.nickname ?? ''}의 방`);
   const [code, setCode] = useState('');
   const [stat, setStat] = useState<GameStat | null>(null);
+  const [statFailed, setStatFailed] = useState(false);
   const [rankings, setRankings] = useState<Ranking[]>([]);
 
   useEffect(() => {
@@ -31,17 +32,30 @@ export function LobbyPage() {
         }
       })
       .catch(() => undefined);
-    recordsApi.me().then((stats) => setStat(stats.stats.find((item) => item.gameType === GAME) ?? null)).catch(() => undefined);
+    recordsApi.me().then((stats) => setStat(stats.stats.find((item) => item.gameType === GAME) ?? null)).catch(() => setStatFailed(true));
     recordsApi.rankings(GAME).then(setRankings).catch(() => undefined);
   }, [navigate]);
 
-  const loadRooms = useCallback(() => {
-    roomsApi.list(GAME).then(setRooms).catch((error) => toast.show(messageOf(error)));
+  const failedRef = useRef(false);
+
+  const loadRooms = useCallback((manual = false) => {
+    roomsApi
+      .list(GAME)
+      .then((next) => {
+        failedRef.current = false;
+        setRooms(next);
+      })
+      .catch((error) => {
+        if (manual || !failedRef.current) {
+          toast.show(messageOf(error));
+        }
+        failedRef.current = true;
+      });
   }, [toast]);
 
   useEffect(() => {
     loadRooms();
-    const timer = window.setInterval(loadRooms, 5000);
+    const timer = window.setInterval(() => loadRooms(), 5000);
     return () => window.clearInterval(timer);
   }, [loadRooms]);
 
@@ -85,7 +99,7 @@ export function LobbyPage() {
         <Panel>
           <div className="mb-3 flex items-center justify-between">
             <h2 className="font-bold">기다리는 방</h2>
-            <button type="button" onClick={loadRooms} className="text-sm text-stone-500 hover:text-stone-800">새로고침</button>
+            <button type="button" onClick={() => loadRooms(true)} className="text-sm text-stone-500 hover:text-stone-800">새로고침</button>
           </div>
           {rooms.length === 0 ? <p className="text-sm text-stone-500">지금은 열린 방이 없어요. 방을 만들어 친구를 불러보세요!</p> : null}
           <ul className="grid gap-2 sm:grid-cols-2">
@@ -111,7 +125,7 @@ export function LobbyPage() {
       <div className="space-y-4">
         <Panel>
           <h2 className="mb-2 font-bold">내 전적</h2>
-          {stat ? <StatSummary stat={stat} /> : <p className="text-sm text-stone-500">불러오는 중…</p>}
+          {stat ? <StatSummary stat={stat} /> : <p className="text-sm text-stone-500">{statFailed ? '전적을 불러오지 못했어요.' : '불러오는 중…'}</p>}
         </Panel>
         <Panel>
           <h2 className="mb-2 font-bold">순위표 TOP 5</h2>
