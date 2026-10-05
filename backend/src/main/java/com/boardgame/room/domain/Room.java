@@ -147,4 +147,8 @@ public class Room {
             throw new BusinessException(ErrorCode.ROOM_ALREADY_PLAYING);
         }
     }
+
+    public GameOccupancy addTo(GameOccupancy occupancy) {
+        return occupancy.add(status(), PlayerCount.of(members.size()));
+    }
 }

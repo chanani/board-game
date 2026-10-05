@@ -9,8 +9,10 @@ import com.boardgame.game.GameSessionFactories;
 import com.boardgame.game.GameType;
 import com.boardgame.game.event.GameStartedEvent;
 import com.boardgame.room.api.CreateRoomRequest;
+import com.boardgame.room.api.GameSummaryResponse;
 import com.boardgame.room.api.RoomResponse;
 import com.boardgame.room.api.RoomSummaryResponse;
+import com.boardgame.room.domain.GameOccupancies;
 import com.boardgame.room.domain.Participant;
 import com.boardgame.room.domain.Room;
 import com.boardgame.room.domain.RoomCode;
@@ -68,6 +70,13 @@ public class RoomService {
         return registry.all().stream()
                 .filter(room -> room.isWaitingFor(gameType))
                 .map(RoomSummaryResponse::from)
+                .toList();
+    }
+
+    public synchronized List<GameSummaryResponse> gameOccupancies() {
+        GameOccupancies occupancies = GameOccupancies.of(registry.all());
+        return occupancies.asList().stream()
+                .map(GameSummaryResponse::from)
                 .toList();
     }
 
