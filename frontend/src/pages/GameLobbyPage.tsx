@@ -1,18 +1,23 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { motion } from 'motion/react';
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { messageOf } from '../api/http';
 import { recordsApi } from '../api/records';
 import { roomsApi } from '../api/rooms';
 import type { GameStat, Ranking, RoomSummary } from '../api/types';
 import { useAuth } from '../auth/AuthContext';
+import { Felt } from '../components/Felt';
 import { Button, Panel, TextInput } from '../components/ui';
 import { useToast } from '../components/Toast';
+import { entryBySlug } from '../games/catalog';
+import { PaperSafariBoxArt } from '../games/PaperSafariBoxArt';
 import { RankingList } from '../records/RankingList';
 import { StatSummary } from '../records/StatSummary';
 
-const GAME = 'PAPER_SAFARI' as const;
-
-export function LobbyPage() {
+export function GameLobbyPage() {
+  const { slug = '' } = useParams();
+  const entry = entryBySlug(slug);
+  const gameType = entry?.gameType ?? 'PAPER_SAFARI';
   const { member } = useAuth();
   const navigate = useNavigate();
   const toast = useToast();
@@ -32,15 +37,15 @@ export function LobbyPage() {
         }
       })
       .catch(() => undefined);
-    recordsApi.me().then((stats) => setStat(stats.stats.find((item) => item.gameType === GAME) ?? null)).catch(() => setStatFailed(true));
-    recordsApi.rankings(GAME).then(setRankings).catch(() => undefined);
-  }, [navigate]);
+    recordsApi.me().then((stats) => setStat(stats.stats.find((item) => item.gameType === gameType) ?? null)).catch(() => setStatFailed(true));
+    recordsApi.rankings(gameType).then(setRankings).catch(() => undefined);
+  }, [navigate, gameType]);
 
   const failedRef = useRef(false);
 
   const loadRooms = useCallback((manual = false) => {
     roomsApi
-      .list(GAME)
+      .list(gameType)
       .then((next) => {
         failedRef.current = false;
         setRooms(next);
@@ -51,7 +56,7 @@ export function LobbyPage() {
         }
         failedRef.current = true;
       });
-  }, [toast]);
+  }, [toast, gameType]);
 
   useEffect(() => {
     loadRooms();
@@ -70,7 +75,7 @@ export function LobbyPage() {
 
   const handleCreate = (event: FormEvent) => {
     event.preventDefault();
-    enter(() => roomsApi.create(name, GAME));
+    enter(() => roomsApi.create(name, gameType));
   };
 
   const handleJoinByCode = (event: FormEvent) => {
@@ -78,11 +83,19 @@ export function LobbyPage() {
     enter(() => roomsApi.join(code.trim()));
   };
 
+  if (!entry) {
+    return <Navigate to="/" replace />;
+  }
+
   return (
     <div className="grid gap-4 lg:grid-cols-3">
       <div className="space-y-4 lg:col-span-2">
-        <div className="flex gap-2">
-          <span className="rounded-xl bg-safari-600 px-4 py-2 text-sm font-semibold text-white">🦊 페이퍼 사파리</span>
+        <div className="flex items-center gap-3">
+          <div className="h-16 w-12 overflow-hidden rounded shadow-lg"><PaperSafariBoxArt /></div>
+          <div>
+            <Link to="/" className="text-sm font-semibold text-cream-200 hover:text-cream-50">← 게임 선반</Link>
+            <h1 className="text-xl font-black text-cream-50">페이퍼 사파리</h1>
+          </div>
         </div>
         <Panel>
           <div className="grid gap-4 sm:grid-cols-2">
@@ -96,31 +109,40 @@ export function LobbyPage() {
             </form>
           </div>
         </Panel>
-        <Panel>
+        <Felt className="p-4">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="font-bold">기다리는 방</h2>
-            <button type="button" onClick={() => loadRooms(true)} className="text-sm text-stone-500 hover:text-stone-800">새로고침</button>
+            <h2 className="font-bold text-cream-50">기다리는 방</h2>
+            <button type="button" onClick={() => loadRooms(true)} className="text-sm text-cream-200 hover:text-cream-50">새로고침</button>
           </div>
-          {rooms.length === 0 ? <p className="text-sm text-stone-500">지금은 열린 방이 없어요. 방을 만들어 친구를 불러보세요!</p> : null}
+          {rooms.length === 0 ? <p className="text-sm text-cream-200">지금은 열린 방이 없어요. 방을 만들어 친구를 불러보세요!</p> : null}
           <ul className="grid gap-2 sm:grid-cols-2">
-            {rooms.map((room) => {
+            {rooms.map((room, index) => {
               const full = room.playerCount >= room.maxPlayers;
               return (
-                <li key={room.code} className="flex items-center justify-between rounded-xl border border-stone-200 px-3 py-2">
+                <motion.li
+                  key={room.code}
+                  className="paper flex items-center justify-between p-3"
+                  initial={{ y: -16, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: index * 0.05 }}
+                >
                   <div>
                     <p className="font-medium">{room.name}</p>
                     <p className="text-xs text-stone-500">
-                      👑 {room.hostNickname} · {room.playerCount}/{room.maxPlayers}명
+                      👑 {room.hostNickname}{' '}
+                      <span aria-label={`${room.playerCount}/${room.maxPlayers}명`}>
+                        {'●'.repeat(room.playerCount) + '○'.repeat(room.maxPlayers - room.playerCount)}
+                      </span>
                     </p>
                   </div>
                   <Button variant="secondary" disabled={full} onClick={() => enter(() => roomsApi.join(room.code))}>
                     {full ? '가득 참' : '참가'}
                   </Button>
-                </li>
+                </motion.li>
               );
             })}
           </ul>
-        </Panel>
+        </Felt>
       </div>
       <div className="space-y-4">
         <Panel>

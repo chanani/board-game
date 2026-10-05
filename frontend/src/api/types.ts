@@ -95,3 +95,12 @@ export type Ranking = {
   losses: number;
   winRate: number;
 };
+
+export type GameSummary = {
+  gameType: GameType;
+  name: string;
+  minPlayers: number;
+  maxPlayers: number;
+  waitingPlayers: number;
+  playingPlayers: number;
+};

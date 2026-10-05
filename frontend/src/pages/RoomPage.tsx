@@ -5,6 +5,7 @@ import { roomsApi } from '../api/rooms';
 import { useAuth } from '../auth/AuthContext';
 import { Button, Panel } from '../components/ui';
 import { useToast } from '../components/Toast';
+import { lobbyPath } from '../games/catalog';
 import { PaperSafariTable } from '../games/papersafari/PaperSafariTable';
 import { useRoomChannel } from '../room/useRoomChannel';
 import { WaitingRoom } from '../room/WaitingRoom';
@@ -38,7 +39,7 @@ export function RoomPage() {
   useEffect(() => {
     if (room && !room.members.some((roomMember) => roomMember.id === meId)) {
       toast.show('방에서 나왔어요.', 'info');
-      navigate('/', { replace: true });
+      navigate(lobbyPath(room.gameType), { replace: true });
     }
   }, [room, meId, navigate, toast]);
 
@@ -74,7 +75,7 @@ export function RoomPage() {
         setConfirmLeave(false);
         throw error;
       }
-      navigate('/', { replace: true });
+      navigate(lobbyPath(room.gameType), { replace: true });
     });
   };
 
