@@ -3,6 +3,22 @@
 @theme {
   --font-sans: "Pretendard", system-ui, -apple-system, sans-serif;
   --color-cream: #faf6ee;
+  --color-cream-50: #fffaf0;
+  --color-cream-200: #e6dcc4;
+  --color-cream-300: #d8cdb4;
+  --color-wood-900: #24160b;
+  --color-wood-800: #2e1d10;
+  --color-wood-700: #5d3b1f;
+  --color-wood-500: #8a5a32;
+  --color-wood-300: #a8743f;
+  --color-felt-800: #164a2d;
+  --color-felt-600: #1c5a37;
+  --color-felt-400: #2f8a57;
+  --color-mustard-300: #f7c860;
+  --color-mustard-400: #f2b33d;
+  --color-mustard-600: #b77b14;
+  --color-brick-500: #b4461a;
+  --color-brick-700: #7c2d12;
   --color-safari-50: #eef7ef;
   --color-safari-100: #d7ecd9;
   --color-safari-300: #8cc597;
@@ -12,5 +28,60 @@
 }
 
 body {
-  @apply bg-cream text-stone-800 antialiased;
+  @apply text-stone-800 antialiased;
+  min-height: 100vh;
+  background-color: var(--color-wood-800);
+  background-image:
+    radial-gradient(ellipse at 50% 0%, rgb(255 220 160 / 0.12), transparent 60%),
+    radial-gradient(ellipse at 50% 120%, rgb(0 0 0 / 0.55), transparent 60%),
+    repeating-linear-gradient(92deg, rgb(255 255 255 / 0.025) 0 2px, transparent 2px 9px),
+    linear-gradient(180deg, #3b2614, #24160b);
+  background-attachment: fixed;
+}
+
+@utility paper {
+  background: var(--color-cream-50);
+  border-radius: 1.25rem;
+  box-shadow: 0 4px 0 var(--color-cream-200), 0 6px 0 var(--color-cream-300), 0 18px 30px rgb(0 0 0 / 0.35);
+}
+
+@utility felt {
+  background: radial-gradient(ellipse at 50% 40%, var(--color-felt-400), var(--color-felt-600) 70%, var(--color-felt-800));
+  box-shadow: 0 0 0 10px var(--color-wood-500), 0 0 0 13px var(--color-wood-700), 0 30px 40px rgb(0 0 0 / 0.55),
+    inset 0 0 60px rgb(0 0 0 / 0.35);
+}
+
+@utility wood-rail {
+  background: repeating-linear-gradient(90deg, rgb(255 255 255 / 0.04) 0 3px, transparent 3px 11px),
+    linear-gradient(180deg, var(--color-wood-300), var(--color-wood-500));
+  box-shadow: inset 0 -4px 0 rgb(0 0 0 / 0.25), 0 10px 18px rgb(0 0 0 / 0.5);
+}
+
+@utility press-3d {
+  transition: transform 80ms ease, box-shadow 80ms ease;
+  &:active:not(:disabled) {
+    transform: translateY(4px);
+    box-shadow: 0 0 0 transparent, 0 2px 4px rgb(0 0 0 / 0.3);
+  }
+}
+
+/* 카드 3D 뒤집기 */
+.card-3d { perspective: 700px; }
+.card-inner { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; transition: transform 350ms cubic-bezier(.2,.7,.3,1.2); }
+.card-side { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 10%/7%; overflow: hidden; }
+.card-side.is-back { transform: rotateY(180deg); }
+.card-thick { box-shadow: 0 2px 0 var(--color-cream-300), 0 4px 0 #b9ab8a, 0 10px 14px rgb(0 0 0 / 0.45); }
+
+@keyframes turn-glow { 0%, 100% { box-shadow: 0 0 0 2px var(--color-cream-50), 0 0 6px var(--color-mustard-400); } 50% { box-shadow: 0 0 0 2px var(--color-cream-50), 0 0 18px var(--color-mustard-400); } }
+.turn-glow { animation: turn-glow 1.4s ease-in-out infinite; }
+@keyframes float-hint { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+.float-hint { animation: float-hint 1.6s ease-in-out infinite; }
+@keyframes gold-sparkle { 0% { box-shadow: 0 0 0 0 rgb(251 191 36 / .9); } 100% { box-shadow: 0 0 0 12px rgb(251 191 36 / 0); } }
+.gold-sparkle { animation: gold-sparkle 900ms ease-out 1; }
+@keyframes live-dot { 50% { opacity: .3; } }
+.live-dot { animation: live-dot 1.2s infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .card-inner, .press-3d { transition: none; }
+  .turn-glow, .float-hint, .gold-sparkle, .live-dot { animation: none; }
 }

@@ -1,22 +1,24 @@
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode } from 'react';
 
-export function Panel({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <section className={`rounded-2xl bg-white p-5 shadow-sm ring-1 ring-stone-200 ${className}`}>{children}</section>;
+type PanelProps = { children: ReactNode; className?: string; as?: 'section' | 'div' };
+
+export function Panel({ children, className = '', as: Tag = 'section' }: PanelProps) {
+  return <Tag className={`paper p-5 ${className}`}>{children}</Tag>;
 }
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'secondary' | 'danger' };
 
 const VARIANTS = {
-  primary: 'bg-safari-600 text-white hover:bg-safari-700',
-  secondary: 'bg-white text-stone-700 ring-1 ring-stone-300 hover:bg-stone-50',
-  danger: 'bg-white text-red-600 ring-1 ring-red-200 hover:bg-red-50',
+  primary: 'bg-mustard-400 text-wood-800 shadow-[0_4px_0_var(--color-mustard-600),0_8px_14px_rgb(0_0_0/0.3)] hover:bg-mustard-300',
+  secondary: 'bg-cream-50 text-wood-800 shadow-[0_4px_0_var(--color-cream-300),0_8px_14px_rgb(0_0_0/0.25)] hover:bg-white',
+  danger: 'bg-brick-500 text-cream-50 shadow-[0_4px_0_var(--color-brick-700),0_8px_14px_rgb(0_0_0/0.3)] hover:brightness-110',
 };
 
 export function Button({ variant = 'primary', className = '', ...props }: ButtonProps) {
   return (
     <button
       type="button"
-      className={`rounded-xl px-4 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-40 ${VARIANTS[variant]} ${className}`}
+      className={`press-3d rounded-xl px-4 py-2 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-45 disabled:shadow-none ${VARIANTS[variant]} ${className}`}
       {...props}
     />
   );
@@ -27,10 +29,10 @@ type TextInputProps = InputHTMLAttributes<HTMLInputElement> & { label: string; h
 export function TextInput({ label, hint, id, ...props }: TextInputProps) {
   return (
     <label className="block space-y-1" htmlFor={id}>
-      <span className="text-sm font-medium text-stone-700">{label}</span>
+      <span className="text-sm font-semibold text-wood-700">{label}</span>
       <input
         id={id}
-        className="w-full rounded-xl border border-stone-300 bg-white px-3 py-2 outline-none focus:border-safari-500 focus:ring-2 focus:ring-safari-100"
+        className="w-full rounded-xl border border-cream-300 bg-cream px-3 py-2 shadow-[inset_0_2px_4px_rgb(0_0_0/0.12)] outline-none focus:border-mustard-400 focus:ring-2 focus:ring-mustard-300/50"
         {...props}
       />
       {hint ? <span className="block text-xs text-stone-500">{hint}</span> : null}
