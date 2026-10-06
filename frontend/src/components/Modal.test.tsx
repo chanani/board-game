@@ -20,6 +20,27 @@ describe('Modal', () => {
     expect(onClose).toHaveBeenCalledOnce();
   });
 
+  it('포커스가 body로 빠져도 Esc로 닫힌다 (눌렀던 버튼이 비활성이 된 경우)', async () => {
+    const onClose = vi.fn();
+    render(<Modal open title="결과" onClose={onClose}><button type="button">확인</button></Modal>);
+    (document.activeElement as HTMLElement).blur();
+    expect(document.body).toHaveFocus();
+
+    await userEvent.keyboard('{Escape}');
+
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it('다른 곳(모달 밖 입력칸)에 포커스가 있으면 Esc를 가로채지 않는다', async () => {
+    const onClose = vi.fn();
+    render(<><input aria-label="밖" /><Modal open title="결과" onClose={onClose}><button type="button">확인</button></Modal></>);
+    screen.getByRole('textbox', { name: '밖' }).focus();
+
+    await userEvent.keyboard('{Escape}');
+
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
   it('Tab은 모달 안에서만 돈다', async () => {
     render(<Modal open title="결과"><button type="button">하나</button><button type="button">둘</button></Modal>);
 

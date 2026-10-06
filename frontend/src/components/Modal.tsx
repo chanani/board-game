@@ -11,8 +11,30 @@ function focusables(root: HTMLElement | null): HTMLElement[] {
   return root ? Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE)) : [];
 }
 
+function focusIsFree(box: HTMLElement | null): boolean {
+  const active = document.activeElement;
+  return !active || active === document.body || Boolean(box?.contains(active));
+}
+
 export function Modal({ open, title, onClose, children, wide = false, padding = 'normal' }: Props) {
   const boxRef = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
+  // 누른 버튼이 비활성이 되거나 글자를 누르면 포커스가 body로 빠지므로, Esc는 문서에서 받는다.
+  useEffect(() => {
+    if (!open) {
+      return undefined;
+    }
+    const onKey = (event: globalThis.KeyboardEvent) => {
+      if (event.key !== 'Escape' || !onCloseRef.current || !focusIsFree(boxRef.current)) {
+        return;
+      }
+      onCloseRef.current();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [open]);
 
   useEffect(() => {
     if (open) {
@@ -21,10 +43,6 @@ export function Modal({ open, title, onClose, children, wide = false, padding = 
   }, [open]);
 
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    if (event.key === 'Escape' && onClose) {
-      onClose();
-      return;
-    }
     if (event.key !== 'Tab') {
       return;
     }
@@ -58,7 +76,8 @@ export function Modal({ open, title, onClose, children, wide = false, padding = 
             role="dialog"
             aria-modal="true"
             aria-label={title}
-            className={`paper max-h-[90vh] w-full overflow-y-auto ${PADDING[padding]} ${wide ? 'max-w-4xl' : 'max-w-lg'}`}
+            tabIndex={-1}
+            className={`paper outline-none max-h-[90vh] w-full overflow-y-auto ${PADDING[padding]} ${wide ? 'max-w-4xl' : 'max-w-lg'}`}
             initial={{ y: 60, scale: 0.92, opacity: 0 }}
             animate={{ y: 0, scale: 1, opacity: 1 }}
             exit={{ y: 40, scale: 0.95, opacity: 0 }}
