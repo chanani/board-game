@@ -10,7 +10,7 @@ import { BinocularsIcon, CrownIcon, LockIcon, PlusIcon, RefreshIcon } from '../c
 import { Button, Panel, TextInput } from '../components/ui';
 import { useToast } from '../components/Toast';
 import { entryBySlug } from '../games/catalog';
-import { PaperSafariBoxArt } from '../games/PaperSafariBoxArt';
+import { gameOf } from '../games/registry';
 import { usePolling } from '../lib/usePolling';
 import { CreateRoomModal } from '../room/CreateRoomModal';
 import { PasswordModal } from '../room/PasswordModal';
@@ -74,6 +74,7 @@ export function GameLobbyPage() {
   const { slug = '' } = useParams();
   const entry = entryBySlug(slug);
   const gameType = entry?.gameType ?? 'PAPER_SAFARI';
+  const game = gameOf(gameType);
   const { member } = useAuth();
   const navigate = useNavigate();
   const toast = useToast();
@@ -194,10 +195,10 @@ export function GameLobbyPage() {
     <div className="grid gap-8 lg:grid-cols-3">
       <div className="space-y-4 lg:col-span-2">
         <div className="flex items-center gap-3">
-          <div className="h-16 w-12 overflow-hidden rounded shadow-lg"><PaperSafariBoxArt /></div>
+          <div className="h-16 w-12 overflow-hidden rounded shadow-lg"><game.BoxArt /></div>
           <div>
             <Link to="/" className="text-sm font-semibold text-cream-200 hover:text-cream-50">← 게임 목록</Link>
-            <h1 className="text-xl font-black text-cream-50">페이퍼 사파리</h1>
+            <h1 className="text-xl font-black text-cream-50">{game.name}</h1>
           </div>
         </div>
         <Panel>
@@ -281,7 +282,8 @@ export function GameLobbyPage() {
           <RankingList rankings={rankings} limit={5} />
         </Panel>
       </div>
-      <CreateRoomModal open={creating} defaultName={`${member?.nickname ?? ''}의 방`} onClose={() => setCreating(false)} onCreate={handleCreate} />
+      <CreateRoomModal open={creating} defaultName={`${member?.nickname ?? ''}의 방`} onClose={() => setCreating(false)} onCreate={handleCreate}
+        minPlayers={game.minPlayers} maxPlayers={game.maxPlayers} />
       <PasswordModal open={asking !== null} roomName={asking?.name ?? ''} error={asking?.error ?? null}
         onSubmit={(pw) => asking && join(asking.code, asking.name, pw)} onCancel={() => setAsking(null)} />
     </div>

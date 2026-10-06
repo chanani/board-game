@@ -1,6 +1,7 @@
 import type { CardView } from '../../api/types';
+import type { RuleSlideBase } from '../gameModule';
 
-export type RuleSlide = { title: string; body: string[]; cards: CardView[] };
+export type RuleSlide = RuleSlideBase & { cards: CardView[] };
 
 const num = (value: number): CardView => ({ kind: 'NUMBER', value });
 

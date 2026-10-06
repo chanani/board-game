@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError, messageOf } from '../api/http';
 import { roomsApi } from '../api/rooms';
-import type { ApiErrorBody, GameAction, PaperSafariSessionView, PaperSafariView, Room } from '../api/types';
+import type { ApiErrorBody, GameAction, Room, SessionView } from '../api/types';
 import { useToast } from '../components/Toast';
 import { departures } from '../lib/departures';
-import { describeChanges, prependLog, type LogDraft, type LogEntry } from '../lib/eventLog';
+import type { ViewTransition } from '../games/gameModule';
+import { findGame, sessionGameType } from '../games/registry';
+import { prependLog, type LogDraft, type LogEntry } from '../lib/eventLog';
 import { useRealtime } from '../realtime/RealtimeContext';
 
 const CHAT_ERROR_CODES = new Set(['INVALID_CHAT_MESSAGE', 'CHAT_TOO_FAST']);
@@ -21,19 +23,19 @@ const LEFT_MESSAGE = '방에서 나왔어요.';
 const isRoomGone = (error: unknown) =>
   error instanceof ApiError && (error.status === 404 || error.code === 'NOT_IN_ROOM');
 
-export type ViewTransition = { seq: number; from: PaperSafariView | null; to: PaperSafariView; animate: boolean };
+export type { ViewTransition } from '../games/gameModule';
 
 export function useRoomChannel(code: string, { poll = false, meId = 0 }: Options = {}) {
   const { realtime, connected } = useRealtime();
   const toast = useToast();
   const [room, setRoom] = useState<Room | null>(null);
   const [receivedAt, setReceivedAt] = useState(0);
-  const [view, setView] = useState<PaperSafariSessionView | null>(null);
+  const [view, setView] = useState<SessionView | null>(null);
   const [log, setLog] = useState<LogEntry[]>([]);
   const [missing, setMissing] = useState(false);
   const [errorSeq, setErrorSeq] = useState(0);
-  const [transition, setTransition] = useState<ViewTransition | null>(null);
-  const viewRef = useRef<PaperSafariSessionView | null>(null);
+  const [transition, setTransition] = useState<ViewTransition<SessionView['game']> | null>(null);
+  const viewRef = useRef<SessionView | null>(null);
   const syncPendingRef = useRef(false);
   const seqRef = useRef(0);
   const logIdRef = useRef(0);
@@ -86,12 +88,16 @@ export function useRoomChannel(code: string, { poll = false, meId = 0 }: Options
   );
 
   const acceptView = useCallback(
-    (next: PaperSafariSessionView) => {
-      const lines = describeChanges(viewRef.current?.game ?? null, next.game, nicknameOf);
+    (next: SessionView) => {
+      const type = sessionGameType(next);
+      const prev = viewRef.current;
+      // 게임 종류가 다른 화면(오래된 화면이 섞여 온 경우)과는 비교하지 않는다.
+      const from = prev !== null && sessionGameType(prev) === type ? prev : null;
+      const lines = findGame(type)?.describeChanges(from, next, nicknameOf) ?? [];
       const animate = !syncPendingRef.current;
       syncPendingRef.current = false;
       seqRef.current += 1;
-      setTransition({ seq: seqRef.current, from: viewRef.current?.game ?? null, to: next.game, animate });
+      setTransition({ seq: seqRef.current, from: from?.game ?? null, to: next.game, animate });
       viewRef.current = next;
       setView(next);
       appendLog(lines);
@@ -155,7 +161,7 @@ export function useRoomChannel(code: string, { poll = false, meId = 0 }: Options
         topicSeenRef.current += 1;
         acceptRoom(body as Room, { live: true });
       }),
-      realtime.subscribe('/user/queue/game', (body) => acceptView(body as PaperSafariSessionView)),
+      realtime.subscribe('/user/queue/game', (body) => acceptView(body as SessionView)),
       realtime.subscribe('/user/queue/errors', (body) => {
         const error = body as ApiErrorBody;
         // 채팅 오류는 게임 행동과 무관하므로 카드 이동·중복 전송 방지를 풀지 않는다.

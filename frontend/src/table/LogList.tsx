@@ -1,7 +1,7 @@
 import type { ComponentType } from 'react';
-import { chatTime } from '../../../lib/format';
-import type { LogEntry, LogKind } from '../../../lib/eventLog';
-import { CardsIcon, ClockIcon, DotIcon, EyeIcon, LogoutIcon, PlayIcon, RecycleIcon, SwapIcon, TrophyIcon, UndoIcon } from '../../../components/icons';
+import { chatTime } from '../lib/format';
+import type { LogEntry, LogKind } from '../lib/eventLog';
+import { CardsIcon, ClockIcon, DotIcon, EyeIcon, LogoutIcon, PlayIcon, RecycleIcon, SwapIcon, TrophyIcon, UndoIcon } from '../components/icons';
 
 export type Nickname = (memberId: number) => string;
 

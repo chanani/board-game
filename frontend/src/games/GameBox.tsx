@@ -1,7 +1,7 @@
 import { motion } from 'motion/react';
 import { useState } from 'react';
 import type { CatalogEntry } from './catalog';
-import { PaperSafariBoxArt } from './PaperSafariBoxArt';
+import { gameOf } from './registry';
 import { LockIcon } from '../components/icons';
 
 type Props = { entry?: CatalogEntry; name: string; onOpen?: () => void };
@@ -11,6 +11,7 @@ const OPEN_MS = 380;
 export function GameBox({ entry, name, onOpen }: Props) {
   const [opening, setOpening] = useState(false);
   const available = Boolean(entry && onOpen);
+  const BoxArt = entry ? gameOf(entry.gameType).BoxArt : null;
 
   const open = () => {
     if (!onOpen || opening) {
@@ -33,7 +34,7 @@ export function GameBox({ entry, name, onOpen }: Props) {
     >
       <span className="absolute inset-0 transition-transform duration-200 [transform-style:preserve-3d] [transform:rotateY(-14deg)] group-enabled:group-hover:[transform:rotateY(-4deg)_rotateX(6deg)_translateZ(10px)]">
         <span className="absolute inset-0 overflow-hidden rounded-[4px] shadow-[10px_8px_18px_rgb(0_0_0/0.55)]">
-          {available ? <PaperSafariBoxArt /> : <ComingSoonFace />}
+          {available && BoxArt ? <BoxArt /> : <ComingSoonFace />}
         </span>
         <span className={`absolute right-[-16px] top-0 h-full w-4 origin-left [transform:rotateY(90deg)] brightness-[.6] ${available ? 'bg-[#f6c66e]' : 'bg-stone-600'}`} />
         <span className="absolute left-0 top-[-12px] h-3 w-full origin-bottom [transform:rotateX(90deg)] bg-cream-200 brightness-90" />

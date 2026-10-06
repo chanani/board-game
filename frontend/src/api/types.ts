@@ -71,7 +71,9 @@ export type PaperSafariView = {
   /** 시간 초과 자동 행동이 일어날 때만 1씩 는다. */
   autoActSeq?: number;
 };
-export type PaperSafariSessionView = { game: PaperSafariView };
+export type PaperSafariSessionView = { gameType?: 'PAPER_SAFARI'; game: PaperSafariView };
+/** /user/queue/game으로 오는 세션 화면. Task 10에서 우노 화면을 더한다. */
+export type SessionView = PaperSafariSessionView;
 
 export type GameStat = {
   gameType: GameType;

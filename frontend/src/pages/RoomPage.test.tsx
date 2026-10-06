@@ -297,6 +297,15 @@ describe('RoomPage 결과 모달', () => {
     expect(JSON.parse(window.sessionStorage.getItem('bg.dismissedGameOver') ?? '[]')).toEqual(['XYZ789:1:{}']);
   });
 
+  it('방 게임과 다른 종류의 화면은 그리지 않는다', async () => {
+    setChannel({ room: { ...baseRoom, spectators: [], members: [...members, { ...members[1], id: 3, nickname: '캐롤' }] }, view: { gameType: 'UNO', game: { status: 'IN_PROGRESS' } } });
+    renderRoom();
+    await act(async () => {});
+
+    expect(screen.getByText('게임 화면을 불러오는 중…')).toBeInTheDocument();
+    expect(screen.queryByTestId('turn-bar')).not.toBeInTheDocument();
+  });
+
   it('관전자도 게임 결과(승자)를 보고 닫을 수 있다', async () => {
     const spectatorView: PaperSafariSessionView = { game: { ...finished.game, round: { ...finished.game.round, boards: [boardOf(1), boardOf(2)] } } };
     setChannel({ room: { ...baseRoom, status: 'WAITING' }, view: spectatorView });

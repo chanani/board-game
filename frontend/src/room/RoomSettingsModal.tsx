@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import type { Room, RoomTheme } from '../api/types';
 import { Modal } from '../components/Modal';
 import { Button } from '../components/ui';
-import { SeatPicker } from './SeatPicker';
+import { findGame } from '../games/registry';
+import { SeatPicker, seatOptions } from './SeatPicker';
 import { ThemePicker } from './ThemePicker';
 
 type Props = {
@@ -15,14 +16,17 @@ type Props = {
 
 /** 대기 중인 방장이 최대 인원과 테마를 바꾸는 창. 지금 있는 인원보다 적게는 줄일 수 없다. */
 export function RoomSettingsModal({ open, room, onClose, onSave }: Props) {
-  const [maxPlayers, setMaxPlayers] = useState(room.maxPlayers);
+  const [capacity, setCapacity] = useState(room.maxPlayers);
   const [theme, setTheme] = useState<RoomTheme>(room.theme);
   const [pending, setPending] = useState(false);
-  const min = Math.max(2, room.members.length);
+  const game = findGame(room.gameType);
+  const minPlayers = game?.minPlayers ?? 2;
+  const maxPlayers = game?.maxPlayers ?? 5;
+  const min = Math.max(minPlayers, room.members.length);
 
   useEffect(() => {
     if (open) {
-      setMaxPlayers(room.maxPlayers);
+      setCapacity(room.maxPlayers);
       setTheme(room.theme);
     }
     // 열릴 때만 현재 설정으로 되돌린다. 열려 있는 동안 방송이 와도 고르던 값을 덮어쓰지 않는다.
@@ -31,7 +35,7 @@ export function RoomSettingsModal({ open, room, onClose, onSave }: Props) {
   const save = async () => {
     setPending(true);
     try {
-      await onSave(maxPlayers, theme);
+      await onSave(capacity, theme);
       onClose();
     } catch {
       // 오류 알림은 onSave 쪽에서 한다.
@@ -44,7 +48,7 @@ export function RoomSettingsModal({ open, room, onClose, onSave }: Props) {
     <Modal open={open} title="방 설정" onClose={onClose} padding="snug">
       <div className="space-y-4">
         <h2 className="pr-10 text-lg font-black leading-7 text-wood-800">방 설정</h2>
-        <SeatPicker value={maxPlayers} onChange={setMaxPlayers} min={min} />
+        <SeatPicker value={capacity} onChange={setCapacity} min={min} options={seatOptions(minPlayers, maxPlayers)} />
         {min > 2 ? <p className="text-xs text-stone-500">지금 {min}명이 있어서 {min - 1}명 이하로는 줄일 수 없어요.</p> : null}
         <ThemePicker value={theme} onChange={setTheme} />
         <div className="flex justify-end gap-2 pt-1">

@@ -10,10 +10,10 @@ import { useToast } from '../components/Toast';
 import { WoodRail } from '../components/WoodRail';
 import { CATALOG, COMING_SOON_SLOTS, lobbyPath } from '../games/catalog';
 import { GameBox } from '../games/GameBox';
-import { RulesCarousel } from '../games/papersafari/RulesCarousel';
+import { gameOf } from '../games/registry';
+import { RulesCarousel } from '../table/RulesCarousel';
 
 const POLL_MS = 1000;
-const DEFAULT_NAMES: Record<GameType, string> = { PAPER_SAFARI: '페이퍼 사파리' };
 
 function Counts({ summary }: { summary: GameSummary | undefined }) {
   const waiting = summary?.waitingPlayers ?? null;
@@ -37,7 +37,7 @@ export function GameShelfPage() {
   const navigate = useNavigate();
   const toast = useToast();
   const [summaries, setSummaries] = useState<GameSummary[] | null>(null);
-  const [rulesOpen, setRulesOpen] = useState(false);
+  const [rulesFor, setRulesFor] = useState<GameType | null>(null);
   const failedRef = useRef(false);
 
   usePolling(() => gamesApi
@@ -63,13 +63,13 @@ export function GameShelfPage() {
       <div className="flex flex-wrap items-end justify-center gap-10 px-6">
         {CATALOG.map((entry) => {
           const summary = summaryOf(entry.gameType);
-          const name = summary?.name ?? DEFAULT_NAMES[entry.gameType];
+          const name = summary?.name ?? gameOf(entry.gameType).name;
           return (
             <div key={entry.slug} className="flex flex-col items-center">
               <GameBox entry={entry} name={name} onOpen={() => navigate(lobbyPath(entry.gameType))} />
               <p className="mt-3 text-sm font-bold text-cream-50">{name}</p>
               <p className="text-xs text-cream-200/70">{entry.tagline}</p>
-              <button type="button" onClick={() => setRulesOpen(true)}
+              <button type="button" onClick={() => setRulesFor(entry.gameType)}
                 className="press-3d mt-3 inline-flex items-center gap-1.5 rounded-full bg-cream-50 px-3 py-1 text-xs font-bold text-wood-800 shadow">
                 <BookIcon className="h-4 w-4" />규칙 보기
               </button>
@@ -85,7 +85,10 @@ export function GameShelfPage() {
         ))}
       </div>
       <WoodRail className="mx-2 mt-4 h-4" />
-      <RulesCarousel open={rulesOpen} onClose={() => setRulesOpen(false)} />
+      {rulesFor ? (
+        <RulesCarousel open onClose={() => setRulesFor(null)} title={gameOf(rulesFor).rules.title}
+          slides={gameOf(rulesFor).rules.slides} renderArt={gameOf(rulesFor).rules.renderArt} />
+      ) : null}
     </div>
   );
 }

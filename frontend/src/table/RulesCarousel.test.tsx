@@ -2,10 +2,12 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { RulesCarousel } from './RulesCarousel';
-import { RULE_SLIDES, RULE_SUMMARY } from './rules';
+import { paperSafariModule } from '../games/papersafari/module';
+import { RULE_SLIDES, RULE_SUMMARY } from '../games/papersafari/rules';
 
 function renderCarousel() {
-  render(<RulesCarousel open onClose={vi.fn()} />);
+  const { rules } = paperSafariModule;
+  render(<RulesCarousel open onClose={vi.fn()} title={rules.title} slides={rules.slides} renderArt={rules.renderArt} />);
 }
 
 describe('RulesCarousel', () => {

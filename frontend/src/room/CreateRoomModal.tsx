@@ -6,7 +6,7 @@ import { Modal } from '../components/Modal';
 import { ToggleSwitch } from '../components/ToggleSwitch';
 import { Button, TextInput } from '../components/ui';
 import { DEFAULT_ROOM_THEME } from './roomTheme';
-import { SeatPicker, SECTION_TITLE } from './SeatPicker';
+import { SeatPicker, seatOptions, SECTION_TITLE } from './SeatPicker';
 import { ThemePicker } from './ThemePicker';
 
 type Props = {
@@ -14,11 +14,15 @@ type Props = {
   defaultName: string;
   onClose: () => void;
   onCreate: (name: string, maxPlayers: number, theme: RoomTheme, password?: string) => void;
+  /** 게임의 최소 인원(기본 2). */
+  minPlayers?: number;
+  /** 게임의 최대 인원(기본 5). 처음 고른 칸이기도 하다. */
+  maxPlayers?: number;
 };
 
-export function CreateRoomModal({ open, defaultName, onClose, onCreate }: Props) {
+export function CreateRoomModal({ open, defaultName, onClose, onCreate, minPlayers = 2, maxPlayers = 5 }: Props) {
   const [name, setName] = useState(defaultName);
-  const [maxPlayers, setMaxPlayers] = useState(5);
+  const [capacity, setCapacity] = useState(maxPlayers);
   const [priv, setPriv] = useState(false);
   const [password, setPassword] = useState('');
   const [theme, setTheme] = useState<RoomTheme>(DEFAULT_ROOM_THEME);
@@ -26,12 +30,12 @@ export function CreateRoomModal({ open, defaultName, onClose, onCreate }: Props)
   useEffect(() => {
     if (open) {
       setName(defaultName);
-      setMaxPlayers(5);
+      setCapacity(maxPlayers);
       setPriv(false);
       setPassword('');
       setTheme(DEFAULT_ROOM_THEME);
     }
-  }, [open, defaultName]);
+  }, [open, defaultName, maxPlayers]);
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
@@ -39,7 +43,7 @@ export function CreateRoomModal({ open, defaultName, onClose, onCreate }: Props)
     if (trimmed === '' || (priv && password.length < 4)) {
       return;
     }
-    onCreate(trimmed, maxPlayers, theme, priv ? password : undefined);
+    onCreate(trimmed, capacity, theme, priv ? password : undefined);
   };
 
   return (
@@ -51,7 +55,7 @@ export function CreateRoomModal({ open, defaultName, onClose, onCreate }: Props)
           <input id="roomName" value={name} onChange={(e) => setName(e.target.value)} maxLength={20} required
             className="w-full rounded-xl border border-cream-300 bg-cream px-3 py-2.5 text-sm text-wood-800 shadow-[inset_0_2px_4px_rgb(0_0_0/0.08)] outline-none focus:border-mustard-400 focus:ring-2 focus:ring-mustard-300/50" />
         </div>
-        <SeatPicker value={maxPlayers} onChange={setMaxPlayers} />
+        <SeatPicker value={capacity} onChange={setCapacity} options={seatOptions(minPlayers, maxPlayers)} />
         <ThemePicker value={theme} onChange={setTheme} />
         <div>
           <ToggleSwitch checked={priv} onChange={setPriv} label="비공개방" icon={<LockIcon className="h-4 w-4 text-wood-500" />}

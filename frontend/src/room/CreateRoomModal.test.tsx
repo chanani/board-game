@@ -152,4 +152,11 @@ describe('CreateRoomModal', () => {
     expect(within(inner).getByLabelText('비밀번호')).toBeInTheDocument();
     expect(within(inner).getByLabelText('비밀번호')).toHaveAccessibleDescription(/4~20자로 정해요/);
   });
+
+  it('게임의 최대 인원을 기본으로 고른다', () => {
+    render(<CreateRoomModal open defaultName="방" minPlayers={2} maxPlayers={4} onClose={vi.fn()} onCreate={vi.fn()} />);
+
+    expect(screen.getByRole('radio', { name: '4' })).toHaveAttribute('aria-checked', 'true');
+    expect(screen.queryByRole('radio', { name: '5' })).not.toBeInTheDocument();
+  });
 });

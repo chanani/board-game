@@ -8,7 +8,7 @@ import { RoomStatusBar } from '../components/RoomStatusBar';
 import { Panel } from '../components/ui';
 import { useToast } from '../components/Toast';
 import { lobbyPath } from '../games/catalog';
-import { PaperSafariTable } from '../games/papersafari/PaperSafariTable';
+import { findGame, sessionGameType } from '../games/registry';
 import { GameChat } from '../room/GameChat';
 import { useGameOverDismissal } from '../room/useGameOverDismissal';
 import { useRoomChat } from '../room/useRoomChat';
@@ -41,7 +41,11 @@ export function RoomPage() {
   const [editingSettings, setEditingSettings] = useState(false);
   const layout = useTableLayout();
   const pcChat = useMediaQuery(PC_QUERY);
-  const gameOver = useGameOverDismissal(code, view?.game ?? null, room?.status === 'PLAYING');
+  const game = room ? findGame(room.gameType) : undefined;
+  // 방의 게임과 종류가 다른 화면은 쓰지 않는다(D3).
+  const gameView = room && view && sessionGameType(view) === room.gameType ? view : null;
+  const overKey = game && gameView ? game.gameOverKey(code, gameView) : null;
+  const gameOver = useGameOverDismissal(code, overKey, room?.status === 'PLAYING');
   // 이 화면은 REST 입장(참가·관전) 뒤에만 오므로 채팅도 방 채널과 같은 시점에 시작한다.
   const chat = useRoomChat(code, room !== null && !missing);
 
@@ -75,13 +79,17 @@ export function RoomPage() {
   if (!room) {
     return <Panel>방 정보를 불러오는 중…</Panel>;
   }
+  if (!game) {
+    return <Panel>준비 중인 게임이에요.</Panel>;
+  }
 
   const playing = room.status === 'PLAYING';
   const canEditSettings = !playing && !spectating && room.hostId === meId;
-  const wasPlayer = view !== null && view.game.round.boards.some((board) => board.playerId === meId);
+  const wasPlayer = gameView !== null && game.wasParticipant(gameView, meId);
   // 관전자(게임이 끝나 자동으로 앉은 사람 포함)도 누가 이겼는지 볼 수 있게 결과 창을 띄운다.
-  const showGameOver = !playing && view?.game.status === 'GAME_OVER' && (wasPlayer || spectating || watched) && !gameOver.dismissed;
-  const showGame = view !== null && (playing || showGameOver);
+  const showGameOver = !playing && gameView !== null && game.isGameOver(gameView) && (wasPlayer || spectating || watched) && !gameOver.dismissed;
+  const showGame = gameView !== null && (playing || showGameOver);
+  const Table = game.Table;
 
   const run = async (action: () => Promise<unknown>) => {
     try {
@@ -130,11 +138,11 @@ export function RoomPage() {
       {landscapeGame ? null : statusBar}
       <div className={chatBeside ? 'flex items-start gap-4' : undefined}>
         <div className={chatBeside ? 'min-w-0 flex-1' : undefined}>
-          {showGame && view ? (
-            <PaperSafariTable
+          {showGame && gameView ? (
+            <Table
               aside={landscapeGame ? statusBar : undefined}
               asideFooter={landscapeGame ? gameChat : undefined}
-              view={view}
+              view={gameView}
               room={room}
               meId={meId}
               log={log}

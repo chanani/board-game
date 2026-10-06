@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import type { LogEntry } from '../../../lib/eventLog';
-import { Countdown } from '../../../components/Countdown';
+import type { LogEntry } from '../lib/eventLog';
+import { Countdown } from '../components/Countdown';
 import { KindDot, Sentence } from './LogList';
-import { ChevronRightIcon } from '../../../components/icons';
+import { ChevronRightIcon } from '../components/icons';
 import { LogModal } from './LogModal';
 
 type Props = {

@@ -1,5 +1,5 @@
-import { Modal } from '../../../components/Modal';
-import type { LogEntry } from '../../../lib/eventLog';
+import { Modal } from '../components/Modal';
+import type { LogEntry } from '../lib/eventLog';
 import { LogList, type Nickname } from './LogList';
 
 /** 진행 기록 전체를 화면 안 대화상자로 보여준다. */

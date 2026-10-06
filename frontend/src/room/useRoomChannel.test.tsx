@@ -332,4 +332,15 @@ describe('useRoomChannel', () => {
       }
     });
   });
+
+  it('모르는 게임 화면이 와도 기록 없이 받아 둔다', () => {
+    vi.spyOn(roomsApi, 'get').mockReturnValue(new Promise<Room>(() => {}));
+    const { result } = renderHook(() => useRoomChannel('ABCDEF'));
+
+    act(() => state.handlers.get('/user/queue/game')?.({ gameType: 'CHESS', game: { status: 'IN_PROGRESS' } }));
+    act(() => state.handlers.get('/user/queue/game')?.({ gameType: 'CHESS', game: { status: 'GAME_OVER' } }));
+
+    expect(result.current.view).toEqual({ gameType: 'CHESS', game: { status: 'GAME_OVER' } });
+    expect(result.current.log).toEqual([]);
+  });
 });

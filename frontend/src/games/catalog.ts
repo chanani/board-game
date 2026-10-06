@@ -1,10 +1,12 @@
 import type { GameType } from '../api/types';
+import { GAME_ORDER, GAMES } from './registry';
 
 export type CatalogEntry = { gameType: GameType; slug: string; tagline: string };
 
-export const CATALOG: CatalogEntry[] = [
-  { gameType: 'PAPER_SAFARI', slug: 'paper-safari', tagline: '2~5인 · 낮은 점수를 노려라!' },
-];
+export const CATALOG: CatalogEntry[] = GAME_ORDER.flatMap((gameType) => {
+  const game = GAMES[gameType];
+  return game ? [{ gameType, slug: game.slug, tagline: game.tagline }] : [];
+});
 
 export const COMING_SOON_SLOTS = 1;
 

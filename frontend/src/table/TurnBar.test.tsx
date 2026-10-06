@@ -1,8 +1,8 @@
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
-import type { LogEntry } from '../../../lib/eventLog';
-import { setMediaMatches } from '../../../test/media';
+import type { LogEntry } from '../lib/eventLog';
+import { setMediaMatches } from '../test/media';
 import { TurnBar } from './TurnBar';
 
 const nick = (id: number) => ({ 1: '앨리스', 2: '밥' })[id] ?? '플레이어';

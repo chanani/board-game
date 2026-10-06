@@ -3,8 +3,8 @@ import type { BoardView, GameAction, PaperSafariSessionView, Room, SlotView } fr
 import { GameOverPanel } from './GameOverPanel';
 import type { SeatTimer } from './PlayerBoard';
 import { TableRound, type TableDensity } from './layout/TableRound';
-import { TurnBar } from './layout/TurnBar';
-import { seatOrder } from './layout/seats';
+import { TurnBar } from '../../table/TurnBar';
+import { seatOrder } from '../../table/seats';
 import type { Presence } from './layout/Seat';
 import { useTableLayout, type TableLayout } from '../../lib/useTableLayout';
 import { offlineSecondsNow } from '../../lib/format';
@@ -15,7 +15,7 @@ import type { LogEntry } from '../../lib/eventLog';
 import { GhostLayer } from './motion/GhostLayer';
 import { HiddenZonesContext, LiftedZonesContext } from './motion/ZoneAnchor';
 import { useCardMotion } from './motion/useCardMotion';
-import { GameEndBanner } from './layout/GameEndBanner';
+import { GameEndBanner } from '../../table/GameEndBanner';
 import { slotKey, useFinale } from './useFinale';
 
 const PENDING_MS = 3000;
