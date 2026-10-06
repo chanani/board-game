@@ -3,7 +3,6 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import type { LogEntry } from '../../../lib/eventLog';
 import { setMediaMatches } from '../../../test/media';
-import { LogPopover } from './Hud';
 import { TurnBar } from './TurnBar';
 
 const nick = (id: number) => ({ 1: '앨리스', 2: '밥' })[id] ?? '플레이어';
@@ -28,11 +27,11 @@ describe('차례 안내 바', () => {
   });
 });
 
-describe('진행 기록 팝오버', () => {
+describe('진행 기록 창', () => {
   it('기록 창은 종류 아이콘과 HH:mm 시간이 있는 타임라인이다', async () => {
-    render(<LogPopover log={log} nicknameOf={nick} />);
-    await userEvent.click(screen.getByRole('button', { name: /진행 기록/ }));
-    const items = screen.getAllByRole('listitem');
+    render(<TurnBar instruction="안내" myTurn={false} log={log} nicknameOf={nick} deadline={null} serverNow={0} />);
+    await userEvent.click(screen.getByRole('button', { name: '진행 기록 보기' }));
+    const items = within(await screen.findByRole('dialog')).getAllByRole('listitem');
     expect(items).toHaveLength(2);
     expect(items[0]).toHaveTextContent('14:02');
     expect(items[1]).toHaveTextContent('14:01');
@@ -40,45 +39,13 @@ describe('진행 기록 팝오버', () => {
     expect(within(items[1]).getByText('앨리스').tagName).toBe('B');
   });
 
-  it('기록이 없으면 안내 문구를 보여준다', async () => {
-    render(<LogPopover log={[]} />);
-    await userEvent.click(screen.getByRole('button', { name: /진행 기록/ }));
-    expect(screen.getByText('아직 기록이 없어요.')).toBeInTheDocument();
-  });
-
-  it('위에서 내려오며 열리고, 닫힘 애니메이션이 끝나면 사라진다', async () => {
-    render(<LogPopover log={log} nicknameOf={nick} />);
-    const button = screen.getByRole('button', { name: /진행 기록/ });
-    expect(button.querySelector('svg')).not.toBeNull();
-
-    await userEvent.click(button);
-    const popover = screen.getByTestId('log-popover');
-    expect(popover).toHaveStyle({ transformOrigin: 'top right' });
-    expect(button).toHaveAttribute('aria-expanded', 'true');
-
-    await userEvent.click(button);
-    await waitFor(() => expect(screen.queryByTestId('log-popover')).not.toBeInTheDocument());
-  });
-});
-
-describe('진행 기록 창', () => {
-  it('모바일에서는 화면 안 대화상자로 열리고 팝오버는 쓰지 않는다', async () => {
+  it('모바일에서도 화면 안 대화상자로 열리고 목록은 창 안에서 스크롤된다', async () => {
     setMediaMatches(false);
-    render(<LogPopover log={log} nicknameOf={nick} />);
-    await userEvent.click(screen.getByRole('button', { name: /진행 기록/ }));
+    render(<TurnBar instruction="안내" myTurn={false} log={log} nicknameOf={nick} deadline={null} serverNow={0} compact />);
+    await userEvent.click(screen.getByRole('button', { name: '진행 기록 보기' }));
     const dialog = await screen.findByRole('dialog');
     await waitFor(() => expect(dialog).toBeVisible());
-    expect(within(dialog).getAllByRole('listitem')).toHaveLength(2);
-    expect(screen.queryByTestId('log-popover')).not.toBeInTheDocument();
     expect(within(dialog).getAllByRole('list')[0]).toHaveClass('max-h-[60vh]', 'overflow-y-auto');
-  });
-
-  it('PC에서는 팝오버가 열린다', async () => {
-    setMediaMatches(true);
-    render(<LogPopover log={log} nicknameOf={nick} />);
-    await userEvent.click(screen.getByRole('button', { name: /진행 기록/ }));
-    expect(screen.getByTestId('log-popover')).toBeInTheDocument();
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
   it.each([true, false])('최근 진행 한 줄을 누르면 전체 기록 대화상자가 열린다 (PC=%s)', async (pc) => {

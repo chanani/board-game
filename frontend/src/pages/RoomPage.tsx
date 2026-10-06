@@ -9,7 +9,6 @@ import { Panel } from '../components/ui';
 import { useToast } from '../components/Toast';
 import { lobbyPath } from '../games/catalog';
 import { PaperSafariTable } from '../games/papersafari/PaperSafariTable';
-import { LogPopover } from '../games/papersafari/layout/Hud';
 import { ChatLauncher } from '../room/ChatLauncher';
 import { useGameOverDismissal } from '../room/useGameOverDismissal';
 import { useRoomChat } from '../room/useRoomChat';
@@ -113,8 +112,7 @@ export function RoomPage() {
     <RoomThemeProvider value={room.theme}>
     <div data-theme={room.theme} className={`space-y-4 ${playing ? 'lg:pb-20' : ''}`}>
       <RoomBackdrop theme={room.theme} />
-      <RoomStatusBar room={room} playing={playing} onLeave={requestLeave}
-        log={showGame ? <LogPopover log={log} nicknameOf={nicknameOf} /> : null} />
+      <RoomStatusBar room={room} playing={playing} onLeave={requestLeave} />
       {showGame && view ? (
         <PaperSafariTable
           view={view}

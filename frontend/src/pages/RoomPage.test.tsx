@@ -93,13 +93,19 @@ describe('RoomPage 관전자', () => {
     expect(within(chips).getByLabelText('관전 1명').querySelector('svg')).not.toBeNull();
   });
 
-  it('칩이 여러 줄로 늘어나도 나가기 버튼은 줄어들지 않는다(좁은 화면에서 글자가 두 줄로 깨지지 않게)', async () => {
+  it('나가기 버튼은 방 제목과 같은 줄에 작게 두고, 칩은 줄바꿈 없이 한 줄에 둔다', async () => {
     setChannel({ room: { ...baseRoom, locked: true } });
     renderRoom();
     await act(async () => {});
 
-    expect(screen.getByRole('button', { name: '나가기' })).toHaveClass('shrink-0');
-    expect(screen.getByTestId('room-chips').parentElement).toHaveClass('min-w-0');
+    const leave = screen.getByRole('button', { name: '나가기' });
+    expect(screen.getByTestId('room-title-row')).toContainElement(leave);
+    expect(screen.getByTestId('room-title-row')).toContainElement(screen.getByRole('heading', { level: 1 }));
+    expect(leave).toHaveClass('shrink-0', 'px-2.5', 'py-1', 'text-xs');
+    const chips = screen.getByTestId('room-chips');
+    expect(chips).toHaveClass('flex-nowrap', 'overflow-hidden');
+    expect(chips).not.toHaveClass('flex-wrap');
+    expect(within(chips).getByLabelText('비공개')).toHaveClass('text-[10px]');
   });
 
   it('관전자가 없으면 관전 칩을 숨기고 대기 중이면 대기 중 칩을 보여준다', async () => {
@@ -416,13 +422,13 @@ describe('RoomPage 상태 바', () => {
     expect(within(bar).getByRole('button', { name: '나가기' })).toBeInTheDocument();
   });
 
-  it('게임 중에는 코드 칩 대신 진행 기록 버튼이 상태 바에 있다', async () => {
+  it('게임 중에는 상태 바에 코드 칩도 진행 기록 버튼도 없다', async () => {
     setChannel({ room: { ...waiting, status: 'PLAYING' }, view: playingView });
     renderRoom();
     await act(async () => {});
 
     const bar = screen.getByTestId('room-status-bar');
-    expect(within(bar).getByRole('button', { name: /진행 기록/ })).toBeInTheDocument();
+    expect(within(bar).queryByRole('button', { name: /진행 기록/ })).not.toBeInTheDocument();
     expect(within(bar).queryByRole('button', { name: /방 코드/ })).not.toBeInTheDocument();
     expect(screen.getByTestId('turn-bar')).toBeInTheDocument();
   });
