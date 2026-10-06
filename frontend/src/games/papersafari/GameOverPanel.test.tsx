@@ -169,4 +169,31 @@ describe('GameOverPanel 단판 결과', () => {
     act(() => { vi.advanceTimersByTime(1000); });
     expect(next).not.toHaveBeenCalled();
   });
+  it('무승부면 효과음을 울리지 않고, 진 사람에게는 진 소리를 울린다', () => {
+    vi.useFakeTimers();
+    const ui = (view: PaperSafariView, meId: number, fn: SoundApi['play']) => (
+      <SoundContext.Provider value={{ play: fn, muted: false, toggleMuted: () => undefined }}>
+        <GameOverPanel game={view} room={room} meId={meId} nicknameOf={nicknameOf} onReady={vi.fn()} onClose={vi.fn()} />
+      </SoundContext.Provider>
+    );
+    const drawPlay = vi.fn();
+    const drawn = render(ui(tie, 1, drawPlay));
+    revealAll();
+    expect(drawPlay).not.toHaveBeenCalled();
+    drawn.unmount();
+
+    const losePlay = vi.fn();
+    render(ui(game, 2, losePlay));
+    revealAll();
+    expect(losePlay).toHaveBeenCalledWith('roundLose');
+  });
+
+  it('기권으로 끝나 점수가 없으면 바로 남은 사람의 승리를 보여 주고 점수 줄은 없다', () => {
+    vi.useFakeTimers();
+    renderPanel({ view: { ...game, winnerId: 2, lastRoundResult: null } });
+
+    const dialog = screen.getByRole('dialog', { name: '게임 결과' });
+    expect(within(dialog).getByRole('heading', { name: '🏆 밥님 승리!' })).toBeInTheDocument();
+    expect(within(dialog).queryAllByTestId('score-row')).toHaveLength(0);
+  });
 });

@@ -35,14 +35,14 @@ function useStagedReveal(total: number) {
   return { revealed, done: revealed >= total };
 }
 
-/** 공개가 끝나면 내 결과 효과음을 한 번만 울린다. */
+/** 공개가 끝나면 내 결과 효과음을 한 번만 울린다. 무승부는 이기지도 지지도 않았으니 울리지 않는다. */
 function useResultSound(done: boolean, outcome: PlayerResultView['outcome'] | undefined) {
   const { play } = useSound();
   const playRef = useRef(play);
   playRef.current = play;
   const sounded = useRef(false);
   useEffect(() => {
-    if (!done || !outcome || sounded.current) {
+    if (!done || !outcome || outcome === 'DRAW' || sounded.current) {
       return;
     }
     sounded.current = true;
