@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import type { Room } from '../api/types';
@@ -13,12 +13,12 @@ const room: Room = {
   ],
 };
 
-type Overrides = { room?: Room; meId?: number; onSeat?: () => void; onReady?: (ready: boolean) => unknown; onStart?: () => void };
+type Overrides = { room?: Room; meId?: number; onSeat?: () => void; onReady?: (ready: boolean) => unknown; onStart?: () => void; onForfeit?: (memberId: number) => void; onKick?: (memberId: number) => unknown };
 
-function renderRoom({ room: shown = room, meId = 1, onSeat = vi.fn(), onReady = vi.fn(), onStart = vi.fn() }: Overrides = {}) {
+function renderRoom({ room: shown = room, meId = 1, onSeat = vi.fn(), onReady = vi.fn(), onStart = vi.fn(), onForfeit = vi.fn(), onKick = vi.fn() }: Overrides = {}) {
   return render(
     <ToastProvider>
-      <WaitingRoom room={shown} meId={meId} receivedAt={0} now={0} onStart={onStart} onReady={onReady} onForfeit={vi.fn()} onSeat={onSeat}
+      <WaitingRoom room={shown} meId={meId} receivedAt={0} now={0} onStart={onStart} onReady={onReady} onForfeit={onForfeit} onKick={onKick} onSeat={onSeat}
         chat={{ messages: [{ id: 1, memberId: 2, nickname: '밥', text: '준비할게요', sentAt: '2026-10-06T00:00:00Z' }], onSend: vi.fn(() => true) }} />
     </ToastProvider>,
   );
@@ -43,10 +43,41 @@ describe('WaitingRoom', () => {
     expect(screen.getByText('✔ 준비 완료')).toBeInTheDocument();
   });
 
-  it('60초 넘게 끊긴 사람은 내보내기 버튼이 있다', () => {
-    renderRoom();
+  it('60초 넘게 끊긴 사람은 방장이 아니어도 내보내기 버튼이 있다', async () => {
+    const onForfeit = vi.fn();
+    const erin = { id: 5, nickname: '에린', host: false, connected: true, offlineSeconds: 0, ready: false };
+    renderRoom({ room: { ...room, members: [...room.members, erin] }, meId: 5, onForfeit });
 
-    expect(screen.getByRole('button', { name: '내보내기' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: '내보내기' }));
+
+    expect(onForfeit).toHaveBeenCalledWith(2);
+  });
+
+  it('방장은 대기 중에 다른 참가자를 확인 창을 거쳐 내보낼 수 있다', async () => {
+    const onKick = vi.fn();
+    const erin = { id: 5, nickname: '에린', host: false, connected: true, offlineSeconds: 0, ready: false };
+    renderRoom({ room: { ...room, members: [...room.members, erin] }, onKick });
+
+    const chairs = screen.getAllByTestId('chair');
+    expect(within(chairs[0]).queryByRole('button', { name: '내보내기' })).not.toBeInTheDocument();
+    await userEvent.click(within(chairs[2]).getByRole('button', { name: '내보내기' }));
+
+    const dialog = screen.getByRole('dialog');
+    expect(within(dialog).getByText('에린님을 내보낼까요?')).toBeVisible();
+    await userEvent.click(within(dialog).getByRole('button', { name: '취소' }));
+    expect(onKick).not.toHaveBeenCalled();
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+
+    await userEvent.click(within(chairs[2]).getByRole('button', { name: '내보내기' }));
+    await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: '내보내기' }));
+    expect(onKick).toHaveBeenCalledWith(5);
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  });
+
+  it('방장이 아니면 연결된 참가자를 내보낼 수 없다', () => {
+    renderRoom({ room: { ...room, members: [room.members[0], { ...room.members[1], connected: true, offlineSeconds: 0 }] }, meId: 2 });
+
+    expect(screen.queryByRole('button', { name: '내보내기' })).not.toBeInTheDocument();
   });
 
   it('방장은 모두 준비하면 시작 버튼을 누를 수 있다', async () => {
@@ -103,14 +134,15 @@ describe('WaitingRoom', () => {
     expect(screen.queryByRole('button', { name: '자리에 앉기' })).not.toBeInTheDocument();
   });
 
-  it('내가 관전자면 자동 참가 안내와 자리에 앉기가 있고 시작·준비 버튼은 없다', async () => {
+  it('대기 중에 내가 관전자면 자리 안내와 자리에 앉기가 있고 시작·준비 버튼은 없다', async () => {
     const onSeat = vi.fn();
     renderRoom({ room: { ...room, spectators: [{ id: 3, nickname: '캐롤' }] }, meId: 3, onSeat });
 
     await userEvent.click(screen.getByRole('button', { name: '자리에 앉기' }));
 
     expect(onSeat).toHaveBeenCalledTimes(1);
-    expect(screen.getByText(/게임이 끝나면 자동으로 참가해요/)).toBeInTheDocument();
+    expect(screen.getByText(/자리가 나면 앉을 수 있어요/)).toBeInTheDocument();
+    expect(screen.queryByText(/게임이 끝나면 자동으로 참가해요/)).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /게임 시작|준비하기/ })).not.toBeInTheDocument();
   });
 
@@ -118,7 +150,8 @@ describe('WaitingRoom', () => {
     renderRoom({ room: { ...room, maxPlayers: 2, spectators: [{ id: 3, nickname: '캐롤' }] }, meId: 3 });
 
     expect(screen.queryByRole('button', { name: '자리에 앉기' })).not.toBeInTheDocument();
-    expect(screen.getByText(/게임이 끝나면 자동으로 참가해요/)).toBeInTheDocument();
+    expect(screen.getByText(/자리가 나면 앉을 수 있어요/)).toBeInTheDocument();
+    expect(screen.queryByText(/게임이 끝나면 자동으로 참가해요/)).not.toBeInTheDocument();
   });
 
   it('준비 요청이 끝날 때까지 준비 버튼을 다시 누를 수 없다', async () => {

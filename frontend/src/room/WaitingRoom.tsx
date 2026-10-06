@@ -6,6 +6,7 @@ import { Felt } from '../components/Felt';
 import { useToast } from '../components/Toast';
 import { RULE_SUMMARY } from '../games/papersafari/rules';
 import { ChatPanel } from './ChatPanel';
+import { KickConfirmModal } from './KickConfirmModal';
 import { MemberList } from './MemberList';
 
 type Chat = { messages: ChatMessage[]; onSend: (text: string) => boolean };
@@ -19,6 +20,8 @@ type Props = {
   /** 요청이 끝날 때까지(Promise) 준비 버튼을 잠근다. */
   onReady: (ready: boolean) => unknown;
   onForfeit: (memberId: number) => void;
+  /** 방장이 대기 중에 참가자를 내보낸다(확인 창을 거친 뒤 부른다). */
+  onKick: (memberId: number) => unknown;
   onSeat: () => void;
   chat: Chat;
 };
@@ -26,8 +29,17 @@ type Props = {
 /** 펠트의 나무 테두리(box-shadow 13px)는 레이아웃에 잡히지 않으므로 그만큼 안쪽 여백을 두어 패널 사이 간격(24px)을 맞춘다. */
 const FELT_RIM = 'p-[13px]';
 
-export function WaitingRoom({ room, meId, receivedAt, now, onStart, onReady, onForfeit, onSeat, chat }: Props) {
+export function WaitingRoom({ room, meId, receivedAt, now, onStart, onReady, onForfeit, onKick, onSeat, chat }: Props) {
   const spectating = room.spectators.some((spectator) => spectator.id === meId);
+  const [kickTarget, setKickTarget] = useState<RoomMember | null>(null);
+  const canKick = !spectating && room.status === 'WAITING' && room.hostId === meId;
+  const askKick = (memberId: number) => setKickTarget(room.members.find((member) => member.id === memberId) ?? null);
+  const confirmKick = () => {
+    if (kickTarget) {
+      onKick(kickTarget.id);
+    }
+    setKickTarget(null);
+  };
 
   return (
     <div className="grid items-start gap-6 lg:grid-cols-[3fr_2fr]">
@@ -35,7 +47,7 @@ export function WaitingRoom({ room, meId, receivedAt, now, onStart, onReady, onF
         {/* 좁은 화면에서는 세로로 긴 타원으로 의자와 가운데 버튼 사이 자리를 확보한다. */}
         <Felt shape="round" className="aspect-[3/4] w-full max-w-[640px] sm:aspect-square">
           <MemberList members={room.members} maxPlayers={room.maxPlayers} meId={meId} receivedAt={receivedAt} now={now}
-            onForfeit={spectating ? undefined : onForfeit} />
+            onForfeit={spectating ? undefined : onForfeit} onKick={canKick ? askKick : undefined} />
           <div className="absolute left-1/2 top-[45%] flex w-[44%] sm:w-[40%] -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-2 text-center">
             <CenterAction room={room} meId={meId} spectating={spectating} onStart={onStart} onReady={onReady} onSeat={onSeat} />
             <CodeChip code={room.code} />
@@ -57,6 +69,7 @@ export function WaitingRoom({ room, meId, receivedAt, now, onStart, onReady, onF
           </ul>
         </Panel>
       </div>
+      <KickConfirmModal nickname={kickTarget?.nickname ?? null} onCancel={() => setKickTarget(null)} onConfirm={confirmKick} />
     </div>
   );
 }
@@ -105,7 +118,7 @@ function CenterAction({ room, meId, spectating, onStart, onReady, onSeat }: Cent
     const canSeat = room.status === 'WAITING' && room.members.length < room.maxPlayers;
     return (
       <>
-        <p className={NOTE}>👀 관전 중 · 게임이 끝나면 자동으로 참가해요</p>
+        <p className={NOTE}>👀 관전 중 · {room.status === 'WAITING' ? '자리가 나면 앉을 수 있어요' : '게임이 끝나면 자동으로 참가해요'}</p>
         {canSeat ? <Button onClick={onSeat}>자리에 앉기</Button> : null}
       </>
     );

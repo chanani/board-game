@@ -11,6 +11,8 @@ type Props = {
   now: number;
   /** 없으면(관전자) 내보내기 버튼을 보이지 않는다. */
   onForfeit?: (memberId: number) => void;
+  /** 있으면(대기 중인 방장) 나 말고 모든 참가자 의자에 내보내기 버튼을 둔다. */
+  onKick?: (memberId: number) => void;
 };
 
 type Point = { left: number; top: number };
@@ -37,7 +39,7 @@ function positionOf(maxPlayers: number, index: number): Point {
   return { left: 50 + 34 * Math.cos(angle), top: 44 + 30 * Math.sin(angle) };
 }
 
-export function MemberList({ members, maxPlayers, meId, receivedAt, now, onForfeit }: Props) {
+export function MemberList({ members, maxPlayers, meId, receivedAt, now, onForfeit, onKick }: Props) {
   const seats = Array.from({ length: maxPlayers }, (_, index) => members[index] ?? null);
   return (
     <ul aria-label="자리" className="absolute inset-0">
@@ -61,7 +63,7 @@ export function MemberList({ members, maxPlayers, meId, receivedAt, now, onForfe
               )}
             </AnimatePresence>
             {member ? (
-              <Seated member={member} meId={meId} receivedAt={receivedAt} now={now} onForfeit={onForfeit} />
+              <Seated member={member} meId={meId} receivedAt={receivedAt} now={now} onForfeit={onForfeit} onKick={onKick} />
             ) : (
               <span aria-hidden="true" className="text-xs font-semibold text-cream-50/60">빈자리</span>
             )}
@@ -72,9 +74,25 @@ export function MemberList({ members, maxPlayers, meId, receivedAt, now, onForfe
   );
 }
 
-type SeatedProps = { member: RoomMember; meId: number; receivedAt: number; now: number; onForfeit?: (memberId: number) => void };
+type SeatedProps = {
+  member: RoomMember; meId: number; receivedAt: number; now: number;
+  onForfeit?: (memberId: number) => void; onKick?: (memberId: number) => void;
+};
 
-function Seated({ member, meId, receivedAt, now, onForfeit }: SeatedProps) {
+/** 방장의 내보내기가 있으면 그것만, 없으면 60초 넘게 끊긴 사람의 기권 내보내기를 보여 준다. */
+function removeActionOf({ member, meId, receivedAt, now, onForfeit, onKick }: SeatedProps): (() => void) | null {
+  if (onKick) {
+    return member.id === meId ? null : () => onKick(member.id);
+  }
+  if (onForfeit && canForfeit(member, meId, receivedAt, now)) {
+    return () => onForfeit(member.id);
+  }
+  return null;
+}
+
+function Seated(props: SeatedProps) {
+  const { member, meId, receivedAt, now } = props;
+  const remove = removeActionOf(props);
   return (
     <>
       <span className="flex max-w-full items-center rounded-full bg-black/40 px-2 text-sm font-bold text-cream-50">
@@ -83,8 +101,8 @@ function Seated({ member, meId, receivedAt, now, onForfeit }: SeatedProps) {
       </span>
       <StatusChip member={member} />
       {!member.connected ? <span className="text-xs text-cream-200/80">연결 끊김 {offlineSecondsNow(member, receivedAt, now)}초</span> : null}
-      {onForfeit && canForfeit(member, meId, receivedAt, now) ? (
-        <Button variant="danger" className="px-2 py-0.5 text-xs" onClick={() => onForfeit(member.id)}>내보내기</Button>
+      {remove ? (
+        <Button variant="danger" className="px-2 py-0.5 text-xs" onClick={remove}>내보내기</Button>
       ) : null}
     </>
   );

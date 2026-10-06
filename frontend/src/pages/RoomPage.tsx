@@ -149,6 +149,7 @@ export function RoomPage() {
           onStart={() => run(() => roomsApi.start(code))}
           onReady={(ready) => run(() => roomsApi.ready(code, ready))}
           onForfeit={(memberId) => run(() => roomsApi.forfeit(code, memberId))}
+          onKick={(memberId) => run(() => roomsApi.kick(code, memberId))}
           onSeat={() => run(() => roomsApi.seat(code))}
           chat={{ messages: chat.messages, onSend: chat.send }}
         />

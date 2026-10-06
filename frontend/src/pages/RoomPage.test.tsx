@@ -22,7 +22,7 @@ vi.mock('../room/useRoomChat', () => ({
     return { messages: [{ id: 1, memberId: 1, nickname: '앨리스', text: '잘 부탁해요', sentAt: '2026-10-06T00:00:00Z' }], send: chat.send, unread: chat.unread, markRead: chat.markRead };
   },
 }));
-vi.mock('../api/rooms', () => ({ roomsApi: { seat: vi.fn(), leave: vi.fn(), start: vi.fn(), forfeit: vi.fn(), ready: vi.fn() } }));
+vi.mock('../api/rooms', () => ({ roomsApi: { seat: vi.fn(), leave: vi.fn(), start: vi.fn(), forfeit: vi.fn(), kick: vi.fn(), ready: vi.fn() } }));
 
 const members = [
   { id: 1, nickname: '앨리스', host: true, connected: true, offlineSeconds: 0, ready: false },
@@ -97,6 +97,21 @@ describe('RoomPage 관전자', () => {
     await userEvent.click(screen.getByRole('button', { name: '자리에 앉기' }));
 
     expect(roomsApi.seat).toHaveBeenCalledWith('ABC234');
+  });
+});
+
+describe('RoomPage 방장 내보내기', () => {
+  it('대기 중에 방장이 확인 창에서 내보내기를 누르면 kick을 부른다', async () => {
+    const { roomsApi } = await import('../api/rooms');
+    vi.mocked(roomsApi.kick).mockResolvedValue(undefined);
+    const hosted = [{ ...members[1], id: 3, nickname: '캐롤', host: true }, members[1]];
+    setChannel({ room: { ...baseRoom, status: 'WAITING', hostId: 3, members: hosted, spectators: [] } });
+    renderRoom();
+
+    await userEvent.click(screen.getByRole('button', { name: '내보내기' }));
+    await userEvent.click(within(screen.getByRole('dialog', { name: '밥님을 내보낼까요?' })).getByRole('button', { name: '내보내기' }));
+
+    expect(roomsApi.kick).toHaveBeenCalledWith('ABC234', 2);
   });
 });
 
