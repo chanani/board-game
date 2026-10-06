@@ -8,6 +8,8 @@ export type FinalePhase = 'idle' | 'revealing' | 'banner' | 'done';
 const FLIP_STEP_MS = 120;
 const REVEAL_MAX_MS = 1200;
 const BANNER_MS = 1300;
+/** 뒷면 카드가 많으면 뒤집기 간격이 짧아지므로, 소리는 이 간격보다 자주 내지 않는다. */
+const SOUND_GAP_MS = 100;
 
 /** 연출 한 번. hidden은 직전까지 뒷면이던 칸의 열쇠("playerId:column:row")를 뒤집을 순서대로 담는다. */
 type Run = { game: PaperSafariView; hidden: string[] };
@@ -47,7 +49,8 @@ function previousOnMount(game: PaperSafariView, transition: ViewTransition | nul
 
 function timings(count: number) {
   const step = count === 0 ? 0 : Math.min(FLIP_STEP_MS, REVEAL_MAX_MS / count);
-  return { step, reveal: step * count };
+  const soundEvery = step === 0 ? 1 : Math.ceil(SOUND_GAP_MS / step);
+  return { step, reveal: step * count, soundEvery };
 }
 
 /**
@@ -74,10 +77,12 @@ export function useFinale(game: PaperSafariView, transition: ViewTransition | nu
     if (!run) {
       return undefined;
     }
-    const { step, reveal } = timings(run.hidden.length);
+    const { step, reveal, soundEvery } = timings(run.hidden.length);
     const flips = run.hidden.map((_, index) => window.setTimeout(() => {
       setProgress({ stage: 'revealing', flipped: index + 1 });
-      onFlipRef.current();
+      if (index % soundEvery === 0) {
+        onFlipRef.current();
+      }
     }, step * index));
     const banner = window.setTimeout(() => setProgress((current) => ({ ...current, stage: 'banner' })), reveal);
     const done = window.setTimeout(() => setProgress((current) => ({ ...current, stage: 'done' })), reveal + BANNER_MS);

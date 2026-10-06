@@ -1,5 +1,6 @@
 import { act, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { LogEntry } from '../../lib/eventLog';
 import type { BoardView, PaperSafariSessionView, PaperSafariView, Room, SlotView } from '../../api/types';
 import { SoundContext } from '../../lib/sound';
 import type { ViewTransition } from '../../room/useRoomChannel';
@@ -50,11 +51,11 @@ function over(lastRoundResult: PaperSafariView['lastRoundResult'] = result): Pap
 const nicknameOf = (memberId: number) => room.members.find((member) => member.id === memberId)?.nickname ?? '떠난 플레이어';
 const play = vi.fn();
 
-function ui(game: PaperSafariView, transition: ViewTransition | null = null) {
+function ui(game: PaperSafariView, transition: ViewTransition | null = null, log: LogEntry[] = []) {
   const view: PaperSafariSessionView = { game };
   return (
     <SoundContext.Provider value={{ play, muted: false, toggleMuted: () => undefined }}>
-      <PaperSafariTable view={view} room={room} meId={ME} log={[]} receivedAt={0} now={0} errorSeq={0} nicknameOf={nicknameOf}
+      <PaperSafariTable view={view} room={room} meId={ME} log={log} receivedAt={0} now={0} errorSeq={0} nicknameOf={nicknameOf}
         onForfeit={vi.fn()} send={vi.fn()} onCloseGameOver={vi.fn()} onReadyNext={vi.fn()} transition={transition} />
     </SoundContext.Provider>
   );
@@ -141,5 +142,17 @@ describe('게임 종료 연출', () => {
     rerender(ui(over()));
     expect(banner()).not.toBeInTheDocument();
     expect(resultDialog()).toBeInTheDocument();
+  });
+  it('뒷면 카드가 많아도 뒤집는 소리는 0.1초에 한 번까지만 낸다', () => {
+    const many = [1, 2, 3, 4, 5].map((playerId) => ({ playerId, slots: slots(false) }));
+    const crowded: PaperSafariView = { ...playing, round: { ...playing.round, boards: many } };
+    const { rerender } = render(ui(crowded));
+    const ended = over();
+    rerender(ui({ ...ended, round: { ...ended.round, boards: many.map((board) => ({ ...board, slots: slots(true) })) } }));
+
+    advance(1200);
+    const flips = play.mock.calls.filter(([name]) => name === 'flip').length;
+    expect(flips).toBeGreaterThan(0);
+    expect(flips).toBeLessThanOrEqual(13);
   });
 });
