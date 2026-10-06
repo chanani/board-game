@@ -4,7 +4,7 @@ import { CenterPiles, type PileSize } from './CenterPiles';
 import { MySide } from './MySide';
 import { OpponentSeat } from './OpponentSeat';
 import { HandAnchor, Seat, type SeatSize } from './Seat';
-import { SpectatorNotice } from './SpectatorNotice';
+import { SpectatorNotice } from '../../../table/SpectatorNotice';
 import { seatRows } from '../../../table/seats';
 import type { TableProps } from '../PaperSafariTable';
 
