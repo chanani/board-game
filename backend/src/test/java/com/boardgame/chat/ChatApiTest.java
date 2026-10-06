@@ -124,4 +124,28 @@ class ChatApiTest {
         assertThat(chatRegistry.contains(openCode)).isFalse();
         roomService.leave(openCode, other.id());
     }
+
+    @Test
+    void 관전자_메시지는_spectator_true로_기록되고_참가자는_false다() throws Exception {
+        User host = ApiUsers.create(mockMvc);
+        User guest = ApiUsers.create(mockMvc);
+        User watcher = ApiUsers.create(mockMvc);
+        String code = createRoom(host);
+        mockMvc.perform(post("/api/rooms/{code}/join", code).session(guest.session())
+                .contentType(MediaType.APPLICATION_JSON).content("{}")).andExpect(status().isOk());
+        mockMvc.perform(post("/api/rooms/{code}/ready", code).session(guest.session())
+                .contentType(MediaType.APPLICATION_JSON).content("{\"ready\": true}")).andExpect(status().isOk());
+        mockMvc.perform(post("/api/rooms/{code}/start", code).session(host.session())).andExpect(status().isOk());
+        mockMvc.perform(post("/api/rooms/{code}/watch", code).session(watcher.session())).andExpect(status().isOk());
+
+        chatService.send(code, host.id(), "선수");
+        chatService.send(code, watcher.id(), "구경");
+
+        mockMvc.perform(get("/api/rooms/" + code + "/chat").session(watcher.session()))
+                .andExpect(jsonPath("$[0].spectator").value(false))
+                .andExpect(jsonPath("$[1].spectator").value(true));
+        roomService.leave(code, watcher.id());
+        roomService.leave(code, guest.id());
+        roomService.leave(code, host.id());
+    }
 }

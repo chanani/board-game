@@ -207,6 +207,10 @@ public class Room {
         return occupants.isOccupant(memberId);
     }
 
+    public boolean isSpectator(long memberId) {
+        return occupants.isSpectator(memberId);
+    }
+
     public boolean isEmpty() {
         return occupants.hasNoPlayers();
     }
@@ -230,6 +234,10 @@ public class Room {
 
     public boolean isLocked() {
         return profile.lock().isLocked();
+    }
+
+    public RoomTheme theme() {
+        return profile.theme();
     }
 
     public GameType gameType() {

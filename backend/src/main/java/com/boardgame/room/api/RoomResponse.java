@@ -5,11 +5,12 @@ import com.boardgame.room.application.PresenceTracker;
 import com.boardgame.room.domain.Participant;
 import com.boardgame.room.domain.Room;
 import com.boardgame.room.domain.RoomStatus;
+import com.boardgame.room.domain.RoomTheme;
 import java.time.Instant;
 import java.util.List;
 
 public record RoomResponse(String code, String name, GameType gameType, String gameTypeName, RoomStatus status,
-                           long hostId, int maxPlayers, boolean locked, List<RoomMemberResponse> members,
+                           long hostId, int maxPlayers, boolean locked, RoomTheme theme, List<RoomMemberResponse> members,
                            List<RoomSpectatorResponse> spectators) {
 
     public static RoomResponse from(Room room, PresenceTracker presence, Instant now) {
@@ -22,7 +23,7 @@ public record RoomResponse(String code, String name, GameType gameType, String g
                 .toList();
         GameType gameType = room.gameType();
         return new RoomResponse(room.codeValue(), room.nameValue(), gameType, gameType.displayName(),
-                room.status(), hostId, room.capacity(), room.isLocked(), members, spectators);
+                room.status(), hostId, room.capacity(), room.isLocked(), room.theme(), members, spectators);
     }
 
     private static RoomMemberResponse member(Participant participant, long hostId, List<Long> readyIds,

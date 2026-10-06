@@ -10,6 +10,8 @@ import com.boardgame.game.GameType;
 import com.boardgame.game.event.GameStartedEvent;
 import com.boardgame.room.api.CreateRoomRequest;
 import com.boardgame.room.domain.RoomClosedEvent;
+import com.boardgame.room.domain.RoomTheme;
+import com.boardgame.room.domain.RoomTraits;
 import com.boardgame.room.api.GameSummaryResponse;
 import com.boardgame.room.api.RoomResponse;
 import com.boardgame.room.api.RoomSummaryResponse;
@@ -157,7 +159,8 @@ public class RoomService {
         List<Participant> everyone = Stream.concat(room.participants().stream(), room.spectators().stream()).toList();
         String nickname = everyone.stream().filter(person -> person.memberId() == memberId)
                 .map(Participant::nickname).findFirst().orElseThrow();
-        return action.apply(new OccupantContext(nickname, everyone.stream().map(Participant::memberId).toList()));
+        return action.apply(new OccupantContext(nickname, everyone.stream().map(Participant::memberId).toList(),
+                room.isSpectator(memberId)));
     }
 
     private void saveAndNotifyClosed(Room room) {
@@ -368,7 +371,7 @@ public class RoomService {
 
     private RoomSettings settingsOf(CreateRoomRequest request) {
         GameType type = requireGameType(request);
-        return new RoomSettings(type, capacityOf(type, request.maxPlayers()), lockOf(request.password()));
+        return new RoomSettings(type, capacityOf(type, request.maxPlayers()), new RoomTraits(lockOf(request.password()), RoomTheme.parse(request.theme())));
     }
 
     private Capacity capacityOf(GameType type, Integer maxPlayers) {

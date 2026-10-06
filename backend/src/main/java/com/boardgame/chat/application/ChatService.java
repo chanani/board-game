@@ -47,7 +47,7 @@ public class ChatService {
     // 방 잠금 안에서 실행된다: 방 닫힘 정리와 겹쳐도 닫힌 방의 로그가 다시 생기지 않는다.
     private Void deliver(String code, long memberId, ChatText text, OccupantContext context) {
         limiter.require(memberId);
-        ChatMessage message = new ChatMessage(ids.incrementAndGet(), new ChatAuthor(memberId, context.nickname()),
+        ChatMessage message = new ChatMessage(ids.incrementAndGet(), new ChatAuthor(memberId, context.nickname(), context.spectator()),
                 new ChatBody(text, clock.instant()));
         registry.append(code, message);
         ChatMessageResponse payload = ChatMessageResponse.from(code, message);

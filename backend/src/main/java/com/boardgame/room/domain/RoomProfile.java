@@ -12,6 +12,10 @@ public record RoomProfile(RoomCode code, RoomName name, RoomSettings settings) {
         return settings.capacity();
     }
 
+    public RoomTheme theme() {
+        return settings.theme();
+    }
+
     public RoomLock lock() {
         return settings.lock();
     }
