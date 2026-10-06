@@ -56,7 +56,7 @@ export function RoomPage() {
     setConfirmLeave(false);
   }, [room?.status]);
 
-  // 대기실에서는 채팅이 늘 펼쳐져 있으니 본 것으로 보고, 게임이 시작돼도 💬 배지에 남지 않게 한다.
+  // 대기실에서는 채팅이 늘 펼쳐져 있으니 본 것으로 보고, 게임이 시작돼도 채팅 버튼 배지에 남지 않게 한다.
   const waitingChatShown = room !== null && room.status !== 'PLAYING';
   const { messages: chatMessages, markRead } = chat;
   useEffect(() => {

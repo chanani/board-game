@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { roomsApi } from '../api/rooms';
 import type { Room } from '../api/types';
+import { DiceIcon } from '../components/icons';
 
 const POLL_MS = 5000;
 const HIDDEN_PATHS = ['/login', '/signup'];
@@ -62,7 +63,7 @@ export function ActiveRoomBar() {
       <div className="pointer-events-none fixed inset-x-0 bottom-4 z-40 flex justify-center px-4">
         <button type="button" onClick={() => navigate(roomPath)}
           className="wood-rail press-3d pointer-events-auto max-w-full truncate rounded-full border-2 border-mustard-400 px-5 py-2.5 text-sm font-bold text-cream-50">
-          🎲 참여 중인 방으로 돌아가기 · <span className="text-mustard-300">{room.name}</span>
+          <DiceIcon className="mr-1.5 inline h-4 w-4 align-[-3px]" />참여 중인 방으로 돌아가기 · <span className="text-mustard-300">{room.name}</span>
         </button>
       </div>
     </>

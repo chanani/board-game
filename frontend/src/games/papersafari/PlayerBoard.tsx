@@ -4,13 +4,15 @@ import { Countdown } from '../../components/Countdown';
 import { CardFace } from './CardFace';
 import { ZoneAnchor } from './motion/ZoneAnchor';
 import { slotZone } from './motion/zones';
-import { cardAt, isZeroPair } from './score';
+import { CrownIcon } from '../../components/icons';
+import { zeroPairColumns } from './score';
 
 /** 결과 화면용: 이름표 글, 합계, 열 점수 배지(없으면 '…'), 승자 강조. */
 /** 이 사람의 행동을 기다리는 마감(서버 시계). 5초 이하부터 이름표 옆에 작게 보인다. */
 export type SeatTimer = { deadline: number | null | undefined; serverNow: number | undefined };
 
-export type BoardResult = { tag: string; total: string; badges: string[]; winner: boolean };
+/** notes: 열마다 와일드가 복사한 값 안내("와일드 → -2", 없으면 빈 글). */
+export type BoardResult = { tag: string; total: string; badges: string[]; notes?: string[]; winner: boolean };
 
 type Props = {
   result?: BoardResult;
@@ -35,9 +37,7 @@ const GAP = { sm: 'gap-1.5', md: 'gap-2.5', lg: 'gap-2.5' };
 
 export function PlayerBoard({ result, board, nickname, active, turnRing = false, size = 'md', pulseSlots = false, onSlotClick, canClick, connected, offlineSeconds = 0, onForfeit, zoomLabel, onZoom, timer }: Props) {
   const ordered = [...board.slots].sort((a, b) => a.row - b.row || a.column - b.column);
-  const zeroColumns = new Set(
-    [0, 1, 2].filter((column) => isZeroPair(cardAt(board, column, 0), cardAt(board, column, 1))),
-  );
+  const zeroColumns = new Set(zeroPairColumns(board));
   const previousZero = useRef<Set<number>>(zeroColumns);
   const fresh = new Set([...zeroColumns].filter((column) => !previousZero.current.has(column)));
   useEffect(() => {
@@ -52,7 +52,7 @@ export function PlayerBoard({ result, board, nickname, active, turnRing = false,
           {connected !== undefined ? (
             <span aria-hidden="true" className={`inline-block h-2 w-2 shrink-0 rounded-full ${connected ? 'bg-green-500' : 'bg-stone-400'}`} />
           ) : null}
-          <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold shadow-[0_2px_0_rgb(0_0_0/0.3)] ${active ? 'turn-glow bg-(--accent) text-(--accent-text)' : 'bg-cream-50 text-wood-800'}`}>{result ? result.tag : nickname}</span>
+          <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold shadow-[0_2px_0_rgb(0_0_0/0.3)] ${active ? 'turn-glow bg-(--accent) text-(--accent-text)' : 'bg-cream-50 text-wood-800'}`}>{result?.winner ? <CrownIcon className="mr-1 inline h-3.5 w-3.5 align-[-2px]" testId="winner-crown" /> : null}{result ? result.tag : nickname}</span>
           {timer ? <Countdown size="sm" deadline={timer.deadline} serverNow={timer.serverNow} /> : null}
           {connected === false ? <span className="felt-ink text-xs">연결 끊김 {offlineSeconds}초</span> : null}
           {onForfeit ? (
@@ -63,7 +63,7 @@ export function PlayerBoard({ result, board, nickname, active, turnRing = false,
         </span>
         {result ? <b data-testid="board-total" className="felt-ink shrink-0 text-xs">{result.total}</b> : null}
       </div>
-      <div className={`relative grid ${result ? 'grid-cols-[repeat(3,auto)] justify-center' : 'grid-cols-3'} ${GAP[size]}`}>
+      <div data-testid="board-grid" className={`relative grid ${result ? 'grid-cols-[repeat(3,auto)] justify-center gap-x-4 gap-y-2' : `grid-cols-3 ${GAP[size]}`}`}>
         {onZoom ? (
           <button type="button" aria-label={zoomLabel} onClick={onZoom}
             className="absolute inset-0 z-[5] cursor-zoom-in rounded-xl focus-visible:outline-2 focus-visible:outline-mustard-400" />
@@ -85,6 +85,11 @@ export function PlayerBoard({ result, board, nickname, active, turnRing = false,
           <span key={`badge-${column}`} data-testid="column-badge"
             className={`justify-self-center rounded-md px-2 py-0.5 text-xs font-extrabold ${badge === '0' ? 'bg-green-200 text-green-800' : 'bg-cream-50 text-wood-800'}`}>
             {badge}
+          </span>
+        ))}
+        {result?.notes?.map((note, column) => (
+          <span key={`note-${column}`} data-testid="wild-note" className="felt-ink -mt-1.5 justify-self-center whitespace-nowrap text-[10px] font-bold leading-none">
+            {note}
           </span>
         ))}
       </div>

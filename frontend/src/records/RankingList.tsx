@@ -1,8 +1,7 @@
 import { Link } from 'react-router-dom';
 import type { Ranking } from '../api/types';
 import { percent } from '../lib/format';
-
-const MEDALS = ['🥇', '🥈', '🥉'];
+import { RankMedalIcon } from '../components/icons';
 
 export function RankingList({ rankings, limit }: { rankings: Ranking[]; limit?: number }) {
   const shown = limit ? rankings.slice(0, limit) : rankings;
@@ -14,7 +13,7 @@ export function RankingList({ rankings, limit }: { rankings: Ranking[]; limit?: 
       {shown.map((ranking) => (
         <li key={ranking.memberId} className="flex items-center justify-between rounded-lg px-2 py-1 hover:bg-stone-50">
           <span>
-            <span className="mr-2 inline-block w-6 font-bold text-safari-700">{MEDALS[ranking.rank - 1] ?? ranking.rank}</span>
+            <span className="mr-2 inline-flex w-6 items-center font-bold text-safari-700">{ranking.rank <= 3 ? <><RankMedalIcon rank={ranking.rank} /><span className="sr-only">{ranking.rank}위</span></> : ranking.rank}</span>
             <Link to={`/records/${ranking.memberId}`} className="hover:underline">{ranking.nickname}</Link>
           </span>
           <span className="text-stone-500">

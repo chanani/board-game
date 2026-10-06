@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import type { ChatMessage } from '../api/chat';
+import { BinocularsIcon } from '../components/icons';
 import { chatTime } from '../lib/format';
 
 export const CHAT_MAX_LENGTH = 200;
@@ -120,7 +121,14 @@ function ChatLine({ message, mine, showTime }: { message: ChatMessage; mine: boo
   }
   return (
     <li data-mine="false" className="flex flex-col items-start gap-0.5">
-      <span className="px-1 text-xs font-bold text-wood-700">{message.nickname}</span>
+      <span className="flex items-center gap-1 px-1">
+        {message.spectator ? (
+          <span data-testid="spectator-badge" className="inline-flex items-center gap-0.5 rounded-full bg-sky-100 px-1.5 py-px text-[10px] font-bold text-sky-800 ring-1 ring-sky-200">
+            <BinocularsIcon className="h-3 w-3" />관전
+          </span>
+        ) : null}
+        <span className={`text-xs font-bold ${message.spectator ? 'text-sky-700' : 'text-wood-700'}`}>{message.nickname}</span>
+      </span>
       <div className="flex w-full items-end gap-1.5">
         <p className="max-w-[80%] whitespace-pre-wrap break-words rounded-2xl rounded-bl-md bg-cream-50 px-3 py-1.5 text-sm text-wood-800 shadow-sm ring-1 ring-cream-300">
           {message.text}

@@ -1,4 +1,5 @@
 import type { CardView } from '../../api/types';
+import { PeekIcon } from '../../components/icons';
 import { cardLabel } from './cards';
 import { CardArt } from './cards/CardArt';
 import { CardBack } from './cards/CardBack';
@@ -46,7 +47,9 @@ export function CardFace({ card, faceUp, known, size = 'md', highlight = false, 
         <span className="pointer-events-none absolute inset-0 opacity-45"><CardArt card={card} /></span>
       ) : null}
       {peeked ? (
-        <span className="absolute -right-1.5 -top-1.5 rounded-full bg-cream-50 px-1 text-xs shadow">👁</span>
+        <span className="absolute -right-1.5 -top-1.5 grid h-5 w-5 place-items-center rounded-full bg-cream-50 text-wood-800 shadow">
+          <PeekIcon className="h-3.5 w-3.5" testId="peek-icon" />
+        </span>
       ) : null}
     </button>
   );

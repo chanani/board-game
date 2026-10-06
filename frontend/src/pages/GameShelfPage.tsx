@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { gamesApi } from '../api/games';
 import { messageOf } from '../api/http';
 import type { GameSummary, GameType } from '../api/types';
-import { BookIcon } from '../components/icons';
+import { BookIcon, HourglassIcon } from '../components/icons';
 import { usePolling } from '../lib/usePolling';
 import { RollingNumber } from '../components/RollingNumber';
 import { useToast } from '../components/Toast';
@@ -22,7 +22,7 @@ function Counts({ summary }: { summary: GameSummary | undefined }) {
     <div className="mt-3 flex justify-center gap-1.5 text-xs font-bold">
       <span aria-label={waiting === null ? '대기 인원 알 수 없음' : `대기 ${waiting}명`}
         className="rounded-full bg-amber-100 px-2 py-0.5 text-amber-900 shadow-[0_2px_0_rgb(0_0_0/0.35)]">
-        ⏳ 대기 <RollingNumber value={waiting} />
+        <HourglassIcon className="mr-0.5 inline h-3 w-3 align-[-2px]" />대기 <RollingNumber value={waiting} />
       </span>
       <span aria-label={playing === null ? '플레이 인원 알 수 없음' : `플레이 ${playing}명`}
         className="rounded-full bg-green-200 px-2 py-0.5 text-green-900 shadow-[0_2px_0_rgb(0_0_0/0.35)]">

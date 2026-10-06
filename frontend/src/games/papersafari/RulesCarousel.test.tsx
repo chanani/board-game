@@ -45,6 +45,25 @@ describe('RulesCarousel', () => {
     expect(await screen.findByText('1 / 7')).toBeInTheDocument();
   });
 
+  it('쪽 번호는 아래 가운데 점 표시기 바로 위에 있고 이전·다음 버튼은 작다', () => {
+    renderCarousel();
+
+    const counter = screen.getByText('1 / 7');
+    const dots = screen.getByRole('button', { name: '1번째 설명' }).parentElement as HTMLElement;
+    expect(counter.compareDocumentPosition(dots) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(counter.nextElementSibling).toBe(dots);
+    expect(screen.getByRole('heading', { name: '1. 목표' })).toHaveClass('text-base', 'sm:text-xl');
+    expect(screen.getByRole('button', { name: '이전' })).toHaveClass('text-xs');
+  });
+
+  it('와일드 설명은 공식 규칙(같은 줄 왼쪽·오른쪽 카드 값을 복사)이다', () => {
+    const text = [...RULE_SLIDES.flatMap((slide) => slide.body), ...RULE_SUMMARY].join(' ');
+    expect(text).not.toContain('와일드가 있어도 0점');
+    expect(text).not.toContain('와일드가 있는 열도 0점');
+    expect(text).toContain('바로 왼쪽이나 오른쪽');
+    expect(RULE_SUMMARY.join(' ')).toContain('와일드');
+  });
+
   it('5번째 슬라이드에 0점 설명이 있다', async () => {
     renderCarousel();
 

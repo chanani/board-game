@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import type { RoomMember } from '../api/types';
 import { canForfeit, offlineSecondsNow } from '../lib/format';
 import { Button } from '../components/ui';
+import { CheckIcon, CrownIcon } from '../components/icons';
 
 type Props = {
   members: RoomMember[];
@@ -112,10 +113,10 @@ const CHIP = 'whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-bold l
 
 function StatusChip({ member }: { member: RoomMember }) {
   if (member.host) {
-    return <span className={`${CHIP} bg-cream-50 text-wood-800`}>👑 방장</span>;
+    return <span className={`${CHIP} inline-flex items-center gap-1 bg-cream-50 text-wood-800`}><CrownIcon className="h-3 w-3" />방장</span>;
   }
   if (member.ready) {
-    return <span className={`${CHIP} bg-green-600 text-white`}>✔ 준비 완료</span>;
+    return <span className={`${CHIP} inline-flex items-center gap-1 bg-green-600 text-white`}><CheckIcon className="h-3 w-3" />준비 완료</span>;
   }
   return <span className={`${CHIP} bg-mustard-300 text-wood-800`}>준비 전</span>;
 }

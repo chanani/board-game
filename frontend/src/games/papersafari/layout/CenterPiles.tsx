@@ -5,6 +5,8 @@ import { ZoneAnchor } from '../motion/ZoneAnchor';
 import { DECK, DISCARD } from '../motion/zones';
 
 const SIZE_CLASS = { md: 'h-[90px] w-16', lg: 'h-28 w-20' };
+/** 가져올 수 있을 때: 버린 카드와 같은 손가락 커서와 살짝 떠오르는 hover. */
+const DRAWABLE = 'float-hint cursor-pointer hover:-translate-y-1.5 hover:rotate-[-1.5deg] focus-visible:-translate-y-1.5';
 
 type Props = { deckSize: number; discardTop: CardView | null; drawable: boolean; onDrawDeck: () => void; onDrawDiscard: () => void; size: 'md' | 'lg' };
 
@@ -25,7 +27,7 @@ export function CenterPiles({ deckSize, discardTop, drawable, onDrawDeck, onDraw
             </span>
           ))}
           <button type="button" aria-label="덱에서 뽑기" disabled={!drawable} onClick={onDrawDeck}
-            className={`press-3d card-thick relative block overflow-hidden rounded-[10%/7%] disabled:cursor-default ${SIZE_CLASS[size]} ${drawable ? 'float-hint' : ''}`}>
+            className={`press-3d card-thick relative block overflow-hidden rounded-[10%/7%] transition-transform duration-150 ${SIZE_CLASS[size]} ${drawable ? DRAWABLE : 'cursor-default'}`}>
             <CardBack />
           </button>
         </ZoneAnchor>

@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react';
 
-type IconProps = { className?: string };
+type IconProps = { className?: string; testId?: string };
 
-function Svg({ className, children }: IconProps & { children: ReactNode }) {
+function Svg({ className, testId, children }: IconProps & { children: ReactNode }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+    <svg data-testid={testId} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
       className={className ?? 'h-5 w-5'} aria-hidden="true">
       {children}
     </svg>
@@ -120,3 +120,42 @@ export const ClockIcon = ({ className }: IconProps) => (
 export const DotIcon = ({ className }: IconProps) => (
   <Svg className={className}><circle cx="12" cy="12" r="3" fill="currentColor" /></Svg>
 );
+
+export const CrownIcon = ({ className, testId }: IconProps) => (
+  <Svg testId={testId} className={className ?? 'h-3.5 w-3.5'}><path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5z" /></Svg>
+);
+
+export const CheckIcon = ({ className, testId }: IconProps) => (
+  <Svg testId={testId} className={className ?? 'h-3.5 w-3.5'}><path d="M5 12.5l4.5 4.5L19 7" /></Svg>
+);
+
+/** 엿본 카드 표시: 돋보기 + 카드 모서리. */
+export const PeekIcon = ({ className, testId }: IconProps) => (
+  <Svg testId={testId} className={className ?? 'h-3.5 w-3.5'}><path d="M13 3H6a2 2 0 0 0-2 2v12" /><path d="M8 7h5" /><circle cx="14" cy="14" r="4.5" /><path d="M17.5 17.5L21 21" /></Svg>
+);
+
+export const DiceIcon = ({ className }: IconProps) => (
+  <Svg className={className ?? 'h-4 w-4'}><rect x="4" y="4" width="16" height="16" rx="3" /><path d="M8.5 8.5h.01M15.5 8.5h.01M12 12h.01M8.5 15.5h.01M15.5 15.5h.01" /></Svg>
+);
+
+export const HourglassIcon = ({ className }: IconProps) => (
+  <Svg className={className ?? 'h-3.5 w-3.5'}><path d="M6 3h12M6 21h12" /><path d="M8 3v3l4 6-4 6v3M16 3v3l-4 6 4 6v3" /></Svg>
+);
+
+const RANK_COLORS = [
+  { fill: '#f2b33d', stroke: '#b77b14' },
+  { fill: '#d6d3d1', stroke: '#78716c' },
+  { fill: '#d08a4e', stroke: '#8a4f22' },
+];
+
+/** 순위표 1~3위 메달(금·은·동). */
+export const RankMedalIcon = ({ rank, className }: IconProps & { rank: number }) => {
+  const color = RANK_COLORS[rank - 1] ?? RANK_COLORS[2];
+  return (
+    <svg data-testid={`rank-medal-${rank}`} viewBox="0 0 24 24" className={className ?? 'h-5 w-5'} aria-hidden="true">
+      <path d="M8 2h8l-2 6h-4z" fill="#b4461a" />
+      <circle cx="12" cy="14" r="7" fill={color.fill} stroke={color.stroke} strokeWidth="1.5" />
+      <text x="12" y="17.5" textAnchor="middle" fontSize="9" fontWeight="800" fill="#3f2a17">{rank}</text>
+    </svg>
+  );
+};

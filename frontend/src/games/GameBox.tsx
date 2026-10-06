@@ -2,6 +2,7 @@ import { motion } from 'motion/react';
 import { useState } from 'react';
 import type { CatalogEntry } from './catalog';
 import { PaperSafariBoxArt } from './PaperSafariBoxArt';
+import { LockIcon } from '../components/icons';
 
 type Props = { entry?: CatalogEntry; name: string; onOpen?: () => void };
 
@@ -44,7 +45,7 @@ export function GameBox({ entry, name, onOpen }: Props) {
 function ComingSoonFace() {
   return (
     <span className="flex h-full w-full flex-col items-center justify-center gap-2 bg-gradient-to-b from-stone-500 to-stone-700 text-sm font-bold text-stone-200">
-      <span aria-hidden="true" className="text-2xl">🔒</span>
+      <LockIcon className="h-7 w-7" />
       곧 추가돼요
     </span>
   );

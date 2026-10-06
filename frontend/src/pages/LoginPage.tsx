@@ -8,6 +8,7 @@ import { Felt } from '../components/Felt';
 import { Button, Panel, TextInput } from '../components/ui';
 import { CardFace } from '../games/papersafari/CardFace';
 import { useToast } from '../components/Toast';
+import { LogoMark } from '../components/LogoMark';
 
 export function LoginPage() {
   const { member, login } = useAuth();
@@ -48,7 +49,7 @@ export function LoginPage() {
         <p role="alert" className="paper mb-4 -rotate-1 px-4 py-2.5 text-center text-sm font-bold text-brick-500">{notice}</p>
       ) : null}
       <Panel>
-        <h1 className="mb-1 text-2xl font-bold text-safari-700">🌿 보드게임 라운지</h1>
+        <h1 className="mb-1 flex items-center gap-2 text-2xl font-bold text-safari-700"><LogoMark className="h-8 w-8" />보드게임 라운지</h1>
         <p className="mb-6 text-sm text-stone-500">친구들과 함께하는 보드게임</p>
         <form className="space-y-4" onSubmit={handleSubmit}>
           <TextInput id="loginId" label="아이디" value={loginId} onChange={(e) => setLoginId(e.target.value)} autoComplete="username" required />

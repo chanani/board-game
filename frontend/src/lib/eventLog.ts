@@ -46,7 +46,7 @@ function gameResult(prev: PaperSafariView, next: PaperSafariView, nicknameOf: Ni
   if (next.winnerId === null) {
     return [{ kind: 'result', text: '무승부로 끝났어요' }];
   }
-  return [{ kind: 'result', actorId: next.winnerId, text: `${nicknameOf(next.winnerId)}님이 게임에서 승리했어요! 🎉` }];
+  return [{ kind: 'result', actorId: next.winnerId, text: `${nicknameOf(next.winnerId)}님이 게임에서 승리했어요!` }];
 }
 
 const AUTO_ACTIONS: Record<string, string> = {

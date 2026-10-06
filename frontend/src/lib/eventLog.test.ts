@@ -62,7 +62,7 @@ describe('describeChanges', () => {
       round: { phase: 'ROUND_OVER' },
       lastRoundResult: { players: [{ playerId: 1, score: 1, outcome: 'WIN' }, { playerId: 2, score: 9, outcome: 'LOSE' }] },
     });
-    expect(describeChanges(view({}), over, nick).map((entry) => entry.text)).toEqual(['앨리스님이 게임에서 승리했어요! 🎉']);
+    expect(describeChanges(view({}), over, nick).map((entry) => entry.text)).toEqual(['앨리스님이 게임에서 승리했어요!']);
   });
 
   it('최저점이 동점이면 무승부로 끝났다고 알린다', () => {

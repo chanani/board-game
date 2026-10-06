@@ -28,7 +28,8 @@ describe('CardFace', () => {
     render(<CardFace card={{ kind: 'FOX', value: -2 }} faceUp={false} known />);
 
     const card = screen.getByLabelText('여우 -2 카드 (엿봄)');
-    expect(card).toHaveTextContent('👁');
+    expect(card.querySelector('svg[data-testid="peek-icon"]')).not.toBeNull();
+    expect(card.textContent).not.toMatch(/\p{Extended_Pictographic}/u);
     expect(card).toHaveAttribute('data-side', 'back');
   });
 

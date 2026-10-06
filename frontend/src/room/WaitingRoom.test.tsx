@@ -41,9 +41,9 @@ describe('WaitingRoom', () => {
   it('의자마다 방장·준비 상태 칩을 단다', () => {
     renderRoom({ room: { ...room, maxPlayers: 3, members: [...room.members, { id: 5, nickname: '에린', host: false, connected: true, offlineSeconds: 0, ready: true }] } });
 
-    expect(screen.getByText('👑 방장')).toBeInTheDocument();
+    expect(screen.getByText('방장')).toBeInTheDocument();
     expect(screen.getByText('준비 전')).toBeInTheDocument();
-    expect(screen.getByText('✔ 준비 완료')).toBeInTheDocument();
+    expect(screen.getByText('준비 완료')).toBeInTheDocument();
   });
 
   it('60초 넘게 끊긴 사람은 방장이 아니어도 내보내기 버튼이 있다', async () => {

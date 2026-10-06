@@ -7,9 +7,9 @@ import { Modal } from '../../components/Modal';
 import { RollingNumber } from '../../components/RollingNumber';
 import { useSound } from '../../lib/sound';
 import { resultLabel } from '../../lib/format';
-import { MedalIcon, DrawIcon } from '../../components/icons';
+import { CheckIcon, DrawIcon, MedalIcon } from '../../components/icons';
 import { PlayerBoard, type BoardResult } from './PlayerBoard';
-import { cardAt, columnScore } from './score';
+import { resolveBoard } from './score';
 
 type Props = {
   game: PaperSafariView;
@@ -51,11 +51,11 @@ function useResultSound(done: boolean, outcome: PlayerResultView['outcome'] | un
   }, [done, outcome]);
 }
 
-function columnValues(board: BoardView): (number | null)[] {
+function wildNotes(board: BoardView): string[] {
+  const { wilds } = resolveBoard(board);
   return [0, 1, 2].map((column) => {
-    const top = cardAt(board, column, 0);
-    const bottom = cardAt(board, column, 1);
-    return top && bottom ? columnScore(top, bottom) : null;
+    const copies = wilds.filter((wild) => wild.column === column).map((wild) => wild.value);
+    return copies.length === 0 ? '' : `와일드 → ${copies.join(' · ')}`;
   });
 }
 
@@ -64,13 +64,14 @@ function totalLabel(values: (number | null)[]): string {
 }
 
 function resultFor(board: BoardView, done: boolean, winnerId: number | null, label: (id: number) => string, outcome: PlayerResultView['outcome'] | undefined): BoardResult {
-  const values = columnValues(board);
+  const values = resolveBoard(board).columns;
   const winner = done && winnerId === board.playerId;
   const suffix = done && outcome ? ` · ${resultLabel(outcome)}` : '';
   return {
-    tag: `${winner ? '👑 ' : ''}${label(board.playerId)}${suffix}`,
+    tag: `${label(board.playerId)}${suffix}`,
     total: done ? totalLabel(values) : '합계 …',
     badges: values.map((value) => (done ? String(value ?? '?') : '…')),
+    notes: done ? wildNotes(board) : undefined,
     winner,
   };
 }
@@ -108,7 +109,7 @@ function ReadyChips({ members }: { members: RoomMember[] }) {
       {guests.map((member) => (
         <li key={member.id} data-testid="ready-chip"
           className={`rounded-full border-2 px-3 py-1 text-sm font-bold ${member.ready ? 'border-safari-500 text-safari-700' : 'border-cream-300 text-wood-700'}`}>
-          {member.ready ? '✔ ' : ''}{member.nickname}
+          {member.ready ? <CheckIcon className="mr-1 inline h-3.5 w-3.5 align-[-2px]" testId="ready-check" /> : null}{member.nickname}
         </li>
       ))}
     </ul>

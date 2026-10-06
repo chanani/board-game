@@ -10,6 +10,23 @@ const messages: ChatMessage[] = [
 ];
 
 describe('ChatPanel', () => {
+  it('관전자가 보낸 글은 이름 앞에 망원경 아이콘이 든 관전 배지를 달고 이름 색을 달리한다', () => {
+    const mixed: ChatMessage[] = [
+      { id: 1, memberId: 2, nickname: '밥', text: '안녕', sentAt: '2026-10-06T00:00:00Z', spectator: false },
+      { id: 2, memberId: 3, nickname: '캐롤', text: '구경 왔어요', sentAt: '2026-10-06T00:00:01Z', spectator: true },
+    ];
+    render(<ChatPanel messages={mixed} meId={1} onSend={vi.fn()} />);
+
+    const spectatorLine = screen.getByText('구경 왔어요').closest('li') as HTMLElement;
+    const badge = spectatorLine.querySelector('[data-testid="spectator-badge"]') as HTMLElement;
+    expect(badge).toHaveTextContent('관전');
+    expect(badge.querySelector('svg')).not.toBeNull();
+    expect(screen.getByText('캐롤')).toHaveClass('text-sky-700');
+    const playerLine = screen.getByText('안녕').closest('li') as HTMLElement;
+    expect(playerLine.querySelector('[data-testid="spectator-badge"]')).toBeNull();
+    expect(screen.getByText('밥')).toHaveClass('text-wood-700');
+  });
+
   it('내 메시지와 남의 메시지를 구분해 보여 주고 글은 그대로 글자로 보여 준다', () => {
     render(<ChatPanel messages={messages} meId={1} onSend={vi.fn()} />);
 

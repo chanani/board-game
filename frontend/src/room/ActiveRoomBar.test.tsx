@@ -33,7 +33,7 @@ describe('ActiveRoomBar', () => {
     renderAt('/');
 
     const bar = await screen.findByRole('button', { name: BAR });
-    expect(bar).toHaveTextContent('🎲 참여 중인 방으로 돌아가기 · 앨리스의 방');
+    expect(bar).toHaveTextContent('참여 중인 방으로 돌아가기 · 앨리스의 방');
     await userEvent.click(bar);
 
     expect(await screen.findByText('방 화면')).toBeInTheDocument();

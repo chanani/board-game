@@ -20,7 +20,8 @@ describe('PlayerBoard', () => {
     render(<PlayerBoard board={board} nickname="밥" active={false} />);
 
     const slots = screen.getAllByTestId('slot');
-    expect(slots.filter((slot) => slot.dataset.zeroPair === 'true')).toHaveLength(4);
+    // 7/7 열만 0점 쌍. 오른쪽 위 와일드는 이웃이 가려진 칸뿐이라 복사할 값이 없어(0) 아래 4와 짝이 아니다.
+    expect(slots.filter((slot) => slot.dataset.zeroPair === 'true')).toHaveLength(2);
     expect(screen.getAllByLabelText('뒷면 카드')).toHaveLength(2);
     expect(screen.getByText('밥')).toBeInTheDocument();
     expect(screen.queryByLabelText(/토큰/)).not.toBeInTheDocument();

@@ -101,7 +101,9 @@ describe('GameOverPanel 단판 결과', () => {
     expect(screen.getByTestId('board-1')).toHaveAttribute('data-winner', 'true');
     expect(screen.getByTestId('board-1')).toHaveClass('ring-mustard-400');
     expect(screen.getByTestId('board-2')).toHaveAttribute('data-winner', 'false');
-    expect(screen.getByTestId('board-1')).toHaveTextContent('👑 앨리스 (나) · 승');
+    expect(screen.getByTestId('board-1')).toHaveTextContent('앨리스 (나) · 승');
+    expect(within(screen.getByTestId('board-1')).getByTestId('winner-crown').tagName).toBe('svg');
+    expect(within(screen.getByTestId('board-2')).queryByTestId('winner-crown')).not.toBeInTheDocument();
     const badges = within(screen.getByTestId('board-1')).getAllByTestId('column-badge');
     expect(badges).toHaveLength(3);
     expect(within(screen.getByTestId('board-1')).getByTestId('board-total')).toHaveTextContent(/^합계 \d+점$/);
@@ -123,6 +125,31 @@ describe('GameOverPanel 단판 결과', () => {
     const others = within(screen.getByTestId('board-2'));
     expect(others.getAllByTestId('column-badge').map((badge) => badge.textContent)).toEqual(['3', '5', '7']);
     expect(others.getByTestId('board-total')).toHaveTextContent('합계 15점');
+  });
+
+  it('와일드가 복사한 값을 열 배지 아래 작은 글씨로 보여 주고, 점수는 공식 와일드 규칙을 따른다', () => {
+    vi.useFakeTimers();
+    const W = { kind: 'WILD' as const, value: 0 };
+    const num = (value: number) => ({ kind: 'NUMBER' as const, value });
+    // 윗줄 [2, W, 8], 아랫줄 [5, 8, 5] → 와일드는 8을 복사해 짝과 맞춘다: 7, 0, 13 = 20
+    const cards = [[num(2), num(5)], [W, num(8)], [num(8), num(5)]];
+    const wildBoard = { playerId: 1, slots: cards.flatMap((column, c) => column.map((card, row) => ({ column: c, row, faceUp: true, known: false, card }))) };
+    const view: PaperSafariView = { ...game, round: { ...game.round, boards: [wildBoard, knownBoards[1]] } };
+    renderPanel({ view });
+    expect(screen.queryByText('와일드 → 8')).not.toBeInTheDocument();
+    revealAll();
+
+    const mine = within(screen.getByTestId('board-1'));
+    expect(mine.getAllByTestId('column-badge').map((badge) => badge.textContent)).toEqual(['7', '0', '13']);
+    expect(mine.getByTestId('board-total')).toHaveTextContent('합계 20점');
+    const notes = mine.getAllByTestId('wild-note');
+    expect(notes.map((note) => note.textContent)).toEqual(['', '와일드 → 8', '']);
+    expect(notes[1]).toHaveClass('text-[10px]');
+  });
+
+  it('결과 판은 열 배지 사이 간격을 넓게 둔다', () => {
+    renderPanel();
+    expect(within(screen.getByTestId('board-1')).getByTestId('board-grid')).toHaveClass('gap-x-4');
   });
 
   it('승리면 메달 아이콘을, 무승부면 무승부 아이콘만 보여 준다', () => {
@@ -147,7 +174,7 @@ describe('GameOverPanel 단판 결과', () => {
 
     expect(screen.getByTestId('board-1')).toHaveAttribute('data-winner', 'false');
     expect(screen.getByTestId('board-2')).toHaveAttribute('data-winner', 'false');
-    expect(screen.getByRole('dialog', { name: '게임 결과' })).not.toHaveTextContent('👑');
+    expect(screen.queryByTestId('winner-crown')).not.toBeInTheDocument();
   });
 
   it('판 격자는 펠트 테두리(13px)만큼 여백과 간격을 둔다', () => {
@@ -203,15 +230,15 @@ describe('GameOverPanel 단판 결과', () => {
     expect(onClose).toHaveBeenCalledOnce();
   });
 
-  it('방장을 뺀 사람들의 준비 칩을 보여주고, 준비한 사람은 초록 테두리와 ✔를 단다', () => {
+  it('방장을 뺀 사람들의 준비 칩을 보여주고, 준비한 사람은 초록 테두리와 체크 아이콘을 단다', () => {
     renderPanel();
 
     const chips = within(screen.getByTestId('ready-chips')).getAllByTestId('ready-chip');
     expect(chips).toHaveLength(2);
     expect(chips[0]).toHaveTextContent('밥');
-    expect(chips[0]).not.toHaveTextContent('✔');
+    expect(within(chips[0]).queryByTestId('ready-check')).not.toBeInTheDocument();
     expect(chips[0]).toHaveClass('rounded-full', 'border-2', 'px-3', 'py-1', 'border-cream-300');
-    expect(chips[1]).toHaveTextContent('✔');
+    expect(within(chips[1]).getByTestId('ready-check').tagName).toBe('svg');
     expect(chips[1]).toHaveTextContent('캐롤');
     expect(chips[1]).toHaveClass('border-safari-500');
   });

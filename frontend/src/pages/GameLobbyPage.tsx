@@ -6,7 +6,7 @@ import { recordsApi } from '../api/records';
 import { roomsApi } from '../api/rooms';
 import type { GameStat, Ranking, RoomSummary, RoomTheme } from '../api/types';
 import { useAuth } from '../auth/AuthContext';
-import { BinocularsIcon, LockIcon, RefreshIcon } from '../components/icons';
+import { BinocularsIcon, CrownIcon, LockIcon, RefreshIcon } from '../components/icons';
 import { Felt } from '../components/Felt';
 import { Button, Panel, TextInput } from '../components/ui';
 import { useToast } from '../components/Toast';
@@ -171,8 +171,8 @@ export function GameLobbyPage() {
                       {room.name}
                       {room.locked ? <span role="img" aria-label="비공개"><LockIcon className="h-4 w-4 text-stone-500" /></span> : null}
                     </p>
-                    <p className="text-xs text-stone-500">
-                      👑 {room.hostNickname} · {room.playerCount}/{room.maxPlayers}
+                    <p className="flex items-center gap-1 text-xs text-stone-500">
+                      <CrownIcon className="h-3.5 w-3.5" />{room.hostNickname} · {room.playerCount}/{room.maxPlayers}
                     </p>
                     <p className="mt-0.5 text-xs text-stone-500"><ThemeBadge theme={room.theme} /></p>
                   </div>
