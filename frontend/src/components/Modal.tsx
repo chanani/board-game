@@ -66,7 +66,9 @@ export function Modal({ open, title, onClose, children, wide = false, padding = 
     }
     const first = items[0];
     const last = items[items.length - 1];
-    if (event.shiftKey && document.activeElement === first) {
+    // 대화상자 자체에 포커스가 있으면(initialFocus="dialog") 첫 칸으로 보고, Shift+Tab이 밖으로 새지 않게 한다.
+    const atStart = document.activeElement === first || document.activeElement === boxRef.current;
+    if (event.shiftKey && atStart) {
       event.preventDefault();
       last.focus();
       return;

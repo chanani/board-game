@@ -59,6 +59,15 @@ describe('Modal', () => {
     expect(screen.getByRole('button', { name: '하나' })).toHaveFocus();
   });
 
+  it('대화상자 자체에 포커스가 있을 때 Shift+Tab은 마지막 버튼으로 돌아 모달 밖으로 나가지 않는다', async () => {
+    render(<><button type="button">밖</button><Modal open title="결과" initialFocus="dialog"><button type="button">하나</button><button type="button">둘</button></Modal></>);
+    expect(screen.getByRole('dialog', { name: '결과' })).toHaveFocus();
+
+    await userEvent.tab({ shift: true });
+
+    expect(screen.getByRole('button', { name: '둘' })).toHaveFocus();
+  });
+
   it('닫혀 있으면 아무것도 그리지 않는다', () => {
     render(<Modal open={false} title="결과"><p>내용</p></Modal>);
 
