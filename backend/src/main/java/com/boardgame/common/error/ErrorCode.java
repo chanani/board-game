@@ -55,7 +55,15 @@ public enum ErrorCode {
     DECK_EXHAUSTED(HttpStatus.CONFLICT, "더 이상 뽑을 카드가 없습니다."),
     ROUND_NOT_OVER(HttpStatus.CONFLICT, "라운드가 아직 끝나지 않았습니다."),
     CANNOT_CANCEL_DRAW(HttpStatus.CONFLICT, "덱에서 뽑은 카드는 되돌릴 수 없어요."),
-    GAME_ALREADY_OVER(HttpStatus.CONFLICT, "이미 끝난 게임입니다.");
+    GAME_ALREADY_OVER(HttpStatus.CONFLICT, "이미 끝난 게임입니다."),
+    UNO_INVALID_PLAYER_COUNT(HttpStatus.BAD_REQUEST, "우노는 2~5명이 플레이할 수 있습니다."),
+    UNO_CARD_NOT_IN_HAND(HttpStatus.BAD_REQUEST, "내 손에 없는 카드예요."),
+    UNO_CARD_NOT_PLAYABLE(HttpStatus.CONFLICT, "지금 낼 수 없는 카드예요."),
+    UNO_ONLY_DRAWN_CARD(HttpStatus.CONFLICT, "방금 뽑은 카드만 낼 수 있어요."),
+    UNO_COLOR_REQUIRED(HttpStatus.BAD_REQUEST, "와일드 카드는 색을 골라야 해요."),
+    UNO_INVALID_COLOR(HttpStatus.BAD_REQUEST, "고를 수 없는 색이에요."),
+    UNO_CALL_NOT_ALLOWED(HttpStatus.CONFLICT, "지금은 우노를 외칠 수 없어요."),
+    UNO_CATCH_CLOSED(HttpStatus.CONFLICT, "지금은 우노를 잡을 수 없어요.");
 
     private final HttpStatus status;
     private final String message;

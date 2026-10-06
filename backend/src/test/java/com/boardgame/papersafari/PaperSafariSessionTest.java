@@ -248,4 +248,14 @@ class PaperSafariSessionTest {
         assertThat(json.get("game").get("roundNumber").asInt()).isEqualTo(1);
         assertThat(json.get("game").get("winnerId").asLong()).isEqualTo(A);
     }
+
+    @Test
+    void 화면에_게임_종류_구분자가_붙는다() {
+        PaperSafariSession session = session(List.of(roundWonBy(ALICE)));
+
+        JsonNode json = new ObjectMapper().valueToTree(session.viewFor(A));
+
+        assertThat(json.get("gameType").asText()).isEqualTo("PAPER_SAFARI");
+        assertThat(json.get("game").get("status").asText()).isEqualTo("IN_ROUND");
+    }
 }
