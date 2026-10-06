@@ -1,7 +1,8 @@
 package com.boardgame.game;
 
 public enum GameType {
-    PAPER_SAFARI("페이퍼 사파리", 2, 5);
+    PAPER_SAFARI("페이퍼 사파리", 2, 5),
+    UNO("우노", 2, 5);
 
     private final String displayName;
     private final int minPlayers;

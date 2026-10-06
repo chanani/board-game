@@ -2,6 +2,7 @@ package com.boardgame.uno;
 
 import com.boardgame.common.error.BusinessException;
 import com.boardgame.common.error.ErrorCode;
+import com.boardgame.uno.view.UnoView;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -210,5 +211,21 @@ public class UnoGame {
 
     public List<UnoEvent> latestEvents() {
         return events.latest();
+    }
+
+    public List<CardId> playableFor(PlayerId viewer) {
+        return round.playableFor(viewer);
+    }
+
+    public boolean isRiskyFour(PlayerId viewer) {
+        return round.isRiskyFour(viewer);
+    }
+
+    public Optional<CardId> drawnFor(PlayerId viewer) {
+        return round.drawnFor(viewer);
+    }
+
+    public UnoView viewFor(PlayerId viewer, UnoViewContext context) {
+        return UnoViewAssembler.assemble(this, viewer, context);
     }
 }

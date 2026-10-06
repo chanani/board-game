@@ -457,4 +457,30 @@ public class UnoRound {
     public Optional<PlayerId> catchTarget() {
         return players.catchTarget();
     }
+
+    // D19: 보는 사람이 지금 낼 수 있는 카드. PLAY면 R8, DRAWN이면 뽑은 카드만, 그 밖·남의 차례는 없음. 불법 +4도 들어간다(R11).
+    public List<CardId> playableFor(PlayerId viewer) {
+        if (progress.isActorIn(viewer, UnoStage.DRAWN)) {
+            return progress.drawnCard().stream().toList();
+        }
+        if (!progress.isActorIn(viewer, UnoStage.PLAY)) {
+            return List.of();
+        }
+        return players.playable(viewer, table.top(), table.color().orElse(null));
+    }
+
+    // 지금 +4를 내면 불법인지(현재 색 카드를 갖고 있음). 내 차례(PLAY/DRAWN)에만 참일 수 있다.
+    public boolean isRiskyFour(PlayerId viewer) {
+        if (!progress.isActorIn(viewer, UnoStage.PLAY, UnoStage.DRAWN)) {
+            return false;
+        }
+        return !holdsNoActiveColor(viewer);
+    }
+
+    public Optional<CardId> drawnFor(PlayerId viewer) {
+        if (!progress.isActorIn(viewer, UnoStage.DRAWN)) {
+            return Optional.empty();
+        }
+        return progress.drawnCard();
+    }
 }
