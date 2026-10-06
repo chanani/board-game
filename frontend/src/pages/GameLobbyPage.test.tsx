@@ -75,6 +75,7 @@ describe('GameLobbyPage', () => {
     expect(await screen.findByRole('heading', { name: '기다리는 방' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: '게임 중인 방' })).toBeInTheDocument();
     expect(screen.getByText('3라운드 진행 중')).toBeInTheDocument();
+    expect(screen.getAllByText('2명')).toHaveLength(2);
   });
 
   it('공개 방은 관전하고 비공개 방은 막혀 있다', async () => {

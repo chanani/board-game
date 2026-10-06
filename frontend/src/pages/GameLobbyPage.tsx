@@ -214,7 +214,7 @@ export function GameLobbyPage() {
                 <div>
                   <p className="font-medium">{room.name}</p>
                   <p className="text-xs text-stone-500">
-                    <span>{room.roundNumber ?? 1}라운드 진행 중</span> · <span aria-label={`관전 ${room.spectatorCount}명`}>👀 {room.spectatorCount}</span>
+                    <span>{room.roundNumber ?? 1}라운드 진행 중</span> · <span>{room.playerCount}명</span> · <span aria-label={`관전 ${room.spectatorCount}명`}>👀 {room.spectatorCount}</span>
                   </p>
                 </div>
                 {room.locked ? (
