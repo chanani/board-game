@@ -92,11 +92,12 @@ export function PaperSafariTable({ view, room, meId, log, receivedAt, now, error
   const wasMyTurn = useRef(false);
 
   useEffect(() => {
-    const now = myTurn && round.phase === 'DRAW';
-    if (now && !wasMyTurn.current) {
+    // 되돌리기로 PLACE에서 DRAW로 돌아와도 내 차례는 이어지는 것이라 소리를 다시 내지 않는다.
+    const starting = myTurn && round.phase === 'DRAW' && !wasMyTurn.current;
+    if (starting) {
       play('myTurn');
     }
-    wasMyTurn.current = now;
+    wasMyTurn.current = myTurn && (round.phase === 'DRAW' || round.phase === 'PLACE');
   }, [myTurn, round.phase, play]);
 
   useEffect(() => {

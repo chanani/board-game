@@ -43,7 +43,7 @@ export function TableRound(props: TableProps) {
           <div />
           {myBoard ? (
             <div className={`transition-transform duration-300 ${myTurn ? '-translate-y-2' : ''}`}>
-              <Seat board={myBoard} nickname={`${nicknameOf(meId)} (나)`} active={myTurn}
+              <Seat board={myBoard} nickname={`${nicknameOf(meId)} (나)`} active={myTurn} turnRing={myTurn}
                 held={round.held} size="lg" presence={{}} handLabel="들고 있는 카드" onSlotClick={clickSlot} canClick={canClickSlot} pulseSlots={myTurn} />
             </div>
           ) : <SpectatorNotice />}

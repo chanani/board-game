@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import type { BoardView, CardView, HeldView, PaperSafariSessionView, Room, SlotView, TurnPhase } from '../../api/types';
 import { setMediaMatches } from '../../test/media';
+import { SoundContext } from '../../lib/sound';
 import { PaperSafariTable } from './PaperSafariTable';
 
 const ME = 1;
@@ -397,7 +398,7 @@ describe('버린 카드 되돌리기', () => {
     renderTable({ phase: 'PLACE', current: ME, held: fromDiscard });
 
     const buttons = within(screen.getByTestId('my-side')).getAllByRole('button');
-    expect(buttons.map((button) => button.getAttribute('aria-label') ?? button.textContent)).toEqual(['되돌리기', '버리기']);
+    expect(buttons.map((button) => button.getAttribute('aria-label') ?? button.textContent)).toEqual(['되돌리기', '버리기', '4 카드']);
   });
 
   it('PC에서는 버리기 옆에 둔다', () => {
@@ -444,4 +445,62 @@ it('게임이 끝나면 게임 결과 창을 띄우고, 방장이 아닌 참가�
   await userEvent.click(screen.getByRole('button', { name: '다음 게임 준비' }));
 
   expect(onReadyNext).toHaveBeenCalledOnce();
+});
+
+describe('모바일 게임 화면 (상대 판·내 차례·손 카드)', () => {
+  it('모바일 상대 자리의 손 칸은 판 위에 겹쳐 놓아 자리 너비가 판 너비와 같다', () => {
+    setMediaMatches(false);
+    render(<PaperSafariTable {...baseProps(build({ phase: 'DRAW', current: OPPONENT }))} />);
+    const hand = document.querySelector('[data-zone="hand:2"]') as HTMLElement;
+    expect(hand).toHaveClass('absolute');
+    expect(document.querySelectorAll('[data-zone="hand:2"]')).toHaveLength(1);
+    const seat = hand.parentElement as HTMLElement;
+    expect(seat).not.toHaveClass('flex');
+  });
+
+  it('모바일 상대 줄은 3px 간격이다', () => {
+    setMediaMatches(false);
+    render(<PaperSafariTable {...baseProps(build({ phase: 'DRAW', current: ME }))} />);
+    const rail = screen.getByRole('button', { name: '밥님의 판 크게 보기' }).closest('.overflow-x-auto');
+    expect(rail).toHaveClass('gap-[3px]');
+  });
+
+  it('내 차례면 내 판에 겨자색 테두리 링이 생기고, 아니면 없다', () => {
+    setMediaMatches(false);
+    const { unmount } = render(<PaperSafariTable {...baseProps(build({ phase: 'DRAW', current: ME }))} />);
+    expect(screen.getByTestId('board-1')).toHaveClass('ring-mustard-400');
+    unmount();
+    render(<PaperSafariTable {...baseProps(build({ phase: 'DRAW', current: OPPONENT }))} />);
+    expect(screen.getByTestId('board-1')).not.toHaveClass('ring-mustard-400');
+  });
+
+  it('모바일에서 내 손 칸은 내 옆 칸 안에 하나만 있다', () => {
+    setMediaMatches(false);
+    render(<PaperSafariTable {...baseProps(build({ phase: 'PLACE', current: ME, held: { playerId: ME, source: 'DECK', card: { kind: 'NUMBER', value: 5 } } }))} />);
+    const side = screen.getByTestId('my-side');
+    expect(side.querySelector('[data-zone="hand:1"]')).not.toBeNull();
+    expect(document.querySelectorAll('[data-zone="hand:1"]')).toHaveLength(1);
+  });
+
+  it('PC에서는 내 손 칸이 내 옆 칸 밖에 하나만 있다', () => {
+    setMediaMatches(true);
+    render(<PaperSafariTable {...baseProps(build({ phase: 'PLACE', current: ME }))} />);
+    expect(document.querySelectorAll('[data-zone="hand:1"]')).toHaveLength(1);
+  });
+
+  it('되돌리기로 PLACE에서 DRAW로 돌아와도 내 차례 소리는 다시 나지 않는다', () => {
+    const play = vi.fn();
+    const held: HeldView = { playerId: ME, source: 'DISCARD', card: { kind: 'NUMBER', value: 4 } };
+    const ui = (view: PaperSafariSessionView) => (
+      <SoundContext.Provider value={{ play, muted: false, toggleMuted: () => undefined }}>
+        <PaperSafariTable {...baseProps(view)} />
+      </SoundContext.Provider>
+    );
+    const { rerender } = render(ui(build({ phase: 'DRAW', current: OPPONENT })));
+    rerender(ui(build({ phase: 'DRAW', current: ME })));
+    expect(play).toHaveBeenCalledTimes(1);
+    rerender(ui(build({ phase: 'PLACE', current: ME, held })));
+    rerender(ui(build({ phase: 'DRAW', current: ME })));
+    expect(play.mock.calls.filter(([name]) => name === 'myTurn')).toHaveLength(1);
+  });
 });

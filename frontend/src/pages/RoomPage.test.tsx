@@ -1,4 +1,4 @@
-import { act, render, screen, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -111,6 +111,37 @@ describe('RoomPage 관전자 나가기', () => {
 
     expect(roomsApi.leave).toHaveBeenCalledWith('ABC234');
     expect(screen.queryByText(/기권 처리/)).not.toBeInTheDocument();
+  });
+});
+
+describe('RoomPage 참가자 나가기 확인', () => {
+  const playing: Room = { ...baseRoom, spectators: [], members: [members[0], { id: 3, nickname: '캐롤', host: false, connected: true, offlineSeconds: 0, ready: false }] };
+
+  it('게임 중 참가자가 나가기를 누르면 확인 창이 뜨고, 취소하면 나가지 않고 닫힌다', async () => {
+    const { roomsApi } = await import('../api/rooms');
+    vi.mocked(roomsApi.leave).mockClear();
+    setChannel({ room: playing });
+    renderRoom();
+
+    await userEvent.click(screen.getByRole('button', { name: '나가기' }));
+    const dialog = await screen.findByRole('dialog', { name: '정말 나갈까요?' });
+    await userEvent.click(within(dialog).getByRole('button', { name: '취소' }));
+
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: '정말 나갈까요?' })).not.toBeInTheDocument());
+    expect(roomsApi.leave).not.toHaveBeenCalled();
+  });
+
+  it('확인 창에서 나가기를 누르면 방을 나간다', async () => {
+    const { roomsApi } = await import('../api/rooms');
+    vi.mocked(roomsApi.leave).mockResolvedValue(undefined);
+    setChannel({ room: playing });
+    renderRoom();
+
+    await userEvent.click(screen.getByRole('button', { name: '나가기' }));
+    const dialog = await screen.findByRole('dialog', { name: '정말 나갈까요?' });
+    await userEvent.click(within(dialog).getByRole('button', { name: '나가기' }));
+
+    expect(roomsApi.leave).toHaveBeenCalledWith('ABC234');
   });
 });
 

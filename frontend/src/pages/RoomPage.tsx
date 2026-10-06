@@ -12,6 +12,7 @@ import { ChatLauncher } from '../room/ChatLauncher';
 import { useGameOverDismissal } from '../room/useGameOverDismissal';
 import { useRoomChat } from '../room/useRoomChat';
 import { useRoomChannel } from '../room/useRoomChannel';
+import { LeaveConfirmModal } from '../room/LeaveConfirmModal';
 import { WaitingRoom } from '../room/WaitingRoom';
 
 function isPresent(room: Room, meId: number): boolean {
@@ -90,18 +91,18 @@ export function RoomPage() {
     }
   };
 
-  const leave = () => {
-    if (playing && !spectating && !confirmLeave) {
+  const requestLeave = () => {
+    if (playing && !spectating) {
       setConfirmLeave(true);
       return;
     }
+    leave();
+  };
+
+  const leave = () => {
+    setConfirmLeave(false);
     run(async () => {
-      try {
-        await roomsApi.leave(code);
-      } catch (error) {
-        setConfirmLeave(false);
-        throw error;
-      }
+      await roomsApi.leave(code);
       navigate(lobbyPath(room.gameType), { replace: true });
     });
   };
@@ -116,9 +117,7 @@ export function RoomPage() {
             {spectatorCount > 0 ? <span> · 👀 관전 {spectatorCount}명</span> : null}
           </p>
         </div>
-        <Button variant="danger" onClick={leave}>
-          {confirmLeave ? '정말 나갈까요? (기권 처리)' : '나가기'}
-        </Button>
+        <Button variant="danger" onClick={requestLeave}>나가기</Button>
       </div>
       {showGame && view ? (
         <PaperSafariTable
@@ -157,6 +156,7 @@ export function RoomPage() {
       {playing ? (
         <ChatLauncher messages={chat.messages} meId={meId} onSend={chat.send} unread={chat.unread} onOpen={chat.markRead} />
       ) : null}
+      <LeaveConfirmModal open={confirmLeave} onCancel={() => setConfirmLeave(false)} onConfirm={leave} />
     </div>
   );
 }

@@ -74,6 +74,8 @@ body {
 
 @keyframes turn-glow { 0%, 100% { box-shadow: 0 0 0 2px var(--color-cream-50), 0 0 6px var(--color-mustard-400); } 50% { box-shadow: 0 0 0 2px var(--color-cream-50), 0 0 18px var(--color-mustard-400); } }
 .turn-glow { animation: turn-glow 1.4s ease-in-out infinite; }
+@keyframes turn-ring { 0%, 100% { filter: drop-shadow(0 0 3px var(--color-mustard-400)); } 50% { filter: drop-shadow(0 0 12px var(--color-mustard-400)); } }
+.turn-ring { animation: turn-ring 1.4s ease-in-out infinite; }
 @keyframes float-hint { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
 .float-hint { animation: float-hint 1.6s ease-in-out infinite; }
 @keyframes gold-sparkle { 0% { box-shadow: 0 0 0 0 rgb(251 191 36 / .9); } 100% { box-shadow: 0 0 0 12px rgb(251 191 36 / 0); } }
@@ -83,7 +85,7 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .card-inner, .press-3d { transition: none; }
-  .turn-glow, .float-hint, .gold-sparkle, .live-dot { animation: none; }
+  .turn-glow, .turn-ring, .float-hint, .gold-sparkle, .live-dot { animation: none; }
 }
 
 /* "참여 중인 방으로 돌아가기" 바가 떠 있으면 알림을 그 위로 올린다 (ActiveRoomBar가 html[data-room-bar]를 단다). */

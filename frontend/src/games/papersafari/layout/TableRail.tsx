@@ -5,7 +5,7 @@ import { CenterPiles } from './CenterPiles';
 import { Hud } from './Hud';
 import { MySide } from './MySide';
 import { OpponentSeat } from './OpponentSeat';
-import { Seat } from './Seat';
+import { HandAnchor, Seat } from './Seat';
 import { SpectatorNotice } from './SpectatorNotice';
 import type { TableProps } from '../PaperSafariTable';
 
@@ -19,11 +19,11 @@ export function TableRail(props: TableProps) {
   return (
     <div className="space-y-3">
       <Hud instruction={instructionText} myTurn={myTurn} log={log} compact />
-      <WoodRail className="flex justify-center-safe gap-1.5 overflow-x-auto px-3 py-2">
+      <WoodRail className="flex justify-center-safe gap-[3px] overflow-x-auto px-1.5 py-2">
         {opponents.map((board) => (
           <div key={board.playerId} className="shrink-0">
             <OpponentSeat board={board} nickname={nicknameOf(board.playerId)}
-              active={round.currentPlayerId === board.playerId} held={round.held} presence={presenceOf(board.playerId)} />
+              active={round.currentPlayerId === board.playerId} held={round.held} presence={presenceOf(board.playerId)} handOverlay />
           </div>
         ))}
       </WoodRail>
@@ -32,9 +32,10 @@ export function TableRail(props: TableProps) {
           onDrawDeck={() => send({ type: 'DRAW_DECK' })} onDrawDiscard={() => send({ type: 'DRAW_DISCARD' })} />
         {myBoard ? (
           <div className="flex w-full items-start gap-2">
-          <Seat board={myBoard} nickname={`${nicknameOf(meId)} (나)`} active={myTurn}
+          <Seat board={myBoard} nickname={`${nicknameOf(meId)} (나)`} active={myTurn} turnRing={myTurn} hand="none"
             held={round.held} size={roomy ? 'md' : 'sm'} presence={{}} handLabel="들고 있는 카드" onSlotClick={clickSlot} canClick={canClickSlot} pulseSlots={myTurn} />
           <MySide canDiscard={canDiscard} canUndo={canUndo} estimate={estimate}
+            hand={<HandAnchor board={myBoard} held={round.held} size={roomy ? 'md' : 'sm'} handLabel="들고 있는 카드" />}
             onDiscard={() => send({ type: 'DISCARD' })} onUndo={() => send({ type: 'CANCEL_DRAW' })} />
           </div>
         ) : <SpectatorNotice />}

@@ -9,6 +9,8 @@ type Props = {
   board: BoardView;
   nickname: string;
   active: boolean;
+  /** 내 차례일 때 판 테두리에 겨자색 링과 빛 번짐을 단다. */
+  turnRing?: boolean;
   size?: 'sm' | 'md' | 'lg';
   pulseSlots?: boolean;
   onSlotClick?: (slot: SlotView) => void;
@@ -22,7 +24,7 @@ type Props = {
 
 const GAP = { sm: 'gap-1.5', md: 'gap-2.5', lg: 'gap-2.5' };
 
-export function PlayerBoard({ board, nickname, active, size = 'md', pulseSlots = false, onSlotClick, canClick, connected, offlineSeconds = 0, onForfeit, zoomLabel, onZoom }: Props) {
+export function PlayerBoard({ board, nickname, active, turnRing = false, size = 'md', pulseSlots = false, onSlotClick, canClick, connected, offlineSeconds = 0, onForfeit, zoomLabel, onZoom }: Props) {
   const ordered = [...board.slots].sort((a, b) => a.row - b.row || a.column - b.column);
   const zeroColumns = new Set(
     [0, 1, 2].filter((column) => isZeroPair(cardAt(board, column, 0), cardAt(board, column, 1))),
@@ -34,7 +36,7 @@ export function PlayerBoard({ board, nickname, active, size = 'md', pulseSlots =
   });
 
   return (
-    <div className="rounded-2xl bg-black/15 p-2 backdrop-blur-[1px]">
+    <div data-testid={`board-${board.playerId}`} className={`rounded-2xl bg-black/15 p-2 backdrop-blur-[1px] ${turnRing ? 'ring-4 ring-mustard-400 turn-ring' : ''}`}>
       <div className="mb-2 flex items-center justify-between gap-2 text-sm">
         <span className="flex min-w-0 flex-wrap items-center gap-1.5">
           {connected !== undefined ? (
