@@ -321,8 +321,22 @@ describe('게임 화면 다듬기', () => {
     const side = screen.getByTestId('my-side');
     expect(side).toHaveClass('@container', 'flex-1');
     expect(side.className).not.toMatch(/(^|\s)w-\d/);
-    expect(side.querySelector('.estimate-hidden-note')).toHaveClass('@max-[140px]:hidden');
-    expect(side.querySelector('strong')).toHaveClass('text-lg', '@max-[140px]:text-base');
+    expect(side.querySelector('.estimate-hidden-note')).toHaveClass('@max-[110px]:hidden');
+    expect(side.querySelector('strong')).toHaveClass('text-lg', '@max-[110px]:text-base');
+  });
+
+  it('모바일 상대 줄은 Tailwind가 실제로 만드는 안전한 가운데 정렬 클래스를 쓴다', () => {
+    setMediaMatches(false);
+    render(<PaperSafariTable {...baseProps(build({ phase: 'DRAW', current: ME }))} />);
+    const rail = screen.getByRole('button', { name: '밥님의 판 크게 보기' }).closest('.overflow-x-auto');
+    expect(rail).toHaveClass('justify-center-safe');
+  });
+
+  it('좁은 휴대폰에서는 내 판 카드를 한 단계 작게 그려 버리기 칸과 한 줄에 들어가게 한다', () => {
+    setMediaMatches(false);
+    render(<PaperSafariTable {...baseProps(build({ phase: 'DRAW', current: ME }))} />);
+    mySlotButtons().forEach((button) => expect(button).toHaveClass('w-12'));
+    expect(within(screen.getByTestId('my-side')).getByRole('button', { name: '버리기' })).toHaveClass('px-2!');
   });
 
   describe('상대 판 확대', () => {
