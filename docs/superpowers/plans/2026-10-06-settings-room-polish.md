@@ -1189,6 +1189,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ### Task 8: 프론트 — 모바일 내보내기 X 버튼 (#10)
 
 **Files:**
+- Create: `frontend/src/components/KickBadge.tsx`
 - Modify: `frontend/src/room/MemberList.tsx`, `frontend/src/room/WaitingRoom.test.tsx`
 - Modify: `frontend/src/games/papersafari/PlayerBoard.tsx`, `frontend/src/games/papersafari/PlayerBoard.test.tsx`
 - Modify: `frontend/src/games/papersafari/PaperSafariTable.test.tsx`, `frontend/src/pages/RoomPage.test.tsx` (모바일에서 '내보내기' 이름으로 찾는 곳이 있으면)
