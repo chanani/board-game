@@ -22,7 +22,7 @@ export function RecentMatches({ matches, ownerId }: { matches: RecentMatch[]; ow
               ))}
           </span>
           <span className={`w-10 font-bold ${match.result === 'WIN' ? 'text-safari-700' : 'text-stone-600'}`}>{resultLabel(match.result)}</span>
-          <span className="w-28 text-xs text-stone-400">{match.rounds.map((round) => resultLabel(round.result)).join(' ')}</span>
+          <span className="w-28 text-xs text-stone-400">{match.rounds.map((round) => `${round.score}점`).join(' ')}</span>
         </li>
       ))}
     </ul>

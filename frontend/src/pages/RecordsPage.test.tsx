@@ -49,7 +49,8 @@ describe('RecordsPage', () => {
     expect(await screen.findByText('2승 0무 1패')).toBeInTheDocument();
     expect(screen.getByText('승률').nextElementSibling).toHaveTextContent('66.7%');
     expect(await screen.findByText('밥')).toBeInTheDocument();
-    expect(screen.getByText('승 패')).toBeInTheDocument();
+    expect(screen.getByText('1점 20점')).toBeInTheDocument();
+    expect(screen.queryByText('승 패')).not.toBeInTheDocument();
   });
 
   it('단판 규칙이라 라운드 통계 행과 토큰 표시는 보여주지 않는다', async () => {
