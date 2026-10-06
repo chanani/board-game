@@ -4,6 +4,11 @@ import { PlayerBoard, type SeatTimer } from '../PlayerBoard';
 import { ZoneAnchor } from '../motion/ZoneAnchor';
 import { handZone } from '../motion/zones';
 
+export type SeatSize = 'xs' | 'sm' | 'md' | 'lg';
+
+/** 들고 있는 카드 자리 크기: 큰 판은 md 카드, 가장 작은 판은 xs 카드, 나머지는 sm 카드. */
+const HAND = { xs: { box: 'min-h-14 w-10', card: 'xs' }, sm: { box: 'min-h-[67px] w-12', card: 'sm' }, md: { box: 'min-h-[67px] w-12', card: 'sm' }, lg: { box: 'min-h-[90px] w-16', card: 'md' } } as const;
+
 export type Presence = { connected?: boolean; offlineSeconds?: number; onForfeit?: () => void };
 
 type Props = {
@@ -11,7 +16,7 @@ type Props = {
   nickname: string;
   active: boolean;
   held: HeldView | null;
-  size: 'sm' | 'md' | 'lg';
+  size: SeatSize;
   presence: Presence;
   handLabel: string;
   onSlotClick?: (slot: SlotView) => void;
@@ -23,16 +28,16 @@ type Props = {
   timer?: SeatTimer;
 };
 
-type HandProps = { board: BoardView; held: HeldView | null; size: 'sm' | 'md' | 'lg'; handLabel: string; className?: string };
+type HandProps = { board: BoardView; held: HeldView | null; size: SeatSize; handLabel: string; className?: string };
 
 /** 들고 있는 카드가 놓이는 자리. 카드 비행 훅이 재는 `hand:<id>` 구역이라 플레이어마다 하나만 그린다. */
 export function HandAnchor({ board, held, size, handLabel, className = '' }: HandProps) {
   const holding = held !== null && held.playerId === board.playerId;
   return (
-    <ZoneAnchor zone={handZone(board.playerId)} className={`shrink-0 ${size === 'lg' ? 'min-h-[90px] w-16' : 'min-h-[67px] w-12'} ${className}`}>
+    <ZoneAnchor zone={handZone(board.playerId)} className={`shrink-0 ${HAND[size].box} ${className}`}>
       {holding ? (
         <div className="-rotate-6 drop-shadow-xl" aria-label={handLabel}>
-          <CardFace card={held.card} faceUp={held.card !== null} known={false} size={size === 'lg' ? 'md' : 'sm'} />
+          <CardFace card={held.card} faceUp={held.card !== null} known={false} size={HAND[size].card} />
         </div>
       ) : null}
     </ZoneAnchor>

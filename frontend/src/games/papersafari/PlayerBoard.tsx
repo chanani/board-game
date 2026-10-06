@@ -21,7 +21,7 @@ type Props = {
   active: boolean;
   /** 내 차례일 때 판 테두리 안쪽에 겨자색 링과 빛을 단다(바깥으로 번지지 않아 위 정보를 덮지 않는다). */
   turnRing?: boolean;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'xs' | 'sm' | 'md' | 'lg';
   pulseSlots?: boolean;
   onSlotClick?: (slot: SlotView) => void;
   canClick?: (slot: SlotView) => boolean;
@@ -33,7 +33,7 @@ type Props = {
   timer?: SeatTimer;
 };
 
-const GAP = { sm: 'gap-1.5', md: 'gap-2.5', lg: 'gap-2.5' };
+const GAP = { xs: 'gap-1', sm: 'gap-1.5', md: 'gap-2.5', lg: 'gap-2.5' };
 
 export function PlayerBoard({ result, board, nickname, active, turnRing = false, size = 'md', pulseSlots = false, onSlotClick, canClick, connected, offlineSeconds = 0, onForfeit, zoomLabel, onZoom, timer }: Props) {
   const ordered = [...board.slots].sort((a, b) => a.row - b.row || a.column - b.column);

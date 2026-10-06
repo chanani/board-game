@@ -413,11 +413,21 @@ describe('게임 화면 다듬기', () => {
     expect(lastLog).toHaveClass('min-w-0', 'truncate');
   });
 
-  it('모바일 상대 줄은 Tailwind가 실제로 만드는 안전한 가운데 정렬 클래스를 쓴다', () => {
+  it('모바일 상대 판은 가로 스크롤 없이 한 줄에 두 명씩 놓고, 남는 한 명은 가운데에 둔다', () => {
     setMediaMatches(false);
     render(<PaperSafariTable {...baseProps(build({ phase: 'DRAW', current: ME }))} />);
-    const rail = screen.getByRole('button', { name: '밥님의 판 크게 보기' }).closest('.overflow-x-auto');
-    expect(rail).toHaveClass('justify-center-safe');
+    const rail = screen.getByTestId('opponent-rail');
+    expect(rail).toHaveClass('flex', 'flex-wrap', 'justify-center');
+    expect(rail).not.toHaveClass('overflow-x-auto');
+    const seat = within(rail).getByRole('button', { name: '밥님의 판 크게 보기' }).closest('[data-testid="opponent-cell"]');
+    expect(seat).toHaveClass('basis-[calc(50%-4px)]');
+  });
+
+  it('좁은 휴대폰에서는 상대 카드를 가장 작은 크기로 그려 두 명이 한 줄에 들어가게 한다', () => {
+    setMediaMatches(false);
+    render(<PaperSafariTable {...baseProps(build({ phase: 'DRAW', current: ME }))} />);
+    const card = within(screen.getByTestId('opponent-rail')).getAllByRole('button', { name: '뒷면 카드' })[0];
+    expect(card).toHaveClass('w-10');
   });
 
   it('좁은 휴대폰에서는 내 판 카드를 한 단계 작게 그려 버리기 칸과 한 줄에 들어가게 한다', () => {
@@ -537,14 +547,6 @@ describe('모바일 게임 화면 (상대 판·내 차례·손 카드)', () => {
     expect(hand).toHaveClass('pointer-events-none');
   });
 
-  it('모바일 상대 줄은 3px 간격이고, 좌우 여백 4px라 390px 화면에 상대 판 둘(172px×2)이 넘치지 않는다', () => {
-    setMediaMatches(false);
-    render(<PaperSafariTable {...baseProps(build({ phase: 'DRAW', current: ME }))} />);
-    const rail = screen.getByRole('button', { name: '밥님의 판 크게 보기' }).closest('.overflow-x-auto');
-    expect(rail).toHaveClass('gap-[3px]', 'px-1');
-    expect(rail).not.toHaveClass('px-1.5');
-  });
-
   it('내 차례면 내 판에 테마 강조색 테두리 링이 생기고, 아니면 없다', () => {
     setMediaMatches(false);
     const { unmount } = render(<PaperSafariTable {...baseProps(build({ phase: 'DRAW', current: ME }))} />);
@@ -593,11 +595,10 @@ describe('모바일 게임 화면 (상대 판·내 차례·손 카드)', () => {
     expect(board).not.toHaveClass('ring-4');
   });
 
-  it('모바일 상대 줄은 얇은 스크롤바를 쓰고, 내 펠트와 조금 더 띄운다', () => {
+  it('모바일 상대 판 줄은 내 펠트와 조금 띄운다', () => {
     setMediaMatches(false);
     render(<PaperSafariTable {...baseProps(build({ phase: 'DRAW', current: ME }))} />);
-    const rail = screen.getByRole('button', { name: '밥님의 판 크게 보기' }).closest('.overflow-x-auto');
-    expect(rail).toHaveClass('scroll-thin', 'mb-5');
+    expect(screen.getByTestId('opponent-rail')).toHaveClass('mb-5');
   });
 
   it('되돌리기로 PLACE에서 DRAW로 돌아와도 내 차례 소리는 다시 나지 않는다', () => {
