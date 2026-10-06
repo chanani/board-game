@@ -14,7 +14,7 @@ const OFFSET_PX = 40;
 export function RulesCarousel({ open, onClose }: Props) {
   const [index, setIndex] = useState(0);
   const [direction, setDirection] = useState(1);
-  const touchX = useRef<number | null>(null);
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
   const slide = RULE_SLIDES[index];
 
   const goTo = (next: number) => {
@@ -37,7 +37,7 @@ export function RulesCarousel({ open, onClose }: Props) {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  });
+  }, [open, index]);
 
   useEffect(() => {
     if (open) {
@@ -46,16 +46,18 @@ export function RulesCarousel({ open, onClose }: Props) {
   }, [open]);
 
   const handleTouchStart = (event: TouchEvent) => {
-    touchX.current = event.touches[0].clientX;
+    touchStart.current = { x: event.touches[0].clientX, y: event.touches[0].clientY };
   };
 
   const handleTouchEnd = (event: TouchEvent) => {
-    if (touchX.current === null) {
+    const start = touchStart.current;
+    touchStart.current = null;
+    if (start === null) {
       return;
     }
-    const delta = event.changedTouches[0].clientX - touchX.current;
-    touchX.current = null;
-    if (Math.abs(delta) < SWIPE_PX) {
+    const delta = event.changedTouches[0].clientX - start.x;
+    const vertical = Math.abs(event.changedTouches[0].clientY - start.y);
+    if (Math.abs(delta) < SWIPE_PX || vertical > Math.abs(delta)) {
       return;
     }
     goTo(delta < 0 ? index + 1 : index - 1);
@@ -67,7 +69,8 @@ export function RulesCarousel({ open, onClose }: Props) {
         <h2 className="text-lg font-black text-wood-800">페이퍼 사파리 규칙</h2>
         <span className="text-sm font-bold text-stone-600">{index + 1} / {RULE_SLIDES.length}</span>
       </div>
-      <div className="min-h-[18rem] overflow-hidden" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+      <div className="min-h-[18rem] overflow-hidden" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}
+        onTouchCancel={() => { touchStart.current = null; }}>
         <AnimatePresence mode="wait" initial={false}>
           <motion.div key={index}
             initial={{ opacity: 0, x: direction * OFFSET_PX }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -direction * OFFSET_PX }}
