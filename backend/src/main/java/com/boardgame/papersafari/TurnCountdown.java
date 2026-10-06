@@ -4,7 +4,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 
-// 행동을 기다리기 시작한 시각을 기억하고, 15초 마감을 계산한다. 상태가 바뀔 때마다 다시 잰다.
+// 행동을 기다리기 시작한 시각을 기억하고, 15초 마감을 계산한다. 차례가 넘어가거나 단계가 나아갈 때 다시 잰다.
 public class TurnCountdown {
 
     public static final Duration LIMIT = Duration.ofSeconds(15);

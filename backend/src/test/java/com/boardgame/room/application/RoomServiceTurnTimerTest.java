@@ -114,6 +114,29 @@ class RoomServiceTurnTimerTest {
     }
 
     @Test
+    void 가져왔다_되돌리기를_되풀이해도_원래_마감에_대신_행동한다() {
+        clock.advance(Duration.ofSeconds(15));
+        scheduler.latest().run();
+        long current = viewOf(HOST).round().currentPlayerId();
+        Instant turnDeadline = T0.plusSeconds(30);
+
+        for (int cycle = 0; cycle < 3; cycle++) {
+            clock.advance(Duration.ofSeconds(2));
+            service.act(CODE, current, new GameAction("DRAW_DISCARD", null, null));
+            clock.advance(Duration.ofSeconds(2));
+            service.act(CODE, current, new GameAction("CANCEL_DRAW", null, null));
+        }
+
+        assertThat(scheduler.latest().startTime()).isEqualTo(turnDeadline);
+        clock.advance(Duration.between(clock.instant(), turnDeadline));
+
+        scheduler.latest().run();
+
+        assertThat(viewOf(HOST).lastAutoActorIds()).containsExactly(current);
+        assertThat(viewOf(HOST).round().currentPlayerId()).isNotEqualTo(current);
+    }
+
+    @Test
     void 게임이_끝나면_예약을_취소한다() {
         ScheduledTask armed = scheduler.latest();
 

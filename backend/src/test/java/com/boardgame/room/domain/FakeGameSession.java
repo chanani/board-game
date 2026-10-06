@@ -23,6 +23,7 @@ public class FakeGameSession implements GameSession {
     private int autoActs;
     private Instant deadline;
     private boolean failAutoAct;
+    private boolean finishOnAutoAct;
 
     public FakeGameSession(List<Long> players) {
         this.players = List.copyOf(players);
@@ -55,6 +56,10 @@ public class FakeGameSession implements GameSession {
         if (failAutoAct) {
             throw new IllegalStateException("자동 행동 실패");
         }
+        if (finishOnAutoAct) {
+            finished = true;
+            return List.of(new GameCompleted(List.of()));
+        }
         return List.of();
     }
 
@@ -68,6 +73,10 @@ public class FakeGameSession implements GameSession {
 
     public void deadlineAt(Instant at) {
         deadline = at;
+    }
+
+    public void finishOnAutoAct() {
+        finishOnAutoAct = true;
     }
 
     public void failAutoAct() {

@@ -74,6 +74,35 @@ class PaperSafariSessionTimerTest {
     }
 
     @Test
+    void 가져왔다_되돌리기를_되풀이해도_차례_마감은_늘어나지_않는다() {
+        PaperSafariSession session = session();
+        session.autoAct(new FixedRandom(0));
+        Instant turnDeadline = session.deadline().orElseThrow();
+
+        for (int cycle = 0; cycle < 3; cycle++) {
+            clock.advance(Duration.ofSeconds(2));
+            session.act(A, new GameAction("DRAW_DISCARD", null, null));
+            clock.advance(Duration.ofSeconds(2));
+            session.act(A, new GameAction("CANCEL_DRAW", null, null));
+        }
+
+        assertThat(session.deadline()).contains(turnDeadline);
+    }
+
+    @Test
+    void 차례가_넘어가면_마감을_새로_잡는다() {
+        PaperSafariSession session = session();
+        session.autoAct(new FixedRandom(0));
+        clock.advance(Duration.ofSeconds(3));
+        session.act(A, new GameAction("DRAW_DECK", null, null));
+        clock.advance(Duration.ofSeconds(3));
+
+        session.act(A, new GameAction("DISCARD", null, null));
+
+        assertThat(session.deadline()).contains(clock.instant().plus(LIMIT));
+    }
+
+    @Test
     void 자동_행동도_마감을_다시_잡는다() {
         PaperSafariSession session = session();
         clock.advance(LIMIT);
