@@ -18,13 +18,11 @@ export function OpponentSeat({ board, nickname, tokens, active, held, presence }
   const [open, setOpen] = useState(false);
   const { score } = estimateBoard(board);
   return (
-    <div className="relative">
+    <div>
       <Seat board={board} nickname={nickname} tokens={tokens} active={active} held={held} size="sm" presence={presence}
-        handLabel={`${nickname}님이 들고 있는 카드`} />
-      <button type="button" aria-label={`${nickname}님의 판 크게 보기`} onClick={() => setOpen(true)}
-        className="absolute inset-0 z-[5] cursor-zoom-in rounded-2xl focus-visible:outline-2 focus-visible:outline-mustard-400" />
+        handLabel={`${nickname}님이 들고 있는 카드`} onZoom={() => setOpen(true)} />
       <span data-testid="opponent-estimate" className="mt-1 block w-fit rounded-full bg-black/35 px-2 py-0.5 text-xs font-bold text-cream-50">예상 {score}점</span>
-      <OpponentBoardModal open={open} board={board} nickname={nickname} tokens={tokens} presence={presence} onClose={() => setOpen(false)} />
+      <OpponentBoardModal open={open} board={board} nickname={nickname} tokens={tokens} presence={{ connected: presence.connected, offlineSeconds: presence.offlineSeconds }} onClose={() => setOpen(false)} />
     </div>
   );
 }

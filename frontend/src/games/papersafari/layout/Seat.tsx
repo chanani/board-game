@@ -18,14 +18,15 @@ type Props = {
   onSlotClick?: (slot: SlotView) => void;
   canClick?: (slot: SlotView) => boolean;
   pulseSlots?: boolean;
+  onZoom?: () => void;
 };
 
-export function Seat({ board, nickname, tokens, active, held, size, presence, handLabel, onSlotClick, canClick, pulseSlots }: Props) {
+export function Seat({ board, nickname, tokens, active, held, size, presence, handLabel, onSlotClick, canClick, pulseSlots, onZoom }: Props) {
   const holding = held !== null && held.playerId === board.playerId;
   return (
     <div className="relative flex items-start gap-2">
       <PlayerBoard board={board} nickname={nickname} tokens={tokens} active={active} size={size}
-        onSlotClick={onSlotClick} canClick={canClick} pulseSlots={pulseSlots} {...presence} />
+        onSlotClick={onSlotClick} canClick={canClick} pulseSlots={pulseSlots} onZoom={onZoom} zoomLabel={`${nickname}님의 판 크게 보기`} {...presence} />
       <ZoneAnchor zone={handZone(board.playerId)} className={`mt-6 shrink-0 ${size === 'lg' ? 'min-h-[90px] w-16' : 'min-h-[67px] w-12'}`}>
         {holding ? (
           <div className="-rotate-6 -translate-y-2 drop-shadow-xl" aria-label={handLabel}>

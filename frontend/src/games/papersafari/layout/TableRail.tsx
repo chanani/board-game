@@ -26,7 +26,7 @@ export function TableRail(props: TableProps) {
         <CenterPiles deckSize={round.deckSize} discardTop={round.discardTop} drawable={drawable} size="md"
           onDrawDeck={() => send({ type: 'DRAW_DECK' })} onDrawDiscard={() => send({ type: 'DRAW_DISCARD' })} />
         {myBoard ? (
-          <div className="flex items-start gap-2">
+          <div className="flex w-full items-start gap-2">
           <Seat board={myBoard} nickname={`${nicknameOf(meId)} (나)`} tokens={tokensOf(meId)} active={myTurn}
             held={round.held} size="md" presence={{}} handLabel="들고 있는 카드" onSlotClick={clickSlot} canClick={canClickSlot} pulseSlots={myTurn} />
           <MySide canDiscard={canDiscard} estimate={estimate} onDiscard={() => send({ type: 'DISCARD' })} />

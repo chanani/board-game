@@ -148,6 +148,18 @@ describe('PaperSafariTable 접속 상태와 내보내기', () => {
     await userEvent.click(screen.getByRole('button', { name: '내보내기' }));
 
     expect(onForfeit).toHaveBeenCalledWith(OPPONENT);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('내보내기 버튼은 확대 덮개 밖에 있고, 확대 창에는 내보내기가 없다', async () => {
+    render(tableFor(build({ phase: 'DRAW', current: ME }), vi.fn(), offlineRoom(60)));
+    const zoom = screen.getByRole('button', { name: '밥님의 판 크게 보기' });
+
+    expect(zoom).not.toContainElement(screen.getByRole('button', { name: '내보내기' }));
+    expect(zoom.parentElement).not.toContainElement(screen.getByRole('button', { name: '내보내기' }));
+    await userEvent.click(zoom);
+
+    expect(within(screen.getByRole('dialog')).queryByRole('button', { name: '내보내기' })).not.toBeInTheDocument();
   });
 
   it('60초 미만이면 끊긴 시간만 보이고 버튼은 없다', () => {
@@ -290,7 +302,9 @@ describe('게임 화면 다듬기', () => {
   it.each([true, false])('안내 문구 영역은 두 줄 높이로 고정된다 (PC 배치 %s)', (wide) => {
     setMediaMatches(wide);
     render(<PaperSafariTable {...baseProps(build({ phase: 'DRAW', current: OPPONENT }))} />);
-    expect(screen.getByTestId('instruction')).toHaveClass('min-h-[3rem]', 'line-clamp-2');
+    const box = screen.getByTestId('instruction');
+    expect(box).toHaveClass('min-h-[3.25rem]');
+    expect(box.querySelector('.line-clamp-2')).not.toBeNull();
   });
 
   it('모바일 배치에서는 내 판 옆 세로 칸에 버리기와 예상 점수를 둔다', () => {
@@ -299,6 +313,16 @@ describe('게임 화면 다듬기', () => {
     const side = screen.getByTestId('my-side');
     expect(within(side).getByRole('button', { name: '버리기' })).toBeEnabled();
     expect(within(side).getByText(/현재 예상 점수/)).toBeInTheDocument();
+  });
+
+  it('내 칸이 좁아질 때만 가려진 장수를 숨기고 점수 글자를 줄이는 컨테이너 규칙을 가진다', () => {
+    setMediaMatches(false);
+    render(<PaperSafariTable {...baseProps(build({ phase: 'DRAW', current: ME }))} />);
+    const side = screen.getByTestId('my-side');
+    expect(side).toHaveClass('@container', 'flex-1');
+    expect(side.className).not.toMatch(/(^|\s)w-\d/);
+    expect(side.querySelector('.estimate-hidden-note')).toHaveClass('@max-[140px]:hidden');
+    expect(side.querySelector('strong')).toHaveClass('text-lg', '@max-[140px]:text-base');
   });
 
   describe('상대 판 확대', () => {

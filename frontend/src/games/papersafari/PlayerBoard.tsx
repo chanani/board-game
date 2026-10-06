@@ -17,6 +17,8 @@ type Props = {
   connected?: boolean;
   offlineSeconds?: number;
   onForfeit?: () => void;
+  zoomLabel?: string;
+  onZoom?: () => void;
 };
 
 const TOKENS_TO_WIN = 3;
@@ -32,7 +34,7 @@ function TokenCoins({ tokens }: { tokens: number }) {
   );
 }
 
-export function PlayerBoard({ board, nickname, tokens, active, size = 'md', pulseSlots = false, onSlotClick, canClick, connected, offlineSeconds = 0, onForfeit }: Props) {
+export function PlayerBoard({ board, nickname, tokens, active, size = 'md', pulseSlots = false, onSlotClick, canClick, connected, offlineSeconds = 0, onForfeit, zoomLabel, onZoom }: Props) {
   const ordered = [...board.slots].sort((a, b) => a.row - b.row || a.column - b.column);
   const zeroColumns = new Set(
     [0, 1, 2].filter((column) => isZeroPair(cardAt(board, column, 0), cardAt(board, column, 1))),
@@ -53,14 +55,18 @@ export function PlayerBoard({ board, nickname, tokens, active, size = 'md', puls
           <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold text-wood-800 shadow-[0_2px_0_rgb(0_0_0/0.3)] ${active ? 'turn-glow bg-mustard-400' : 'bg-cream-50'}`}>{nickname}</span>
           {connected === false ? <span className="text-xs text-cream-100">연결 끊김 {offlineSeconds}초</span> : null}
           {onForfeit ? (
-            <button type="button" onClick={onForfeit} className="relative z-10 rounded-md bg-red-50 px-1.5 py-0.5 text-xs font-medium text-red-700 hover:bg-red-100">
+            <button type="button" onClick={onForfeit} className="rounded-md bg-red-50 px-1.5 py-0.5 text-xs font-medium text-red-700 hover:bg-red-100">
               내보내기
             </button>
           ) : null}
         </span>
         <TokenCoins tokens={tokens} />
       </div>
-      <div className={`grid grid-cols-3 ${GAP[size]}`}>
+      <div className={`relative grid grid-cols-3 ${GAP[size]}`}>
+        {onZoom ? (
+          <button type="button" aria-label={zoomLabel} onClick={onZoom}
+            className="absolute inset-0 z-[5] cursor-zoom-in rounded-xl focus-visible:outline-2 focus-visible:outline-mustard-400" />
+        ) : null}
         {ordered.map((slot) => {
           const clickable = Boolean(onSlotClick && canClick?.(slot));
           return (
