@@ -109,6 +109,25 @@ class AutoActTest {
         assertThat(round.isOver()).isTrue();
     }
 
+    @Test
+    void 거부된_행동은_자동_행동_표시를_지우지_않고_자동_행동마다_순번이_오른다() {
+        PaperSafariGame game = PaperSafariGame.start(TWO,
+                new RoundFactory(StackedShuffler.of(stack(List.of(WINNER_HAND, LOSER_HAND), Card.number(7),
+                        zeros(10))), count -> 0));
+        game.autoAct(new FixedRandom(0));
+
+        try {
+            game.drawFromDeck(BOB);
+        } catch (RuntimeException ignored) {
+            // ALICE 차례라 거부된다.
+        }
+
+        assertThat(game.viewFor(ALICE).lastAutoActorIds()).containsExactly(ALICE.value(), BOB.value());
+        game.autoAct(new FixedRandom(0));
+        assertThat(game.viewFor(ALICE).autoActSeq()).isEqualTo(2L);
+        assertThat(game.viewFor(ALICE).lastAutoActorIds()).containsExactly(ALICE.value());
+    }
+
     private void playTurn(PaperSafariRound round, Position position) {
         round.drawFromDeck(ALICE);
         round.swapAt(ALICE, position);
@@ -128,8 +147,12 @@ class AutoActTest {
         assertThat(game.viewFor(ALICE).lastAutoActorId()).isEqualTo(BOB.value());
         assertThat(game.viewFor(ALICE).lastAutoActorIds()).containsExactly(BOB.value());
 
+        assertThat(game.viewFor(ALICE).autoActSeq()).isEqualTo(1L);
+        assertThat(game.viewFor(BOB).autoActSeq()).isEqualTo(1L);
+
         game.drawFromDeck(ALICE);
 
+        assertThat(game.viewFor(ALICE).autoActSeq()).isEqualTo(1L);
         assertThat(game.viewFor(ALICE).lastAutoActorId()).isNull();
         assertThat(game.viewFor(ALICE).lastAutoActorIds()).isEmpty();
     }

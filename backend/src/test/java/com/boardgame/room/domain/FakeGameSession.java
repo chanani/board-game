@@ -21,6 +21,8 @@ public class FakeGameSession implements GameSession {
     private boolean finished;
     private boolean finishOnAct;
     private int autoActs;
+    private Instant deadline;
+    private boolean failAutoAct;
 
     public FakeGameSession(List<Long> players) {
         this.players = List.copyOf(players);
@@ -50,12 +52,26 @@ public class FakeGameSession implements GameSession {
     @Override
     public List<GameOutcome> autoAct(Random random) {
         autoActs++;
+        if (failAutoAct) {
+            throw new IllegalStateException("자동 행동 실패");
+        }
         return List.of();
     }
 
     @Override
     public Optional<Instant> deadline() {
-        return Optional.empty();
+        if (finished) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(deadline);
+    }
+
+    public void deadlineAt(Instant at) {
+        deadline = at;
+    }
+
+    public void failAutoAct() {
+        failAutoAct = true;
     }
 
     public int autoActs() {

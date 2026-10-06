@@ -38,6 +38,8 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import java.time.Instant;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -45,7 +47,9 @@ import org.springframework.stereotype.Service;
 @Service
 public class RoomService {
 
+    private static final Logger log = LoggerFactory.getLogger(RoomService.class);
     private static final Duration FORFEIT_GRACE = Duration.ofSeconds(60);
+    private static final Duration TIMEOUT_RETRY = Duration.ofSeconds(15);
 
     private final RoomRegistry registry;
     private final RoomCodeGenerator codeGenerator;
@@ -245,7 +249,15 @@ public class RoomService {
         if (found.isEmpty()) {
             return;
         }
-        Room room = found.get();
+        try {
+            applyTimeout(found.get());
+        } catch (RuntimeException exception) {
+            log.warn("시간 초과 자동 행동 실패, 다시 예약한다: room={}", code.value(), exception);
+            retryTimeout(found.get());
+        }
+    }
+
+    private void applyTimeout(Room room) {
         List<Long> before = room.memberIds();
         List<GameOutcome> outcomes = room.autoAct(random);
         baselineNewcomers(room, before);
@@ -255,15 +267,33 @@ public class RoomService {
         outcomePublisher.publish(room, outcomes, clock.instant());
     }
 
+    // 실패하면 마감이 이미 지났으므로 rearm은 곧바로 다시 실행돼 실패를 되풀이한다. 한 번의 제한 시간 뒤에 다시 시도한다.
+    private void retryTimeout(Room room) {
+        RoomCode code = room.code();
+        Optional<Instant> deadline = waitingDeadline(room);
+        if (deadline.isEmpty()) {
+            turnTimer.cancel(code);
+            broadcastUnlessEmpty(room);
+            return;
+        }
+        turnTimer.arm(code, clock.instant().plus(TIMEOUT_RETRY), version -> timeout(code, version));
+        broadcast(room);
+    }
+
     // 상태가 바뀔 때마다 새 판번호로 다시 건다. 기다리는 행동이 없거나(게임 끝) 방이 사라졌으면 취소한다.
     private void rearm(Room room) {
         RoomCode code = room.code();
-        Optional<Instant> deadline = room.deadline().filter(ignored -> registry.exists(code));
+        Optional<Instant> deadline = waitingDeadline(room);
         if (deadline.isEmpty()) {
             turnTimer.cancel(code);
             return;
         }
         turnTimer.arm(code, deadline.get(), version -> timeout(code, version));
+    }
+
+    private Optional<Instant> waitingDeadline(Room room) {
+        RoomCode code = room.code();
+        return room.deadline().filter(ignored -> registry.exists(code));
     }
 
     public synchronized void sync(String rawCode, long memberId) {

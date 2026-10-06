@@ -26,43 +26,35 @@ public class PaperSafariGame {
     }
 
     public void flipInitial(PlayerId player, Position position) {
-        requireHumanTurn();
-        round.flipInitial(player, position);
+        humanAction(() -> round.flipInitial(player, position));
     }
 
     public void drawFromDeck(PlayerId player) {
-        requireHumanTurn();
-        round.drawFromDeck(player);
+        humanAction(() -> round.drawFromDeck(player));
     }
 
     public void drawFromDiscard(PlayerId player) {
-        requireHumanTurn();
-        round.drawFromDiscard(player);
+        humanAction(() -> round.drawFromDiscard(player));
     }
 
     public void cancelDraw(PlayerId player) {
-        requireHumanTurn();
-        round.cancelDraw(player);
+        humanAction(() -> round.cancelDraw(player));
     }
 
     public void swapAt(PlayerId player, Position position) {
-        requireHumanTurn();
-        round.swapAt(player, position);
+        humanAction(() -> round.swapAt(player, position));
     }
 
     public void discardDrawn(PlayerId player) {
-        requireHumanTurn();
-        round.discardDrawn(player);
+        humanAction(() -> round.discardDrawn(player));
     }
 
     public void peekAt(PlayerId player, Position position) {
-        requireHumanTurn();
-        round.peekAt(player, position);
+        humanAction(() -> round.peekAt(player, position));
     }
 
     public void forfeit(PlayerId player) {
-        requireHumanTurn();
-        round.leave(player);
+        humanAction(() -> round.leave(player));
     }
 
     // 시간 초과: 지금 기다리는 행동을 대신 하고, 누구 대신이었는지 기억한다.
@@ -136,7 +128,8 @@ public class PaperSafariGame {
                 timing.deadline(),
                 timing.serverNow(),
                 autoActors.firstId(),
-                autoActors.ids());
+                autoActors.ids(),
+                autoActors.sequence());
     }
 
     private RoundOutcome drawUnlessForfeited(PlayerId player) {
@@ -146,9 +139,10 @@ public class PaperSafariGame {
         return RoundOutcome.DRAW;
     }
 
-    // 사람의 행동(기권 포함)이 오면 직전 자동 행동 표시를 지운다.
-    private void requireHumanTurn() {
+    // 사람의 행동(기권 포함)이 성공하면 직전 자동 행동 표시를 지운다. 거부된 행동은 표시를 건드리지 않는다.
+    private void humanAction(Runnable action) {
         requireInProgress();
+        action.run();
         autoActors.clear();
     }
 
