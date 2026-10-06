@@ -7,6 +7,7 @@ import { Layout } from './Layout';
 
 vi.mock('../realtime/RealtimeContext', () => ({ useRealtime: () => ({ realtime: {}, connected: true }) }));
 vi.mock('../auth/AuthContext', () => ({ useAuth: () => ({ member: { id: 1, nickname: '앨리스' }, logout: vi.fn() }) }));
+vi.mock('../api/rooms', () => ({ roomsApi: { mine: () => Promise.resolve(null) } }));
 vi.mock('./Toast', () => ({ useToast: () => ({ show: vi.fn() }) }));
 
 describe('Layout 페이지 전환', () => {

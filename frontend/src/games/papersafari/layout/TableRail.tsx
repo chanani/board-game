@@ -3,6 +3,7 @@ import { WoodRail } from '../../../components/WoodRail';
 import { CenterPiles } from './CenterPiles';
 import { Hud } from './Hud';
 import { Seat } from './Seat';
+import { SpectatorNotice } from './SpectatorNotice';
 import type { TableProps } from '../PaperSafariTable';
 
 export function TableRail(props: TableProps) {
@@ -26,9 +27,9 @@ export function TableRail(props: TableProps) {
         {myBoard ? (
           <Seat board={myBoard} nickname={`${nicknameOf(meId)} (나)`} tokens={tokensOf(meId)} active={myTurn}
             held={round.held} size="md" presence={{}} handLabel="들고 있는 카드" onSlotClick={clickSlot} canClick={canClickSlot} pulseSlots={myTurn} />
-        ) : null}
+        ) : <SpectatorNotice />}
       </Felt>
-      <div className="mx-auto max-w-md">{footer}</div>
+      {footer ? <div className="mx-auto max-w-md">{footer}</div> : null}
     </div>
   );
 }

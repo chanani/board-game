@@ -1,7 +1,8 @@
 import { useState, type FormEvent } from 'react';
-import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { messageOf } from '../api/http';
 import { useAuth } from '../auth/AuthContext';
+import { pathAfterLogin } from '../auth/afterLogin';
 import { motion } from 'motion/react';
 import { Felt } from '../components/Felt';
 import { Button, Panel, TextInput } from '../components/ui';
@@ -11,12 +12,14 @@ import { useToast } from '../components/Toast';
 export function LoginPage() {
   const { member, login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const notice = (location.state as { notice?: string } | null)?.notice;
   const toast = useToast();
   const [loginId, setLoginId] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  if (member) {
+  if (member && !submitting) {
     return <Navigate to="/" replace />;
   }
 
@@ -25,7 +28,7 @@ export function LoginPage() {
     setSubmitting(true);
     try {
       await login(loginId, password);
-      navigate('/', { replace: true });
+      navigate(await pathAfterLogin(), { replace: true });
     } catch (error) {
       toast.show(messageOf(error));
     } finally {
@@ -41,6 +44,9 @@ export function LoginPage() {
           <div className="-ml-4 rotate-6"><CardFace card={{ kind: 'FOX', value: -2 }} faceUp known size="md" /></div>
         </div>
         <motion.div initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
+      {notice ? (
+        <p role="alert" className="paper mb-4 -rotate-1 px-4 py-2.5 text-center text-sm font-bold text-brick-500">{notice}</p>
+      ) : null}
       <Panel>
         <h1 className="mb-1 text-2xl font-bold text-safari-700">🌿 보드게임 라운지</h1>
         <p className="mb-6 text-sm text-stone-500">친구들과 함께하는 보드게임</p>

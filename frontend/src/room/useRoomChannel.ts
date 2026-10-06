@@ -9,10 +9,15 @@ import { useRealtime } from '../realtime/RealtimeContext';
 const MAX_LOG = 5;
 const SYNC_RETRY_MS = 1000;
 const SYNC_MAX_TRIES = 5;
+const POLL_MS = 5000;
+
+type Options = { poll?: boolean };
+
+const isRoomGone = (error: unknown) => error instanceof ApiError && error.status === 404;
 
 export type ViewTransition = { seq: number; from: PaperSafariView | null; to: PaperSafariView; animate: boolean };
 
-export function useRoomChannel(code: string) {
+export function useRoomChannel(code: string, { poll = false }: Options = {}) {
   const { realtime, connected } = useRealtime();
   const toast = useToast();
   const [room, setRoom] = useState<Room | null>(null);
@@ -87,7 +92,7 @@ export function useRoomChannel(code: string) {
           return;
         }
         toast.show(messageOf(error));
-        if (!roomRef.current || (error instanceof ApiError && error.status === 404)) {
+        if (!roomRef.current || isRoomGone(error)) {
           setMissing(true);
         }
       });
@@ -104,8 +109,12 @@ export function useRoomChannel(code: string) {
       }),
       realtime.subscribe('/user/queue/game', (body) => acceptView(body as PaperSafariSessionView)),
       realtime.subscribe('/user/queue/errors', (body) => {
-        toast.show((body as ApiErrorBody).message);
+        const error = body as ApiErrorBody;
+        toast.show(error.message);
         setErrorSeq((current) => current + 1);
+        if (error.code === 'ROOM_NOT_FOUND') {
+          setMissing(true);
+        }
       }),
     ];
     return () => offs.forEach((off) => off());
@@ -131,6 +140,33 @@ export function useRoomChannel(code: string) {
     }, SYNC_RETRY_MS);
     return () => window.clearInterval(timer);
   }, [code, connected, realtime]);
+
+  useEffect(() => {
+    if (!poll) {
+      return undefined;
+    }
+    let cancelled = false;
+    const timer = window.setInterval(() => {
+      const seenBefore = topicSeenRef.current;
+      roomsApi
+        .get(code)
+        .then((next) => {
+          if (!cancelled && topicSeenRef.current === seenBefore) {
+            acceptRoom(next);
+          }
+        })
+        .catch((error) => {
+          if (!cancelled && isRoomGone(error)) {
+            toast.show(messageOf(error));
+            setMissing(true);
+          }
+        });
+    }, POLL_MS);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [poll, code, acceptRoom, toast]);
 
   const status = room?.status;
   useEffect(() => {

@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { authApi } from '../api/auth';
-import { setUnauthorizedHandler } from '../api/http';
+import { setUnauthorizedHandler, type UnauthorizedReason } from '../api/http';
 import type { Member } from '../api/types';
 
 type AuthState = {
@@ -9,7 +9,13 @@ type AuthState = {
   login: (loginId: string, password: string) => Promise<void>;
   signup: (loginId: string, nickname: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  /** 로그인 화면으로 보낼 때 함께 보여 줄 안내. 다른 곳에서 로그인해서 끊겼을 때만 있다. */
+  notice: string | null;
+  /** 웹소켓이 4001(다른 곳에서 로그인)로 닫혔을 때 부른다. */
+  sessionReplaced: () => void;
 };
+
+export const SESSION_REPLACED_NOTICE = '다른 곳에서 로그인해서 로그아웃됐어요.';
 
 export class SignupLoginError extends Error {
   constructor() {
@@ -22,11 +28,18 @@ const AuthContext = createContext<AuthState | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [member, setMember] = useState<Member | null>(null);
   const [loading, setLoading] = useState(true);
+  const [notice, setNotice] = useState<string | null>(null);
+
+  const expire = useCallback((reason?: UnauthorizedReason) => {
+    setNotice(reason === 'SESSION_REPLACED' ? SESSION_REPLACED_NOTICE : null);
+    setMember(null);
+  }, []);
+  const sessionReplaced = useCallback(() => expire('SESSION_REPLACED'), [expire]);
 
   useEffect(() => {
-    setUnauthorizedHandler(() => setMember(null));
+    setUnauthorizedHandler(expire);
     return () => setUnauthorizedHandler(null);
-  }, []);
+  }, [expire]);
 
   useEffect(() => {
     authApi
@@ -37,13 +50,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = useCallback(async (loginId: string, password: string) => {
-    setMember(await authApi.login(loginId, password));
+    const next = await authApi.login(loginId, password);
+    setNotice(null);
+    setMember(next);
   }, []);
 
   const signup = useCallback(async (loginId: string, nickname: string, password: string) => {
     await authApi.signup(loginId, nickname, password);
     try {
-      setMember(await authApi.login(loginId, password));
+      const next = await authApi.login(loginId, password);
+      setNotice(null);
+      setMember(next);
     } catch {
       throw new SignupLoginError();
     }
@@ -51,10 +68,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(async () => {
     await authApi.logout();
+    setNotice(null);
     setMember(null);
   }, []);
 
-  const value = useMemo(() => ({ member, loading, login, signup, logout }), [member, loading, login, signup, logout]);
+  const value = useMemo(
+    () => ({ member, loading, login, signup, logout, notice, sessionReplaced }),
+    [member, loading, login, signup, logout, notice, sessionReplaced],
+  );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

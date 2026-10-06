@@ -6,7 +6,7 @@ type Subscription = { unsubscribe: () => void };
 export interface StompLike {
   connected: boolean;
   onConnect: () => void;
-  onWebSocketClose: () => void;
+  onWebSocketClose: (event?: { code?: number }) => void;
   activate(): void;
   deactivate(): void;
   subscribe(destination: string, callback: (message: Message) => void): Subscription;
@@ -14,6 +14,9 @@ export interface StompLike {
 }
 
 type Handler = (body: unknown) => void;
+
+/** 서버가 같은 계정의 새 로그인으로 이전 웹소켓을 닫을 때 쓰는 닫힘 코드. */
+export const SESSION_REPLACED_CLOSE_CODE = 4001;
 type Entry = { destination: string; handler: Handler; subscription?: Subscription };
 
 export function createStompClient(): StompLike {
@@ -30,6 +33,7 @@ export class Realtime {
   private readonly client: StompLike;
   private readonly entries = new Map<number, Entry>();
   private readonly listeners = new Set<(connected: boolean) => void>();
+  private readonly replacedListeners = new Set<() => void>();
   private nextId = 1;
 
   constructor(factory: () => StompLike = createStompClient) {
@@ -38,7 +42,12 @@ export class Realtime {
       this.entries.forEach((entry) => this.attach(entry));
       this.emit(true);
     };
-    this.client.onWebSocketClose = () => this.emit(false);
+    this.client.onWebSocketClose = (event) => {
+      this.emit(false);
+      if (event?.code === SESSION_REPLACED_CLOSE_CODE) {
+        this.replacedListeners.forEach((listener) => listener());
+      }
+    };
   }
 
   start(): void {
@@ -77,6 +86,13 @@ export class Realtime {
   onConnectionChange(listener: (connected: boolean) => void): () => void {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
+  }
+
+  onSessionReplaced(listener: () => void): () => void {
+    this.replacedListeners.add(listener);
+    return () => {
+      this.replacedListeners.delete(listener);
+    };
   }
 
   private attach(entry: Entry): void {

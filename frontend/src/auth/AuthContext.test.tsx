@@ -1,10 +1,12 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { authApi } from '../api/auth';
 import { request } from '../api/http';
 import { AuthProvider, SignupLoginError, useAuth } from './AuthContext';
+import { RequireAuth } from './RequireAuth';
 
 function Consumer() {
   const { member, loading, signup } = useAuth();
@@ -71,5 +73,84 @@ describe('AuthProvider 세션 만료', () => {
     await request('/api/rooms').catch(() => undefined);
 
     await waitFor(() => expect(screen.getByTestId('member')).toHaveTextContent('none'));
+  });
+});
+
+vi.mock('../realtime/RealtimeContext', () => ({
+  RealtimeProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
+
+function LoginProbe() {
+  const location = useLocation();
+  const notice = (location.state as { notice?: string } | null)?.notice;
+  return <p>로그인 화면 {notice ?? '안내 없음'}</p>;
+}
+
+describe('다른 곳에서 로그인해서 끊김', () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  function renderProtected() {
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <AuthProvider>
+          <Routes>
+            <Route path="/login" element={<LoginProbe />} />
+            <Route element={<RequireAuth />}>
+              <Route path="/" element={<p>목록 화면</p>} />
+            </Route>
+          </Routes>
+        </AuthProvider>
+      </MemoryRouter>,
+    );
+  }
+
+  it('SESSION_REPLACED 401이면 로그인 화면으로 가며 안내를 넘긴다', async () => {
+    vi.spyOn(authApi, 'me').mockResolvedValue(alice);
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({ status: 401, code: 'SESSION_REPLACED', message: 'x' }), { status: 401 }));
+    renderProtected();
+    expect(await screen.findByText('목록 화면')).toBeInTheDocument();
+
+    await request('/api/rooms/me').catch(() => undefined);
+
+    expect(await screen.findByText('로그인 화면 다른 곳에서 로그인해서 로그아웃됐어요.')).toBeInTheDocument();
+  });
+
+  it('보통의 401이면 안내 없이 로그인 화면으로 간다', async () => {
+    vi.spyOn(authApi, 'me').mockResolvedValue(alice);
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({ status: 401, code: 'UNAUTHORIZED', message: 'x' }), { status: 401 }));
+    renderProtected();
+    expect(await screen.findByText('목록 화면')).toBeInTheDocument();
+
+    await request('/api/rooms/me').catch(() => undefined);
+
+    expect(await screen.findByText('로그인 화면 안내 없음')).toBeInTheDocument();
+  });
+
+  it('웹소켓이 4001로 닫혔다고 알리면 같은 안내로 로그인 화면에 간다', async () => {
+    vi.spyOn(authApi, 'me').mockResolvedValue(alice);
+    let replaced: (() => void) | null = null;
+    function Trigger() {
+      const { sessionReplaced } = useAuth();
+      replaced = sessionReplaced;
+      return null;
+    }
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <AuthProvider>
+          <Trigger />
+          <Routes>
+            <Route path="/login" element={<LoginProbe />} />
+            <Route element={<RequireAuth />}>
+              <Route path="/" element={<p>목록 화면</p>} />
+            </Route>
+          </Routes>
+        </AuthProvider>
+      </MemoryRouter>,
+    );
+    expect(await screen.findByText('목록 화면')).toBeInTheDocument();
+
+    act(() => replaced?.());
+
+    expect(await screen.findByText('로그인 화면 다른 곳에서 로그인해서 로그아웃됐어요.')).toBeInTheDocument();
   });
 });

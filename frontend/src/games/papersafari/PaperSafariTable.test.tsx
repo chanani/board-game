@@ -252,3 +252,26 @@ it('상대가 덱에서 뽑으면 유령 카드가 날아간다', () => {
   expect(screen.getByTestId('ghost-layer')).toBeInTheDocument();
   rect.mockRestore();
 });
+
+describe('관전자 화면', () => {
+  const SPECTATOR = 99;
+  const watching = (): PaperSafariSessionView => {
+    const view = build({ phase: 'DRAW', current: OPPONENT });
+    return { ...view, game: { ...view.game, viewerId: SPECTATOR } };
+  };
+
+  it.each([true, false])('모든 판을 상대 자리로 보여주고 행동 버튼은 모두 막는다 (PC 배치 %s)', (wide) => {
+    setMediaMatches(wide);
+    const send = vi.fn();
+    render(<PaperSafariTable {...baseProps(watching(), send)} meId={SPECTATOR} />);
+
+    const slotButtons = screen.getAllByTestId('slot').map((slot) => within(slot).getByRole('button'));
+    expect(slotButtons).toHaveLength(12);
+    slotButtons.forEach((button) => expect(button).toBeDisabled());
+    expect(screen.getByText(/관전 중이에요/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '덱에서 뽑기' })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: '버리기' })).not.toBeInTheDocument();
+    expect(screen.getByText('밥님의 차례예요.')).toBeInTheDocument();
+    expect(screen.queryByText(/\(나\)/)).not.toBeInTheDocument();
+  });
+});

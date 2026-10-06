@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useAuth } from '../auth/AuthContext';
 import { Realtime } from './Realtime';
 
 type RealtimeState = { realtime: Realtime; connected: boolean };
@@ -8,6 +9,9 @@ const RealtimeContext = createContext<RealtimeState | null>(null);
 export function RealtimeProvider({ children }: { children: ReactNode }) {
   const [realtime] = useState(() => new Realtime());
   const [connected, setConnected] = useState(false);
+  const { sessionReplaced } = useAuth();
+
+  useEffect(() => realtime.onSessionReplaced(sessionReplaced), [realtime, sessionReplaced]);
 
   useEffect(() => {
     const off = realtime.onConnectionChange(setConnected);

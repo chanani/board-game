@@ -121,6 +121,16 @@ describe('GameLobbyPage', () => {
     expect(await screen.findByText('게임 중인 방이에요. 목록에서 관전할 수 있어요.')).toBeInTheDocument();
   });
 
+  it('이미 방에 있어도 로비에 머문다', async () => {
+    api.mine.mockResolvedValue({ code: 'ABC234' });
+    renderLobby();
+    await screen.findByText('열린방');
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    expect(screen.queryByText('방 화면')).not.toBeInTheDocument();
+    expect(screen.getByText('열린방')).toBeInTheDocument();
+  });
+
   it('1초마다 방 목록을 새로 불러온다', async () => {
     vi.useFakeTimers();
     renderLobby();

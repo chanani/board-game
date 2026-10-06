@@ -42,17 +42,9 @@ export function GameLobbyPage() {
   const [rankings, setRankings] = useState<Ranking[]>([]);
 
   useEffect(() => {
-    roomsApi
-      .mine()
-      .then((room) => {
-        if (room) {
-          navigate(`/rooms/${room.code}`, { replace: true });
-        }
-      })
-      .catch(() => undefined);
     recordsApi.me().then((stats) => setStat(stats.stats.find((item) => item.gameType === gameType) ?? null)).catch(() => setStatFailed(true));
     recordsApi.rankings(gameType).then(setRankings).catch(() => undefined);
-  }, [navigate, gameType]);
+  }, [gameType]);
 
   const failedRef = useRef(false);
 

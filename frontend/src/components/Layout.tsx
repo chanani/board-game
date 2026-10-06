@@ -5,6 +5,7 @@ import { useAuth } from '../auth/AuthContext';
 import { messageOf } from '../api/http';
 import { useSound } from '../lib/sound';
 import { useRealtime } from '../realtime/RealtimeContext';
+import { ActiveRoomBar } from '../room/ActiveRoomBar';
 import { SpeakerIcon, SpeakerMutedIcon } from './icons';
 import { useToast } from './Toast';
 
@@ -86,6 +87,7 @@ export function Layout() {
           </motion.div>
         </AnimatePresence>
       </main>
+      <ActiveRoomBar />
     </div>
   );
 }

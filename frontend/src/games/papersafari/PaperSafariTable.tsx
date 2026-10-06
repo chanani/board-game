@@ -1,6 +1,6 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import type { BoardView, GameAction, PaperSafariSessionView, Room, SlotView } from '../../api/types';
-import { Button, Panel } from '../../components/ui';
+import { Button } from '../../components/ui';
 import { GameOverPanel } from './GameOverPanel';
 import { TableRail } from './layout/TableRail';
 import { TableRound } from './layout/TableRound';
@@ -117,6 +117,7 @@ export function PaperSafariTable({ view, room, meId, log, receivedAt, now, error
   const canDiscard = myTurn && round.phase === 'PLACE' && held !== null && held.source === 'DECK' && held.card?.kind !== 'TARZAN';
   const estimate = myBoard ? estimateBoard(myBoard) : null;
   const memberOf = (memberId: number) => room.members.find((member) => member.id === memberId);
+  const seated = memberOf(meId) !== undefined;
   const presenceOf = (memberId: number): Presence => {
     const member = memberOf(memberId);
     if (!member) {
@@ -125,7 +126,7 @@ export function PaperSafariTable({ view, room, meId, log, receivedAt, now, error
     return {
       connected: member.connected,
       offlineSeconds: offlineSecondsNow(member, receivedAt, now),
-      onForfeit: canForfeit(member, meId, receivedAt, now) ? () => onForfeit(memberId) : undefined,
+      onForfeit: seated && canForfeit(member, meId, receivedAt, now) ? () => onForfeit(memberId) : undefined,
     };
   };
   const tokensOf = (memberId: number) => game.tokens[String(memberId)] ?? 0;
@@ -169,9 +170,7 @@ export function PaperSafariTable({ view, room, meId, log, receivedAt, now, error
         </span>
       ) : null}
     </div>
-  ) : (
-    <Panel className="text-center text-sm text-stone-500">이번 게임을 지켜보는 중이에요.</Panel>
-  );
+  ) : null;
 
   const tableProps: TableProps = {
     view, meId, opponents, myBoard, nicknameOf, presenceOf, tokensOf, canClickSlot, clickSlot, drawable, send,

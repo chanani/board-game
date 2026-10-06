@@ -9,7 +9,8 @@ type Props = {
   meId: number;
   receivedAt: number;
   now: number;
-  onForfeit: (memberId: number) => void;
+  /** 없으면(관전자) 내보내기 버튼을 보이지 않는다. */
+  onForfeit?: (memberId: number) => void;
 };
 
 export function MemberList({ members, maxPlayers, meId, receivedAt, now, onForfeit }: Props) {
@@ -39,7 +40,7 @@ export function MemberList({ members, maxPlayers, meId, receivedAt, now, onForfe
                 {member.id === meId ? <span className="text-xs"> (나)</span> : null}
               </span>
               {!member.connected ? <span className="text-xs text-cream-200/80">연결 끊김 {offlineSecondsNow(member, receivedAt, now)}초</span> : null}
-              {canForfeit(member, meId, receivedAt, now) ? (
+              {onForfeit && canForfeit(member, meId, receivedAt, now) ? (
                 <Button variant="danger" className="px-2 py-0.5 text-xs" onClick={() => onForfeit(member.id)}>내보내기</Button>
               ) : null}
             </>

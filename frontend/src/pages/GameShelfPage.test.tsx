@@ -56,12 +56,14 @@ describe('GameShelfPage', () => {
     expect(await screen.findByText('로비 화면')).toBeInTheDocument();
   });
 
-  it('이미 방에 있으면 그 방으로 간다', async () => {
+  it('이미 방에 있어도 목록에 머문다', async () => {
     list.mockResolvedValue([]);
     mine.mockResolvedValue({ code: 'ABC234' });
     renderShelf();
+    await new Promise((resolve) => setTimeout(resolve, 50));
 
-    expect(await screen.findByText('방 화면')).toBeInTheDocument();
+    expect(screen.queryByText('방 화면')).not.toBeInTheDocument();
+    expect(screen.getByText('오늘은 뭘 할까요?')).toBeInTheDocument();
   });
 
   it('제목과 부제, 규칙 보기 버튼을 보여준다', async () => {

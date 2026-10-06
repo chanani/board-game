@@ -12,12 +12,15 @@ type Props = {
   now: number;
   onStart: () => void;
   onForfeit: (memberId: number) => void;
+  onSeat: () => void;
 };
 
-export function WaitingRoom({ room, meId, receivedAt, now, onStart, onForfeit }: Props) {
+export function WaitingRoom({ room, meId, receivedAt, now, onStart, onForfeit, onSeat }: Props) {
   const toast = useToast();
   const isHost = room.hostId === meId;
   const canStart = isHost && room.members.length >= 2;
+  const spectating = room.spectators.some((spectator) => spectator.id === meId);
+  const canSeat = spectating && room.status === 'WAITING' && room.members.length < room.maxPlayers;
 
   const copyCode = async () => {
     try {
@@ -37,15 +40,12 @@ export function WaitingRoom({ room, meId, receivedAt, now, onStart, onForfeit }:
             코드 {room.code} 📋
           </button>
         </div>
-        <MemberList members={room.members} maxPlayers={room.maxPlayers} meId={meId} receivedAt={receivedAt} now={now} onForfeit={onForfeit} />
+        <MemberList members={room.members} maxPlayers={room.maxPlayers} meId={meId} receivedAt={receivedAt} now={now} onForfeit={spectating ? undefined : onForfeit} />
+        {room.spectators.length > 0 ? (
+          <p className="mx-auto w-fit rounded-full bg-black/35 px-3 py-1 text-sm text-cream-50">👀 관전 중: {room.spectators.map((spectator) => spectator.nickname).join(', ')}</p>
+        ) : null}
         <div className="mt-4 flex justify-end">
-          {isHost ? (
-            <Button onClick={onStart} disabled={!canStart}>
-              {canStart ? '게임 시작' : '2명 이상 모이면 시작할 수 있어요'}
-            </Button>
-          ) : (
-            <span className="rounded-full bg-black/35 px-3 py-1 text-sm text-cream-50">방장이 게임을 시작하길 기다리는 중…</span>
-          )}
+          <Controls isHost={isHost} canStart={canStart} spectating={spectating} canSeat={canSeat} onStart={onStart} onSeat={onSeat} />
         </div>
       </Felt>
       <Panel>
@@ -56,4 +56,22 @@ export function WaitingRoom({ room, meId, receivedAt, now, onStart, onForfeit }:
       </Panel>
     </div>
   );
+}
+
+type ControlsProps = { isHost: boolean; canStart: boolean; spectating: boolean; canSeat: boolean; onStart: () => void; onSeat: () => void };
+
+function Controls({ isHost, canStart, spectating, canSeat, onStart, onSeat }: ControlsProps) {
+  if (spectating) {
+    return canSeat
+      ? <Button onClick={onSeat}>자리에 앉기</Button>
+      : <span className="rounded-full bg-black/35 px-3 py-1 text-sm text-cream-50">👀 관전 중이에요</span>;
+  }
+  if (isHost) {
+    return (
+      <Button onClick={onStart} disabled={!canStart}>
+        {canStart ? '게임 시작' : '2명 이상 모이면 시작할 수 있어요'}
+      </Button>
+    );
+  }
+  return <span className="rounded-full bg-black/35 px-3 py-1 text-sm text-cream-50">방장이 게임을 시작하길 기다리는 중…</span>;
 }

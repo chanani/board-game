@@ -150,4 +150,54 @@ describe('useRoomChannel', () => {
     expect(result.current.transition?.from?.roundNumber).toBe(1);
     expect(result.current.transition?.to.roundNumber).toBe(2);
   });
+
+  it('관전 중 확인(poll)에서 404면 missing이 되고, 다른 실패는 조용히 넘긴다', async () => {
+    vi.useFakeTimers();
+    try {
+      const get = vi.spyOn(roomsApi, 'get').mockResolvedValue(room('방', 'PLAYING'));
+      const { result } = renderHook(() => useRoomChannel('ABCDEF', { poll: true }));
+      await act(async () => {});
+      expect(get).toHaveBeenCalledTimes(1);
+      toast.show.mockClear();
+
+      get.mockRejectedValueOnce(new Error('network'));
+      await act(async () => { await vi.advanceTimersByTimeAsync(5000); });
+      expect(get).toHaveBeenCalledTimes(2);
+      expect(result.current.missing).toBe(false);
+      expect(toast.show).not.toHaveBeenCalled();
+
+      get.mockRejectedValueOnce(new ApiError(404, 'ROOM_NOT_FOUND', '방을 찾을 수 없어요.'));
+      await act(async () => { await vi.advanceTimersByTimeAsync(5000); });
+
+      expect(result.current.missing).toBe(true);
+      expect(toast.show).toHaveBeenCalledWith('방을 찾을 수 없어요.');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('poll이 아니면 주기적으로 다시 가져오지 않는다', async () => {
+    vi.useFakeTimers();
+    try {
+      const get = vi.spyOn(roomsApi, 'get').mockResolvedValue(room('방'));
+      renderHook(() => useRoomChannel('ABCDEF'));
+      await act(async () => {});
+
+      await act(async () => { await vi.advanceTimersByTimeAsync(15000); });
+
+      expect(get).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('동기화 오류가 ROOM_NOT_FOUND면 missing이 된다', async () => {
+    vi.spyOn(roomsApi, 'get').mockResolvedValue(room('방', 'PLAYING'));
+    const { result } = renderHook(() => useRoomChannel('ABCDEF'));
+    await act(async () => {});
+
+    act(() => state.handlers.get('/user/queue/errors')?.({ status: 404, code: 'ROOM_NOT_FOUND', message: '방을 찾을 수 없어요.' }));
+
+    expect(result.current.missing).toBe(true);
+  });
 });

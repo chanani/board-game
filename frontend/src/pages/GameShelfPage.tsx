@@ -1,8 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { gamesApi } from '../api/games';
 import { messageOf } from '../api/http';
-import { roomsApi } from '../api/rooms';
 import type { GameSummary, GameType } from '../api/types';
 import { BookIcon } from '../components/icons';
 import { usePolling } from '../lib/usePolling';
@@ -40,17 +39,6 @@ export function GameShelfPage() {
   const [summaries, setSummaries] = useState<GameSummary[] | null>(null);
   const [rulesOpen, setRulesOpen] = useState(false);
   const failedRef = useRef(false);
-
-  useEffect(() => {
-    roomsApi
-      .mine()
-      .then((room) => {
-        if (room) {
-          navigate(`/rooms/${room.code}`, { replace: true });
-        }
-      })
-      .catch(() => undefined);
-  }, [navigate]);
 
   usePolling(() => gamesApi
     .list()

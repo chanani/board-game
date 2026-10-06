@@ -69,6 +69,19 @@ describe('세션 만료 처리', () => {
     await expect(request('/api/rooms')).rejects.toMatchObject({ status: 401 });
 
     expect(handler).toHaveBeenCalledTimes(1);
+    expect(handler).toHaveBeenCalledWith(undefined);
+  });
+
+  it('다른 곳에서 로그인해서 끊긴 401이면 그 이유를 넘긴다', async () => {
+    const handler = vi.fn();
+    setUnauthorizedHandler(handler);
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      jsonResponse({ status: 401, code: 'SESSION_REPLACED', message: '다른 곳에서 로그인해서 로그아웃됐어요.' }, 401),
+    );
+
+    await expect(request('/api/rooms/me')).rejects.toMatchObject({ code: 'SESSION_REPLACED' });
+
+    expect(handler).toHaveBeenCalledWith('SESSION_REPLACED');
   });
 
   it('로그인과 내 정보 조회의 401은 핸들러를 부르지 않는다', async () => {

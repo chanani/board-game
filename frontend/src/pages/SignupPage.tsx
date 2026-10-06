@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { messageOf } from '../api/http';
 import { SignupLoginError, useAuth } from '../auth/AuthContext';
+import { pathAfterLogin } from '../auth/afterLogin';
 import { motion } from 'motion/react';
 import { Felt } from '../components/Felt';
 import { Button, Panel, TextInput } from '../components/ui';
@@ -17,7 +18,7 @@ export function SignupPage() {
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  if (member) {
+  if (member && !submitting) {
     return <Navigate to="/" replace />;
   }
 
@@ -35,7 +36,7 @@ export function SignupPage() {
     setSubmitting(true);
     try {
       await signup(loginId, nickname, password);
-      navigate('/', { replace: true });
+      navigate(await pathAfterLogin(), { replace: true });
     } catch (error) {
       handleFailure(error);
     } finally {

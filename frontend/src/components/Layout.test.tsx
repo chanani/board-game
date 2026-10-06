@@ -6,6 +6,7 @@ import { Layout } from './Layout';
 const state = vi.hoisted(() => ({ connected: false }));
 vi.mock('../realtime/RealtimeContext', () => ({ useRealtime: () => ({ realtime: {}, connected: state.connected }) }));
 vi.mock('../auth/AuthContext', () => ({ useAuth: () => ({ member: { id: 1, nickname: '앨리스' }, logout: vi.fn() }) }));
+vi.mock('../api/rooms', () => ({ roomsApi: { mine: () => Promise.resolve(null) } }));
 vi.mock('./Toast', () => ({ useToast: () => ({ show: vi.fn() }) }));
 
 const BANNER = '서버와 연결이 끊겼어요. 다시 연결하는 중…';

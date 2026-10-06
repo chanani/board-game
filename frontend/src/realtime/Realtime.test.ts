@@ -4,7 +4,7 @@ import { Realtime, type StompLike } from './Realtime';
 class FakeStomp implements StompLike {
   connected = false;
   onConnect: () => void = () => {};
-  onWebSocketClose: () => void = () => {};
+  onWebSocketClose: (event?: { code?: number }) => void = () => {};
   subscriptions: { destination: string; callback: (message: { body: string }) => void; active: boolean }[] = [];
   published: { destination: string; body: string }[] = [];
 
@@ -22,9 +22,9 @@ class FakeStomp implements StompLike {
     this.connected = true;
     this.onConnect();
   }
-  drop() {
+  drop(code = 1006) {
     this.connected = false;
-    this.onWebSocketClose();
+    this.onWebSocketClose({ code });
   }
 }
 
@@ -69,5 +69,24 @@ describe('Realtime', () => {
 
     expect(fake.published).toEqual([{ destination: '/app/x', body: '{"type":"READY"}', headers: { 'content-type': 'application/json' } }]);
     expect(states).toEqual([true, false]);
+  });
+
+  it('닫힘 코드 4001이면 다른 곳에서 로그인했다고 알린다', () => {
+    const fake = new FakeStomp();
+    const realtime = new Realtime(() => fake);
+    const replaced: number[] = [];
+    const off = realtime.onSessionReplaced(() => replaced.push(1));
+    fake.connect();
+
+    fake.drop(1006);
+    expect(replaced).toEqual([]);
+    fake.connect();
+    fake.drop(4001);
+    expect(replaced).toEqual([1]);
+
+    off();
+    fake.connect();
+    fake.drop(4001);
+    expect(replaced).toEqual([1]);
   });
 });

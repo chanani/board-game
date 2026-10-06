@@ -3,6 +3,7 @@ import { Felt } from '../../../components/Felt';
 import { CenterPiles } from './CenterPiles';
 import { Hud } from './Hud';
 import { Seat } from './Seat';
+import { SpectatorNotice } from './SpectatorNotice';
 import { seatRows } from './seats';
 import type { TableProps } from '../PaperSafariTable';
 
@@ -45,7 +46,7 @@ export function TableRound(props: TableProps) {
               <Seat board={myBoard} nickname={`${nicknameOf(meId)} (나)`} tokens={tokensOf(meId)} active={myTurn}
                 held={round.held} size="lg" presence={{}} handLabel="들고 있는 카드" onSlotClick={clickSlot} canClick={canClickSlot} pulseSlots={myTurn} />
             </div>
-          ) : <div />}
+          ) : <SpectatorNotice />}
           <div className="w-56 self-center justify-self-start">{footer}</div>
         </div>
       </Felt>
