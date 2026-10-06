@@ -15,8 +15,10 @@ import { useRoomChat } from '../room/useRoomChat';
 import { useRoomChannel } from '../room/useRoomChannel';
 import { LeaveConfirmModal } from '../room/LeaveConfirmModal';
 import { WaitingRoom } from '../room/WaitingRoom';
+import { RoomBackdrop, RoomThemeProvider } from '../room/roomTheme';
 
-const CHIP_TONES = { plain: 'bg-black/35 text-cream-50', green: 'bg-[#1c5a37] text-cream-50' } as const;
+// 게임 중 칩은 테마의 상태 표시 색(원목은 초록)을 쓴다.
+const CHIP_TONES = { plain: 'bg-black/35 text-cream-50', green: 'bg-(--plate-bg) text-(--plate-text)' } as const;
 
 function RoomChip({ tone = 'plain', label, children }: { tone?: keyof typeof CHIP_TONES; label?: string; children: React.ReactNode }) {
   return (
@@ -117,8 +119,10 @@ export function RoomPage() {
   };
 
   return (
-    <div className={`space-y-4 ${playing ? 'pb-20' : ''}`}>
-      <div className="flex items-center justify-between gap-3">
+    <RoomThemeProvider value={room.theme}>
+    <div data-theme={room.theme} className={`space-y-4 ${playing ? 'pb-20' : ''}`}>
+      <RoomBackdrop theme={room.theme} />
+      <div data-testid="room-status-bar" className="flex items-center justify-between gap-3 rounded-2xl border border-(--status-border) bg-(--status-bg) px-3 py-2 backdrop-blur-[2px]">
         <div className="min-w-0">
           <h1 className="text-xl font-black text-cream-50 drop-shadow">{room.name}</h1>
           <div className="mt-1 flex flex-wrap items-center gap-1.5" data-testid="room-chips">
@@ -171,5 +175,6 @@ export function RoomPage() {
       ) : null}
       <LeaveConfirmModal open={confirmLeave} onCancel={() => setConfirmLeave(false)} onConfirm={leave} />
     </div>
+    </RoomThemeProvider>
   );
 }

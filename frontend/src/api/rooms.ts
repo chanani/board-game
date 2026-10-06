@@ -1,5 +1,5 @@
 import { request } from './http';
-import type { GameType, Room, RoomSummary } from './types';
+import type { GameType, Room, RoomSummary, RoomTheme } from './types';
 
 const path = (code: string) => `/api/rooms/${encodeURIComponent(code)}`;
 
@@ -10,8 +10,8 @@ export const roomsApi = {
     return room ?? null;
   },
   get: (code: string) => request<Room>(path(code)),
-  create: (name: string, gameType: GameType, maxPlayers: number, password?: string) =>
-    request<Room>('/api/rooms', { method: 'POST', body: { name, gameType, maxPlayers, password } }),
+  create: (name: string, gameType: GameType, maxPlayers: number, theme: RoomTheme, password?: string) =>
+    request<Room>('/api/rooms', { method: 'POST', body: { name, gameType, maxPlayers, theme, password } }),
   join: (code: string, password?: string) => request<Room>(`${path(code)}/join`, { method: 'POST', body: { password } }),
   watch: (code: string) => request<Room>(`${path(code)}/watch`, { method: 'POST' }),
   seat: (code: string) => request<Room>(`${path(code)}/seat`, { method: 'POST' }),

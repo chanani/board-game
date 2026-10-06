@@ -11,7 +11,7 @@ const OPPONENT = 2;
 
 const room: Room = {
   code: 'ABC123', name: '테스트 방', gameType: 'PAPER_SAFARI', gameTypeName: '페이퍼 사파리', status: 'PLAYING',
-  hostId: ME, maxPlayers: 4, locked: false, spectators: [],
+  hostId: ME, maxPlayers: 4, locked: false, spectators: [], theme: 'WOOD',
   members: [
     { id: ME, nickname: '앨리스', host: true, connected: true, offlineSeconds: 0, ready: false },
     { id: OPPONENT, nickname: '밥', host: false, connected: true, offlineSeconds: 0, ready: false },
@@ -467,13 +467,13 @@ describe('모바일 게임 화면 (상대 판·내 차례·손 카드)', () => {
     expect(rail).not.toHaveClass('px-1.5');
   });
 
-  it('내 차례면 내 판에 겨자색 테두리 링이 생기고, 아니면 없다', () => {
+  it('내 차례면 내 판에 테마 강조색 테두리 링이 생기고, 아니면 없다', () => {
     setMediaMatches(false);
     const { unmount } = render(<PaperSafariTable {...baseProps(build({ phase: 'DRAW', current: ME }))} />);
-    expect(screen.getByTestId('board-1')).toHaveClass('ring-mustard-400');
+    expect(screen.getByTestId('board-1')).toHaveClass('turn-ring', 'ring-(--accent)');
     unmount();
     render(<PaperSafariTable {...baseProps(build({ phase: 'DRAW', current: OPPONENT }))} />);
-    expect(screen.getByTestId('board-1')).not.toHaveClass('ring-mustard-400');
+    expect(screen.getByTestId('board-1')).not.toHaveClass('turn-ring');
   });
 
   it('모바일에서 내 손 칸은 내 옆 칸 안에 하나만 있다', () => {

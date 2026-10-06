@@ -39,6 +39,204 @@ body {
   background-attachment: fixed;
 }
 
+/* ───────── 방 테마 (원목·노을·달빛·오로라·해변) ─────────
+ * RoomPage가 방 화면 최상위에 data-theme를 달고, 아래 변수들을 테마마다 바꾼다.
+ * :root 값은 원목(WOOD)과 같아서 방 밖 화면(로비 등)은 지금 모습 그대로다. */
+:root,
+[data-theme="WOOD"] {
+  --room-bg:
+    radial-gradient(ellipse at 50% 0%, rgb(255 220 160 / 0.12), transparent 60%),
+    radial-gradient(ellipse at 50% 120%, rgb(0 0 0 / 0.55), transparent 60%),
+    repeating-linear-gradient(92deg, rgb(255 255 255 / 0.025) 0 2px, transparent 2px 9px),
+    linear-gradient(180deg, #3b2614, #24160b);
+  --felt-bg: radial-gradient(ellipse at 50% 40%, #2f8a57, #1c5a37 70%, #164a2d);
+  --rim-1: #8a5a32;
+  --rim-2: #5d3b1f;
+  --rim-glow: 0 0 0 transparent;
+  --table-shadow: rgb(0 0 0 / 0.55);
+  --felt-ink: #fffaf0;
+  --felt-ink-shadow: none;
+  --back-a: #1f6f45;
+  --back-b: #25804f;
+  --back-angle: 45deg;
+  --back-frame: #fffaf0;
+  --seal-fill: #fffaf0;
+  --seal-ring: #f2b33d;
+  --accent: #f2b33d;
+  --accent-hover: #f7c860;
+  --accent-text: #2e1d10;
+  --accent-shadow: #b77b14;
+  --status-bg: rgb(0 0 0 / 0.35);
+  --status-border: rgb(255 250 240 / 0.15);
+  --plate-bg: #1c5a37;
+  --plate-text: #fffaf0;
+}
+
+[data-theme="SUNSET"] {
+  --room-bg: linear-gradient(180deg, #f59e0b 0%, #ea580c 45%, #7c2d12 100%);
+  --felt-bg: radial-gradient(ellipse at 50% 40%, #e9c08a, #c08a4f);
+  --rim-1: #7c3f1d;
+  --rim-2: #4a210c;
+  --table-shadow: rgb(0 0 0 / 0.45);
+  --felt-ink: #4a210c;
+  --back-a: #9a3412;
+  --back-b: #c2410c;
+  --back-angle: -45deg;
+  --back-frame: #fff7ed;
+  --seal-fill: #fff7ed;
+  --seal-ring: #fb923c;
+  --accent: #fff7ed;
+  --accent-hover: #ffffff;
+  --accent-text: #9a3412;
+  --accent-shadow: #fdba74;
+  --status-bg: rgb(63 29 11 / 0.55);
+  --status-border: rgb(255 247 237 / 0.25);
+  --plate-bg: #fff7ed;
+  --plate-text: #9a3412;
+}
+
+[data-theme="MOONLIT"] {
+  --room-bg:
+    radial-gradient(circle at 20% 30%, #ffffff 0 1px, transparent 2px),
+    radial-gradient(circle at 40% 12%, #ffffff 0 1px, transparent 2px),
+    radial-gradient(circle at 60% 25%, #ffffff 0 1px, transparent 2px),
+    radial-gradient(circle at 8% 10%, #ffffff 0 1px, transparent 2px),
+    radial-gradient(circle at 92% 38%, #ffffff 0 1px, transparent 2px),
+    radial-gradient(circle at 30% 48%, rgb(255 255 255 / 0.7) 0 1px, transparent 2px),
+    radial-gradient(circle at 70% 6%, rgb(255 255 255 / 0.7) 0 1px, transparent 2px),
+    linear-gradient(180deg, #0b1730, #0f2a2e 70%, #0a1f1d);
+  --felt-bg: radial-gradient(ellipse at 50% 40%, #1f6f6a, #0f3f40);
+  --rim-1: #2b3a55;
+  --rim-2: #172036;
+  --rim-glow: 0 0 30px rgb(94 234 212 / 0.25);
+  --table-shadow: rgb(0 0 0 / 0.6);
+  --felt-ink: #e0f2fe;
+  --back-a: #1e3a8a;
+  --back-b: #1d4ed8;
+  --back-angle: 45deg;
+  --back-frame: #e0f2fe;
+  --seal-fill: #e0f2fe;
+  --seal-ring: #fde68a;
+  --accent: #5eead4;
+  --accent-hover: #99f6e4;
+  --accent-text: #083344;
+  --accent-shadow: #0d9488;
+  --status-bg: rgb(2 6 23 / 0.5);
+  --status-border: rgb(224 242 254 / 0.18);
+  --plate-bg: #5eead4;
+  --plate-text: #083344;
+}
+
+[data-theme="AURORA"] {
+  --room-bg: linear-gradient(180deg, #0b1d3a 0%, #123a5c 55%, #dbeafe 56%, #eff6ff 100%);
+  --felt-bg: radial-gradient(ellipse at 50% 40%, #7dd3fc, #2563a8);
+  --rim-1: #e2e8f0;
+  --rim-2: #94a3b8;
+  --table-shadow: rgb(15 23 42 / 0.45);
+  --felt-ink: #f8fafc;
+  --felt-ink-shadow: 0 1px 2px rgb(15 23 42 / 0.85);
+  --back-a: #1e40af;
+  --back-b: #3b82f6;
+  --back-angle: 30deg;
+  --back-frame: #f8fafc;
+  --seal-fill: #f8fafc;
+  --seal-ring: #a7f3d0;
+  --accent: #a7f3d0;
+  --accent-hover: #d1fae5;
+  --accent-text: #064e3b;
+  --accent-shadow: #34d399;
+  --status-bg: rgb(11 29 58 / 0.6);
+  --status-border: rgb(240 249 255 / 0.2);
+  --plate-bg: #a7f3d0;
+  --plate-text: #064e3b;
+}
+
+[data-theme="BEACH"] {
+  --room-bg: linear-gradient(180deg, #7dd3fc 0%, #38bdf8 45%, #0ea5e9 46%, #0369a1 70%, #fde68a 71%, #fcd34d 100%);
+  --felt-bg: radial-gradient(ellipse at 50% 40%, #fef3c7, #e9c98a);
+  --rim-1: #f97316;
+  --rim-2: #c2410c;
+  --table-shadow: rgb(8 47 73 / 0.35);
+  --felt-ink: #082f49;
+  --back-a: #0ea5e9;
+  --back-b: #38bdf8;
+  --back-angle: 0deg;
+  --back-frame: #ffffff;
+  --seal-fill: #ffffff;
+  --seal-ring: #f97316;
+  --accent: #f97316;
+  --accent-hover: #fb923c;
+  --accent-text: #431407;
+  --accent-shadow: #c2410c;
+  --status-bg: rgb(8 47 73 / 0.6);
+  --status-border: rgb(255 255 255 / 0.25);
+  --plate-bg: #f97316;
+  --plate-text: #431407;
+}
+
+/* 방 배경 장면. 방 화면 뒤(고정)와 방 만들기 미리보기 타일이 함께 쓴다. 장식 크기는 장면 크기(cq 단위)에 맞춘다. */
+@layer components {
+  .room-scene {
+    background: var(--room-bg);
+    overflow: hidden;
+    container-type: size;
+  }
+  .room-scene::before,
+  .room-scene::after {
+    content: none;
+    position: absolute;
+    pointer-events: none;
+  }
+  /* 노을: 지는 해와 언덕 실루엣 */
+  .room-scene[data-theme="SUNSET"]::after {
+    content: '';
+    right: 12%;
+    top: 9%;
+    width: 16cqmin;
+    height: 16cqmin;
+    border-radius: 50%;
+    background: #fde68a;
+    opacity: 0.9;
+  }
+  .room-scene[data-theme="SUNSET"]::before {
+    content: '';
+    left: -2%;
+    right: -2%;
+    bottom: 0;
+    height: 28%;
+    background: #3f1d0b;
+    clip-path: polygon(0 60%, 10% 50%, 18% 58%, 30% 40%, 42% 55%, 55% 45%, 68% 60%, 80% 42%, 92% 55%, 100% 48%, 100% 100%, 0 100%);
+  }
+  /* 달빛: 달 */
+  .room-scene[data-theme="MOONLIT"]::after {
+    content: '';
+    left: 80%;
+    top: 15%;
+    width: 12cqmin;
+    height: 12cqmin;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: #fef9c3;
+    box-shadow: 0 0 6cqmin rgb(254 249 195 / 0.35);
+  }
+  /* 오로라: 하늘의 빛 띠 */
+  .room-scene[data-theme="AURORA"]::before {
+    content: '';
+    inset: -4% -4% auto;
+    height: 48%;
+    background:
+      radial-gradient(ellipse at 30% 60%, rgb(74 222 128 / 0.55), transparent 60%),
+      radial-gradient(ellipse at 70% 40%, rgb(129 140 248 / 0.5), transparent 60%);
+    filter: blur(2cqmin);
+  }
+}
+
+/* 펠트 위에 바탕 없이 놓이는 글자. 밝은 펠트(노을·해변)에서는 어두운 글자가 된다. */
+@utility felt-ink {
+  color: var(--felt-ink);
+  text-shadow: var(--felt-ink-shadow);
+}
+
 @utility paper {
   background: var(--color-cream-50);
   border-radius: 1.25rem;
@@ -46,8 +244,8 @@ body {
 }
 
 @utility felt {
-  background: radial-gradient(ellipse at 50% 40%, var(--color-felt-400), var(--color-felt-600) 70%, var(--color-felt-800));
-  box-shadow: 0 0 0 10px var(--color-wood-500), 0 0 0 13px var(--color-wood-700), 0 30px 40px rgb(0 0 0 / 0.55),
+  background: var(--felt-bg);
+  box-shadow: 0 0 0 10px var(--rim-1), 0 0 0 13px var(--rim-2), var(--rim-glow), 0 30px 40px var(--table-shadow),
     inset 0 0 60px rgb(0 0 0 / 0.35);
 }
 
@@ -81,10 +279,10 @@ body {
 .card-side.is-back { transform: rotateY(180deg); }
 .card-thick { box-shadow: 0 2px 0 var(--color-cream-300), 0 4px 0 #b9ab8a, 0 10px 14px rgb(0 0 0 / 0.45); }
 
-@keyframes turn-glow { 0%, 100% { box-shadow: 0 0 0 2px var(--color-cream-50), 0 0 6px var(--color-mustard-400); } 50% { box-shadow: 0 0 0 2px var(--color-cream-50), 0 0 18px var(--color-mustard-400); } }
+@keyframes turn-glow { 0%, 100% { box-shadow: 0 0 0 2px var(--color-cream-50), 0 0 6px var(--accent); } 50% { box-shadow: 0 0 0 2px var(--color-cream-50), 0 0 18px var(--accent); } }
 .turn-glow { animation: turn-glow 1.4s ease-in-out infinite; }
 /* 내 차례 링은 판 안쪽(inset)에만 그려 판 밖의 이름표·안내를 덮지 않는다. */
-@keyframes turn-ring { 0%, 100% { box-shadow: inset 0 0 0 3px var(--color-mustard-400), inset 0 0 4px 3px rgb(242 179 61 / 0.35); } 50% { box-shadow: inset 0 0 0 3px var(--color-mustard-400), inset 0 0 14px 4px rgb(242 179 61 / 0.55); } }
+@keyframes turn-ring { 0%, 100% { box-shadow: inset 0 0 0 3px var(--accent), inset 0 0 4px 3px color-mix(in srgb, var(--accent) 35%, transparent); } 50% { box-shadow: inset 0 0 0 3px var(--accent), inset 0 0 14px 4px color-mix(in srgb, var(--accent) 55%, transparent); } }
 .turn-ring { animation: turn-ring 1.4s ease-in-out infinite; }
 @keyframes float-hint { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
 .float-hint { animation: float-hint 1.6s ease-in-out infinite; }

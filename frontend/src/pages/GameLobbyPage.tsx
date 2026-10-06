@@ -4,7 +4,7 @@ import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { ApiError, messageOf } from '../api/http';
 import { recordsApi } from '../api/records';
 import { roomsApi } from '../api/rooms';
-import type { GameStat, Ranking, RoomSummary } from '../api/types';
+import type { GameStat, Ranking, RoomSummary, RoomTheme } from '../api/types';
 import { useAuth } from '../auth/AuthContext';
 import { BinocularsIcon, LockIcon, RefreshIcon } from '../components/icons';
 import { Felt } from '../components/Felt';
@@ -15,6 +15,7 @@ import { PaperSafariBoxArt } from '../games/PaperSafariBoxArt';
 import { usePolling } from '../lib/usePolling';
 import { CreateRoomModal } from '../room/CreateRoomModal';
 import { PasswordModal } from '../room/PasswordModal';
+import { ThemeBadge } from '../room/roomTheme';
 import { RankingList } from '../records/RankingList';
 import { StatSummary } from '../records/StatSummary';
 
@@ -74,9 +75,9 @@ export function GameLobbyPage() {
     }
   };
 
-  const handleCreate = (name: string, maxPlayers: number, password?: string) => {
+  const handleCreate = (name: string, maxPlayers: number, theme: RoomTheme, password?: string) => {
     setCreating(false);
-    enter(() => roomsApi.create(name, gameType, maxPlayers, password));
+    enter(() => roomsApi.create(name, gameType, maxPlayers, theme, password));
   };
 
   const join = async (targetCode: string, targetName: string, pw?: string) => {
@@ -173,6 +174,7 @@ export function GameLobbyPage() {
                     <p className="text-xs text-stone-500">
                       👑 {room.hostNickname} · {room.playerCount}/{room.maxPlayers}
                     </p>
+                    <p className="mt-0.5 text-xs text-stone-500"><ThemeBadge theme={room.theme} /></p>
                   </div>
                   <Button variant="secondary" disabled={full} onClick={() => joinFromList(room)}>
                     {full ? '가득 참' : '참가'}
@@ -193,6 +195,7 @@ export function GameLobbyPage() {
                   <p className="text-xs text-stone-500">
                     <span>게임 진행 중</span> · <span>{room.playerCount}명</span> · <span aria-label={`관전 ${room.spectatorCount}명`}><BinocularsIcon className="mr-0.5 inline h-3 w-3 align-[-1px]" />{room.spectatorCount}</span>
                   </p>
+                  <p className="mt-0.5 text-xs text-stone-500"><ThemeBadge theme={room.theme} /></p>
                 </div>
                 {room.locked ? (
                   <Button variant="secondary" disabled className="inline-flex items-center gap-1"><LockIcon className="h-4 w-4" />비공개</Button>

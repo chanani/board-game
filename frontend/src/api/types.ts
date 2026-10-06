@@ -6,6 +6,7 @@ export type GameType = 'PAPER_SAFARI';
 export type ResultType = 'WIN' | 'DRAW' | 'LOSE';
 
 export type RoomStatus = 'WAITING' | 'PLAYING';
+export type RoomTheme = 'WOOD' | 'SUNSET' | 'MOONLIT' | 'AURORA' | 'BEACH';
 export type RoomMember = { id: number; nickname: string; host: boolean; connected: boolean; offlineSeconds: number; ready: boolean };
 export type Room = {
   code: string;
@@ -18,6 +19,7 @@ export type Room = {
   locked: boolean;
   members: RoomMember[];
   spectators: { id: number; nickname: string }[];
+  theme: RoomTheme;
 };
 export type RoomSummary = {
   code: string;
@@ -31,6 +33,7 @@ export type RoomSummary = {
   locked: boolean;
   roundNumber: number | null;
   spectatorCount: number;
+  theme: RoomTheme;
 };
 
 export type GameActionType = 'FLIP' | 'DRAW_DECK' | 'DRAW_DISCARD' | 'SWAP' | 'DISCARD' | 'PEEK' | 'CANCEL_DRAW';

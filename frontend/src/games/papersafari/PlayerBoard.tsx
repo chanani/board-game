@@ -41,21 +41,21 @@ export function PlayerBoard({ result, board, nickname, active, turnRing = false,
 
   return (
     <div data-testid={`board-${board.playerId}`} data-winner={result ? result.winner : undefined}
-      className={`rounded-2xl bg-black/15 p-2 backdrop-blur-[1px] ${result ? 'mx-auto w-fit' : ''} ${turnRing ? 'ring-[3px] ring-inset ring-mustard-400 turn-ring' : ''} ${result?.winner ? 'ring-[3px] ring-mustard-400 shadow-[0_0_18px_rgb(242_179_61/0.7)]' : ''}`}>
+      className={`rounded-2xl bg-black/15 p-2 backdrop-blur-[1px] ${result ? 'mx-auto w-fit' : ''} ${turnRing ? 'ring-[3px] ring-inset ring-(--accent) turn-ring' : ''} ${result?.winner ? 'ring-[3px] ring-mustard-400 shadow-[0_0_18px_rgb(242_179_61/0.7)]' : ''}`}>
       <div className="mb-2 flex items-center justify-between gap-2 text-sm">
         <span className="flex min-w-0 flex-wrap items-center gap-1.5">
           {connected !== undefined ? (
             <span aria-hidden="true" className={`inline-block h-2 w-2 shrink-0 rounded-full ${connected ? 'bg-green-500' : 'bg-stone-400'}`} />
           ) : null}
-          <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold text-wood-800 shadow-[0_2px_0_rgb(0_0_0/0.3)] ${active ? 'turn-glow bg-mustard-400' : 'bg-cream-50'}`}>{result ? result.tag : nickname}</span>
-          {connected === false ? <span className="text-xs text-cream-100">연결 끊김 {offlineSeconds}초</span> : null}
+          <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold shadow-[0_2px_0_rgb(0_0_0/0.3)] ${active ? 'turn-glow bg-(--accent) text-(--accent-text)' : 'bg-cream-50 text-wood-800'}`}>{result ? result.tag : nickname}</span>
+          {connected === false ? <span className="felt-ink text-xs opacity-90">연결 끊김 {offlineSeconds}초</span> : null}
           {onForfeit ? (
             <button type="button" onClick={onForfeit} className="rounded-md bg-red-50 px-1.5 py-0.5 text-xs font-medium text-red-700 hover:bg-red-100">
               내보내기
             </button>
           ) : null}
         </span>
-        {result ? <b data-testid="board-total" className="shrink-0 text-xs text-cream-50">{result.total}</b> : null}
+        {result ? <b data-testid="board-total" className="felt-ink shrink-0 text-xs">{result.total}</b> : null}
       </div>
       <div className={`relative grid ${result ? 'grid-cols-[repeat(3,auto)] justify-center' : 'grid-cols-3'} ${GAP[size]}`}>
         {onZoom ? (

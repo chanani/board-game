@@ -13,11 +13,11 @@ vi.mock('../api/records', () => ({
 }));
 vi.mock('../auth/AuthContext', () => ({ useAuth: () => ({ member: { id: 1, loginId: 'alice01', nickname: '앨리스' } }) }));
 
-const base = { gameType: 'PAPER_SAFARI', gameTypeName: '페이퍼 사파리', playerCount: 2, maxPlayers: 4, hostNickname: '밥', locked: false, roundNumber: null, spectatorCount: 0 };
+const base = { gameType: 'PAPER_SAFARI', gameTypeName: '페이퍼 사파리', playerCount: 2, maxPlayers: 4, hostNickname: '밥', locked: false, roundNumber: null, spectatorCount: 0, theme: 'WOOD' };
 const rooms = [
   { ...base, code: 'WAIT01', name: '열린방', status: 'WAITING' },
-  { ...base, code: 'LOCK01', name: '잠긴방', status: 'WAITING', locked: true },
-  { ...base, code: 'PLAY01', name: '공개판', status: 'PLAYING', roundNumber: 3, spectatorCount: 2 },
+  { ...base, code: 'LOCK01', name: '잠긴방', status: 'WAITING', locked: true, theme: 'SUNSET' },
+  { ...base, code: 'PLAY01', name: '공개판', status: 'PLAYING', roundNumber: 3, spectatorCount: 2, theme: 'BEACH' },
   { ...base, code: 'PLAY02', name: '비밀판', status: 'PLAYING', locked: true, roundNumber: 1 },
 ];
 
@@ -60,8 +60,30 @@ describe('GameLobbyPage', () => {
     await userEvent.type(within(dialog).getByLabelText('비밀번호'), '1234');
     await userEvent.click(within(dialog).getByRole('button', { name: '만들기' }));
 
-    expect(api.create).toHaveBeenCalledWith('우리방', 'PAPER_SAFARI', 3, '1234');
+    expect(api.create).toHaveBeenCalledWith('우리방', 'PAPER_SAFARI', 3, 'WOOD', '1234');
     expect(await screen.findByText('방 화면')).toBeInTheDocument();
+  });
+
+  it('방 만들기에서 고른 테마로 방을 만든다', async () => {
+    renderLobby();
+    await screen.findByText('열린방');
+    await userEvent.click(screen.getByRole('button', { name: '＋ 방 만들기' }));
+    const dialog = await screen.findByRole('dialog', { name: '방 만들기' });
+    await userEvent.click(within(dialog).getByRole('radio', { name: '설원 오로라' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: '만들기' }));
+
+    expect(api.create).toHaveBeenCalledWith('앨리스의 방', 'PAPER_SAFARI', 5, 'AURORA', undefined);
+  });
+
+  it('방 목록 항목에 테마 색 점과 테마 이름을 보여준다', async () => {
+    renderLobby();
+    const waitingItem = (await screen.findByText('잠긴방')).closest('li') as HTMLElement;
+    const playingItem = screen.getByText('공개판').closest('li') as HTMLElement;
+
+    expect(within(waitingItem).getByText('사바나 노을')).toBeInTheDocument();
+    expect(waitingItem.querySelector('[data-testid="theme-dot"]')).toHaveStyle({ backgroundColor: '#ea580c' });
+    expect(within(playingItem).getByText('열대 해변')).toBeInTheDocument();
+    expect(within(screen.getByText('열린방').closest('li') as HTMLElement).getByText('원목 라운지')).toBeInTheDocument();
   });
 
   it('기본은 5명 공개방이다', async () => {
@@ -70,7 +92,7 @@ describe('GameLobbyPage', () => {
     await userEvent.click(screen.getByRole('button', { name: '＋ 방 만들기' }));
     await userEvent.click(within(await screen.findByRole('dialog', { name: '방 만들기' })).getByRole('button', { name: '만들기' }));
 
-    expect(api.create).toHaveBeenCalledWith('앨리스의 방', 'PAPER_SAFARI', 5, undefined);
+    expect(api.create).toHaveBeenCalledWith('앨리스의 방', 'PAPER_SAFARI', 5, 'WOOD', undefined);
   });
 
   it('코드 입력칸과 입장 버튼은 한 줄에 있다', async () => {

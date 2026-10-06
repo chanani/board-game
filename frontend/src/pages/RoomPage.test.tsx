@@ -30,7 +30,7 @@ const members = [
 ];
 const baseRoom: Room = {
   code: 'ABC234', name: '앨리스의 방', gameType: 'PAPER_SAFARI', gameTypeName: '페이퍼 사파리', status: 'PLAYING',
-  hostId: 1, maxPlayers: 4, locked: false, members, spectators: [{ id: 3, nickname: '캐롤' }],
+  hostId: 1, maxPlayers: 4, locked: false, members, spectators: [{ id: 3, nickname: '캐롤' }], theme: 'WOOD',
 };
 
 function setChannel(overrides: Record<string, unknown>) {
@@ -129,6 +129,27 @@ describe('RoomPage 관전자', () => {
     await userEvent.click(screen.getByRole('button', { name: '자리에 앉기' }));
 
     expect(roomsApi.seat).toHaveBeenCalledWith('ABC234');
+  });
+});
+
+describe('RoomPage 테마', () => {
+  it('방 화면 최상위와 배경 장면에 방 테마를 단다', async () => {
+    setChannel({ room: { ...baseRoom, theme: 'MOONLIT' } });
+    const { container } = renderRoom();
+    await act(async () => {});
+
+    expect(container.firstElementChild).toHaveAttribute('data-theme', 'MOONLIT');
+    expect(screen.getByTestId('room-backdrop')).toHaveAttribute('data-theme', 'MOONLIT');
+  });
+
+  it('방을 떠나면 테마 배경도 함께 사라진다', async () => {
+    setChannel({ room: { ...baseRoom, theme: 'BEACH' } });
+    const { unmount } = renderRoom();
+    await act(async () => {});
+
+    unmount();
+
+    expect(document.querySelector('[data-theme]')).toBeNull();
   });
 });
 

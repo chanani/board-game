@@ -1,14 +1,17 @@
 import { motion } from 'motion/react';
 import { createPortal } from 'react-dom';
+import { useRoomTheme } from '../../../room/roomTheme';
 import { CardFace } from '../CardFace';
 import { TRAVEL_MS, type Ghost } from './useCardMotion';
 
 export function GhostLayer({ ghosts }: { ghosts: Ghost[] }) {
+  // body로 빼내므로 방 테마 변수가 닿지 않는다. 날아가는 카드 뒷면도 방 테마를 따르게 직접 단다.
+  const theme = useRoomTheme();
   if (ghosts.length === 0) {
     return null;
   }
   return createPortal(
-    <div aria-hidden="true" data-testid="ghost-layer" className="pointer-events-none fixed inset-0 z-30">
+    <div aria-hidden="true" data-testid="ghost-layer" data-theme={theme} className="pointer-events-none fixed inset-0 z-30">
       {ghosts.map((ghost) => {
         // 크기 변화는 중심 기준이므로 이동량도 중심끼리 잰다.
         const dx = ghost.to.x + ghost.to.width / 2 - (ghost.from.x + ghost.from.width / 2);

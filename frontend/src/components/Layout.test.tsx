@@ -59,3 +59,13 @@ describe('Layout 상단바', () => {
     expect(mute).not.toHaveTextContent('🔊');
   });
 });
+
+describe('Layout 테마 범위', () => {
+  it('방 밖 화면에는 방 테마가 없다(원목 배경 그대로)', () => {
+    const { container } = render(ui());
+
+    expect(container.querySelector('[data-theme]')).toBeNull();
+    expect(document.documentElement).not.toHaveAttribute('data-theme');
+    expect(document.body).not.toHaveAttribute('data-theme');
+  });
+});

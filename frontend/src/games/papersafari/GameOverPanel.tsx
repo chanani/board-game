@@ -119,7 +119,7 @@ function FooterButton({ guest, onReady, onClose }: { guest: boolean; onReady: ()
   if (guest) {
     return (
       <button type="button" onClick={onReady}
-        className="press-3d rounded-full bg-mustard-400 px-5 py-2 text-sm font-bold text-wood-800 shadow-[0_4px_0_var(--color-mustard-600),0_8px_14px_rgb(0_0_0/0.3)] hover:bg-mustard-300">
+        className="press-3d rounded-full bg-(--accent) px-5 py-2 text-sm font-bold text-(--accent-text) shadow-[0_4px_0_var(--accent-shadow),0_8px_14px_rgb(0_0_0/0.3)] hover:bg-(--accent-hover)">
         다음 게임 준비
       </button>
     );

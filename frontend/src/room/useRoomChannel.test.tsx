@@ -32,6 +32,7 @@ const room = (name: string, status: Room['status'] = 'WAITING'): Room => ({
   name,
   gameType: 'PAPER_SAFARI',
   gameTypeName: '페이퍼 사파리',
+  theme: 'WOOD',
   status,
   hostId: 1,
   maxPlayers: 4, locked: false, spectators: [],

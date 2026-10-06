@@ -25,7 +25,7 @@ const tie: PaperSafariView = {
 };
 const room: Room = {
   code: 'ABC234', name: '앨리스의 방', gameType: 'PAPER_SAFARI', gameTypeName: '페이퍼 사파리', status: 'WAITING',
-  hostId: 1, maxPlayers: 4, locked: false, spectators: [],
+  hostId: 1, maxPlayers: 4, locked: false, spectators: [], theme: 'WOOD',
   members: [
     { id: 1, nickname: '앨리스', host: true, connected: true, offlineSeconds: 0, ready: false },
     { id: 2, nickname: '밥', host: false, connected: true, offlineSeconds: 0, ready: false },
