@@ -333,6 +333,28 @@ public class RoomService {
         outcomePublisher.publish(room, outcomes, clock.instant());
     }
 
+    /** 게임 중인 방에서 연결이 끊긴 지 FORFEIT_GRACE 이상인 참가자를 기권시켜 내보낸다. 주기적으로 불린다. */
+    public synchronized void forfeitLongDisconnected() {
+        Instant now = clock.instant();
+        List<Departure> departures = registry.all()
+                .stream()
+                .filter(room -> room.status() == RoomStatus.PLAYING)
+                .flatMap(room -> longDisconnected(room, now))
+                .toList();
+        departures.forEach(departure -> leave(departure.code(), departure.memberId()));
+    }
+
+    private Stream<Departure> longDisconnected(Room room, Instant now) {
+        return room.memberIds()
+                .stream()
+                .filter(room::isPlaying)
+                .filter(memberId -> presence.isOfflineAtLeast(memberId, now, FORFEIT_GRACE))
+                .map(memberId -> new Departure(room.codeValue(), memberId));
+    }
+
+    private record Departure(String code, long memberId) {
+    }
+
     public synchronized void kick(String rawCode, long requesterId, long targetId) {
         Room room = find(rawCode);
         room.kick(requesterId, targetId);
