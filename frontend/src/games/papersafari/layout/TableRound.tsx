@@ -11,7 +11,7 @@ import type { TableProps } from '../PaperSafariTable';
 // 자리를 절대 위치로 겹쳐 놓지 않고 위 줄 · 가운데 줄 · 내 줄로 흘려 놓아, 인원과 화면 높이와 상관없이 서로 겹치지 않게 한다.
 // 펠트는 내용만큼 자라고, 위 줄은 가운데로 모아 타원의 둥근 모서리 밖으로 나가지 않게 한다.
 export function TableRound(props: TableProps) {
-  const { view, meId, opponents, myBoard, nicknameOf, presenceOf, canClickSlot, clickSlot, drawable, send, canDiscard, canUndo, estimate, myTurn } = props;
+  const { view, meId, opponents, myBoard, nicknameOf, presenceOf, canClickSlot, clickSlot, drawable, send, canDiscard, canUndo, estimate, myTurn, timerFor } = props;
   const round = view.game.round;
   const rows = seatRows(opponents.length);
   const opponentSeat = (index: number | null) => {
@@ -22,7 +22,7 @@ export function TableRound(props: TableProps) {
     return (
       <div key={board.playerId} data-testid="opponent-seat">
         <OpponentSeat board={board} nickname={nicknameOf(board.playerId)}
-          active={round.currentPlayerId === board.playerId} held={round.held} presence={presenceOf(board.playerId)} />
+          active={round.currentPlayerId === board.playerId} held={round.held} presence={presenceOf(board.playerId)} timer={timerFor(board.playerId)} />
       </div>
     );
   };
@@ -43,7 +43,7 @@ export function TableRound(props: TableProps) {
           <div />
           {myBoard ? (
             <div className={`transition-transform duration-300 ${myTurn ? '-translate-y-2' : ''}`}>
-              <Seat board={myBoard} nickname={`${nicknameOf(meId)} (나)`} active={myTurn} turnRing={myTurn} hand="none"
+              <Seat board={myBoard} nickname={`${nicknameOf(meId)} (나)`} active={myTurn} turnRing={myTurn} hand="none" timer={timerFor(meId)}
                 held={round.held} size="lg" presence={{}} handLabel="들고 있는 카드" onSlotClick={clickSlot} canClick={canClickSlot} pulseSlots={myTurn} />
             </div>
           ) : <SpectatorNotice />}

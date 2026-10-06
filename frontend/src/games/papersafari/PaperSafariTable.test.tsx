@@ -364,6 +364,46 @@ describe('게임 화면 다듬기', () => {
     expect(side.querySelector('strong')).toHaveClass('text-lg', '@max-[110px]:text-base');
   });
 
+  it.each([true, false])('5초 이하가 되면 행동할 사람의 이름표에도 남은 시간을 보인다 (PC 배치 %s)', (wide) => {
+    setMediaMatches(wide);
+    vi.useFakeTimers();
+    vi.setSystemTime(1_000_000);
+    const play = vi.fn();
+    const view = build({ phase: 'DRAW', current: OPPONENT });
+    const timed = { game: { ...view.game, deadline: 1_000_000 + 4000, serverNow: 1_000_000 } };
+    try {
+      render(
+        <SoundContext.Provider value={{ play, muted: false, toggleMuted: () => undefined }}>
+          <PaperSafariTable {...baseProps(timed)} />
+        </SoundContext.Provider>,
+      );
+      expect(within(screen.getByTestId(`board-${OPPONENT}`)).getByTestId('countdown')).toHaveTextContent('4');
+      expect(within(screen.getByTestId(`board-${ME}`)).queryByTestId('countdown')).not.toBeInTheDocument();
+      act(() => { vi.advanceTimersByTime(1000); });
+      // 상대 차례이고 이름표 타이머는 경고음을 내지 않는다.
+      expect(play.mock.calls.filter(([name]) => name === 'tick')).toHaveLength(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('시작 뒤집기에서는 아직 안 뒤집은 모든 사람의 이름표에 남은 시간을 보인다', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(1_000_000);
+    const view = build({ phase: 'SETUP_FLIP', current: ME });
+    const flippedMine = view.game.round.boards[0].slots.map((slot, index) => (index === 0 ? { ...slot, faceUp: true, card: { kind: 'NUMBER' as const, value: 3 } } : slot));
+    const boards = [{ playerId: ME, slots: flippedMine }, view.game.round.boards[1], { playerId: 3, slots: view.game.round.boards[1].slots }];
+    const timed = { game: { ...view.game, round: { ...view.game.round, boards }, deadline: 1_000_000 + 3000, serverNow: 1_000_000 } };
+    try {
+      render(<PaperSafariTable {...baseProps(timed)} />);
+      expect(within(screen.getByTestId(`board-${OPPONENT}`)).getByTestId('countdown')).toBeInTheDocument();
+      expect(within(screen.getByTestId('board-3')).getByTestId('countdown')).toBeInTheDocument();
+      expect(within(screen.getByTestId(`board-${ME}`)).queryByTestId('countdown')).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('모바일 배치의 차례 안내 바는 기록이 없어도 마지막 기록 칸을 말줄임 칸으로 잡아 둔다', () => {
     setMediaMatches(false);
     render(<PaperSafariTable {...baseProps(build({ phase: 'DRAW', current: ME }))} />);

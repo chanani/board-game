@@ -49,4 +49,25 @@ describe('Countdown', () => {
     render(<Countdown deadline={START + 3000} serverNow={START} />);
     expect(screen.getByTestId('countdown')).toHaveTextContent('3');
   });
+
+  it('새 마감(deadline/serverNow)이 오면 받은 시점부터 다시 잰다', () => {
+    const { rerender } = render(<Countdown deadline={START + 5000} serverNow={START} />);
+    act(() => { vi.advanceTimersByTime(3000); });
+    expect(screen.getByTestId('countdown')).toHaveTextContent('2');
+
+    // 서버가 새 마감을 보냈다(서버 시계는 클라이언트보다 10초 뒤). 15초 남았으니 숨긴다.
+    const serverNow = START + 3000 - 10_000;
+    rerender(<Countdown deadline={serverNow + 15_000} serverNow={serverNow} />);
+    expect(screen.queryByTestId('countdown')).not.toBeInTheDocument();
+    act(() => { vi.advanceTimersByTime(10_000); });
+    expect(screen.getByTestId('countdown')).toHaveTextContent('5');
+  });
+
+  it('색은 테마 변수를 쓴다', () => {
+    render(<Countdown deadline={START + 3000} serverNow={START} />);
+    const shown = screen.getByTestId('countdown');
+    expect(shown).toHaveClass('bg-(--timer-bg)', 'text-(--timer-ink)');
+    expect(shown.className).not.toMatch(/#[0-9a-f]{3,6}/i);
+    expect(shown.querySelector('circle[stroke="var(--timer-ring)"]')).not.toBeNull();
+  });
 });

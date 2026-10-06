@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import type { Room } from '../api/types';
-import { BinocularsIcon, CardsIcon, CopyIcon, LockIcon, PeopleIcon } from './icons';
+import { BinocularsIcon, CardsIcon, CopyIcon, DotIcon, LockIcon, PeopleIcon } from './icons';
 import { useToast } from './Toast';
 import { Button } from './ui';
 
@@ -48,7 +48,7 @@ export function RoomStatusBar({ room, playing, onLeave, log }: Props) {
         <h1 className="truncate text-base font-black text-cream-50 drop-shadow sm:text-xl">{room.name}</h1>
         <div className="mt-1 flex flex-wrap items-center gap-1 sm:gap-1.5" data-testid="room-chips">
           <RoomChip><CardsIcon /> {room.gameTypeName}</RoomChip>
-          <RoomChip tone={playing ? 'green' : 'plain'}>{playing ? '● 게임 중' : '대기 중'}</RoomChip>
+          <RoomChip tone={playing ? 'green' : 'plain'}>{playing ? <><DotIcon className="h-3 w-3" /> 게임 중</> : '대기 중'}</RoomChip>
           <RoomChip label={`인원 ${room.members.length}/${room.maxPlayers}명`}><PeopleIcon /> {room.members.length}/{room.maxPlayers}명</RoomChip>
           {spectatorCount > 0 ? <RoomChip label={`관전 ${spectatorCount}명`}><BinocularsIcon /> 관전 {spectatorCount}</RoomChip> : null}
           {room.locked ? <RoomChip label="비공개"><LockIcon className="h-3.5 w-3.5" /> 비공개</RoomChip> : null}

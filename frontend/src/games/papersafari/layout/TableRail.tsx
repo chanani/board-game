@@ -12,7 +12,7 @@ import type { TableProps } from '../PaperSafariTable';
 const ROOMY_QUERY = '(min-width: 440px)';
 
 export function TableRail(props: TableProps) {
-  const { view, meId, opponents, myBoard, nicknameOf, presenceOf, canClickSlot, clickSlot, drawable, send, canDiscard, canUndo, estimate, myTurn } = props;
+  const { view, meId, opponents, myBoard, nicknameOf, presenceOf, canClickSlot, clickSlot, drawable, send, canDiscard, canUndo, estimate, myTurn, timerFor } = props;
   const round = view.game.round;
   const roomy = useMediaQuery(ROOMY_QUERY);
   return (
@@ -21,7 +21,7 @@ export function TableRail(props: TableProps) {
         {opponents.map((board) => (
           <div key={board.playerId} className="shrink-0">
             <OpponentSeat board={board} nickname={nicknameOf(board.playerId)}
-              active={round.currentPlayerId === board.playerId} held={round.held} presence={presenceOf(board.playerId)} handOverlay />
+              active={round.currentPlayerId === board.playerId} held={round.held} presence={presenceOf(board.playerId)} timer={timerFor(board.playerId)} handOverlay />
           </div>
         ))}
       </WoodRail>
@@ -30,7 +30,7 @@ export function TableRail(props: TableProps) {
           onDrawDeck={() => send({ type: 'DRAW_DECK' })} onDrawDiscard={() => send({ type: 'DRAW_DISCARD' })} />
         {myBoard ? (
           <div className="flex w-full items-start gap-2">
-          <Seat board={myBoard} nickname={`${nicknameOf(meId)} (나)`} active={myTurn} turnRing={myTurn} hand="none"
+          <Seat board={myBoard} nickname={`${nicknameOf(meId)} (나)`} active={myTurn} turnRing={myTurn} hand="none" timer={timerFor(meId)}
             held={round.held} size={roomy ? 'md' : 'sm'} presence={{}} handLabel="들고 있는 카드" onSlotClick={clickSlot} canClick={canClickSlot} pulseSlots={myTurn} />
           <MySide canDiscard={canDiscard} canUndo={canUndo} estimate={estimate}
             hand={<HandAnchor board={myBoard} held={round.held} size={roomy ? 'md' : 'sm'} handLabel="들고 있는 카드" />}

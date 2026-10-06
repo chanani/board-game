@@ -71,6 +71,9 @@ body {
   --pill-bg: rgb(0 0 0 / 0.35);
   --pill-bg-strong: rgb(0 0 0 / 0.45);
   --pill-ink: #fffaf0;
+  --timer-bg: #b4461a;
+  --timer-ink: #ffffff;
+  --timer-ring: #fde7b0;
 }
 
 [data-theme="SUNSET"] {
@@ -98,6 +101,9 @@ body {
   --pill-bg: rgb(63 29 11 / 0.7);
   --pill-bg-strong: rgb(63 29 11 / 0.78);
   --pill-ink: #fff7ed;
+  --timer-bg: #991b1b;
+  --timer-ink: #ffffff;
+  --timer-ring: #fed7aa;
 }
 
 [data-theme="MOONLIT"] {
@@ -134,6 +140,9 @@ body {
   --pill-bg: rgb(2 6 23 / 0.55);
   --pill-bg-strong: rgb(2 6 23 / 0.65);
   --pill-ink: #e0f2fe;
+  --timer-bg: #be123c;
+  --timer-ink: #ffffff;
+  --timer-ring: #fecdd3;
 }
 
 [data-theme="AURORA"] {
@@ -162,6 +171,9 @@ body {
   --pill-bg: rgb(11 29 58 / 0.85);
   --pill-bg-strong: rgb(11 29 58 / 0.9);
   --pill-ink: #f0f9ff;
+  --timer-bg: #9f1239;
+  --timer-ink: #ffffff;
+  --timer-ring: #fecdd3;
 }
 
 [data-theme="BEACH"] {
@@ -189,6 +201,9 @@ body {
   --pill-bg: rgb(8 47 73 / 0.85);
   --pill-bg-strong: rgb(8 47 73 / 0.9);
   --pill-ink: #f0f9ff;
+  --timer-bg: #9f1239;
+  --timer-ink: #ffffff;
+  --timer-ring: #fecdd3;
 }
 
 /* 방 배경 장면. 방 화면 뒤(고정)와 방 만들기 미리보기 타일이 함께 쓴다. 장식 크기는 장면 크기(cq 단위)에 맞춘다. */

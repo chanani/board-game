@@ -7,8 +7,12 @@ type Props = {
   serverNow: number | undefined;
   /** 처음 5초 이하가 되는 순간 마감마다 한 번 부른다(내 차례 경고음). */
   onWarn?: () => void;
+  /** sm: 이름표 옆 작은 크기. */
+  size?: 'sm' | 'md';
   className?: string;
 };
+
+const SIZES = { sm: 'h-5 w-5 text-[10px]', md: 'h-6 w-6 text-[11px]' };
 
 const SHOW_MS = 5000;
 const TICK_MS = 250;
@@ -43,7 +47,7 @@ function useRemaining(deadline: number | null | undefined, serverNow: number | u
 }
 
 /** 남은 시간이 5초 이하일 때만 숫자와 줄어드는 링을 보인다. 0에서 멈춘다. */
-export function Countdown({ deadline, serverNow, onWarn, className = '' }: Props) {
+export function Countdown({ deadline, serverNow, onWarn, size = 'md', className = '' }: Props) {
   const remaining = useRemaining(deadline, serverNow);
   const visible = remaining !== null && remaining <= SHOW_MS;
   const warnedFor = useRef<number | null | undefined>(undefined);
@@ -63,10 +67,10 @@ export function Countdown({ deadline, serverNow, onWarn, className = '' }: Props
   const offset = CIRCUMFERENCE * (1 - remaining / SHOW_MS);
   return (
     <span data-testid="countdown" role="timer" aria-label={`${seconds}초 남았어요`}
-      className={`relative inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#b4461a] text-[11px] font-black leading-none text-white shadow ${className}`}>
+      className={`relative inline-flex shrink-0 items-center justify-center rounded-full bg-(--timer-bg) font-black leading-none text-(--timer-ink) shadow ${SIZES[size]} ${className}`}>
       <svg viewBox="0 0 24 24" aria-hidden="true" className="absolute inset-0 h-full w-full -rotate-90">
-        <circle cx="12" cy="12" r={RADIUS} fill="none" stroke="rgb(255 255 255 / 0.25)" strokeWidth="2" />
-        <circle cx="12" cy="12" r={RADIUS} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+        <circle cx="12" cy="12" r={RADIUS} fill="none" stroke="currentColor" strokeOpacity="0.2" strokeWidth="2" />
+        <circle cx="12" cy="12" r={RADIUS} fill="none" stroke="var(--timer-ring)" strokeWidth="2" strokeLinecap="round"
           strokeDasharray={CIRCUMFERENCE} strokeDashoffset={offset}
           className="transition-[stroke-dashoffset] duration-250 ease-linear motion-reduce:transition-none" />
       </svg>

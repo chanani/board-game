@@ -1,11 +1,15 @@
 import { useEffect, useRef } from 'react';
 import type { BoardView, SlotView } from '../../api/types';
+import { Countdown } from '../../components/Countdown';
 import { CardFace } from './CardFace';
 import { ZoneAnchor } from './motion/ZoneAnchor';
 import { slotZone } from './motion/zones';
 import { cardAt, isZeroPair } from './score';
 
 /** 결과 화면용: 이름표 글, 합계, 열 점수 배지(없으면 '…'), 승자 강조. */
+/** 이 사람의 행동을 기다리는 마감(서버 시계). 5초 이하부터 이름표 옆에 작게 보인다. */
+export type SeatTimer = { deadline: number | null | undefined; serverNow: number | undefined };
+
 export type BoardResult = { tag: string; total: string; badges: string[]; winner: boolean };
 
 type Props = {
@@ -24,11 +28,12 @@ type Props = {
   onForfeit?: () => void;
   zoomLabel?: string;
   onZoom?: () => void;
+  timer?: SeatTimer;
 };
 
 const GAP = { sm: 'gap-1.5', md: 'gap-2.5', lg: 'gap-2.5' };
 
-export function PlayerBoard({ result, board, nickname, active, turnRing = false, size = 'md', pulseSlots = false, onSlotClick, canClick, connected, offlineSeconds = 0, onForfeit, zoomLabel, onZoom }: Props) {
+export function PlayerBoard({ result, board, nickname, active, turnRing = false, size = 'md', pulseSlots = false, onSlotClick, canClick, connected, offlineSeconds = 0, onForfeit, zoomLabel, onZoom, timer }: Props) {
   const ordered = [...board.slots].sort((a, b) => a.row - b.row || a.column - b.column);
   const zeroColumns = new Set(
     [0, 1, 2].filter((column) => isZeroPair(cardAt(board, column, 0), cardAt(board, column, 1))),
@@ -48,6 +53,7 @@ export function PlayerBoard({ result, board, nickname, active, turnRing = false,
             <span aria-hidden="true" className={`inline-block h-2 w-2 shrink-0 rounded-full ${connected ? 'bg-green-500' : 'bg-stone-400'}`} />
           ) : null}
           <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold shadow-[0_2px_0_rgb(0_0_0/0.3)] ${active ? 'turn-glow bg-(--accent) text-(--accent-text)' : 'bg-cream-50 text-wood-800'}`}>{result ? result.tag : nickname}</span>
+          {timer ? <Countdown size="sm" deadline={timer.deadline} serverNow={timer.serverNow} /> : null}
           {connected === false ? <span className="felt-ink text-xs">연결 끊김 {offlineSeconds}초</span> : null}
           {onForfeit ? (
             <button type="button" onClick={onForfeit} className="rounded-md bg-red-50 px-1.5 py-0.5 text-xs font-medium text-red-700 hover:bg-red-100">

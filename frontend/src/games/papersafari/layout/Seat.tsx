@@ -1,6 +1,6 @@
 import type { BoardView, HeldView, SlotView } from '../../../api/types';
 import { CardFace } from '../CardFace';
-import { PlayerBoard } from '../PlayerBoard';
+import { PlayerBoard, type SeatTimer } from '../PlayerBoard';
 import { ZoneAnchor } from '../motion/ZoneAnchor';
 import { handZone } from '../motion/zones';
 
@@ -20,6 +20,7 @@ type Props = {
   onZoom?: () => void;
   turnRing?: boolean;
   hand?: 'side' | 'overlay' | 'none';
+  timer?: SeatTimer;
 };
 
 type HandProps = { board: BoardView; held: HeldView | null; size: 'sm' | 'md' | 'lg'; handLabel: string; className?: string };
@@ -39,12 +40,12 @@ export function HandAnchor({ board, held, size, handLabel, className = '' }: Han
 }
 
 /** side: 판 옆(기본), overlay: 판 오른쪽 위에 겹쳐 자리 너비를 판과 같게, none: 다른 곳에 따로 둔다. */
-export function Seat({ board, nickname, active, held, size, presence, handLabel, onSlotClick, canClick, pulseSlots, onZoom, turnRing, hand = 'side' }: Props) {
+export function Seat({ board, nickname, active, held, size, presence, handLabel, onSlotClick, canClick, pulseSlots, onZoom, turnRing, hand = 'side', timer }: Props) {
   const handAnchor = <HandAnchor board={board} held={held} size={size} handLabel={handLabel} className={hand === 'overlay' ? 'pointer-events-none absolute top-6 right-0 z-[6]' : 'mt-6'} />;
   return (
     <div className={hand === 'side' ? 'relative flex items-start gap-2' : 'relative'}>
       <PlayerBoard board={board} nickname={nickname} active={active} turnRing={turnRing} size={size}
-        onSlotClick={onSlotClick} canClick={canClick} pulseSlots={pulseSlots} onZoom={onZoom} zoomLabel={`${nickname}님의 판 크게 보기`} {...presence} />
+        onSlotClick={onSlotClick} canClick={canClick} pulseSlots={pulseSlots} onZoom={onZoom} zoomLabel={`${nickname}님의 판 크게 보기`} timer={timer} {...presence} />
       {hand === 'none' ? null : handAnchor}
     </div>
   );

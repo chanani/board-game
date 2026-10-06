@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import type { BoardView, GameAction, PaperSafariSessionView, Room, SlotView } from '../../api/types';
 import { GameOverPanel } from './GameOverPanel';
+import type { SeatTimer } from './PlayerBoard';
 import { TableRail } from './layout/TableRail';
 import { TableRound } from './layout/TableRound';
 import { TurnBar } from './layout/TurnBar';
@@ -33,6 +34,8 @@ export type TableProps = {
   canUndo: boolean;
   myTurn: boolean;
   estimate: { score: number; hidden: number } | null;
+  /** 이 사람의 행동을 기다리는 중이면 이름표 타이머용 마감을, 아니면 undefined. */
+  timerFor: (playerId: number) => SeatTimer | undefined;
 };
 
 type Props = {
@@ -163,11 +166,20 @@ export function PaperSafariTable({ view, room, meId, log, receivedAt, now, error
   };
 
   const drawable = myTurn && round.phase === 'DRAW';
+  const seatTimer: SeatTimer = { deadline: game.deadline, serverNow: game.serverNow };
+  // 시작 뒤집기는 아직 안 뒤집은 모든 사람을, 그 밖의 행동 단계는 현재 차례인 사람을 기다린다.
+  const awaited = (playerId: number): boolean => {
+    if (round.phase === 'SETUP_FLIP') {
+      return !boardOf(playerId)?.slots.some((slot) => slot.faceUp);
+    }
+    return round.phase !== 'ROUND_OVER' && round.currentPlayerId === playerId;
+  };
+  const timerFor = (playerId: number) => (game.deadline != null && awaited(playerId) ? seatTimer : undefined);
   const instructionText = instruction(round.phase, myTurn, needsFlip, nicknameOf(round.currentPlayerId), canDiscard, !wide);
 
   const tableProps: TableProps = {
     view, meId, opponents, myBoard, nicknameOf, presenceOf, canClickSlot, clickSlot, drawable, send,
-    canDiscard, canUndo, myTurn, estimate,
+    canDiscard, canUndo, myTurn, estimate, timerFor,
   };
   // 시간이 내 행동을 기다릴 때(내 차례, 또는 아직 안 뒤집은 시작 뒤집기)만 5초 경고음을 낸다.
   const waitingOnMe = needsFlip || (myTurn && round.phase !== 'SETUP_FLIP' && round.phase !== 'ROUND_OVER');
