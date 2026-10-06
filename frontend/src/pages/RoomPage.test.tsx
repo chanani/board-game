@@ -554,3 +554,53 @@ describe('RoomPage 방 설정', () => {
     expect(screen.getByRole('dialog', { name: '방 설정' })).toBeInTheDocument();
   });
 });
+
+describe('RoomPage 우노', () => {
+  const unoRoom: Room = {
+    ...baseRoom, gameType: 'UNO', gameTypeName: '우노', spectators: [],
+    members: [...members, { id: 3, nickname: '캐롤', host: false, connected: true, offlineSeconds: 0, ready: false }],
+  };
+  const unoGame = {
+    viewerId: 3, status: 'IN_PROGRESS', startedAt: 1000, stage: 'PLAY', currentPlayerId: 1, direction: 'CLOCKWISE', currentColor: 'RED',
+    discardTop: { id: 9, kind: 'NUMBER', color: 'RED', number: 5 }, discardCount: 1, drawPileCount: 80, participantIds: [1, 2, 3],
+    players: [{ playerId: 1, cardCount: 7, unoDeclared: false }, { playerId: 2, cardCount: 7, unoDeclared: false }, { playerId: 3, cardCount: 7, unoDeclared: false }],
+    hand: [{ id: 3, kind: 'NUMBER', color: 'RED', number: 2 }], playableCardIds: [], wildDrawFourRisky: false, drawnCardId: null,
+    canCallUno: false, unoCatch: null, canCatch: false, challenge: null, reveal: null, result: null, winnerId: null,
+    deadline: null, serverNow: 0, lastAutoActorIds: [], autoActSeq: 0, events: [],
+  };
+
+  it('우노 방이면 우노 테이블을 그린다', async () => {
+    setChannel({ room: unoRoom, view: { gameType: 'UNO', game: unoGame } });
+    renderRoom();
+    await act(async () => {});
+
+    expect(screen.getByTestId('uno-table')).toBeInTheDocument();
+  });
+
+  it('끝난 우노 게임은 결과 창을 띄우고, 닫으면 방 코드와 시작 시각으로 기억한다', async () => {
+    const { roomsApi } = await import('../api/rooms');
+    vi.mocked(roomsApi.ready).mockResolvedValue(unoRoom);
+    const over = { ...unoGame, status: 'GAME_OVER', stage: null, currentPlayerId: null, winnerId: 1,
+      result: { reason: 'EMPTY_HAND', winnerId: 1, points: 30, players: [] } };
+    setChannel({ room: { ...unoRoom, status: 'WAITING' }, view: { gameType: 'UNO', game: over } });
+    renderRoom();
+
+    expect(await screen.findByRole('dialog', { name: '게임 결과' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: '다음 게임 준비' }));
+    await waitFor(() => expect(JSON.parse(window.sessionStorage.getItem('bg.dismissedGameOver') ?? '[]')).toContain('ABC234:UNO:1000'));
+  });
+});
+
+describe('RoomPage 모르는 게임', () => {
+  it('나가기 버튼으로 방을 떠나 목록으로 간다', async () => {
+    const { roomsApi } = await import('../api/rooms');
+    vi.mocked(roomsApi.leave).mockResolvedValue(undefined as never);
+    setChannel({ room: { ...baseRoom, gameType: 'CHESS' } });
+    renderRoom();
+
+    await userEvent.click(screen.getByRole('button', { name: '나가기' }));
+
+    expect(roomsApi.leave).toHaveBeenCalledWith('ABC234');
+    expect(await screen.findByText('목록 화면')).toBeInTheDocument();
+  });
+});

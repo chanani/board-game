@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { PaperSafariSessionView } from '../api/types';
+import type { PaperSafariSessionView, UnoSessionView } from '../api/types';
 import { gameOverKey } from '../lib/dismissals';
 import { findGame, GAME_ORDER, gameOf, sessionGameType } from './registry';
 
@@ -39,5 +39,20 @@ describe('게임 등록부', () => {
     expect(game.wasParticipant(finished, 1)).toBe(true);
     expect(game.wasParticipant(finished, 9)).toBe(false);
     expect(game.gameOverKey('ABC234', finished)).toBe(gameOverKey('ABC234', finished.game));
+  });
+
+  it('우노를 두 번째 게임으로 등록한다', () => {
+    const uno = gameOf('UNO');
+    const view = { gameType: 'UNO', game: { status: 'GAME_OVER', startedAt: 1000, participantIds: [1, 2] } } as unknown as UnoSessionView;
+
+    expect(GAME_ORDER).toEqual(['PAPER_SAFARI', 'UNO']);
+    expect(uno.name).toBe('우노');
+    expect(uno.slug).toBe('uno');
+    expect(uno.averageScoreLabel).toBe('평균 획득 점수');
+    expect(uno.rules.title).toBe('우노 규칙');
+    expect(uno.isGameOver(view)).toBe(true);
+    expect(uno.wasParticipant(view, 2)).toBe(true);
+    expect(uno.wasParticipant(view, 9)).toBe(false);
+    expect(uno.gameOverKey('ABC234', view)).toBe('ABC234:UNO:1000');
   });
 });

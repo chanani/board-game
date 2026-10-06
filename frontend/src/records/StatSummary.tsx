@@ -1,5 +1,6 @@
 import type { GameStat } from '../api/types';
 import { decimal, percent } from '../lib/format';
+import { findGame } from '../games/registry';
 
 function Row({ label, children }: { label: string; children: string }) {
   return (
@@ -27,7 +28,7 @@ export function StatSummary({ stat }: { stat: GameStat }) {
         <Row label="게임">{`${stat.matches}전`}</Row>
         <Row label="승·무·패">{`${stat.wins}승 ${stat.draws}무 ${stat.losses}패`}</Row>
         <Row label="승률">{percent(stat.winRate)}</Row>
-        <Row label="평균 점수">{decimal(stat.averageRoundScore)}</Row>
+        <Row label={findGame(stat.gameType)?.averageScoreLabel ?? '평균 점수'}>{decimal(stat.averageRoundScore)}</Row>
       </dl>
     </div>
   );

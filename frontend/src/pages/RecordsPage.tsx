@@ -2,15 +2,15 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { messageOf } from '../api/http';
 import { recordsApi } from '../api/records';
-import type { MemberStats, Ranking, RecentMatch } from '../api/types';
+import type { GameType, MemberStats, Ranking, RecentMatch } from '../api/types';
 import { useAuth } from '../auth/AuthContext';
 import { Panel } from '../components/ui';
 import { useToast } from '../components/Toast';
 import { RankingList } from '../records/RankingList';
 import { RecentMatches } from '../records/RecentMatches';
 import { StatSummary } from '../records/StatSummary';
+import { GAME_ORDER, gameOf } from '../games/registry';
 
-const GAME = 'PAPER_SAFARI' as const;
 type Tab = 'records' | 'ranking';
 
 export function RecordsPage() {
@@ -21,6 +21,7 @@ export function RecordsPage() {
   const memberId = rawId === undefined ? (member?.id ?? 0) : Number(rawId);
   const validId = rawId === undefined || (Number.isInteger(memberId) && memberId > 0);
   const isMe = rawId === undefined || memberId === member?.id;
+  const [game, setGame] = useState<GameType>(GAME_ORDER[0]);
   const [tab, setTab] = useState<Tab>('records');
   const [stats, setStats] = useState<MemberStats | null>(null);
   const [matches, setMatches] = useState<RecentMatch[]>([]);
@@ -40,21 +41,21 @@ export function RecordsPage() {
     };
     const load = isMe ? recordsApi.me() : recordsApi.member(memberId);
     load.then((result) => { if (!cancelled) setStats(result); }).catch(fail);
-    recordsApi.matches(memberId, GAME, 10).then((result) => { if (!cancelled) setMatches(result); }).catch(fail);
+    recordsApi.matches(memberId, game, 10).then((result) => { if (!cancelled) setMatches(result); }).catch(fail);
     return () => {
       cancelled = true;
     };
-  }, [memberId, isMe, validId, toast]);
+  }, [memberId, isMe, validId, game, toast]);
 
   useEffect(() => {
     let cancelled = false;
-    recordsApi.rankings(GAME)
+    recordsApi.rankings(game)
       .then((result) => { if (!cancelled) setRankings(result); })
       .catch((error) => { if (!cancelled) toast.show(messageOf(error)); });
     return () => {
       cancelled = true;
     };
-  }, [toast]);
+  }, [game, toast]);
 
   if (!validId) {
     return <Panel>잘못된 회원 주소예요.</Panel>;
@@ -72,6 +73,14 @@ export function RecordsPage() {
           <button type="button" className={tabClass('ranking')} onClick={() => setTab('ranking')}>순위표</button>
         </div>
       </div>
+      <div role="tablist" aria-label="게임" className="flex gap-2">
+        {GAME_ORDER.map((type) => (
+          <button key={type} type="button" role="tab" aria-selected={game === type} onClick={() => setGame(type)}
+            className={`rounded-full px-3 py-1 text-sm font-bold ${game === type ? 'bg-cream-50 text-wood-800 shadow' : 'bg-black/25 text-cream-100'}`}>
+            {gameOf(type).name}
+          </button>
+        ))}
+      </div>
       {tab === 'records' ? (
         <>
           <div className="grid gap-4 sm:grid-cols-2">
@@ -88,7 +97,7 @@ export function RecordsPage() {
         </>
       ) : (
         <Panel>
-          <h2 className="mb-2 font-bold">페이퍼 사파리 순위표 (5판 이상)</h2>
+          <h2 className="mb-2 font-bold">{`${gameOf(game).name} 순위표 (5판 이상)`}</h2>
           <RankingList rankings={rankings} />
         </Panel>
       )}

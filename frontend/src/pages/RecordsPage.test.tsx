@@ -157,4 +157,29 @@ describe('RecordsPage', () => {
 
     expect((await screen.findByText('승률')).nextElementSibling).toHaveTextContent('-');
   });
+
+  it('게임 탭으로 우노 최근 경기와 순위표를 본다', async () => {
+    renderPage();
+    await screen.findByText('2승 0무 1패');
+
+    await userEvent.click(screen.getByRole('tab', { name: '우노' }));
+
+    expect(screen.getByRole('tab', { name: '우노' })).toHaveAttribute('aria-selected', 'true');
+    await waitFor(() => expect(recordsApi.matches).toHaveBeenLastCalledWith(1, 'UNO', 10));
+    await waitFor(() => expect(recordsApi.rankings).toHaveBeenLastCalledWith('UNO'));
+    await userEvent.click(screen.getByRole('button', { name: '순위표' }));
+    expect(screen.getByRole('heading', { name: '우노 순위표 (5판 이상)' })).toBeInTheDocument();
+  });
+
+  it('우노 통계는 평균 획득 점수로 보여 준다', async () => {
+    vi.mocked(recordsApi.me).mockResolvedValue({
+      memberId: 1, nickname: '앨리스', stats: [{
+        gameType: 'UNO', gameTypeName: '우노', matches: 2, wins: 1, draws: 0, losses: 1, winRate: 0.5,
+        rounds: 1, roundWins: 1, roundDraws: 0, roundLosses: 0, roundWinRate: 1, averageRoundScore: 47,
+      }],
+    });
+    renderPage();
+
+    expect(await screen.findByText('평균 획득 점수')).toBeInTheDocument();
+  });
 });

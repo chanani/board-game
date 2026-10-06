@@ -1,4 +1,4 @@
-import { act, render, screen, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -21,10 +21,10 @@ const rooms = [
   { ...base, code: 'PLAY02', name: '비밀판', status: 'PLAYING', locked: true, roundNumber: 1 },
 ];
 
-function renderLobby() {
+function renderLobby(path = '/games/paper-safari') {
   render(
     <ToastProvider>
-      <MemoryRouter initialEntries={['/games/paper-safari']}>
+      <MemoryRouter initialEntries={[path]}>
         <Routes>
           <Route path="/games/:slug" element={<GameLobbyPage />} />
           <Route path="/rooms/:code" element={<p>방 화면</p>} />
@@ -44,6 +44,13 @@ beforeEach(() => {
 afterEach(() => vi.useRealTimers());
 
 describe('GameLobbyPage', () => {
+  it('우노 로비는 우노 이름과 상자를 보여 주고 우노 방을 만든다', async () => {
+    renderLobby('/games/uno');
+
+    expect(await screen.findByRole('heading', { name: '우노' })).toBeInTheDocument();
+    await waitFor(() => expect(api.list).toHaveBeenCalledWith('UNO'));
+  });
+
   it('내 전적·순위표 칸은 PC(lg)에서만 보이고 모바일에서는 숨긴다', async () => {
     renderLobby();
     const records = await screen.findByRole('heading', { name: '내 전적' });

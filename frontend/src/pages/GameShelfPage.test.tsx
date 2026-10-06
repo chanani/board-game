@@ -44,7 +44,7 @@ describe('GameShelfPage', () => {
     list.mockRejectedValue(new Error('down'));
     renderShelf();
 
-    expect(await screen.findByLabelText('대기 인원 알 수 없음')).toHaveTextContent('–');
+    expect((await screen.findAllByLabelText('대기 인원 알 수 없음'))[0]).toHaveTextContent('–');
   });
 
   it('게임 상자를 누르면 그 게임 로비로 간다', async () => {
@@ -72,8 +72,19 @@ describe('GameShelfPage', () => {
 
     expect(screen.getByText('오늘은 뭘 할까요?')).toBeInTheDocument();
     expect(screen.getByText('목록에서 게임을 골라 주세요')).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: /규칙 보기/ }));
+    await userEvent.click(screen.getAllByRole('button', { name: /규칙 보기/ })[0]);
 
     expect(await screen.findByRole('dialog', { name: '페이퍼 사파리 규칙' })).toBeInTheDocument();
+  });
+
+  it('우노 상자와 우노 규칙을 보여 준다', async () => {
+    list.mockResolvedValue([]);
+    renderShelf();
+
+    expect(screen.getByRole('button', { name: '우노 열기' })).toBeInTheDocument();
+    expect(screen.getByText('2~5인 · 손패를 먼저 비워라!')).toBeInTheDocument();
+    await userEvent.click(screen.getAllByRole('button', { name: /규칙 보기/ })[1]);
+
+    expect(await screen.findByRole('dialog', { name: '우노 규칙' })).toBeInTheDocument();
   });
 });
