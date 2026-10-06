@@ -15,11 +15,11 @@ vi.mock('../room/useRoomChannel', () => ({
 const toast = vi.hoisted(() => ({ show: vi.fn() }));
 vi.mock('../components/Toast', () => ({ useToast: () => toast }));
 vi.mock('../auth/AuthContext', () => ({ useAuth: () => ({ member: { id: 3, loginId: 'carol01', nickname: '캐롤' } }) }));
-const chat = vi.hoisted(() => ({ args: [] as unknown[], send: vi.fn(() => true), markRead: vi.fn() }));
+const chat = vi.hoisted(() => ({ args: [] as unknown[], unread: 2, send: vi.fn(() => true), markRead: vi.fn() }));
 vi.mock('../room/useRoomChat', () => ({
   useRoomChat: (...args: unknown[]) => {
     chat.args = args;
-    return { messages: [{ id: 1, memberId: 1, nickname: '앨리스', text: '잘 부탁해요', sentAt: '2026-10-06T00:00:00Z' }], send: chat.send, unread: 2, markRead: chat.markRead };
+    return { messages: [{ id: 1, memberId: 1, nickname: '앨리스', text: '잘 부탁해요', sentAt: '2026-10-06T00:00:00Z' }], send: chat.send, unread: chat.unread, markRead: chat.markRead };
   },
 }));
 vi.mock('../api/rooms', () => ({ roomsApi: { seat: vi.fn(), leave: vi.fn(), start: vi.fn(), forfeit: vi.fn(), ready: vi.fn() } }));
@@ -239,7 +239,23 @@ describe('RoomPage 준비와 채팅', () => {
     expect(screen.getByText(/대기 중 · 2\/4명/)).toBeInTheDocument();
   });
 
+  it('대기실에서 본 채팅은 읽음 처리해 게임이 시작돼도 안 읽은 배지가 없다', async () => {
+    chat.unread = 2;
+    chat.markRead.mockReset().mockImplementation(() => { chat.unread = 0; });
+    setChannel({ room: waiting });
+    const page = renderRoom();
+    await act(async () => {});
+
+    expect(chat.markRead).toHaveBeenCalled();
+    setChannel({ room: { ...waiting, status: 'PLAYING' }, view: null });
+    page.rerender(roomTree());
+
+    expect(screen.getByRole('button', { name: '채팅 열기' })).toBeInTheDocument();
+  });
+
   it('게임 중에는 채팅 버튼으로 채팅을 열고 안 읽은 수를 보여 준다', async () => {
+    chat.unread = 2;
+    chat.markRead.mockReset();
     setChannel({ room: { ...waiting, status: 'PLAYING' }, view: null });
     renderRoom();
 

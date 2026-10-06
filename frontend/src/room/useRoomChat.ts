@@ -28,11 +28,13 @@ export function useRoomChat(code: string, enabled: boolean, { meId }: Options = 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [readId, setReadId] = useState(0);
   const droppedRef = useRef(false);
+  const initializedRef = useRef(false);
   const [reloadSeq, setReloadSeq] = useState(0);
 
   useEffect(() => {
     setMessages([]);
     setReadId(0);
+    initializedRef.current = false;
   }, [code]);
 
   // 연결이 끊긴 동안 놓친 메시지는 다시 연결되면 기록으로 채운다.
@@ -59,8 +61,11 @@ export function useRoomChat(code: string, enabled: boolean, { meId }: Options = 
           return;
         }
         setMessages((current) => merge(current, history));
-        // 처음 불러온 기록은 이미 지나간 대화라 안 읽은 수로 세지 않는다.
-        setReadId((current) => (current === 0 ? lastIdOf(history) : current));
+        // 처음 불러온 기록만 이미 지나간 대화로 보고 읽음 처리한다. 다시 연결돼 새로 불러온 기록은 건드리지 않는다.
+        if (!initializedRef.current) {
+          initializedRef.current = true;
+          setReadId((current) => Math.max(current, lastIdOf(history)));
+        }
       })
       .catch(() => undefined); // 방에서 나간 경우 등은 방 채널이 알리고 화면을 옮긴다.
     return () => {

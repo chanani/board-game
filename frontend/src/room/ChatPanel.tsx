@@ -67,14 +67,16 @@ export function ChatPanel({ messages, meId, onSend, className = '', autoFocus = 
   };
 
   // 한글 조합 중 Enter는 글자를 확정하는 키라서 보내지 않는다.
+  // Safari(WebKit)는 조합을 끝내는 Enter를 isComposing=false, keyCode 229로 보내므로 함께 거른다.
   const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key !== 'Enter') {
       return;
     }
     event.preventDefault();
-    if (!event.nativeEvent.isComposing) {
-      submit();
+    if (event.nativeEvent.isComposing || event.keyCode === 229) {
+      return;
     }
+    submit();
   };
 
   return (

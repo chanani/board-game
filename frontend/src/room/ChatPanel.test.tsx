@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import type { ChatMessage } from '../api/chat';
@@ -63,5 +63,17 @@ describe('ChatPanel', () => {
     await userEvent.click(screen.getByRole('button', { name: '보내기' }));
 
     expect(onSend).toHaveBeenCalledWith('안녕');
+  });
+
+  it('한글 조합을 끝내는 Enter(keyCode 229, Safari)는 보내지 않는다', () => {
+    const onSend = vi.fn(() => true);
+    render(<ChatPanel messages={[]} meId={1} onSend={onSend} />);
+
+    const input = screen.getByRole('textbox', { name: '채팅 입력' });
+    fireEvent.change(input, { target: { value: '안녕' } });
+    fireEvent.keyDown(input, { key: 'Enter', keyCode: 229 });
+
+    expect(onSend).not.toHaveBeenCalled();
+    expect(input).toHaveValue('안녕');
   });
 });

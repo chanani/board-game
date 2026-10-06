@@ -52,6 +52,15 @@ export function RoomPage() {
     setConfirmLeave(false);
   }, [room?.status]);
 
+  // 대기실에서는 채팅이 늘 펼쳐져 있으니 본 것으로 보고, 게임이 시작돼도 💬 배지에 남지 않게 한다.
+  const waitingChatShown = room !== null && room.status !== 'PLAYING';
+  const { messages: chatMessages, markRead } = chat;
+  useEffect(() => {
+    if (waitingChatShown) {
+      markRead();
+    }
+  }, [waitingChatShown, chatMessages, markRead]);
+
   useEffect(() => {
     if (room && !missing && !isPresent(room, meId)) {
       toast.show('방에서 나왔어요.', 'info');

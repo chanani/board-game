@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { ChatMessage } from '../api/chat';
 import type { Room, RoomMember } from '../api/types';
 import { Button, Panel } from '../components/ui';
@@ -15,7 +16,8 @@ type Props = {
   receivedAt: number;
   now: number;
   onStart: () => void;
-  onReady: (ready: boolean) => void;
+  /** 요청이 끝날 때까지(Promise) 준비 버튼을 잠근다. */
+  onReady: (ready: boolean) => unknown;
   onForfeit: (memberId: number) => void;
   onSeat: () => void;
   chat: Chat;
@@ -94,7 +96,7 @@ type CenterProps = {
   meId: number;
   spectating: boolean;
   onStart: () => void;
-  onReady: (ready: boolean) => void;
+  onReady: (ready: boolean) => unknown;
   onSeat: () => void;
 };
 
@@ -121,12 +123,26 @@ function CenterAction({ room, meId, spectating, onStart, onReady, onSeat }: Cent
       </>
     );
   }
+  return <ReadyButton ready={me.ready} onReady={onReady} />;
+}
+
+function ReadyButton({ ready, onReady }: { ready: boolean; onReady: (ready: boolean) => unknown }) {
+  const [pending, setPending] = useState(false);
+  // 요청이 끝나기 전에 다시 눌러 준비·취소가 엇갈려 가지 않게 잠근다.
+  const toggle = async () => {
+    setPending(true);
+    try {
+      await onReady(!ready);
+    } finally {
+      setPending(false);
+    }
+  };
   return (
     <>
-      <Button variant={me.ready ? 'secondary' : 'primary'} onClick={() => onReady(!me.ready)} className="px-5 py-2.5 text-base">
-        {me.ready ? '준비 취소' : '준비하기'}
+      <Button variant={ready ? 'secondary' : 'primary'} onClick={toggle} disabled={pending} className="px-5 py-2.5 text-base">
+        {ready ? '준비 취소' : '준비하기'}
       </Button>
-      <p className={NOTE}>{me.ready ? '방장이 시작하길 기다리고 있어요' : '준비하면 방장이 시작할 수 있어요'}</p>
+      <p className={NOTE}>{ready ? '방장이 시작하길 기다리고 있어요' : '준비하면 방장이 시작할 수 있어요'}</p>
     </>
   );
 }

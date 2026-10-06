@@ -5,7 +5,7 @@ import { useRoomChat } from './useRoomChat';
 
 type Handler = (body: unknown) => void;
 const state = vi.hoisted(() => ({
-  connected: true,
+  connected: true as boolean,
   handlers: new Map<string, (body: unknown) => void>(),
   publish: vi.fn(() => true),
   realtime: undefined as unknown,
@@ -94,5 +94,25 @@ describe('useRoomChat', () => {
 
     act(() => result.current.markRead());
     expect(result.current.unread).toBe(0);
+  });
+
+  it('다시 연결돼 기록을 새로 불러와도 그사이 받은 메시지를 읽음으로 바꾸지 않는다', async () => {
+    vi.mocked(chatApi.history).mockResolvedValue([]);
+    const { result, rerender } = renderHook(() => useRoomChat('ABC234', true, { meId: 1 }));
+    await waitFor(() => expect(chatApi.history).toHaveBeenCalledTimes(1));
+    await act(async () => {});
+
+    push({ ...message(3, 2), roomCode: 'ABC234' });
+    expect(result.current.unread).toBe(1);
+
+    vi.mocked(chatApi.history).mockResolvedValue([message(3, 2)]);
+    state.connected = false;
+    rerender();
+    state.connected = true;
+    rerender();
+    await waitFor(() => expect(chatApi.history).toHaveBeenCalledTimes(2));
+    await act(async () => {});
+
+    expect(result.current.unread).toBe(1);
   });
 });

@@ -39,4 +39,13 @@ describe('ChatLauncher', () => {
 
     expect(screen.getByRole('dialog', { name: '채팅' })).toHaveAttribute('data-variant', 'sheet');
   });
+
+  it('모달(z-40)보다 아래 층에 뜬다', async () => {
+    render(<ChatLauncher messages={messages} meId={1} onSend={vi.fn()} unread={0} onOpen={vi.fn()} />);
+
+    const button = screen.getByRole('button', { name: '채팅 열기' });
+    expect(button).toHaveClass('z-30');
+    await userEvent.click(button);
+    expect(screen.getByRole('dialog', { name: '채팅' })).toHaveClass('z-30');
+  });
 });

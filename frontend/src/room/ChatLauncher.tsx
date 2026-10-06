@@ -18,6 +18,7 @@ const badgeOf = (unread: number) => (unread > 9 ? '9+' : String(unread));
 
 /**
  * 게임 중 채팅. 오른쪽 아래 💬 버튼으로 연다. PC는 오른쪽 서랍, 모바일은 아래 시트.
+ * 모달(z-40) 아래 층(z-30)에 두어 상대 보드·규칙 모달을 가리거나 클릭을 가로채지 않는다.
  * 게임 화면은 방 화면이라 "돌아가기" 바가 뜨지 않는다. 알림(토스트)은 z-50으로 이 위에 뜨고,
  * 모바일 시트가 열려 있는 동안에는 html[data-chat-sheet]로 시트 위로 올린다.
  */
@@ -57,7 +58,7 @@ export function ChatLauncher({ messages, meId, onSend, unread, onOpen }: Props) 
     const label = unread > 0 ? `채팅 열기 (안 읽은 메시지 ${unread}개)` : '채팅 열기';
     return (
       <button type="button" aria-label={label} onClick={() => setOpen(true)}
-        className="press-3d fixed bottom-4 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-mustard-400 text-wood-800 shadow-[0_4px_0_var(--color-mustard-600),0_10px_18px_rgb(0_0_0/0.4)] hover:bg-mustard-300">
+        className="press-3d fixed bottom-4 right-4 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-mustard-400 text-wood-800 shadow-[0_4px_0_var(--color-mustard-600),0_10px_18px_rgb(0_0_0/0.4)] hover:bg-mustard-300">
         <ChatIcon className="h-7 w-7" />
         {unread > 0 ? (
           <span aria-hidden="true" className="absolute -right-1 -top-1 flex h-6 min-w-6 items-center justify-center rounded-full bg-brick-500 px-1.5 text-xs font-black text-cream-50 ring-2 ring-cream-50">
@@ -69,8 +70,8 @@ export function ChatLauncher({ messages, meId, onSend, unread, onOpen }: Props) 
   }
 
   const frame = pc
-    ? 'fixed bottom-20 right-4 z-40 h-[60vh] w-80 rounded-2xl'
-    : 'fixed inset-x-0 bottom-0 z-40 h-[60vh] rounded-t-3xl pb-[env(safe-area-inset-bottom)]';
+    ? 'fixed bottom-20 right-4 z-30 h-[60vh] w-80 rounded-2xl'
+    : 'fixed inset-x-0 bottom-0 z-30 h-[60vh] rounded-t-3xl pb-[env(safe-area-inset-bottom)]';
   const enter = pc ? { x: 24, opacity: 0 } : { y: '100%' };
 
   return (

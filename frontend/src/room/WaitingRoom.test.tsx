@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import type { Room } from '../api/types';
@@ -13,7 +13,7 @@ const room: Room = {
   ],
 };
 
-type Overrides = { room?: Room; meId?: number; onSeat?: () => void; onReady?: (ready: boolean) => void; onStart?: () => void };
+type Overrides = { room?: Room; meId?: number; onSeat?: () => void; onReady?: (ready: boolean) => unknown; onStart?: () => void };
 
 function renderRoom({ room: shown = room, meId = 1, onSeat = vi.fn(), onReady = vi.fn(), onStart = vi.fn() }: Overrides = {}) {
   return render(
@@ -119,5 +119,17 @@ describe('WaitingRoom', () => {
 
     expect(screen.queryByRole('button', { name: '자리에 앉기' })).not.toBeInTheDocument();
     expect(screen.getByText(/게임이 끝나면 자동으로 참가해요/)).toBeInTheDocument();
+  });
+
+  it('준비 요청이 끝날 때까지 준비 버튼을 다시 누를 수 없다', async () => {
+    let finish: () => void = () => {};
+    const onReady = vi.fn(() => new Promise<void>((resolve) => { finish = resolve; }));
+    renderRoom({ meId: 2, onReady });
+
+    await userEvent.click(screen.getByRole('button', { name: '준비하기' }));
+    expect(screen.getByRole('button', { name: '준비하기' })).toBeDisabled();
+
+    await act(async () => finish());
+    expect(screen.getByRole('button', { name: '준비하기' })).toBeEnabled();
   });
 });
