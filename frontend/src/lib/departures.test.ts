@@ -30,6 +30,11 @@ describe('departures', () => {
     expect(texts(playing, playing, 1)).toEqual([]);
   });
 
+  it('내가 빠지는 갱신에서 같이 빠진 사람은 알리지 않는다', () => {
+    const prev = room('PLAYING', [member(1, '앨리스'), member(2, '밥'), member(3, '캐롤')]);
+    expect(texts(prev, room('PLAYING', [member(3, '캐롤')]), 1)).toEqual([]);
+  });
+
   it('여러 명이 빠지면 사람마다 한 줄', () => {
     const prev = room('PLAYING', [member(1, '앨리스'), member(2, '밥'), member(3, '캐롤', false)]);
     const next = room('WAITING', [member(1, '앨리스')]);

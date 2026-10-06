@@ -14,7 +14,7 @@ const KIND_STYLE: Record<LogKind, { Icon: ComponentType<{ className?: string }>;
   start: { Icon: PlayIcon, bg: 'bg-lime-100' },
   result: { Icon: TrophyIcon, bg: 'bg-yellow-100' },
   timeout: { Icon: ClockIcon, bg: 'bg-rose-100' },
-  leave: { Icon: LogoutIcon, bg: 'bg-red-100' },
+  leave: { Icon: LogoutIcon, bg: 'bg-stone-300' },
   other: { Icon: DotIcon, bg: 'bg-stone-200' },
 };
 
