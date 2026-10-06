@@ -114,11 +114,28 @@ class RoomServiceTurnTimerTest {
     }
 
     @Test
+    void 덱에서_가져오면_예약_시각이_지금부터_15초로_바뀐다() {
+        clock.advance(Duration.ofSeconds(15));
+        scheduler.latest().run();
+        long current = viewOf(HOST).round().currentPlayerId();
+        clock.advance(Duration.ofSeconds(10));
+
+        service.act(CODE, current, new GameAction("DRAW_DECK", null, null));
+
+        assertThat(scheduler.latest().startTime()).isEqualTo(clock.instant().plusSeconds(15));
+    }
+
+    @Test
     void 가져왔다_되돌리기를_되풀이해도_원래_마감에_대신_행동한다() {
         clock.advance(Duration.ofSeconds(15));
         scheduler.latest().run();
         long current = viewOf(HOST).round().currentPlayerId();
-        Instant turnDeadline = T0.plusSeconds(30);
+        // 첫 가져오기는 마감을 다시 15초로 채우고, 되돌린 뒤의 되풀이는 그 마감을 그대로 둔다.
+        clock.advance(Duration.ofSeconds(2));
+        service.act(CODE, current, new GameAction("DRAW_DISCARD", null, null));
+        Instant turnDeadline = clock.instant().plus(Duration.ofSeconds(15));
+        assertThat(scheduler.latest().startTime()).isEqualTo(turnDeadline);
+        service.act(CODE, current, new GameAction("CANCEL_DRAW", null, null));
 
         for (int cycle = 0; cycle < 3; cycle++) {
             clock.advance(Duration.ofSeconds(2));

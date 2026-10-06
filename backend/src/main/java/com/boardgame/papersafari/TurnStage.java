@@ -14,6 +14,11 @@ public record TurnStage(RoundNumber round, PlayerId player, TurnPhase phase) {
         return round.equals(previous.round) && player.equals(previous.player);
     }
 
+    // 같은 차례에서 놓을 단계가 가져올 단계로 돌아왔다면 가져오기를 되돌린 것이다.
+    public boolean cancelsDrawFrom(TurnStage previous) {
+        return sameTurnAs(previous) && previous.phase == TurnPhase.PLACE && phase == TurnPhase.DRAW;
+    }
+
     private boolean isDrawOrPlace() {
         return phase == TurnPhase.DRAW || phase == TurnPhase.PLACE;
     }

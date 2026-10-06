@@ -11,6 +11,7 @@ public class TurnCountdown {
 
     private final Clock clock;
     private Instant awaitingSince;
+    private CancelMark cancelMark = CancelMark.none();
 
     public TurnCountdown(Clock clock) {
         this.clock = clock;
@@ -19,6 +20,23 @@ public class TurnCountdown {
 
     public void restart() {
         awaitingSince = clock.instant();
+    }
+
+    // 단계나 차례가 바뀌면 다시 잰다. 되돌리기와, 되돌림이 있었던 차례의 이후 가져오기는 마감을 그대로 둔다.
+    public void follow(TurnStage before, TurnStage now) {
+        if (!now.sameTurnAs(before)) {
+            cancelMark = CancelMark.none();
+            restart();
+            return;
+        }
+        if (now.cancelsDrawFrom(before)) {
+            cancelMark = CancelMark.on(now);
+            return;
+        }
+        if (cancelMark.covers(now)) {
+            return;
+        }
+        restart();
     }
 
     public Instant awaitingSince() {

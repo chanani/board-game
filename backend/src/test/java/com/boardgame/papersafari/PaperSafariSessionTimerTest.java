@@ -77,6 +77,8 @@ class PaperSafariSessionTimerTest {
     void 가져왔다_되돌리기를_되풀이해도_차례_마감은_늘어나지_않는다() {
         PaperSafariSession session = session();
         session.autoAct(new FixedRandom(0));
+        session.act(A, new GameAction("DRAW_DISCARD", null, null));
+        session.act(A, new GameAction("CANCEL_DRAW", null, null));
         Instant turnDeadline = session.deadline().orElseThrow();
 
         for (int cycle = 0; cycle < 3; cycle++) {
@@ -87,6 +89,69 @@ class PaperSafariSessionTimerTest {
         }
 
         assertThat(session.deadline()).contains(turnDeadline);
+    }
+
+    private PaperSafariSession atFirstDrawTurn() {
+        PaperSafariSession session = session();
+        session.autoAct(new FixedRandom(0));
+        return session;
+    }
+
+    @Test
+    void 덱에서_가져오면_마감을_다시_15초로_잡는다() {
+        PaperSafariSession session = atFirstDrawTurn();
+        clock.advance(Duration.ofSeconds(10));
+
+        session.act(A, new GameAction("DRAW_DECK", null, null));
+
+        assertThat(session.deadline()).contains(clock.instant().plus(LIMIT));
+    }
+
+    @Test
+    void 되돌리기는_마감을_그대로_둔다() {
+        PaperSafariSession session = atFirstDrawTurn();
+        clock.advance(Duration.ofSeconds(5));
+        session.act(A, new GameAction("DRAW_DISCARD", null, null));
+        Instant refilled = clock.instant().plus(LIMIT);
+        clock.advance(Duration.ofSeconds(3));
+
+        session.act(A, new GameAction("CANCEL_DRAW", null, null));
+
+        assertThat(session.deadline()).contains(refilled);
+    }
+
+    @Test
+    void 되돌린_차례의_다시_가져오기도_마감을_그대로_둔다() {
+        PaperSafariSession session = atFirstDrawTurn();
+        clock.advance(Duration.ofSeconds(5));
+        session.act(A, new GameAction("DRAW_DISCARD", null, null));
+        Instant refilled = clock.instant().plus(LIMIT);
+        clock.advance(Duration.ofSeconds(3));
+        session.act(A, new GameAction("CANCEL_DRAW", null, null));
+        clock.advance(Duration.ofSeconds(4));
+
+        session.act(A, new GameAction("DRAW_DISCARD", null, null));
+        assertThat(session.deadline()).contains(refilled);
+        clock.advance(Duration.ofSeconds(2));
+        session.act(A, new GameAction("CANCEL_DRAW", null, null));
+
+        assertThat(session.deadline()).contains(refilled);
+    }
+
+    @Test
+    void 되돌림_표시는_다음_차례에서_사라진다() {
+        PaperSafariSession session = atFirstDrawTurn();
+        session.act(A, new GameAction("DRAW_DISCARD", null, null));
+        session.act(A, new GameAction("CANCEL_DRAW", null, null));
+        session.act(A, new GameAction("DRAW_DECK", null, null));
+        clock.advance(Duration.ofSeconds(6));
+
+        session.act(A, new GameAction("DISCARD", null, null));
+        assertThat(session.deadline()).contains(clock.instant().plus(LIMIT));
+        clock.advance(Duration.ofSeconds(4));
+        session.act(B, new GameAction("DRAW_DECK", null, null));
+
+        assertThat(session.deadline()).contains(clock.instant().plus(LIMIT));
     }
 
     @Test

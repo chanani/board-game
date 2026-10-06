@@ -92,18 +92,10 @@ public class PaperSafariSession implements GameSession {
         return number.value();
     }
 
-    // 상태가 바뀌었으니 마감을 다시 잡는다. 같은 차례 안에서 가져왔다 되돌리기만 했다면 차례 마감을 그대로 둔다.
+    // 상태가 바뀌었으니 마감을 다시 잡는다. 되돌리기와 되돌림이 있었던 차례의 가져오기는 차례 마감을 그대로 둔다.
     private List<GameOutcome> changed(TurnStage before) {
-        restartUnlessSameTurn(before);
+        countdown.follow(before, TurnStage.of(game));
         return outcomesIfFinished();
-    }
-
-    private void restartUnlessSameTurn(TurnStage before) {
-        TurnStage now = TurnStage.of(game);
-        if (now.sameTurnAs(before)) {
-            return;
-        }
-        countdown.restart();
     }
 
     // 행동은 끝난 게임에서 거부되므로, 행동 직후 끝나 있으면 이번 행동으로 끝난 것이다.
