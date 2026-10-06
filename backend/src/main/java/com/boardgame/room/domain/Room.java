@@ -14,52 +14,73 @@ import java.util.function.Function;
 public class Room {
 
     private final RoomProfile profile;
-    private final RoomMembers members;
+    private final RoomOccupants occupants;
     private RoomGame game;
 
-    private Room(RoomProfile profile, RoomMembers members) {
+    private Room(RoomProfile profile, RoomOccupants occupants) {
         this.profile = profile;
-        this.members = members;
+        this.occupants = occupants;
     }
 
     public static Room open(RoomProfile profile, Participant host) {
-        RoomMembers members = new RoomMembers();
-        members.add(host, profile.capacity());
-        return new Room(profile, members);
+        return new Room(profile, RoomOccupants.hostedBy(host, profile.capacity()));
     }
 
     public void join(Participant participant, String password, RoomPasswordHasher hasher) {
-        if (members.contains(participant.memberId())) {
+        if (occupants.isPlayer(participant.memberId())) {
             return;
         }
         requireWaiting();
         profile.lock().require(password, hasher);
-        members.add(participant, profile.capacity());
+        occupants.addPlayer(participant, profile.capacity());
+    }
+
+    public void watch(Participant participant) {
+        if (occupants.isOccupant(participant.memberId())) {
+            return;
+        }
+        if (isLocked()) {
+            throw new BusinessException(ErrorCode.ROOM_PRIVATE);
+        }
+        if (status() != RoomStatus.PLAYING) {
+            throw new BusinessException(ErrorCode.ROOM_NOT_PLAYING);
+        }
+        occupants.addSpectator(participant);
+    }
+
+    public void seat(long memberId) {
+        occupants.requireSpectator(memberId);
+        requireWaiting();
+        occupants.seat(memberId, profile.capacity());
     }
 
     public List<GameOutcome> leave(long memberId) {
-        members.requireMember(memberId);
+        if (occupants.isSpectator(memberId)) {
+            occupants.removeSpectator(memberId);
+            return List.of();
+        }
+        occupants.requirePlayer(memberId);
         List<GameOutcome> outcomes = forfeitIfPlaying(memberId);
-        members.remove(memberId);
+        occupants.removePlayer(memberId);
         return outcomes;
     }
 
     public RoomGame start(long requesterId, Function<List<Long>, GameSession> sessionCreator,
                           String matchKey, Instant startedAt) {
-        members.requireMember(requesterId);
-        if (!members.isHost(requesterId)) {
+        occupants.requirePlayer(requesterId);
+        if (!occupants.isHost(requesterId)) {
             throw new BusinessException(ErrorCode.NOT_ROOM_HOST);
         }
         requireWaiting();
-        if (members.size() < gameType().minPlayers()) {
+        if (occupants.playerCount() < gameType().minPlayers()) {
             throw new BusinessException(ErrorCode.NOT_ENOUGH_PLAYERS);
         }
-        game = new RoomGame(sessionCreator.apply(members.ids()), matchKey, startedAt);
+        game = new RoomGame(sessionCreator.apply(occupants.playerIds()), matchKey, startedAt);
         return game;
     }
 
     public List<GameOutcome> act(long memberId, GameAction action) {
-        members.requireMember(memberId);
+        occupants.requirePlayer(memberId);
         if (status() != RoomStatus.PLAYING) {
             throw new BusinessException(ErrorCode.GAME_NOT_STARTED);
         }
@@ -96,7 +117,7 @@ public class Room {
     }
 
     public int spectatorCount() {
-        return 0;
+        return occupants.spectatorCount();
     }
 
     public RoomGame currentGame() {
@@ -107,15 +128,25 @@ public class Room {
     }
 
     public void requireMember(long memberId) {
-        members.requireMember(memberId);
+        occupants.requirePlayer(memberId);
+    }
+
+    public void requireOccupant(long memberId) {
+        if (!isOccupant(memberId)) {
+            throw new BusinessException(ErrorCode.NOT_IN_ROOM);
+        }
     }
 
     public boolean contains(long memberId) {
-        return members.contains(memberId);
+        return occupants.isPlayer(memberId);
+    }
+
+    public boolean isOccupant(long memberId) {
+        return occupants.isOccupant(memberId);
     }
 
     public boolean isEmpty() {
-        return members.isEmpty();
+        return occupants.hasNoPlayers();
     }
 
     public RoomCode code() {
@@ -144,15 +175,23 @@ public class Room {
     }
 
     public long hostId() {
-        return members.hostId();
+        return occupants.hostId();
     }
 
     public List<Participant> participants() {
-        return members.asList();
+        return occupants.players();
+    }
+
+    public List<Participant> spectators() {
+        return occupants.spectators();
     }
 
     public List<Long> memberIds() {
-        return members.ids();
+        return occupants.playerIds();
+    }
+
+    public List<Long> occupantIds() {
+        return occupants.occupantIds();
     }
 
     private List<GameOutcome> forfeitIfPlaying(long memberId) {
@@ -169,6 +208,6 @@ public class Room {
     }
 
     public GameOccupancy addTo(GameOccupancy occupancy) {
-        return occupancy.add(status(), PlayerCount.of(members.size()));
+        return occupancy.add(status(), PlayerCount.of(occupants.playerCount()));
     }
 }

@@ -14,11 +14,13 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private final String[] allowedOriginPatterns;
     private final InboundDestinationGuard destinationGuard;
+    private final RoomTopicGuard roomTopicGuard;
 
     public WebSocketConfig(@Value("${app.websocket.allowed-origin-patterns}") String[] allowedOriginPatterns,
-                           InboundDestinationGuard destinationGuard) {
+                           InboundDestinationGuard destinationGuard, RoomTopicGuard roomTopicGuard) {
         this.allowedOriginPatterns = allowedOriginPatterns;
         this.destinationGuard = destinationGuard;
+        this.roomTopicGuard = roomTopicGuard;
     }
 
     @Override
@@ -36,6 +38,6 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureClientInboundChannel(ChannelRegistration registration) {
-        registration.interceptors(destinationGuard);
+        registration.interceptors(destinationGuard, roomTopicGuard);
     }
 }

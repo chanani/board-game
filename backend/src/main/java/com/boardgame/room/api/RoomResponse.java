@@ -9,16 +9,20 @@ import java.time.Instant;
 import java.util.List;
 
 public record RoomResponse(String code, String name, GameType gameType, String gameTypeName, RoomStatus status,
-                           long hostId, int maxPlayers, boolean locked, List<RoomMemberResponse> members) {
+                           long hostId, int maxPlayers, boolean locked, List<RoomMemberResponse> members,
+                           List<RoomSpectatorResponse> spectators) {
 
     public static RoomResponse from(Room room, PresenceTracker presence, Instant now) {
         long hostId = room.hostId();
         List<RoomMemberResponse> members = room.participants().stream()
                 .map(participant -> member(participant, hostId, presence, now))
                 .toList();
+        List<RoomSpectatorResponse> spectators = room.spectators().stream()
+                .map(RoomSpectatorResponse::from)
+                .toList();
         GameType gameType = room.gameType();
         return new RoomResponse(room.codeValue(), room.nameValue(), gameType, gameType.displayName(),
-                room.status(), hostId, room.capacity(), room.isLocked(), members);
+                room.status(), hostId, room.capacity(), room.isLocked(), members, spectators);
     }
 
     private static RoomMemberResponse member(Participant participant, long hostId, PresenceTracker presence,

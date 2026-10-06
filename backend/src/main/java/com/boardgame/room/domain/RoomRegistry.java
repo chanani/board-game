@@ -17,8 +17,8 @@ public class RoomRegistry {
 
     public void save(Room room) {
         RoomCode code = room.code();
-        memberRooms.entrySet().removeIf(entry -> entry.getValue().equals(code) && !room.contains(entry.getKey()));
-        room.memberIds().forEach(memberId -> memberRooms.put(memberId, code));
+        memberRooms.entrySet().removeIf(entry -> entry.getValue().equals(code) && !room.isOccupant(entry.getKey()));
+        room.occupantIds().forEach(memberId -> memberRooms.put(memberId, code));
         rooms.put(code, room);
         removeIfEmpty(room);
     }
@@ -29,6 +29,10 @@ public class RoomRegistry {
             throw new BusinessException(ErrorCode.ROOM_NOT_FOUND);
         }
         return room;
+    }
+
+    public Optional<Room> find(RoomCode code) {
+        return Optional.ofNullable(rooms.get(code));
     }
 
     public Optional<Room> findByMember(long memberId) {
@@ -50,5 +54,6 @@ public class RoomRegistry {
             return;
         }
         rooms.remove(room.code());
+        room.occupantIds().forEach(memberId -> memberRooms.remove(memberId, room.code()));
     }
 }

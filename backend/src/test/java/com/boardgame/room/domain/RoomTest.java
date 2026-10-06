@@ -185,4 +185,104 @@ class RoomTest {
 
         assertError(() -> room.join(bob, null, hasher), ErrorCode.ROOM_PASSWORD_MISMATCH);
     }
+
+    private Room playingRoom() {
+        Room room = openRoom();
+        room.join(bob, null, new FakeRoomPasswordHasher());
+        start(room, 1L);
+        return room;
+    }
+
+    @Test
+    void 게임_중인_공개방은_관전할_수_있고_이미_있으면_무시한다() {
+        Room room = playingRoom();
+
+        room.watch(carol);
+        room.watch(carol);
+        room.watch(bob);
+
+        assertThat(room.spectators()).containsExactly(carol);
+        assertThat(room.spectatorCount()).isEqualTo(1);
+        assertThat(room.isOccupant(3L)).isTrue();
+        assertThat(room.isOccupant(2L)).isTrue();
+        assertThat(room.isOccupant(9L)).isFalse();
+        assertThat(room.occupantIds()).containsExactly(1L, 2L, 3L);
+        assertThat(room.memberIds()).containsExactly(1L, 2L);
+        assertThat(room.contains(3L)).isFalse();
+    }
+
+    @Test
+    void 잠긴_방은_ROOM_PRIVATE이고_대기_중인_방은_ROOM_NOT_PLAYING() {
+        FakeRoomPasswordHasher hasher = new FakeRoomPasswordHasher();
+        RoomLock lock = RoomLock.locked(hasher.hash(new RawRoomPassword("1234")));
+        Room locked = Room.open(new RoomProfile(new RoomCode("ABCDEF"), new RoomName("방"), new RoomSettings(
+                GameType.PAPER_SAFARI, Capacity.max(GameType.PAPER_SAFARI), lock)), alice);
+        locked.join(bob, "1234", hasher);
+        start(locked, 1L);
+
+        assertError(() -> locked.watch(carol), ErrorCode.ROOM_PRIVATE);
+        assertError(() -> openRoom().watch(carol), ErrorCode.ROOM_NOT_PLAYING);
+    }
+
+    @Test
+    void 관전자는_게임_행동과_시작을_할_수_없다() {
+        Room room = playingRoom();
+        room.watch(carol);
+
+        assertError(() -> room.act(3L, new GameAction("DRAW_DECK", null, null)), ErrorCode.NOT_IN_ROOM);
+        assertThat(room.isPlaying(3L)).isFalse();
+    }
+
+    @Test
+    void 관전자가_나가면_결과_없이_게임이_계속된다() {
+        Room room = playingRoom();
+        room.watch(carol);
+
+        assertThat(room.leave(3L)).isEmpty();
+
+        assertThat(room.spectators()).isEmpty();
+        assertThat(room.status()).isEqualTo(RoomStatus.PLAYING);
+        assertThat(created.get().forfeitCalls()).isEmpty();
+        assertThat(room.isOccupant(3L)).isFalse();
+    }
+
+    @Test
+    void 게임이_끝나면_관전자가_자리에_앉을_수_있다() {
+        Room room = playingRoom();
+        room.watch(carol);
+        assertError(() -> room.seat(3L), ErrorCode.ROOM_ALREADY_PLAYING);
+        created.get().finish();
+
+        room.seat(3L);
+
+        assertThat(room.memberIds()).containsExactly(1L, 2L, 3L);
+        assertThat(room.spectators()).isEmpty();
+        assertError(() -> room.seat(3L), ErrorCode.NOT_SPECTATOR);
+        assertError(() -> room.seat(9L), ErrorCode.NOT_SPECTATOR);
+    }
+
+    @Test
+    void 정원이_찬_방에서는_자리에_앉을_수_없다() {
+        Room room = Room.open(new RoomProfile(new RoomCode("ABCDEF"), new RoomName("방"), new RoomSettings(
+                GameType.PAPER_SAFARI, Capacity.of(GameType.PAPER_SAFARI, 2), RoomLock.open())), alice);
+        room.join(bob, null, new FakeRoomPasswordHasher());
+        start(room, 1L);
+        room.watch(carol);
+        created.get().finish();
+
+        assertError(() -> room.seat(3L), ErrorCode.ROOM_FULL);
+        assertThat(room.spectators()).containsExactly(carol);
+    }
+
+    @Test
+    void 참가자가_모두_나가면_관전자가_있어도_빈_방이다() {
+        Room room = playingRoom();
+        room.watch(carol);
+
+        room.leave(2L);
+        room.leave(1L);
+
+        assertThat(room.isEmpty()).isTrue();
+        assertThat(room.occupantIds()).containsExactly(3L);
+    }
 }

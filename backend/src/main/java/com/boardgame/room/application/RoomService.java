@@ -101,6 +101,28 @@ public class RoomService {
         return broadcast(room);
     }
 
+    public synchronized RoomResponse watch(String rawCode, LoginMember member) {
+        Room room = find(rawCode);
+        requireNotInOtherRoom(member.id(), room);
+        room.watch(participantOf(member));
+        registry.save(room);
+        return broadcast(room);
+    }
+
+    public synchronized RoomResponse seat(String rawCode, long memberId) {
+        Room room = find(rawCode);
+        room.seat(memberId);
+        registry.save(room);
+        presence.baseline(room.memberIds(), clock.instant());
+        return broadcast(room);
+    }
+
+    public synchronized boolean isOccupant(String rawCode, long memberId) {
+        return registry.find(RoomCode.parse(rawCode))
+                .filter(room -> room.isOccupant(memberId))
+                .isPresent();
+    }
+
     public synchronized void leave(String rawCode, long memberId) {
         Room room = find(rawCode);
         List<GameOutcome> outcomes = room.leave(memberId);
@@ -128,8 +150,10 @@ public class RoomService {
         return response;
     }
 
-    public synchronized RoomResponse get(String rawCode) {
-        return response(find(rawCode));
+    public synchronized RoomResponse get(String rawCode, long memberId) {
+        Room room = find(rawCode);
+        room.requireOccupant(memberId);
+        return response(room);
     }
 
     public synchronized Optional<RoomResponse> myRoom(long memberId) {
@@ -145,7 +169,7 @@ public class RoomService {
 
     public synchronized void sync(String rawCode, long memberId) {
         Room room = find(rawCode);
-        room.requireMember(memberId);
+        room.requireOccupant(memberId);
         sendView(room, memberId);
     }
 
@@ -168,7 +192,9 @@ public class RoomService {
     }
 
     public synchronized void presenceChanged(long memberId) {
-        registry.findByMember(memberId).ifPresent(this::broadcastRoomOnly);
+        registry.findByMember(memberId)
+                .filter(room -> room.contains(memberId))
+                .ifPresent(this::broadcastRoomOnly);
     }
 
     private void broadcastRoomOnly(Room room) {
@@ -182,7 +208,7 @@ public class RoomService {
     private RoomResponse broadcast(Room room) {
         RoomResponse response = response(room);
         notifier.roomUpdated(response);
-        room.memberIds().forEach(memberId -> sendView(room, memberId));
+        room.occupantIds().forEach(memberId -> sendView(room, memberId));
         return response;
     }
 

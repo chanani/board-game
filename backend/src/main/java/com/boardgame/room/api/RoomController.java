@@ -45,8 +45,18 @@ public class RoomController {
     }
 
     @GetMapping("/{code}")
-    public RoomResponse get(@PathVariable String code) {
-        return roomService.get(code);
+    public RoomResponse get(@PathVariable String code, @AuthenticationPrincipal LoginMember member) {
+        return roomService.get(code, member.id());
+    }
+
+    @PostMapping("/{code}/watch")
+    public RoomResponse watch(@PathVariable String code, @AuthenticationPrincipal LoginMember member) {
+        return roomService.watch(code, member);
+    }
+
+    @PostMapping("/{code}/seat")
+    public RoomResponse seat(@PathVariable String code, @AuthenticationPrincipal LoginMember member) {
+        return roomService.seat(code, member.id());
     }
 
     @PostMapping("/{code}/join")

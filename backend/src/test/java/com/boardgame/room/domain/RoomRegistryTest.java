@@ -49,4 +49,36 @@ class RoomRegistryTest {
     void 없는_코드는_ROOM_NOT_FOUND() {
         assertError(() -> registry.get(new RoomCode("ZZZZZZ")), ErrorCode.ROOM_NOT_FOUND);
     }
+
+    @Test
+    void 관전자도_색인되고_참가자가_모두_나가면_관전자_색인과_방이_사라진다() {
+        Room room = room("ABCDEF", 1L);
+        room.join(new Participant(2L, "밥"), null, new FakeRoomPasswordHasher());
+        room.start(1L, FakeGameSession::new, "match-1", java.time.Instant.EPOCH);
+        room.watch(new Participant(9L, "구경꾼"));
+        registry.save(room);
+        assertThat(registry.findByMember(9L)).containsSame(room);
+
+        room.leave(2L);
+        room.leave(1L);
+        registry.save(room);
+
+        assertThat(registry.findByMember(9L)).isEmpty();
+        assertThat(registry.exists(new RoomCode("ABCDEF"))).isFalse();
+    }
+
+    @Test
+    void 나간_관전자는_색인에서_빠진다() {
+        Room room = room("ABCDEF", 1L);
+        room.join(new Participant(2L, "밥"), null, new FakeRoomPasswordHasher());
+        room.start(1L, FakeGameSession::new, "match-1", java.time.Instant.EPOCH);
+        room.watch(new Participant(9L, "구경꾼"));
+        registry.save(room);
+
+        room.leave(9L);
+        registry.save(room);
+
+        assertThat(registry.findByMember(9L)).isEmpty();
+        assertThat(registry.findByMember(1L)).containsSame(room);
+    }
 }

@@ -179,6 +179,62 @@ class StompGameFlowTest {
     }
 
     @Test
+    void 관전자는_sync로_공개_정보만_받는다() throws Exception {
+        Player host = player();
+        Player guest = player();
+        Player watcher = player();
+        String code = startedRoom(host, guest);
+        post("/api/rooms/" + code + "/watch", Map.of(), watcher.cookie());
+        BlockingQueue<JsonNode> watcherTopic = subscribe(watcher.stomp(), "/topic/rooms/" + code);
+
+        syncUntilView(host, code);
+        syncUntilView(guest, code);
+        send(host, code, Map.of("type", "FLIP", "column", 0, "row", 0));
+        send(guest, code, Map.of("type", "FLIP", "column", 0, "row", 0));
+        JsonNode drawing = awaitView(host, view -> view.at("/game/round/phase").asText().equals("DRAW"));
+        long currentId = drawing.at("/game/round/currentPlayerId").asLong();
+        Player current = currentId == host.id() ? host : guest;
+        send(current, code, Map.of("type", "DRAW_DECK"));
+        awaitView(current, view -> view.at("/game/round/phase").asText().equals("PLACE"));
+        JsonNode broadcast = awaitView(watcher, view -> view.at("/game/round/phase").asText().equals("PLACE"));
+        assertThat(broadcast.at("/game/round/held/card").isNull()).isTrue();
+        watcher.views().clear();
+
+        JsonNode view = syncUntilView(watcher, code);
+
+        assertThat(view.at("/game/round/phase").asText()).isEqualTo("PLACE");
+        assertThat(view.at("/game/round/held/source").asText()).isEqualTo("DECK");
+        assertThat(view.at("/game/round/held/card").isNull()).isTrue();
+        assertHiddenCardsAreNull(view.at("/game/round/boards"));
+        assertThat(watcherTopic.poll(5, TimeUnit.SECONDS)).isNotNull();
+    }
+
+    private void assertHiddenCardsAreNull(JsonNode node) {
+        if (node.isObject() && node.has("faceUp") && !node.get("faceUp").asBoolean()) {
+            assertThat(node.path("card").isNull() || node.path("card").isMissingNode())
+                    .as("뒷면 카드는 관전자에게 보이지 않아야 한다: %s", node).isTrue();
+        }
+        node.forEach(this::assertHiddenCardsAreNull);
+    }
+
+    @Test
+    void 방에_없는_사람은_방_토픽을_구독할_수_없다() throws Exception {
+        Player host = player();
+        Player guest = player();
+        Player outsider = player();
+        String code = startedRoom(host, guest);
+        BlockingQueue<JsonNode> hostTopic = subscribe(host.stomp(), "/topic/rooms/" + code);
+        BlockingQueue<JsonNode> outsiderTopic = subscribe(outsider.stomp(), "/topic/rooms/" + code);
+        Thread.sleep(500);
+
+        Player joiner = player();
+        post("/api/rooms/" + code + "/watch", Map.of(), joiner.cookie());
+
+        assertThat(hostTopic.poll(5, TimeUnit.SECONDS)).isNotNull();
+        assertThat(outsiderTopic.poll(1, TimeUnit.SECONDS)).isNull();
+    }
+
+    @Test
     void 로그인하지_않으면_WebSocket에_연결할_수_없다() {
         assertThatThrownBy(() -> connect("JSESSIONID=invalid")).isInstanceOf(Exception.class);
     }
