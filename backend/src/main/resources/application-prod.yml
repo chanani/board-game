@@ -1,0 +1,33 @@
+# 홈서버 운영(prod) 설정. 비밀번호 같은 값은 여기에 쓰지 않고 실행할 때 환경변수로 받는다(Jenkins 자격 증명).
+spring:
+  datasource:
+    # 스키마(boardgame)가 없으면 처음 접속할 때 만든다.
+    url: ${DB_URL:jdbc:mysql://mysql-master:3306/boardgame?serverTimezone=Asia/Seoul&useSSL=false&allowPublicKeyRetrieval=true&characterEncoding=UTF-8&createDatabaseIfNotExist=true}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  jpa:
+    hibernate:
+      # 테이블은 엔티티에 맞춰 자동으로 만들고 고친다(sql/schema.sql과 같은 구조).
+      ddl-auto: update
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  h2:
+    console:
+      enabled: false
+
+server:
+  port: 8899
+  # 앞단 nginx(프론트 컨테이너)가 넘겨 주는 X-Forwarded-* 헤더로 실제 주소·https 여부를 안다.
+  forward-headers-strategy: native
+  servlet:
+    session:
+      cookie:
+        # https로 서비스하면 true로 둔다.
+        secure: ${COOKIE_SECURE:false}
+
+app:
+  websocket:
+    # 브라우저가 접속하는 주소(오리진). 예: https://game.chanhan.cloud,http://localhost:[*]
+    allowed-origin-patterns: "${APP_WEBSOCKET_ALLOWED_ORIGIN_PATTERNS}"
