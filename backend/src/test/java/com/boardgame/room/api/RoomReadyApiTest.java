@@ -79,6 +79,11 @@ class RoomReadyApiTest {
         return mockMvc.perform(post("/api/rooms/{code}/start", code).session(user.session()));
     }
 
+    private ResultActions kick(User requester, String code, User target) throws Exception {
+        return mockMvc.perform(post("/api/rooms/{code}/members/{memberId}/kick", code, target.id())
+                .session(requester.session()));
+    }
+
     @Test
     void 준비를_토글하면_멤버_응답의_ready에_반영된다() throws Exception {
         User host = user();
@@ -133,5 +138,50 @@ class RoomReadyApiTest {
                 .andExpect(jsonPath("$.members[1].ready").value(false));
         ready(guest, code, "{\"ready\": true}").andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("ROOM_ALREADY_PLAYING"));
+    }
+    @Test
+    void 방장이_준비하지_않은_참가자를_내보내면_204이고_남은_준비된_참가자로_시작할_수_있다() throws Exception {
+        User host = user();
+        User ready = user();
+        User idle = user();
+        String code = createRoom(host);
+        join(ready, code).andExpect(status().isOk());
+        join(idle, code).andExpect(status().isOk());
+        ready(ready, code, "{\"ready\": true}").andExpect(status().isOk());
+
+        kick(host, code, idle).andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/api/rooms/me").session(idle.session())).andExpect(status().isNoContent());
+        mockMvc.perform(get("/api/rooms/{code}", code).session(host.session()))
+                .andExpect(jsonPath("$.members.length()").value(2));
+        start(host, code).andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("PLAYING"));
+    }
+
+    @Test
+    void 방장이_아니면_403_NOT_ROOM_HOST_게임_중이면_409_ROOM_ALREADY_PLAYING() throws Exception {
+        User host = user();
+        User guest = user();
+        String code = createRoom(host);
+        join(guest, code).andExpect(status().isOk());
+
+        kick(guest, code, host).andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("NOT_ROOM_HOST"));
+        ready(guest, code, "{\"ready\": true}").andExpect(status().isOk());
+        start(host, code).andExpect(status().isOk());
+        kick(host, code, guest).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("ROOM_ALREADY_PLAYING"));
+    }
+
+    @Test
+    void 방장_자신은_400_INVALID_INPUT_방에_없는_대상은_NOT_IN_ROOM() throws Exception {
+        User host = user();
+        User outsider = user();
+        String code = createRoom(host);
+
+        kick(host, code, host).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+        kick(host, code, outsider).andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("NOT_IN_ROOM"));
     }
 }

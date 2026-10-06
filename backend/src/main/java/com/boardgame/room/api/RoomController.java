@@ -95,4 +95,11 @@ public class RoomController {
         roomService.forfeitDisconnected(code, member.id(), memberId);
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping("/{code}/members/{memberId}/kick")
+    public ResponseEntity<Void> kick(@PathVariable String code, @PathVariable long memberId,
+                                     @AuthenticationPrincipal LoginMember member) {
+        roomService.kick(code, member.id(), memberId);
+        return ResponseEntity.noContent().build();
+    }
 }

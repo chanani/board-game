@@ -438,4 +438,54 @@ class RoomTest {
 
         assertThat(room.spectators()).containsExactly(carol);
     }
+    @Test
+    void 방장은_대기_중에_준비하지_않은_참가자를_내보낼_수_있고_남은_사람으로_시작할_수_있다() {
+        Room room = openRoom();
+        room.join(bob, null, new FakeRoomPasswordHasher());
+        room.join(carol, null, new FakeRoomPasswordHasher());
+        room.setReady(2L, true);
+        room.setReady(3L, true);
+        room.setReady(3L, false);
+
+        room.kick(1L, 3L);
+
+        assertThat(room.memberIds()).containsExactly(1L, 2L);
+        assertThat(room.readyIds()).containsExactly(2L);
+        startRaw(room, 1L);
+        assertThat(room.status()).isEqualTo(RoomStatus.PLAYING);
+    }
+
+    @Test
+    void 내보낸_참가자의_준비도_빠진다() {
+        Room room = openRoom();
+        room.join(bob, null, new FakeRoomPasswordHasher());
+        room.setReady(2L, true);
+
+        room.kick(1L, 2L);
+
+        assertThat(room.readyIds()).isEmpty();
+    }
+
+    @Test
+    void 방장이_아니면_NOT_ROOM_HOST_게임_중이면_ROOM_ALREADY_PLAYING() {
+        Room room = openRoom();
+        room.join(bob, null, new FakeRoomPasswordHasher());
+        room.join(carol, null, new FakeRoomPasswordHasher());
+        Room playing = playingRoom();
+
+        assertError(() -> room.kick(2L, 3L), ErrorCode.NOT_ROOM_HOST);
+        assertError(() -> playing.kick(1L, 2L), ErrorCode.ROOM_ALREADY_PLAYING);
+    }
+
+    @Test
+    void 참가자가_아닌_대상은_NOT_IN_ROOM_방장_자신은_INVALID_INPUT() {
+        Room room = playingRoom();
+        room.watch(carol);
+        created.get().finish();
+
+        assertError(() -> room.kick(1L, 3L), ErrorCode.NOT_IN_ROOM);
+        assertError(() -> room.kick(1L, 9L), ErrorCode.NOT_IN_ROOM);
+        assertError(() -> room.kick(1L, 1L), ErrorCode.INVALID_INPUT);
+        assertError(() -> room.kick(9L, 2L), ErrorCode.NOT_IN_ROOM);
+    }
 }

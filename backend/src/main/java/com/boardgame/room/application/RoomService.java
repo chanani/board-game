@@ -254,6 +254,13 @@ public class RoomService {
         outcomePublisher.publish(room, outcomes, clock.instant());
     }
 
+    public synchronized void kick(String rawCode, long requesterId, long targetId) {
+        Room room = find(rawCode);
+        room.kick(requesterId, targetId);
+        saveAndNotifyClosed(room);
+        broadcast(room);
+    }
+
     public synchronized void presenceChanged(long memberId) {
         registry.findByMember(memberId)
                 .filter(room -> room.contains(memberId))

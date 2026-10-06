@@ -94,12 +94,20 @@ public class Room {
         return outcomes;
     }
 
+    /** 대기 중에 방장이 다른 참가자를 내보낸다. 준비하지 않고 자리만 지키는 사람 때문에 방이 막히지 않게 한다. */
+    public void kick(long requesterId, long targetId) {
+        requireHost(requesterId);
+        requireWaiting();
+        occupants.requirePlayer(targetId);
+        if (occupants.isHost(targetId)) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT);
+        }
+        occupants.removePlayer(targetId);
+    }
+
     public RoomGame start(long requesterId, Function<List<Long>, GameSession> sessionCreator,
                           String matchKey, Instant startedAt) {
-        occupants.requirePlayer(requesterId);
-        if (!occupants.isHost(requesterId)) {
-            throw new BusinessException(ErrorCode.NOT_ROOM_HOST);
-        }
+        requireHost(requesterId);
         requireWaiting();
         if (occupants.playerCount() < gameType().minPlayers()) {
             throw new BusinessException(ErrorCode.NOT_ENOUGH_PLAYERS);
@@ -247,6 +255,13 @@ public class Room {
         }
         occupants.clearReady();
         occupants.seatWaitingSpectators(profile.capacity());
+    }
+
+    private void requireHost(long memberId) {
+        occupants.requirePlayer(memberId);
+        if (!occupants.isHost(memberId)) {
+            throw new BusinessException(ErrorCode.NOT_ROOM_HOST);
+        }
     }
 
     private void requireWaiting() {
