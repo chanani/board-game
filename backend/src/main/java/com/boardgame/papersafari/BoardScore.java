@@ -8,8 +8,8 @@ import java.util.stream.IntStream;
 public record BoardScore(Score total, List<Score> columns) {
 
     public static BoardScore of(Board board) {
-        List<List<CardValue>> tops = WildResolution.candidates(rowOf(board, 0));
-        List<List<CardValue>> bottoms = WildResolution.candidates(rowOf(board, 1));
+        List<List<CardValue>> tops = WildResolution.candidates(rowOf(board, Position.top(0).row()));
+        List<List<CardValue>> bottoms = WildResolution.candidates(rowOf(board, Position.bottom(0).row()));
         return tops.stream()
                 .flatMap(top -> bottoms.stream().map(bottom -> columnsOf(top, bottom)))
                 .map(BoardScore::fromColumns)

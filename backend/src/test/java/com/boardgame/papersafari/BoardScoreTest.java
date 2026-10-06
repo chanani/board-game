@@ -85,4 +85,35 @@ class BoardScoreTest {
 
         assertThat(score.columns()).isEqualTo(scores(7, 7, 7));
     }
+
+    @Test
+    void 서로를_가리키는_와일드_순환은_실제_카드가_있으면_쓰지_않는다() {
+        BoardScore right = scoreOf(Card.number(9), W, W, Card.number(1), Card.number(1), Card.number(1));
+        BoardScore left = scoreOf(W, W, Card.number(9), Card.number(1), Card.number(1), Card.number(1));
+
+        assertThat(right.total()).isEqualTo(new Score(30));
+        assertThat(left.total()).isEqualTo(new Score(30));
+    }
+
+    @Test
+    void 같은_열_위아래_모두_와일드여도_각자_줄에서_계산한다() {
+        BoardScore score = scoreOf(Card.number(3), W, Card.number(6), Card.number(4), W, Card.number(6));
+
+        assertThat(score.columns()).isEqualTo(scores(7, 0, 0));
+    }
+
+    @Test
+    void 전체로_유리하면_더_높은_이웃을_복사해_짝과_맞춘다() {
+        BoardScore score = scoreOf(Card.number(2), W, Card.number(8), Card.number(5), Card.number(8), Card.number(5));
+
+        assertThat(score.columns()).isEqualTo(scores(7, 0, 13));
+        assertThat(score.total()).isEqualTo(new Score(20));
+    }
+
+    @Test
+    void 와일드와_양수_사이의_와일드는_양수를_따른다() {
+        BoardScore score = scoreOf(W, W, Card.number(4), Card.number(1), Card.number(1), Card.number(1));
+
+        assertThat(score.columns()).isEqualTo(scores(5, 5, 5));
+    }
 }

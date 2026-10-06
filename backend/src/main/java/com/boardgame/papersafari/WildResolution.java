@@ -7,13 +7,28 @@ import java.util.stream.IntStream;
 record WildResolution(List<Card> cards, int rightMask) {
 
     private static final int WIDTH = Position.COLUMNS;
+    private static final List<CardValue> NO_SOURCE = java.util.Collections.nCopies(WIDTH, CardValue.ZERO);
 
     static List<List<CardValue>> candidates(List<Card> cards) {
-        return IntStream.range(0, 1 << WIDTH)
+        List<List<CardValue>> resolved = IntStream.range(0, 1 << WIDTH)
                 .mapToObj(mask -> new WildResolution(cards, mask))
                 .filter(WildResolution::hasSourceForEveryWild)
+                .filter(WildResolution::everyWildReachesCard)
                 .map(WildResolution::values)
+                .distinct()
                 .toList();
+        return resolved.isEmpty() ? List.of(NO_SOURCE) : resolved;
+    }
+
+    private boolean everyWildReachesCard() {
+        return IntStream.range(0, WIDTH).allMatch(index -> reachesCard(index, 0));
+    }
+
+    private boolean reachesCard(int index, int depth) {
+        if (!isWild(index)) {
+            return true;
+        }
+        return depth < WIDTH && reachesCard(index + step(index), depth + 1);
     }
 
     List<CardValue> values() {
