@@ -1,6 +1,7 @@
+import { motion, useReducedMotion } from 'motion/react';
 import type { UnoPlayerView } from '../../api/types';
 import { Countdown } from '../../components/Countdown';
-import { AlertIcon, StarIcon } from '../../components/icons';
+import { AlertIcon, SkipIcon, StarIcon } from '../../components/icons';
 import { UnoCardFace } from './UnoCardFace';
 
 type Props = {
@@ -14,13 +15,27 @@ type Props = {
   connected?: boolean;
   offlineSeconds?: number;
   catchable: boolean;
+  bubble?: boolean;
+  shaking?: boolean;
+  skipped?: boolean;
 };
 
-export function UnoSeat({ player, nickname, active, backWidth, maxBacks, timer, connected, offlineSeconds = 0, catchable }: Props) {
+export function UnoSeat({ player, nickname, active, backWidth, maxBacks, timer, connected, offlineSeconds = 0, catchable, bubble = false, shaking = false, skipped = false }: Props) {
+  const reduced = useReducedMotion();
+  const shake = shaking && !reduced;
   const backs = Math.min(player.cardCount, maxBacks);
   const label = `${nickname}, 카드 ${player.cardCount}장${player.unoDeclared ? ', 우노' : ''}`;
   return (
-    <div role="group" aria-label={label} data-testid="uno-seat" data-player={player.playerId} className="flex flex-col items-center gap-1">
+    <motion.div role="group" aria-label={label} data-testid="uno-seat" data-player={player.playerId} data-shaking={shaking ? 'true' : undefined}
+      animate={shake ? { x: [0, -6, 6, -6, 6, 0] } : { x: 0 }} transition={{ duration: 0.5 }} className="relative flex flex-col items-center gap-1">
+      {bubble ? (
+        <motion.span data-testid="uno-bubble" initial={reduced ? false : { scale: 0.6 }} animate={{ scale: 1 }}
+          className="absolute -top-7 left-1/2 -translate-x-1/2 rounded-full bg-yellow-300 px-2.5 py-0.5 text-xs font-black text-wood-900 shadow">우노!</motion.span>
+      ) : null}
+      {skipped ? (
+        <motion.span data-testid="skip-mark" initial={{ opacity: 1 }} animate={{ opacity: 0 }} transition={{ duration: 0.8 }}
+          className="absolute -top-6 right-0 text-red-200"><SkipIcon className="h-5 w-5" /></motion.span>
+      ) : null}
       <div className="flex items-center gap-1.5">
         {connected !== undefined ? <span aria-hidden="true" className={`inline-block h-2 w-2 rounded-full ${connected ? 'bg-green-500' : 'bg-stone-400'}`} /> : null}
         <span className={`max-w-[5.5rem] truncate md:max-w-[7rem] rounded-full px-2.5 py-0.5 text-xs font-bold shadow-[0_2px_0_rgb(0_0_0/0.3)] ${active ? 'turn-glow bg-(--turn-tag-bg) text-(--turn-tag-ink)' : 'bg-cream-50 text-wood-800'}`}>{nickname}</span>
@@ -39,6 +54,6 @@ export function UnoSeat({ player, nickname, active, backWidth, maxBacks, timer, 
           <span data-testid="uno-badge" className="inline-flex items-center gap-0.5 rounded-full bg-yellow-300 px-2 py-0.5 text-wood-900"><StarIcon className="h-3 w-3" />우노</span>
         ) : null}
       </div>
-    </div>
+    </motion.div>
   );
 }

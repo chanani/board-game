@@ -1,4 +1,6 @@
+import { motion, useReducedMotion } from 'motion/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { GameEndBanner } from '../../table/GameEndBanner';
 import { Felt } from '../../components/Felt';
 import type { GameAction, UnoCard, UnoColor, UnoSessionView } from '../../api/types';
 import { useToast } from '../../components/Toast';
@@ -19,6 +21,11 @@ import { UnoActionBar } from './UnoActionBar';
 import { UnoCenter } from './UnoCenter';
 import { UnoHand } from './UnoHand';
 import { UnoSeat } from './UnoSeat';
+import { UnoGameOverPanel } from './UnoGameOverPanel';
+import { UnoGhostLayer } from './motion/UnoGhostLayer';
+import { useUnoMotion } from './motion/useUnoMotion';
+import { useSeatEffects } from './useSeatEffects';
+import { useUnoFinale } from './useUnoFinale';
 
 const PENDING_MS = 3000;
 
@@ -38,7 +45,7 @@ function colorCounts(hand: UnoCard[]): Record<UnoColor, number> {
   return counts;
 }
 
-export function UnoTable({ view, room, meId, log, receivedAt, now, errorSeq, nicknameOf, send: rawSend, aside, asideFooter }: TableProps<UnoSessionView>) {
+export function UnoTable({ view, room, meId, log, receivedAt, now, errorSeq, nicknameOf, send: rawSend, aside, asideFooter, transition, onCloseGameOver, onReadyNext }: TableProps<UnoSessionView>) {
   const game = view.game;
   const layout = useTableLayout();
   const wide = layout === 'pc';
@@ -48,6 +55,11 @@ export function UnoTable({ view, room, meId, log, receivedAt, now, errorSeq, nic
   const rows = seatRows(opponentIds.length);
   const maxBacks = layout === 'portrait' && opponentIds.length >= 3 ? 4 : 7;
 
+  const containerRef = useRef<HTMLDivElement>(null);
+  const { ghosts } = useUnoMotion(containerRef, transition, meId);
+  const finale = useUnoFinale(game, transition);
+  const effects = useSeatEffects(game.events);
+  const reduced = useReducedMotion();
   const toast = useToast();
   const { play } = useSound();
 
@@ -153,7 +165,8 @@ export function UnoTable({ view, room, meId, log, receivedAt, now, errorSeq, nic
         <UnoSeat player={player} nickname={nicknameOf(player.playerId)} active={active} backWidth={sizes.back} maxBacks={maxBacks}
           timer={active && game.deadline !== null ? { deadline: game.deadline, serverNow: game.serverNow } : undefined}
           connected={member?.connected} offlineSeconds={member ? offlineSecondsNow(member, receivedAt, now) : 0}
-          catchable={game.unoCatch?.playerId === player.playerId} />
+          catchable={game.unoCatch?.playerId === player.playerId}
+          bubble={effects[player.playerId]?.bubble} shaking={effects[player.playerId]?.shake} skipped={effects[player.playerId]?.skipped} />
       </div>
     );
   };
@@ -183,7 +196,11 @@ export function UnoTable({ view, room, meId, log, receivedAt, now, errorSeq, nic
     </Felt>
   );
   const mine = game.hand === null ? <SpectatorNotice /> : (
-    <div className="space-y-1">
+    <div className="relative space-y-1">
+      {effects[meId]?.bubble ? (
+        <motion.span data-testid="my-uno-bubble" initial={reduced ? false : { scale: 0.6 }} animate={{ scale: 1 }}
+          className="absolute -top-3 left-1/2 z-10 -translate-x-1/2 rounded-full bg-yellow-300 px-2.5 py-0.5 text-xs font-black text-wood-900 shadow">우노!</motion.span>
+      ) : null}
       <UnoActionBar stage={game.stage} myTurn={myTurn} onDraw={draw} onPlayDrawn={playDrawn} onKeep={() => send({ type: 'KEEP' })}
         canCallUno={game.canCallUno} called={called} catchTarget={catchTarget}
         onCallUno={() => send({ type: 'CALL_UNO' })} onCatch={() => catchTarget && send({ type: 'CATCH_UNO', targetId: catchTarget.id })} />
@@ -218,8 +235,11 @@ export function UnoTable({ view, room, meId, log, receivedAt, now, errorSeq, nic
     </>
   );
 
+  if (finale === 'done') {
+    return <UnoGameOverPanel game={game} room={room} meId={meId} nicknameOf={nicknameOf} onReady={onReadyNext} onClose={onCloseGameOver} />;
+  }
   return (
-    <div data-testid="uno-table" data-layout={layout}>
+    <div ref={containerRef} inert={finale !== 'playing'} data-testid="uno-table" data-layout={layout}>
       {dialogs}
       {layout === 'landscape' ? (
         <div data-testid="landscape-table" className="grid grid-cols-[10.5rem_1fr] items-start gap-3">
@@ -229,6 +249,8 @@ export function UnoTable({ view, room, meId, log, receivedAt, now, errorSeq, nic
       ) : (
         <div className="space-y-3">{turnBar}{felt}{mine}</div>
       )}
+      <UnoGhostLayer ghosts={ghosts} />
+      {finale === 'banner' ? <GameEndBanner /> : null}
     </div>
   );
 }

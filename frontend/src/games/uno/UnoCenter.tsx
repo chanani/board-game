@@ -29,7 +29,8 @@ function DirectionArrows({ direction, size }: { direction: UnoDirection; size: n
   const { scaleX, rotate } = spinOf(direction);
   const spin = reduce ? undefined : { rotate };
   return (
-    <motion.svg key={direction} role="img" aria-label={label} data-direction={direction} viewBox="0 0 100 100" width={size} height={size}
+    <motion.div key={direction} className="pointer-events-none absolute inset-0" initial={reduce ? false : { scale: 1.25 }} animate={{ scale: 1 }} transition={{ duration: 0.4 }}>
+    <motion.svg role="img" aria-label={label} data-direction={direction} viewBox="0 0 100 100" width={size} height={size}
       className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-white/40"
       style={{ scaleX }}
       animate={spin} transition={{ repeat: Infinity, duration: 20, ease: 'linear' }}>
@@ -42,10 +43,12 @@ function DirectionArrows({ direction, size }: { direction: UnoDirection; size: n
         <path d="M6 50 l6 9 l-12 0 z" transform="rotate(8 6 50)" />
       </g>
     </motion.svg>
+    </motion.div>
   );
 }
 
 export function UnoCenter({ drawPileCount, discardTop, discardCount, currentColor, direction, canDraw, onDraw, cardWidth }: Props) {
+  const reduce = useReducedMotion();
   const height = cardWidth * 1.5;
   const unders = Math.min(Math.max(discardCount - 1, 0), 2);
   const ring = currentColor ? COLOR_HEX[currentColor] : 'rgb(255 255 255 / 0.4)';
@@ -75,7 +78,9 @@ export function UnoCenter({ drawPileCount, discardTop, discardCount, currentColo
                 style={{ transform: `rotate(${tilt}deg)` }} />
             ))}
             <div className="absolute inset-0" style={{ transform: `rotate(${cardTilt(discardTop.id)}deg)` }}>
-              <UnoCardFace card={discardTop} width={cardWidth} />
+              <motion.div key={discardTop.id} initial={reduce ? false : { scale: 0.9 }} animate={{ scale: 1 }} transition={{ duration: 0.2 }}>
+                <UnoCardFace card={discardTop} width={cardWidth} />
+              </motion.div>
             </div>
           </div>
           <p data-testid="current-color" className="felt-ink mt-2 text-xs font-bold">
