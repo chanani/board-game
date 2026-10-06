@@ -85,3 +85,8 @@ body {
   .card-inner, .press-3d { transition: none; }
   .turn-glow, .float-hint, .gold-sparkle, .live-dot { animation: none; }
 }
+
+/* "참여 중인 방으로 돌아가기" 바가 떠 있으면 알림을 그 위로 올린다 (ActiveRoomBar가 html[data-room-bar]를 단다). */
+html[data-room-bar] .toast-stack {
+  bottom: 5rem;
+}

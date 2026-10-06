@@ -39,21 +39,32 @@ export function ActiveRoomBar() {
   }, [pathname]);
 
   const room = found.room;
-  if (!room || HIDDEN_PATHS.includes(pathname)) {
-    return null;
-  }
-  const roomPath = `/rooms/${room.code}`;
+  const roomPath = room ? `/rooms/${room.code}` : null;
   // 방 화면에서 확인한 결과는 방을 나가는 순간 낡을 수 있으니, 새 경로에서 다시 확인할 때까지 띄우지 않는다.
-  if (pathname === roomPath || found.path === roomPath) {
+  const visible = room !== null && !HIDDEN_PATHS.includes(pathname) && pathname !== roomPath && found.path !== roomPath;
+
+  // 바가 떠 있는 동안 알림(토스트)이 바 위로 올라가도록 표시를 남긴다.
+  useEffect(() => {
+    if (!visible) {
+      return undefined;
+    }
+    document.documentElement.dataset.roomBar = 'on';
+    return () => { delete document.documentElement.dataset.roomBar; };
+  }, [visible]);
+
+  if (!visible || !room || !roomPath) {
     return null;
   }
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-4 z-40 flex justify-center px-4">
-      <button type="button" onClick={() => navigate(roomPath)}
-        className="wood-rail press-3d pointer-events-auto max-w-full truncate rounded-full border-2 border-mustard-400 px-5 py-2.5 text-sm font-bold text-cream-50">
-        🎲 참여 중인 방으로 돌아가기 · <span className="text-mustard-300">{room.name}</span>
-      </button>
-    </div>
+    <>
+      <div aria-hidden="true" data-testid="room-bar-spacer" className="h-16" />
+      <div className="pointer-events-none fixed inset-x-0 bottom-4 z-40 flex justify-center px-4">
+        <button type="button" onClick={() => navigate(roomPath)}
+          className="wood-rail press-3d pointer-events-auto max-w-full truncate rounded-full border-2 border-mustard-400 px-5 py-2.5 text-sm font-bold text-cream-50">
+          🎲 참여 중인 방으로 돌아가기 · <span className="text-mustard-300">{room.name}</span>
+        </button>
+      </div>
+    </>
   );
 }

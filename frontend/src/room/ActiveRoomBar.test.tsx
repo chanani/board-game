@@ -40,6 +40,24 @@ describe('ActiveRoomBar', () => {
     expect(screen.queryByRole('button', { name: BAR })).not.toBeInTheDocument();
   });
 
+  it('방으로 돌아가면 여백과 html 표시를 치운다', async () => {
+    mine.mockResolvedValue(myRoom);
+    renderAt('/');
+
+    await userEvent.click(await screen.findByRole('button', { name: BAR }));
+    expect(document.documentElement.dataset.roomBar).toBeUndefined();
+    expect(screen.queryByTestId('room-bar-spacer')).not.toBeInTheDocument();
+  });
+
+  it('바가 보이면 여백과 html 표시가 함께 있다', async () => {
+    mine.mockResolvedValue(myRoom);
+    renderAt('/');
+
+    await screen.findByRole('button', { name: BAR });
+    expect(screen.getByTestId('room-bar-spacer')).toBeInTheDocument();
+    expect(document.documentElement.dataset.roomBar).toBe('on');
+  });
+
   it('그 방 화면에서는 숨긴다', async () => {
     mine.mockResolvedValue(myRoom);
     renderAt('/rooms/ABC234');
