@@ -19,6 +19,11 @@ public record TurnStage(RoundNumber round, PlayerId player, TurnPhase phase) {
         return sameTurnAs(previous) && previous.phase == TurnPhase.PLACE && phase == TurnPhase.DRAW;
     }
 
+    // 같은 차례에서 단계도 그대로라면(다른 사람의 기권 따위) 기다리는 행동이 바뀌지 않은 것이다.
+    public boolean holdsStageOf(TurnStage previous) {
+        return sameTurnAs(previous) && phase == previous.phase;
+    }
+
     private boolean isDrawOrPlace() {
         return phase == TurnPhase.DRAW || phase == TurnPhase.PLACE;
     }

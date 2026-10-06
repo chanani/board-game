@@ -22,11 +22,15 @@ public class TurnCountdown {
         awaitingSince = clock.instant();
     }
 
-    // 단계나 차례가 바뀌면 다시 잰다. 되돌리기와, 되돌림이 있었던 차례의 이후 가져오기는 마감을 그대로 둔다.
+    // 단계나 차례가 바뀌면 다시 잰다. 단계가 그대로인 변화(다른 사람의 기권), 되돌리기,
+    // 되돌림이 있었던 차례의 이후 가져오기는 마감을 그대로 둔다.
     public void follow(TurnStage before, TurnStage now) {
         if (!now.sameTurnAs(before)) {
             cancelMark = CancelMark.none();
             restart();
+            return;
+        }
+        if (now.holdsStageOf(before)) {
             return;
         }
         if (now.cancelsDrawFrom(before)) {

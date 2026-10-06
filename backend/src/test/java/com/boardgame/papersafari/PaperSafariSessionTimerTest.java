@@ -24,6 +24,7 @@ class PaperSafariSessionTimerTest {
 
     private static final long A = 1L;
     private static final long B = 2L;
+    private static final long C = 3L;
     private static final Instant T0 = Instant.parse("2026-10-06T00:00:00Z");
     private static final Duration LIMIT = Duration.ofSeconds(15);
 
@@ -152,6 +153,40 @@ class PaperSafariSessionTimerTest {
         session.act(B, new GameAction("DRAW_DECK", null, null));
 
         assertThat(session.deadline()).contains(clock.instant().plus(LIMIT));
+    }
+
+    private PaperSafariSession threePlayersAtFirstDrawTurn() {
+        List<Card> stacked = stack(List.of(WINNER_HAND, LOSER_HAND, LOSER_HAND), Card.number(7), zeros(10));
+        PaperSafariSession session = new PaperSafariSession(List.of(A, B, C),
+                new RoundFactory(StackedShuffler.rounds(List.of(stacked)), count -> 0), clock);
+        session.autoAct(new FixedRandom(0));
+        return session;
+    }
+
+    @Test
+    void 가져올_차례에_다른_사람이_기권해도_마감을_그대로_둔다() {
+        PaperSafariSession session = threePlayersAtFirstDrawTurn();
+        Instant turnDeadline = session.deadline().orElseThrow();
+        clock.advance(Duration.ofSeconds(6));
+
+        session.forfeit(C);
+
+        assertThat(view(session, A).round().phase()).isEqualTo(TurnPhase.DRAW);
+        assertThat(session.deadline()).contains(turnDeadline);
+    }
+
+    @Test
+    void 놓을_차례에_다른_사람이_기권해도_마감을_그대로_둔다() {
+        PaperSafariSession session = threePlayersAtFirstDrawTurn();
+        clock.advance(Duration.ofSeconds(2));
+        session.act(A, new GameAction("DRAW_DECK", null, null));
+        Instant refilled = session.deadline().orElseThrow();
+        clock.advance(Duration.ofSeconds(6));
+
+        session.forfeit(C);
+
+        assertThat(view(session, A).round().phase()).isEqualTo(TurnPhase.PLACE);
+        assertThat(session.deadline()).contains(refilled);
     }
 
     @Test
