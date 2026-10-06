@@ -110,6 +110,25 @@ class ActiveSessionsTest {
 
     @Test
     void 세션이_없으면_잊을_것도_없다() {
+        MockHttpSession first = new MockHttpSession();
+        activeSessions.replace(1L, first);
+
         activeSessions.forget(null);
+        activeSessions.replace(1L, new MockHttpSession());
+
+        assertThat(first.isInvalid()).isTrue();
+    }
+
+    @Test
+    void 한_세션에서_계정을_바꿔_로그인하면_이전_계정의_새_로그인이_그_세션을_끊지_않는다() {
+        MockHttpSession shared = new MockHttpSession();
+        activeSessions.replace(1L, shared);
+        activeSessions.replace(2L, shared);
+
+        activeSessions.replace(1L, new MockHttpSession());
+
+        assertThat(shared.isInvalid()).isFalse();
+        assertThat(replacedSessions.contains(shared.getId())).isFalse();
+        verify(webSocketSessions, never()).closeAll(shared.getId());
     }
 }
