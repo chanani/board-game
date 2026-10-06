@@ -11,6 +11,7 @@ describe('LeaveConfirmModal', () => {
 
     const dialog = screen.getByRole('dialog', { name: '정말 나갈까요?' });
     expect(dialog).not.toHaveTextContent('기권');
+    expect(screen.getByRole('heading', { name: '정말 나갈까요?' })).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: '취소' }));
     expect(onCancel).toHaveBeenCalledOnce();
     await userEvent.click(screen.getByRole('button', { name: '나가기' }));

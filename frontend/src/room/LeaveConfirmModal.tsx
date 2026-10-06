@@ -9,6 +9,7 @@ export function LeaveConfirmModal({ open, onCancel, onConfirm }: Props) {
     <Modal open={open} title="정말 나갈까요?" onClose={onCancel}>
       <div className="flex flex-col items-center gap-5">
         <DoorIcon className="h-12 w-12 text-wood-700" />
+        <h2 className="text-lg font-bold text-wood-800">정말 나갈까요?</h2>
         <div className="flex w-full gap-3">
           <Button variant="secondary" className="flex-1" onClick={onCancel}>취소</Button>
           <Button variant="danger" className="flex-1" onClick={onConfirm}>나가기</Button>
