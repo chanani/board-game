@@ -18,7 +18,12 @@ const nicknameOf = (id: number) => (id === 1 ? '앨리스' : '밥');
 
 describe('RoundResultModal', () => {
   it('라운드 결과 대화상자에 점수와 승패를 보여준다', () => {
+    vi.useFakeTimers();
     render(<RoundResultModal view={view} meId={1} nicknameOf={nicknameOf} onReady={vi.fn()} />);
+    for (let step = 0; step < 12; step += 1) {
+      act(() => { vi.advanceTimersByTime(120); });
+    }
+    vi.useRealTimers();
 
     const dialog = screen.getByRole('dialog', { name: '2라운드 결과' });
     expect(dialog).toHaveTextContent('앨리스');
@@ -45,6 +50,9 @@ describe('RoundResultModal', () => {
 
       expect(dialog).not.toHaveTextContent('9점');
       expect(dialog).not.toHaveTextContent('열 점수 1');
+      expect(dialog).not.toHaveTextContent('🎀');
+      expect(dialog).not.toHaveTextContent('승');
+      expect(dialog).not.toHaveTextContent('패');
       expect(screen.getByRole('button', { name: '다음 라운드 준비' })).toBeEnabled();
 
       for (let step = 0; step < 12; step += 1) {
@@ -52,6 +60,8 @@ describe('RoundResultModal', () => {
       }
 
       expect(dialog).toHaveTextContent('9점');
+      expect(dialog).toHaveTextContent('🎀 앨리스');
+      expect(dialog).toHaveTextContent('패');
       expect(dialog).toHaveTextContent('열 점수');
       expect(dialog).toHaveTextContent('+');
     });

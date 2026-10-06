@@ -21,7 +21,7 @@ const SLOTS_PER_BOARD = 6;
 
 export function RoundResultModal({ view, meId, nicknameOf, onReady }: Props) {
   const game = view.game;
-  const results = [...(game.lastRoundResult?.players ?? [])].sort((a, b) => a.score - b.score);
+  const players = game.lastRoundResult?.players ?? [];
   const seated = game.round.boards.some((board) => board.playerId === meId);
   const ready = view.readyPlayerIds.includes(meId);
   const reduced = useReducedMotion();
@@ -37,6 +37,9 @@ export function RoundResultModal({ view, meId, nicknameOf, onReady }: Props) {
   }, [revealed, total]);
 
   const done = revealed >= total;
+  // 카드가 모두 뒤집히기 전에는 자리 순서로 두고 승패·리본을 숨겨, 점수를 센 뒤에 승자를 보여 준다.
+  const results = done ? [...players].sort((a, b) => a.score - b.score) : players;
+  const won = (outcome: string) => done && outcome === 'WIN';
   const staged = (board: BoardView, boardIndex: number): BoardView => ({
     ...board,
     slots: board.slots.map((slot, slotIndex) => (boardIndex * SLOTS_PER_BOARD + slotIndex < revealed ? slot : { ...slot, faceUp: false })),
@@ -48,10 +51,10 @@ export function RoundResultModal({ view, meId, nicknameOf, onReady }: Props) {
       <ul className="mb-4 space-y-1">
         {results.map((result, index) => (
           <motion.li key={result.playerId} initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.15 * index }}
-            className={`flex justify-between rounded-lg px-3 py-2 text-sm ${result.outcome === 'WIN' ? 'bg-mustard-300/60' : 'bg-cream-200/60'}`}>
-            <span className="font-medium">{result.outcome === 'WIN' ? '🎀 ' : ''}{nicknameOf(result.playerId)}</span>
+            className={`flex justify-between rounded-lg px-3 py-2 text-sm ${won(result.outcome) ? 'bg-mustard-300/60' : 'bg-cream-200/60'}`}>
+            <span className="font-medium">{won(result.outcome) ? '🎀 ' : ''}{nicknameOf(result.playerId)}</span>
             <span>
-              {done ? <><RollingNumber value={result.score} />점</> : '…'} · <strong className={result.outcome === 'WIN' ? 'text-safari-700' : ''}>{resultLabel(result.outcome)}</strong>
+              {done ? <><RollingNumber value={result.score} />점 · <strong className={won(result.outcome) ? 'text-safari-700' : ''}>{resultLabel(result.outcome)}</strong></> : '…'}
             </span>
           </motion.li>
         ))}
