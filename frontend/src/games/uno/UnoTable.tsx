@@ -1,17 +1,26 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Felt } from '../../components/Felt';
-import type { UnoCard, UnoSessionView } from '../../api/types';
+import type { GameAction, UnoCard, UnoColor, UnoSessionView } from '../../api/types';
+import { useToast } from '../../components/Toast';
+import { useSound } from '../../lib/sound';
 import { offlineSecondsNow } from '../../lib/format';
 import { useTableLayout, type TableLayout } from '../../lib/useTableLayout';
 import type { TableProps } from '../gameModule';
 import { seatOrder, seatRows } from '../../table/seats';
 import { SpectatorNotice } from '../../table/SpectatorNotice';
 import { TurnBar } from '../../table/TurnBar';
-import { isWild } from './cards';
+import { COLOR_ORDER, isWild } from './cards';
+import { ChallengePrompt } from './ChallengePrompt';
+import { ChallengeReveal } from './ChallengeReveal';
+import { ColorPicker } from './ColorPicker';
+import { describeUnoEvent } from './describe';
 import { UNO_SIZES, unoInstruction } from './layout';
 import { UnoActionBar } from './UnoActionBar';
 import { UnoCenter } from './UnoCenter';
 import { UnoHand } from './UnoHand';
 import { UnoSeat } from './UnoSeat';
+
+const PENDING_MS = 3000;
 
 const FELT: Record<TableLayout, string> = {
   pc: 'min-h-[min(60vh,560px)] max-w-6xl justify-center gap-6 px-[6%] py-6',
@@ -19,7 +28,17 @@ const FELT: Record<TableLayout, string> = {
   portrait: 'gap-3 px-3 py-4',
 };
 
-export function UnoTable({ view, room, meId, log, receivedAt, now, nicknameOf, send, aside, asideFooter }: TableProps<UnoSessionView>) {
+const maxSeq = (events: { seq: number }[]) => events.reduce((max, event) => Math.max(max, event.seq), 0);
+
+function colorCounts(hand: UnoCard[]): Record<UnoColor, number> {
+  const counts: Record<UnoColor, number> = { RED: 0, YELLOW: 0, GREEN: 0, BLUE: 0 };
+  COLOR_ORDER.forEach((color) => {
+    counts[color] = hand.filter((card) => card.color === color).length;
+  });
+  return counts;
+}
+
+export function UnoTable({ view, room, meId, log, receivedAt, now, errorSeq, nicknameOf, send: rawSend, aside, asideFooter }: TableProps<UnoSessionView>) {
   const game = view.game;
   const layout = useTableLayout();
   const wide = layout === 'pc';
@@ -29,9 +48,72 @@ export function UnoTable({ view, room, meId, log, receivedAt, now, nicknameOf, s
   const rows = seatRows(opponentIds.length);
   const maxBacks = layout === 'portrait' && opponentIds.length >= 3 ? 4 : 7;
 
+  const toast = useToast();
+  const { play } = useSound();
+
+  // 보낸 뒤 화면이 바뀌거나 오류가 오기 전까지는 다시 보내지 않는다(페이퍼 사파리와 같은 패턴).
+  const pendingUntil = useRef(0);
+  useEffect(() => {
+    pendingUntil.current = 0;
+  }, [view, errorSeq]);
+  const send = (action: GameAction) => {
+    if (Date.now() < pendingUntil.current) {
+      return;
+    }
+    pendingUntil.current = Date.now() + PENDING_MS;
+    rawSend(action);
+  };
+
+  const [pendingWild, setPendingWild] = useState<UnoCard | null>(null);
+  useEffect(() => {
+    if (!myTurn) {
+      setPendingWild(null);
+    }
+  }, [myTurn]);
+  const counts = colorCounts(game.hand ?? []);
+
+  const revealSeq = game.events.find((event) => event.type === 'CHALLENGE')?.seq ?? null;
+  const [closedRevealSeq, setClosedRevealSeq] = useState<number | null>(null);
+  const closeReveal = useCallback(() => setClosedRevealSeq(revealSeq), [revealSeq]);
+  const showReveal = game.reveal !== null && revealSeq !== null && revealSeq !== closedRevealSeq;
+  // +4를 낸 순간의 "지금 색"을 기억해 공개 창에서 그 색 카드를 표시한다(서버 화면에는 바뀐 색만 있다).
+  const lastColor = useRef(game.currentColor);
+  const lastStage = useRef(game.stage);
+  const [fourBaseColor, setFourBaseColor] = useState<UnoColor | null>(null);
+  useEffect(() => {
+    if (game.stage === 'CHALLENGE' && lastStage.current !== 'CHALLENGE') {
+      setFourBaseColor(lastColor.current);
+    }
+    lastColor.current = game.currentColor;
+    lastStage.current = game.stage;
+  }, [game.stage, game.currentColor]);
+
+  // 남의 도전 결과는 알림으로만(D10). 처음 그린 화면의 이벤트는 알리지 않는다.
+  const seenSeq = useRef(maxSeq(game.events));
+  useEffect(() => {
+    const fresh = game.events.filter((event) => event.seq > seenSeq.current);
+    seenSeq.current = Math.max(seenSeq.current, maxSeq(game.events));
+    fresh
+      .filter((event) => event.type === 'CHALLENGE' && event.actorId !== meId)
+      .forEach((event) => describeUnoEvent(event, nicknameOf).forEach(({ text }) => toast.show(text, 'info')));
+  }, [game.events, meId, nicknameOf, toast]);
+
+  const turnKey = useRef<number | null>(null);
+  useEffect(() => {
+    const mine = myTurn && game.stage !== 'DRAWN' && game.deadline !== null;
+    if (mine && turnKey.current !== game.deadline) {
+      play('myTurn');
+    }
+    turnKey.current = mine ? game.deadline : null;
+  }, [myTurn, game.stage, game.deadline, play]);
+
+  const called = myTurn && !game.canCallUno && game.events.some((event) => event.type === 'UNO_CALL' && event.actorId === meId);
+  const catchTarget = game.canCatch && game.unoCatch ? { id: game.unoCatch.playerId, name: nicknameOf(game.unoCatch.playerId) } : null;
+
   const draw = () => send({ type: 'DRAW' });
   const playCard = (card: UnoCard) => {
     if (isWild(card)) {
+      setPendingWild(card);
       return;
     }
     send({ type: 'PLAY', cardId: card.id });
@@ -86,18 +168,40 @@ export function UnoTable({ view, room, meId, log, receivedAt, now, nicknameOf, s
   );
   const mine = game.hand === null ? <SpectatorNotice /> : (
     <div className="space-y-1">
-      <UnoActionBar stage={game.stage} myTurn={myTurn} onDraw={draw} onPlayDrawn={playDrawn} onKeep={() => send({ type: 'KEEP' })} />
+      <UnoActionBar stage={game.stage} myTurn={myTurn} onDraw={draw} onPlayDrawn={playDrawn} onKeep={() => send({ type: 'KEEP' })}
+        canCallUno={game.canCallUno} called={called} catchTarget={catchTarget}
+        onCallUno={() => send({ type: 'CALL_UNO' })} onCatch={() => catchTarget && send({ type: 'CATCH_UNO', targetId: catchTarget.id })} />
       <UnoHand cards={game.hand} playableIds={game.playableCardIds} myTurn={myTurn && (game.stage === 'PLAY' || game.stage === 'DRAWN')}
         layout={layout} zoneId={meId} onPlay={playCard} />
     </div>
   );
   const turnBar = (
     <TurnBar instruction={unoInstruction(game, meId, nicknameOf, wide)} myTurn={myTurn} log={log} nicknameOf={nicknameOf} compact={!wide}
-      stacked={layout === 'landscape'} deadline={game.deadline} serverNow={game.serverNow} />
+      stacked={layout === 'landscape'} deadline={game.deadline} serverNow={game.serverNow}
+      onWarn={myTurn ? () => play('tick') : undefined} />
+  );
+
+  const pickWild = (color: UnoColor) => {
+    if (pendingWild) {
+      send({ type: 'PLAY', cardId: pendingWild.id, color });
+    }
+    setPendingWild(null);
+  };
+  const dialogs = (
+    <>
+      <ColorPicker open={pendingWild !== null} mode="wild" risky={pendingWild?.kind === 'WILD_DRAW_FOUR' && game.wildDrawFourRisky}
+        counts={counts} onCancel={() => setPendingWild(null)} onPick={pickWild} />
+      <ColorPicker open={myTurn && game.stage === 'CHOOSE_COLOR'} mode="first" risky={false} counts={counts}
+        onCancel={() => undefined} onPick={(color) => send({ type: 'CHOOSE_COLOR', color })} />
+      <ChallengePrompt open={myTurn && game.stage === 'CHALLENGE' && game.challenge !== null} byName={nicknameOf(game.challenge?.byId ?? 0)}
+        deadline={game.deadline} serverNow={game.serverNow} onAccept={() => send({ type: 'ACCEPT' })} onChallenge={() => send({ type: 'CHALLENGE' })} />
+      {showReveal && game.reveal ? <ChallengeReveal reveal={game.reveal} name={nicknameOf(game.reveal.playerId)} highlightColor={fourBaseColor} onClose={closeReveal} /> : null}
+    </>
   );
 
   return (
     <div data-testid="uno-table" data-layout={layout}>
+      {dialogs}
       {layout === 'landscape' ? (
         <div data-testid="landscape-table" className="grid grid-cols-[10.5rem_1fr] items-start gap-3">
           <div data-testid="table-aside" className="sticky top-2 space-y-2">{aside}{turnBar}{asideFooter}</div>

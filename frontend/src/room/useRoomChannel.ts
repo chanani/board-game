@@ -9,6 +9,8 @@ import { findGame, sessionGameType } from '../games/registry';
 import { prependLog, type LogDraft, type LogEntry } from '../lib/eventLog';
 import { useRealtime } from '../realtime/RealtimeContext';
 
+// 여러 명이 동시에 잡기를 누르면 늦은 사람은 이 오류를 받는다. 정상 상황이라 알림을 띄우지 않는다(D25).
+const QUIET_ERROR_CODES = new Set(['UNO_CATCH_CLOSED']);
 const CHAT_ERROR_CODES = new Set(['INVALID_CHAT_MESSAGE', 'CHAT_TOO_FAST']);
 
 const SYNC_RETRY_MS = 1000;
@@ -173,7 +175,9 @@ export function useRoomChannel(code: string, { poll = false, meId = 0 }: Options
           setMissing(true);
           return;
         }
-        toast.show(error.message);
+        if (!QUIET_ERROR_CODES.has(error.code)) {
+          toast.show(error.message);
+        }
         if (error.code === 'ROOM_NOT_FOUND') {
           setMissing(true);
         }

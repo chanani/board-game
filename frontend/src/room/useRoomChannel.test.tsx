@@ -152,6 +152,17 @@ describe('useRoomChannel', () => {
     }
   });
 
+  it('우노 잡기 경쟁에서 진 오류(UNO_CATCH_CLOSED)는 알림 없이 errorSeq만 올린다', () => {
+    vi.spyOn(roomsApi, 'get').mockReturnValue(new Promise<Room>(() => {}));
+    const { result } = renderHook(() => useRoomChannel('ABCDEF'));
+    toast.show.mockClear();
+
+    act(() => state.handlers.get('/user/queue/errors')?.({ status: 409, code: 'UNO_CATCH_CLOSED', message: '지금은 우노를 잡을 수 없어요.' }));
+
+    expect(result.current.errorSeq).toBe(1);
+    expect(toast.show).not.toHaveBeenCalled();
+  });
+
   it('채팅 오류는 알림만 띄우고 errorSeq를 올리지 않는다(게임 화면의 카드 이동·중복 전송 방지를 건드리지 않게)', async () => {
     vi.spyOn(roomsApi, 'get').mockResolvedValue(room('방', 'PLAYING'));
     const { result } = renderHook(() => useRoomChannel('ABCDEF'));

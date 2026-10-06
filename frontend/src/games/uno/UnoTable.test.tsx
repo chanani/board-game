@@ -7,6 +7,9 @@ import { setMediaMatches } from '../../test/media';
 import { UnoTable } from './UnoTable';
 import { num, unoSession } from './unoFixtures';
 
+const toast = vi.hoisted(() => ({ show: vi.fn() }));
+vi.mock('../../components/Toast', () => ({ useToast: () => toast }));
+
 const room: Room = {
   code: 'UNO123', name: '우노 방', gameType: 'UNO', gameTypeName: '우노', status: 'PLAYING', hostId: 1, maxPlayers: 5,
   locked: false, spectators: [], theme: 'WOOD',
@@ -100,12 +103,13 @@ describe('UnoTable 배치', () => {
     expect(screen.getByRole('button', { name: '빨강 2' })).toHaveAttribute('aria-disabled', 'true');
   });
 
-  it('와일드 카드를 눌러도 아직 아무것도 보내지 않는다', async () => {
+  it('와일드 카드를 누르면 색을 고를 때까지 아무것도 보내지 않고 색 고르기 창이 뜬다', async () => {
     setMediaMatches(true);
     const send = renderTable();
 
     await userEvent.click(screen.getByRole('button', { name: '와일드, 낼 수 있어요' }));
 
+    expect(await screen.findByRole('dialog', { name: '색을 골라 주세요' })).toBeInTheDocument();
     expect(send).not.toHaveBeenCalled();
   });
 

@@ -57,7 +57,7 @@ function gameEndLine(event: UnoEvent, nicknameOf: Nickname): LogDraft {
   return { kind: 'result', actorId: winner, text: `${nicknameOf(winner)}님이 게임에서 승리했어요!${points}` };
 }
 
-function eventLines(event: UnoEvent, nicknameOf: Nickname): LogDraft[] {
+export function describeUnoEvent(event: UnoEvent, nicknameOf: Nickname): LogDraft[] {
   const actor = event.actorId ?? 0;
   const name = nicknameOf(actor);
   const target = event.targetId ?? 0;
@@ -96,7 +96,7 @@ function eventLines(event: UnoEvent, nicknameOf: Nickname): LogDraft[] {
 }
 
 function linesOf(events: UnoEvent[], nicknameOf: Nickname): LogDraft[] {
-  return events.filter((event) => !hiddenWhenAuto(event)).flatMap((event) => eventLines(event, nicknameOf));
+  return events.filter((event) => !hiddenWhenAuto(event)).flatMap((event) => describeUnoEvent(event, nicknameOf));
 }
 
 function autoColorName(view: UnoView): string {
