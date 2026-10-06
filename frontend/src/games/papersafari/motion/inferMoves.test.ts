@@ -67,6 +67,13 @@ describe('inferMoves', () => {
     expect(inferMoves(prev, view({ discardTop: n(9) }))).toEqual([{ kind: 'travel', from: handZone(A), to: DISCARD, card: n(9) }]);
   });
 
+  it('버린 카드 더미에서 가져온 카드를 되돌리면(PLACE → DRAW, 손이 빔) 손에서 더미로 돌아간다', () => {
+    const prev = view({ phase: 'PLACE', discardTop: n(9), held: { playerId: A, source: 'DISCARD', card: n(4) } });
+    const next = view({ phase: 'DRAW', discardTop: n(4), held: null });
+
+    expect(inferMoves(prev, next)).toEqual([{ kind: 'travel', from: handZone(A), to: DISCARD, card: n(4) }]);
+  });
+
   it('타잔 교체는 빠진 카드가 왼쪽 사람 같은 칸으로, 그 사람 카드는 더미로 간다', () => {
     const tarzan: CardView = { kind: 'TARZAN', value: 10 };
     const prev = view({ phase: 'PLACE', held: { playerId: A, source: 'DECK', card: tarzan }, boards: [board(A), board(B), board(C)] });
