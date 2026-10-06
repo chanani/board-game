@@ -1,7 +1,10 @@
 import type { ComponentType } from 'react';
 import { chatTime } from '../lib/format';
 import type { LogEntry, LogKind } from '../lib/eventLog';
-import { CardsIcon, ClockIcon, DotIcon, EyeIcon, LogoutIcon, PlayIcon, RecycleIcon, SwapIcon, TrophyIcon, UndoIcon } from '../components/icons';
+import {
+  CardsIcon, ClockIcon, ColorWheelIcon, DotIcon, EyeIcon, HandIcon, LogoutIcon, PlayIcon, RecycleIcon, ReverseIcon, ScaleIcon,
+  ShuffleIcon, SkipIcon, StarBubbleIcon, SwapIcon, TrophyIcon, UndoIcon, UnoCardIcon,
+} from '../components/icons';
 
 export type Nickname = (memberId: number) => string;
 
@@ -16,6 +19,14 @@ const KIND_STYLE: Record<LogKind, { Icon: ComponentType<{ className?: string }>;
   timeout: { Icon: ClockIcon, bg: 'bg-rose-100' },
   leave: { Icon: LogoutIcon, bg: 'bg-stone-300' },
   other: { Icon: DotIcon, bg: 'bg-stone-200' },
+  play: { Icon: UnoCardIcon, bg: 'bg-red-100' },
+  skip: { Icon: SkipIcon, bg: 'bg-orange-100' },
+  reverse: { Icon: ReverseIcon, bg: 'bg-violet-100' },
+  color: { Icon: ColorWheelIcon, bg: 'bg-teal-100' },
+  challenge: { Icon: ScaleIcon, bg: 'bg-fuchsia-100' },
+  uno: { Icon: StarBubbleIcon, bg: 'bg-yellow-200' },
+  catch: { Icon: HandIcon, bg: 'bg-rose-200' },
+  reshuffle: { Icon: ShuffleIcon, bg: 'bg-cyan-100' },
 };
 
 export function KindDot({ kind, small = false }: { kind: LogKind; small?: boolean }) {

@@ -157,3 +157,43 @@ export const GearIcon = ({ className }: IconProps) => (
 export const ChevronDownIcon = ({ className }: IconProps) => (
   <Svg className={className ?? 'h-4 w-4'}><path d="m6 9 6 6 6-6" /></Svg>
 );
+
+export const UnoCardIcon = ({ className }: IconProps) => (
+  <Svg className={className}><rect x="6" y="3" width="12" height="18" rx="2" /><ellipse cx="12" cy="12" rx="3.5" ry="5.5" /></Svg>
+);
+
+export const SkipIcon = ({ className }: IconProps) => (
+  <Svg className={className}><circle cx="12" cy="12" r="8" /><path d="M6.5 17.5l11-11" /></Svg>
+);
+
+export const ReverseIcon = ({ className }: IconProps) => (
+  <Svg className={className}><path d="M4 9a7 7 0 0 1 12-3l2 2" /><path d="M18 4v4h-4" /><path d="M20 15a7 7 0 0 1-12 3l-2-2" /><path d="M6 20v-4h4" /></Svg>
+);
+
+export const ColorWheelIcon = ({ className }: IconProps) => (
+  <Svg className={className}><circle cx="12" cy="12" r="8" /><path d="M12 4v16M4 12h16" /></Svg>
+);
+
+export const ScaleIcon = ({ className }: IconProps) => (
+  <Svg className={className}><path d="M12 4v16M8 20h8M5 7h14" /><path d="M5 7l-3 6a3 3 0 0 0 6 0z" /><path d="M19 7l-3 6a3 3 0 0 0 6 0z" /></Svg>
+);
+
+export const StarBubbleIcon = ({ className }: IconProps) => (
+  <Svg className={className}><path d="M4 5h16v11H9l-5 4z" /><path d="M12 7.5l1 2 2.2.3-1.6 1.5.4 2.2-2-1.1-2 1.1.4-2.2-1.6-1.5 2.2-.3z" /></Svg>
+);
+
+export const HandIcon = ({ className }: IconProps) => (
+  <Svg className={className}><path d="M8 13V5.5a1.5 1.5 0 0 1 3 0V11" /><path d="M11 10V4.5a1.5 1.5 0 0 1 3 0V11" /><path d="M14 10.5V6a1.5 1.5 0 0 1 3 0v8a6 6 0 0 1-6 6h-1a6 6 0 0 1-5-2.7L3.5 14a1.5 1.5 0 0 1 2.5-1.7L8 15" /></Svg>
+);
+
+export const ShuffleIcon = ({ className }: IconProps) => (
+  <Svg className={className}><path d="M3 7h4l10 10h4" /><path d="M3 17h4l3-3" /><path d="M14 10l3-3h4" /><path d="M18 4l3 3-3 3" /><path d="M18 14l3 3-3 3" /></Svg>
+);
+
+export const StarIcon = ({ className, testId }: IconProps) => (
+  <Svg testId={testId} className={className}><path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z" /></Svg>
+);
+
+export const AlertIcon = ({ className, testId }: IconProps) => (
+  <Svg testId={testId} className={className}><path d="M12 6v8" /><circle cx="12" cy="18" r="1" fill="currentColor" /></Svg>
+);

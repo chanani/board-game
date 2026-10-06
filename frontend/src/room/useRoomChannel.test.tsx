@@ -2,7 +2,7 @@ import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from '../api/http';
 import { roomsApi } from '../api/rooms';
-import type { PaperSafariSessionView, Room } from '../api/types';
+import type { PaperSafariSessionView, PaperSafariView, Room } from '../api/types';
 import { useRoomChannel } from './useRoomChannel';
 
 type Handler = (body: unknown) => void;
@@ -209,8 +209,8 @@ describe('useRoomChannel', () => {
 
     act(() => state.handlers.get('/user/queue/game')?.(sessionView(2)));
     expect(result.current.transition?.animate).toBe(true);
-    expect(result.current.transition?.from?.roundNumber).toBe(1);
-    expect(result.current.transition?.to.roundNumber).toBe(2);
+    expect((result.current.transition?.from as PaperSafariView | null | undefined)?.roundNumber).toBe(1);
+    expect((result.current.transition?.to as PaperSafariView).roundNumber).toBe(2);
   });
 
   it('관전 중 확인(poll)에서 404면 missing이 되고, 다른 실패는 조용히 넘긴다', async () => {

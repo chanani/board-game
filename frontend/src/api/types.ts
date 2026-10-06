@@ -2,7 +2,7 @@ export type ApiErrorBody = { status: number; code: string; message: string };
 
 export type Member = { id: number; loginId: string; nickname: string };
 
-export type GameType = 'PAPER_SAFARI';
+export type GameType = 'PAPER_SAFARI' | 'UNO';
 export type ResultType = 'WIN' | 'DRAW' | 'LOSE';
 
 export type RoomStatus = 'WAITING' | 'PLAYING';
@@ -37,7 +37,15 @@ export type RoomSummary = {
 };
 
 export type GameActionType = 'FLIP' | 'DRAW_DECK' | 'DRAW_DISCARD' | 'SWAP' | 'DISCARD' | 'PEEK' | 'CANCEL_DRAW';
-export type GameAction = { type: GameActionType; column?: number; row?: number };
+export type UnoActionType = 'PLAY' | 'DRAW' | 'KEEP' | 'CHOOSE_COLOR' | 'CHALLENGE' | 'ACCEPT' | 'CALL_UNO' | 'CATCH_UNO';
+export type GameAction = {
+  type: GameActionType | UnoActionType;
+  column?: number;
+  row?: number;
+  cardId?: number;
+  color?: UnoColor;
+  targetId?: number;
+};
 
 export type CardKind = 'NUMBER' | 'ELEPHANT' | 'TARZAN' | 'FOX' | 'WILD';
 export type CardView = { kind: CardKind; value: number };
@@ -72,8 +80,59 @@ export type PaperSafariView = {
   autoActSeq?: number;
 };
 export type PaperSafariSessionView = { gameType?: 'PAPER_SAFARI'; game: PaperSafariView };
-/** /user/queue/game으로 오는 세션 화면. Task 10에서 우노 화면을 더한다. */
-export type SessionView = PaperSafariSessionView;
+
+export type UnoColor = 'RED' | 'YELLOW' | 'GREEN' | 'BLUE';
+export type UnoCardKind = 'NUMBER' | 'SKIP' | 'REVERSE' | 'DRAW_TWO' | 'WILD' | 'WILD_DRAW_FOUR';
+export type UnoCard = { id: number; kind: UnoCardKind; color: UnoColor | null; number: number | null };
+export type UnoStage = 'PLAY' | 'DRAWN' | 'CHOOSE_COLOR' | 'CHALLENGE';
+export type UnoDirection = 'CLOCKWISE' | 'COUNTER_CLOCKWISE';
+export type UnoPlayerView = { playerId: number; cardCount: number; unoDeclared: boolean };
+export type UnoEventType = 'START' | 'FIRST_CARD_REDRAWN' | 'PLAY' | 'COLOR' | 'DRAW' | 'PASS' | 'SKIP' | 'REVERSE'
+  | 'PENALTY' | 'CHALLENGE' | 'UNO_CALL' | 'UNO_CAUGHT' | 'RESHUFFLE' | 'GAME_END';
+export type UnoEventReason = 'KEEP' | 'NO_PLAYABLE' | 'EMPTY_PILE' | 'DRAW_TWO' | 'WILD_DRAW_FOUR' | 'CHALLENGE_FAILED'
+  | 'CHALLENGE_GUILTY' | 'UNO_CAUGHT' | 'GUILTY' | 'INNOCENT' | 'EMPTY_HAND' | 'FORFEIT';
+export type UnoEvent = {
+  seq: number; type: UnoEventType; actorId: number | null; targetId: number | null; card: UnoCard | null;
+  color: UnoColor | null; count: number | null; reason: UnoEventReason | null; auto: boolean;
+};
+export type UnoReveal = { playerId: number; cards: UnoCard[]; guilty: boolean };
+export type UnoResultPlayer = { playerId: number; cards: UnoCard[]; points: number };
+export type UnoResult = { reason: 'EMPTY_HAND' | 'FORFEIT'; winnerId: number; points: number; players: UnoResultPlayer[] };
+export type UnoView = {
+  viewerId: number;
+  status: 'IN_PROGRESS' | 'GAME_OVER';
+  /** 게임 시작 시각(epoch ms). 결과 창 닫음 기억 키(D26)와 새 게임 판단에 쓴다. */
+  startedAt: number;
+  stage: UnoStage | null;
+  currentPlayerId: number | null;
+  direction: UnoDirection;
+  currentColor: UnoColor | null;
+  discardTop: UnoCard;
+  discardCount: number;
+  drawPileCount: number;
+  participantIds: number[];
+  players: UnoPlayerView[];
+  /** 남은 참가자면 내 손패(받은 순서), 아니면 null. */
+  hand: UnoCard[] | null;
+  playableCardIds: number[];
+  wildDrawFourRisky: boolean;
+  drawnCardId: number | null;
+  canCallUno: boolean;
+  unoCatch: { playerId: number } | null;
+  canCatch: boolean;
+  challenge: { byId: number; targetId: number } | null;
+  reveal: UnoReveal | null;
+  result: UnoResult | null;
+  winnerId: number | null;
+  deadline: number | null;
+  serverNow: number;
+  lastAutoActorIds: number[];
+  autoActSeq: number;
+  events: UnoEvent[];
+};
+export type UnoSessionView = { gameType: 'UNO'; game: UnoView };
+/** /user/queue/game으로 오는 세션 화면. */
+export type SessionView = PaperSafariSessionView | UnoSessionView;
 
 export type GameStat = {
   gameType: GameType;
