@@ -43,6 +43,7 @@ class RoomTest {
         assertThat(room.participants()).containsExactly(alice);
         assertThat(room.isFor(GameType.PAPER_SAFARI)).isTrue();
         assertThat(room.isFor(null)).isTrue();
+        assertThat(room.roundNumber()).isEmpty();
     }
 
     @Test
