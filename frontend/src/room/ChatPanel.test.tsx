@@ -19,6 +19,15 @@ describe('ChatPanel', () => {
     expect(screen.queryByText('앨리스')).not.toBeInTheDocument();
   });
 
+  it('남의 말풍선 줄은 목록 너비를 다 써서 말풍선 최대 너비(80%)가 짧은 글을 억지로 줄바꿈하지 않는다', () => {
+    render(<ChatPanel messages={messages} meId={1} onSend={vi.fn()} />);
+
+    const row = screen.getByText('<b>반가워요</b>').parentElement;
+
+    expect(row).toHaveClass('w-full');
+    expect(row).not.toHaveClass('max-w-full');
+  });
+
   it('Enter로 보내고 보내면 입력창을 비운다', async () => {
     const onSend = vi.fn(() => true);
     render(<ChatPanel messages={[]} meId={1} onSend={onSend} />);

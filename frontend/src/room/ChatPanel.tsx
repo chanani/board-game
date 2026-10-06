@@ -121,7 +121,7 @@ function ChatLine({ message, mine, showTime }: { message: ChatMessage; mine: boo
   return (
     <li data-mine="false" className="flex flex-col items-start gap-0.5">
       <span className="px-1 text-xs font-bold text-wood-700">{message.nickname}</span>
-      <div className="flex max-w-full items-end gap-1.5">
+      <div className="flex w-full items-end gap-1.5">
         <p className="max-w-[80%] whitespace-pre-wrap break-words rounded-2xl rounded-bl-md bg-cream-50 px-3 py-1.5 text-sm text-wood-800 shadow-sm ring-1 ring-cream-300">
           {message.text}
         </p>
