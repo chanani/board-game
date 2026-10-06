@@ -77,7 +77,18 @@ describe('RulesCarousel', () => {
   });
 
   it('대기실 요약은 타잔을 버릴 수 없다고 알려준다', () => {
-    expect(RULE_SUMMARY).toContain('덱에서 가져온 카드는 (타잔만 빼고) 버릴 수 있어요. 버린 카드 더미에서 가져온 카드는 반드시 교체해요. (되돌리기로 다시 내려놓을 수는 있어요)');
+    expect(RULE_SUMMARY).toContain('버린 카드 더미에서 가져온 카드는 반드시 교체해요(되돌리기로 다시 내려놓을 수는 있어요). 덱에서 가져온 카드는 타잔만 빼고 버릴 수 있어요.');
+  });
+
+  it('되돌리기 안내는 버린 카드 더미 문장에만 붙고 타잔 문장에는 붙지 않는다', () => {
+    const texts = [...RULE_SLIDES.flatMap((slide) => slide.body), ...RULE_SUMMARY];
+    const sentences = texts.flatMap((text) => text.split(/(?<=\.)\s+/)).filter((sentence) => sentence.includes('되돌리기로'));
+
+    expect(sentences).toHaveLength(2);
+    sentences.forEach((sentence) => {
+      expect(sentence).toMatch(/^버린 카드 더미에서 가져온 카드는[^.]*\(되돌리기로 다시 내려놓을 수는 있어요\)\.$/);
+      expect(sentence).not.toMatch(/타잔/);
+    });
   });
 
   it('단판 규칙이라 슬라이드와 요약 어디에도 토큰이 없다', () => {
