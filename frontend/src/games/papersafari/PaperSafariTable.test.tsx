@@ -549,6 +549,7 @@ describe('모바일 게임 화면 (상대 판·내 차례·손 카드)', () => {
     setMediaMatches(false);
     const { unmount } = render(<PaperSafariTable {...baseProps(build({ phase: 'DRAW', current: ME }))} />);
     expect(screen.getByTestId('board-1')).toHaveClass('turn-ring', 'ring-(--turn-ring)');
+    expect(screen.getByTestId('board-1').querySelector('.turn-glow')).toHaveClass('bg-(--turn-tag-bg)', 'text-(--turn-tag-ink)');
     unmount();
     render(<PaperSafariTable {...baseProps(build({ phase: 'DRAW', current: OPPONENT }))} />);
     expect(screen.getByTestId('board-1')).not.toHaveClass('turn-ring');

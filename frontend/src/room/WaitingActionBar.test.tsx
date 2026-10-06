@@ -43,6 +43,9 @@ describe('WaitingActionBar', () => {
 
   it('시작할 수 있으면 title이 없다', () => {
     renderBar(1);
-    expect(screen.getByRole('button', { name: '게임 시작' })).toBeEnabled();
+    const start = screen.getByRole('button', { name: '게임 시작' });
+    expect(start).toBeEnabled();
+    expect(start).not.toHaveAttribute('title');
+    expect(start).not.toHaveAttribute('aria-describedby');
   });
 });

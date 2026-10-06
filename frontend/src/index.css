@@ -61,6 +61,10 @@ body {
   --seal-ring: #f2b33d;
   --accent: #f2b33d;
   --turn-ring: var(--accent);
+  --turn-ring-edge: transparent;
+  --turn-halo: var(--color-cream-50);
+  --turn-tag-bg: var(--accent);
+  --turn-tag-ink: var(--accent-text);
   --accent-hover: #f7c860;
   --accent-text: #2e1d10;
   --accent-shadow: #b77b14;
@@ -191,6 +195,10 @@ body {
   --seal-fill: #ffffff;
   --seal-ring: #f97316;
   --turn-ring: #facc15;
+  --turn-ring-edge: #a16207;
+  --turn-halo: #facc15;
+  --turn-tag-bg: #facc15;
+  --turn-tag-ink: #422006;
   --accent: #f97316;
   --accent-hover: #fb923c;
   --accent-text: #431407;
@@ -336,10 +344,10 @@ body {
 .card-side.is-back { transform: rotateY(180deg); }
 .card-thick { box-shadow: 0 2px 0 var(--color-cream-300), 0 4px 0 #b9ab8a, 0 10px 14px rgb(0 0 0 / 0.45); }
 
-@keyframes turn-glow { 0%, 100% { box-shadow: 0 0 0 2px var(--color-cream-50), 0 0 6px var(--turn-ring); } 50% { box-shadow: 0 0 0 2px var(--color-cream-50), 0 0 18px var(--turn-ring); } }
+@keyframes turn-glow { 0%, 100% { box-shadow: 0 0 0 2px var(--turn-halo), 0 0 6px var(--turn-ring); } 50% { box-shadow: 0 0 0 2px var(--turn-halo), 0 0 18px var(--turn-ring); } }
 .turn-glow { animation: turn-glow 1.4s ease-in-out infinite; }
 /* 내 차례 링은 판 안쪽(inset)에만 그려 판 밖의 이름표·안내를 덮지 않는다. */
-@keyframes turn-ring { 0%, 100% { box-shadow: inset 0 0 0 3px var(--turn-ring), inset 0 0 4px 3px color-mix(in srgb, var(--turn-ring) 35%, transparent); } 50% { box-shadow: inset 0 0 0 3px var(--turn-ring), inset 0 0 14px 4px color-mix(in srgb, var(--turn-ring) 55%, transparent); } }
+@keyframes turn-ring { 0%, 100% { box-shadow: 0 0 0 1px var(--turn-ring-edge), inset 0 0 0 3px var(--turn-ring), inset 0 0 4px 3px color-mix(in srgb, var(--turn-ring) 35%, transparent); } 50% { box-shadow: 0 0 0 1px var(--turn-ring-edge), inset 0 0 0 3px var(--turn-ring), inset 0 0 14px 4px color-mix(in srgb, var(--turn-ring) 55%, transparent); } }
 .turn-ring { animation: turn-ring 1.4s ease-in-out infinite; }
 @keyframes float-hint { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
 .float-hint { animation: float-hint 1.6s ease-in-out infinite; }

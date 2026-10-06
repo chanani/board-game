@@ -14,5 +14,10 @@ describe('index.css', () => {
     expect(css).toMatch(/--turn-ring:\s*var\(--accent\)/);
     const beach = css.match(/\[data-theme="BEACH"\]\s*\{[^}]*\}/)?.[0] ?? '';
     expect(beach).toContain('--turn-ring: #facc15');
+    expect(beach).toContain('--turn-halo: #facc15');
+    expect(beach).toContain('--turn-tag-bg: #facc15');
+    expect(beach).toContain('--turn-tag-ink: #422006');
+    expect(css).toMatch(/--turn-halo:\s*var\(--color-cream-50\)/);
+    expect(css).toMatch(/@keyframes turn-glow[^\n]*var\(--turn-halo\)/);
   });
 });
