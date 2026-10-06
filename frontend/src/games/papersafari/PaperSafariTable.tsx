@@ -1,7 +1,5 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useRef } from 'react';
 import type { BoardView, GameAction, PaperSafariSessionView, Room, SlotView } from '../../api/types';
-import { Button } from '../../components/ui';
-import { UndoButton } from './layout/UndoButton';
 import { GameOverPanel } from './GameOverPanel';
 import { TableRail } from './layout/TableRail';
 import { TableRound } from './layout/TableRound';
@@ -36,7 +34,6 @@ export type TableProps = {
   estimate: { score: number; hidden: number } | null;
   instructionText: string;
   log: LogEntry[];
-  footer: ReactNode;
 };
 
 type Props = {
@@ -169,24 +166,9 @@ export function PaperSafariTable({ view, room, meId, log, receivedAt, now, error
   const drawable = myTurn && round.phase === 'DRAW';
   const instructionText = instruction(round.phase, myTurn, needsFlip, nicknameOf(round.currentPlayerId), canDiscard, !wide);
 
-  const footer = myBoard ? (
-    <div className="flex flex-wrap items-center justify-between gap-3">
-      <div className="flex items-center gap-2">
-        {canUndo ? <UndoButton onUndo={() => send({ type: 'CANCEL_DRAW' })} /> : null}
-        <Button variant="secondary" disabled={!canDiscard} onClick={() => send({ type: 'DISCARD' })}>버리기</Button>
-      </div>
-      {estimate ? (
-        <span className="rounded-full bg-black/35 px-3 py-1 text-sm text-cream-50">
-          현재 예상 점수 <strong className="text-lg text-mustard-400">{estimate.score}</strong>
-          {estimate.hidden > 0 ? <span className="text-cream-200/80"> (+ 가려진 {estimate.hidden}장)</span> : null}
-        </span>
-      ) : null}
-    </div>
-  ) : null;
-
   const tableProps: TableProps = {
     view, meId, opponents, myBoard, nicknameOf, presenceOf, canClickSlot, clickSlot, drawable, send,
-    canDiscard, canUndo, myTurn, estimate, instructionText, log, footer,
+    canDiscard, canUndo, myTurn, estimate, instructionText, log,
   };
   const Layout = wide ? TableRound : TableRail;
 

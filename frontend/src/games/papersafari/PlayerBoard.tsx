@@ -13,7 +13,7 @@ type Props = {
   board: BoardView;
   nickname: string;
   active: boolean;
-  /** 내 차례일 때 판 테두리에 겨자색 링과 빛 번짐을 단다. */
+  /** 내 차례일 때 판 테두리 안쪽에 겨자색 링과 빛을 단다(바깥으로 번지지 않아 위 정보를 덮지 않는다). */
   turnRing?: boolean;
   size?: 'sm' | 'md' | 'lg';
   pulseSlots?: boolean;
@@ -41,7 +41,7 @@ export function PlayerBoard({ result, board, nickname, active, turnRing = false,
 
   return (
     <div data-testid={`board-${board.playerId}`} data-winner={result ? result.winner : undefined}
-      className={`rounded-2xl bg-black/15 p-2 backdrop-blur-[1px] ${result ? 'mx-auto w-fit' : ''} ${turnRing ? 'ring-4 ring-mustard-400 turn-ring' : ''} ${result?.winner ? 'ring-[3px] ring-mustard-400 shadow-[0_0_18px_rgb(242_179_61/0.7)]' : ''}`}>
+      className={`rounded-2xl bg-black/15 p-2 backdrop-blur-[1px] ${result ? 'mx-auto w-fit' : ''} ${turnRing ? 'ring-[3px] ring-inset ring-mustard-400 turn-ring' : ''} ${result?.winner ? 'ring-[3px] ring-mustard-400 shadow-[0_0_18px_rgb(242_179_61/0.7)]' : ''}`}>
       <div className="mb-2 flex items-center justify-between gap-2 text-sm">
         <span className="flex min-w-0 flex-wrap items-center gap-1.5">
           {connected !== undefined ? (

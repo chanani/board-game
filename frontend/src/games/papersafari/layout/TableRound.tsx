@@ -2,8 +2,9 @@ import type { BoardView } from '../../../api/types';
 import { Felt } from '../../../components/Felt';
 import { CenterPiles } from './CenterPiles';
 import { Hud } from './Hud';
+import { MySide } from './MySide';
 import { OpponentSeat } from './OpponentSeat';
-import { Seat } from './Seat';
+import { HandAnchor, Seat } from './Seat';
 import { SpectatorNotice } from './SpectatorNotice';
 import { seatRows } from './seats';
 import type { TableProps } from '../PaperSafariTable';
@@ -11,7 +12,7 @@ import type { TableProps } from '../PaperSafariTable';
 // 자리를 절대 위치로 겹쳐 놓지 않고 위 줄 · 가운데 줄 · 내 줄로 흘려 놓아, 인원과 화면 높이와 상관없이 서로 겹치지 않게 한다.
 // 펠트는 내용만큼 자라고, 위 줄은 가운데로 모아 타원의 둥근 모서리 밖으로 나가지 않게 한다.
 export function TableRound(props: TableProps) {
-  const { view, meId, opponents, myBoard, nicknameOf, presenceOf, canClickSlot, clickSlot, drawable, send, myTurn, instructionText, log, footer } = props;
+  const { view, meId, opponents, myBoard, nicknameOf, presenceOf, canClickSlot, clickSlot, drawable, send, canDiscard, canUndo, estimate, myTurn, instructionText, log } = props;
   const round = view.game.round;
   const rows = seatRows(opponents.length);
   const opponentSeat = (index: number | null) => {
@@ -43,11 +44,17 @@ export function TableRound(props: TableProps) {
           <div />
           {myBoard ? (
             <div className={`transition-transform duration-300 ${myTurn ? '-translate-y-2' : ''}`}>
-              <Seat board={myBoard} nickname={`${nicknameOf(meId)} (나)`} active={myTurn} turnRing={myTurn}
+              <Seat board={myBoard} nickname={`${nicknameOf(meId)} (나)`} active={myTurn} turnRing={myTurn} hand="none"
                 held={round.held} size="lg" presence={{}} handLabel="들고 있는 카드" onSlotClick={clickSlot} canClick={canClickSlot} pulseSlots={myTurn} />
             </div>
           ) : <SpectatorNotice />}
-          <div className="w-56 self-center justify-self-start">{footer}</div>
+          {myBoard ? (
+            <div className="flex w-36 self-center justify-self-start">
+              <MySide canDiscard={canDiscard} canUndo={canUndo} estimate={estimate}
+                hand={<HandAnchor board={myBoard} held={round.held} size="lg" handLabel="들고 있는 카드" />}
+                onDiscard={() => send({ type: 'DISCARD' })} onUndo={() => send({ type: 'CANCEL_DRAW' })} />
+            </div>
+          ) : <div />}
         </div>
       </Felt>
     </div>

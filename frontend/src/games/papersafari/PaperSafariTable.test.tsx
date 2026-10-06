@@ -401,12 +401,12 @@ describe('버린 카드 되돌리기', () => {
     expect(buttons.map((button) => button.getAttribute('aria-label') ?? button.textContent)).toEqual(['되돌리기', '버리기', '4 카드']);
   });
 
-  it('PC에서는 버리기 옆에 둔다', () => {
+  it('PC에서도 오른쪽 칸의 버리기 위에 둔다', () => {
     setMediaMatches(true);
     renderTable({ phase: 'PLACE', current: ME, held: fromDiscard });
 
-    const discard = screen.getByRole('button', { name: '버리기' });
-    expect(discard.parentElement).toContainElement(screen.getByRole('button', { name: '되돌리기' }));
+    const buttons = within(screen.getByTestId('my-side')).getAllByRole('button');
+    expect(buttons.map((button) => button.getAttribute('aria-label') ?? button.textContent)).toEqual(['되돌리기', '버리기', '4 카드']);
   });
 
   it.each<[string, Setup]>([
@@ -484,10 +484,41 @@ describe('모바일 게임 화면 (상대 판·내 차례·손 카드)', () => {
     expect(document.querySelectorAll('[data-zone="hand:1"]')).toHaveLength(1);
   });
 
-  it('PC에서는 내 손 칸이 내 옆 칸 밖에 하나만 있다', () => {
+  it('PC에서도 내 판 오른쪽 칸에 버리기·손 칸·예상 점수를 두고, 판 아래 옛 줄은 없다', () => {
     setMediaMatches(true);
-    render(<PaperSafariTable {...baseProps(build({ phase: 'PLACE', current: ME }))} />);
+    render(<PaperSafariTable {...baseProps(build({ phase: 'PLACE', current: ME, held: { playerId: ME, source: 'DECK', card: { kind: 'NUMBER', value: 5 } } }))} />);
+    const side = screen.getByTestId('my-side');
+    expect(within(side).getByRole('button', { name: '버리기' })).toBeEnabled();
+    expect(side.querySelector('[data-zone="hand:1"]')).not.toBeNull();
+    expect(within(side).getByText(/현재 예상 점수/)).toBeInTheDocument();
+    expect(screen.getAllByText(/현재 예상 점수/)).toHaveLength(1);
+    expect(screen.getAllByRole('button', { name: '버리기' })).toHaveLength(1);
     expect(document.querySelectorAll('[data-zone="hand:1"]')).toHaveLength(1);
+  });
+
+  it.each([true, false])('뽑은 카드는 위로 밀려 올라가지 않고 자기 칸 안에서만 살짝 기운다 (PC 배치 %s)', (wide) => {
+    setMediaMatches(wide);
+    render(<PaperSafariTable {...baseProps(build({ phase: 'PLACE', current: ME, held: { playerId: ME, source: 'DECK', card: { kind: 'NUMBER', value: 5 } } }))} />);
+    const card = screen.getByLabelText('들고 있는 카드');
+    expect(card.className).not.toMatch(/(^|\s)-translate-y/);
+    expect(card).toHaveClass('-rotate-6');
+    const handBox = (document.querySelector('[data-zone="hand:1"]') as HTMLElement).parentElement as HTMLElement;
+    expect(handBox).toHaveClass('py-1.5');
+  });
+
+  it('내 차례 테두리는 판 안쪽에 그려 위 정보를 덮지 않는다', () => {
+    setMediaMatches(false);
+    render(<PaperSafariTable {...baseProps(build({ phase: 'DRAW', current: ME }))} />);
+    const board = screen.getByTestId('board-1');
+    expect(board).toHaveClass('ring-inset', 'turn-ring');
+    expect(board).not.toHaveClass('ring-4');
+  });
+
+  it('모바일 상대 줄은 얇은 스크롤바를 쓰고, 내 펠트와 조금 더 띄운다', () => {
+    setMediaMatches(false);
+    render(<PaperSafariTable {...baseProps(build({ phase: 'DRAW', current: ME }))} />);
+    const rail = screen.getByRole('button', { name: '밥님의 판 크게 보기' }).closest('.overflow-x-auto');
+    expect(rail).toHaveClass('scroll-thin', 'mb-5');
   });
 
   it('되돌리기로 PLACE에서 DRAW로 돌아와도 내 차례 소리는 다시 나지 않는다', () => {

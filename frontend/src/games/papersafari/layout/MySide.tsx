@@ -8,7 +8,7 @@ type Props = {
   estimate: { score: number; hidden: number } | null;
   onDiscard: () => void;
   onUndo: () => void;
-  /** 버리기와 예상 점수 사이에 두는 손 카드 자리(모바일). */
+  /** 버리기와 예상 점수 사이에 두는 손 카드 자리. 기울어진 카드가 버튼을 덮지 않게 위아래 여백을 둔다. */
   hand?: ReactNode;
 };
 
@@ -18,7 +18,7 @@ export function MySide({ canDiscard, canUndo, estimate, onDiscard, onUndo, hand 
     <div data-testid="my-side" className="@container flex min-w-[4.25rem] flex-1 flex-col items-stretch gap-2 self-center">
       {canUndo ? <UndoButton onUndo={onUndo} className="px-2!" /> : null}
       <Button variant="secondary" className="px-2!" disabled={!canDiscard} onClick={onDiscard}>버리기</Button>
-      {hand ? <div className="flex justify-center">{hand}</div> : null}
+      {hand ? <div className="flex justify-center py-1.5">{hand}</div> : null}
       {estimate ? (
         <span className="rounded-2xl bg-black/35 px-2 py-1 text-center text-xs break-keep text-cream-50">
           현재 예상 점수 <strong className="text-lg text-mustard-400 @max-[110px]:text-base">{estimate.score}</strong>

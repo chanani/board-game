@@ -30,7 +30,7 @@ export function HandAnchor({ board, held, size, handLabel, className = '' }: Han
   return (
     <ZoneAnchor zone={handZone(board.playerId)} className={`shrink-0 ${size === 'lg' ? 'min-h-[90px] w-16' : 'min-h-[67px] w-12'} ${className}`}>
       {holding ? (
-        <div className="-rotate-6 -translate-y-2 drop-shadow-xl" aria-label={handLabel}>
+        <div className="-rotate-6 drop-shadow-xl" aria-label={handLabel}>
           <CardFace card={held.card} faceUp={held.card !== null} known={false} size={size === 'lg' ? 'md' : 'sm'} />
         </div>
       ) : null}
