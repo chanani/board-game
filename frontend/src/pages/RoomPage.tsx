@@ -42,7 +42,7 @@ export function RoomPage() {
   const pcChat = useMediaQuery(PC_QUERY);
   const gameOver = useGameOverDismissal(code, view?.game ?? null, room?.status === 'PLAYING');
   // 이 화면은 REST 입장(참가·관전) 뒤에만 오므로 채팅도 방 채널과 같은 시점에 시작한다.
-  const chat = useRoomChat(code, room !== null && !missing, { meId });
+  const chat = useRoomChat(code, room !== null && !missing);
 
   useEffect(() => {
     const watching = Boolean(room?.spectators.some((spectator) => spectator.id === meId));
@@ -60,15 +60,6 @@ export function RoomPage() {
   useEffect(() => {
     setConfirmLeave(false);
   }, [room?.status]);
-
-  // 대기실에서는 채팅이 늘 펼쳐져 있으니 본 것으로 보고, 게임이 시작돼도 안 읽은 수에 남지 않게 한다.
-  const waitingChatShown = room !== null && room.status !== 'PLAYING';
-  const { messages: chatMessages, markRead } = chat;
-  useEffect(() => {
-    if (waitingChatShown) {
-      markRead();
-    }
-  }, [waitingChatShown, chatMessages, markRead]);
 
   useEffect(() => {
     if (room && !missing && !isPresent(room, meId)) {
@@ -120,10 +111,12 @@ export function RoomPage() {
   const statusBar = <RoomStatusBar room={room} playing={playing} onLeave={requestLeave} onSettings={canEditSettings ? () => setEditingSettings(true) : undefined} stacked={landscapeGame} />;
 
   // 게임 중 채팅: 눕힌 화면은 왼쪽 칸 맨 아래, PC는 테이블 오른쪽 칸, 그 밖에는 테이블 아래.
+  // 폭이 넓어도 눕힌 화면(낮은 높이)이면 좁은 왼쪽 칸에 들어가므로 채팅 줄을 쓴다.
   const chatShown = playing || showGame;
-  const gameChat = chatShown ? <GameChat messages={chat.messages} meId={meId} onSend={chat.send} onRead={chat.markRead} /> : null;
-  const chatBeside = chatShown && !landscapeGame && pcChat;
-  const chatBelow = chatShown && !landscapeGame && !pcChat;
+  const chatVariant = pcChat && layout !== 'landscape' ? 'panel' : 'strip';
+  const gameChat = chatShown ? <GameChat variant={chatVariant} messages={chat.messages} meId={meId} onSend={chat.send} /> : null;
+  const chatBeside = chatShown && !landscapeGame && chatVariant === 'panel';
+  const chatBelow = chatShown && !landscapeGame && chatVariant === 'strip';
 
   return (
     <RoomThemeProvider value={room.theme}>

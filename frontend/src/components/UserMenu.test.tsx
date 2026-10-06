@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { Link, MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SoundContext } from '../lib/sound';
+import { ChatSheet } from '../room/ChatSheet';
 import { UserMenu } from './UserMenu';
 
 const auth = vi.hoisted(() => ({ logout: vi.fn(() => Promise.resolve()) }));
@@ -76,6 +77,39 @@ describe('닉네임 메뉴', () => {
     await userEvent.click(trigger());
     await userEvent.click(trigger());
     await waitFor(() => expect(screen.queryByTestId('user-menu')).not.toBeInTheDocument());
+  });
+
+  it('aria-controls는 메뉴가 열려 있을 때만 단다', async () => {
+    render(ui());
+    expect(trigger()).not.toHaveAttribute('aria-controls');
+    await userEvent.click(trigger());
+    expect(trigger()).toHaveAttribute('aria-controls', 'user-menu');
+  });
+
+  it.each(['메뉴', '채팅'])('채팅 시트와 함께 열려 있으면 Esc 한 번에 하나만 닫힌다(%s를 먼저 엶)', async (first) => {
+    const onCloseChat = vi.fn();
+    const tree = (chatOpen: boolean) => (
+      <SoundContext.Provider value={sound}>
+        <MemoryRouter>
+          <UserMenu />
+          <ChatSheet messages={[]} meId={1} onSend={vi.fn()} open={chatOpen} onClose={onCloseChat} />
+        </MemoryRouter>
+      </SoundContext.Provider>
+    );
+    const page = render(tree(first === '채팅'));
+    await userEvent.click(trigger());
+    page.rerender(tree(true));
+
+    await userEvent.keyboard('{Escape}');
+
+    const menuClosed = screen.queryByTestId('user-menu') === null;
+    expect(Number(menuClosed) + onCloseChat.mock.calls.length).toBe(1);
+  });
+
+  it('모바일에서도 메뉴가 화면 오른쪽 끝에서 16px 떨어지게(헤더 12px + 4px) 놓인다', async () => {
+    render(ui());
+    const panel = await openMenu();
+    expect(panel).toHaveClass('right-1', 'sm:right-0');
   });
 
   it('메뉴 안을 눌러도 닫히지 않는다', async () => {

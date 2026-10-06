@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { PaperSafariSessionView, Room } from '../api/types';
 import { RoomPage } from './RoomPage';
 import { setMediaMatches } from '../test/media';
+import { PC_QUERY } from '../lib/useMediaQuery';
 
 const channel = vi.hoisted(() => ({ value: {} as Record<string, unknown>, options: undefined as unknown }));
 vi.mock('../room/useRoomChannel', () => ({
@@ -16,11 +17,11 @@ vi.mock('../room/useRoomChannel', () => ({
 const toast = vi.hoisted(() => ({ show: vi.fn() }));
 vi.mock('../components/Toast', () => ({ useToast: () => toast }));
 vi.mock('../auth/AuthContext', () => ({ useAuth: () => ({ member: { id: 3, loginId: 'carol01', nickname: '캐롤' } }) }));
-const chat = vi.hoisted(() => ({ args: [] as unknown[], unread: 2, send: vi.fn(() => true), markRead: vi.fn() }));
+const chat = vi.hoisted(() => ({ args: [] as unknown[], send: vi.fn(() => true) }));
 vi.mock('../room/useRoomChat', () => ({
   useRoomChat: (...args: unknown[]) => {
     chat.args = args;
-    return { messages: [{ id: 1, memberId: 1, nickname: '앨리스', text: '잘 부탁해요', sentAt: '2026-10-06T00:00:00Z' }], send: chat.send, unread: chat.unread, markRead: chat.markRead };
+    return { messages: [{ id: 1, memberId: 1, nickname: '앨리스', text: '잘 부탁해요', sentAt: '2026-10-06T00:00:00Z' }], send: chat.send };
   },
 }));
 vi.mock('../api/rooms', () => ({ roomsApi: { seat: vi.fn(), leave: vi.fn(), start: vi.fn(), forfeit: vi.fn(), kick: vi.fn(), ready: vi.fn(), updateSettings: vi.fn() } }));
@@ -371,32 +372,20 @@ describe('RoomPage 준비와 채팅', () => {
 
     expect(roomsApi.ready).toHaveBeenCalledWith('ABC234', true);
     expect(screen.getByText('잘 부탁해요')).toBeInTheDocument();
-    expect(chat.args).toEqual(['ABC234', true, { meId: 3 }]);
+    expect(chat.args).toEqual(['ABC234', true]);
     expect(screen.getByTestId('room-chips')).toHaveTextContent('대기 중');
     expect(screen.getByTestId('room-chips')).toHaveTextContent('2/4명');
   });
 
-  it('대기실에서 본 채팅은 읽음 처리해 게임이 시작돼도 안 읽은 배지가 없다', async () => {
-    chat.unread = 2;
-    chat.markRead.mockReset().mockImplementation(() => { chat.unread = 0; });
+  it('대기실에서 게임이 시작되면 PC 오른쪽 채팅 칸으로 이어진다', async () => {
     setChannel({ room: waiting });
     const page = renderRoom();
     await act(async () => {});
 
-    expect(chat.markRead).toHaveBeenCalled();
     setChannel({ room: { ...waiting, status: 'PLAYING' }, view: playingView });
     page.rerender(roomTree());
 
     expect(screen.getByTestId('game-chat-panel')).toBeInTheDocument();
-  });
-
-  it('게임 중 PC 채팅 칸은 보이는 동안 읽음 처리한다', async () => {
-    chat.markRead.mockReset();
-    setChannel({ room: { ...waiting, status: 'PLAYING' }, view: playingView });
-    renderRoom();
-    await act(async () => {});
-
-    expect(chat.markRead).toHaveBeenCalled();
   });
 
   it('PC 게임 화면에는 오른쪽 채팅 칸이 늘 보이고 떠 있는 채팅 버튼은 없다', async () => {
@@ -409,18 +398,16 @@ describe('RoomPage 준비와 채팅', () => {
     expect(screen.queryByRole('button', { name: /채팅 열기/ })).not.toBeInTheDocument();
   });
 
-  it('모바일 게임 화면에는 테이블 아래 채팅 줄이 있고, 줄을 누르면 시트가 열려 읽음 처리한다', async () => {
+  it('모바일 게임 화면에는 테이블 아래 채팅 줄이 있고, 줄을 누르면 시트가 열린다', async () => {
     setMediaMatches(false);
-    chat.markRead.mockReset();
     setChannel({ room: { ...waiting, status: 'PLAYING' }, view: playingView });
     renderRoom();
     await act(async () => {});
 
     expect(screen.getByTestId('chat-strip')).toBeInTheDocument();
     expect(screen.queryByTestId('game-chat-panel')).not.toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: '채팅 전체 보기' }));
+    await userEvent.click(screen.getByRole('button', { name: /채팅 전체 보기/ }));
     expect(screen.getByRole('dialog', { name: '채팅' })).toHaveAttribute('data-variant', 'sheet');
-    expect(chat.markRead).toHaveBeenCalled();
   });
 
   it('휴대폰을 눕히면 채팅 줄이 왼쪽 정보 칸 안에 있다', async () => {
@@ -430,6 +417,16 @@ describe('RoomPage 준비와 채팅', () => {
     await act(async () => {});
 
     expect(within(screen.getByTestId('table-aside')).getByTestId('chat-strip')).toBeInTheDocument();
+  });
+
+  it('폭은 PC만큼 넓어도 높이가 낮은 눕힌 화면이면 왼쪽 칸에 채팅 줄을 두고 PC 채팅 칸은 없다', async () => {
+    setMediaMatches((query) => query === PC_QUERY || query.includes('orientation: landscape'));
+    setChannel({ room: { ...waiting, status: 'PLAYING' }, view: playingView });
+    renderRoom();
+    await act(async () => {});
+
+    expect(within(screen.getByTestId('table-aside')).getByTestId('chat-strip')).toBeInTheDocument();
+    expect(screen.queryByTestId('game-chat-panel')).not.toBeInTheDocument();
   });
 });
 

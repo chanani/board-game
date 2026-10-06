@@ -39,7 +39,21 @@ describe('ChatStrip', () => {
   it('메시지 줄을 누르면 전체 채팅을 연다', async () => {
     const onExpand = vi.fn();
     render(<ChatStrip messages={[msg(1, 2, '밥', '하나')]} meId={1} onSend={() => true} onExpand={onExpand} />);
-    await userEvent.click(screen.getByRole('button', { name: '채팅 전체 보기' }));
+    await userEvent.click(screen.getByRole('button', { name: /채팅 전체 보기/ }));
     expect(onExpand).toHaveBeenCalled();
+  });
+
+  it('메시지 줄 버튼의 이름은 보이는 메시지 글을 그대로 쓰고 끝에 "채팅 전체 보기"를 붙인다', () => {
+    render(<ChatStrip messages={[msg(1, 2, '밥', '하나')]} meId={1} onSend={() => true} onExpand={vi.fn()} />);
+    const button = screen.getByRole('button', { name: /채팅 전체 보기/ });
+    expect(button).not.toHaveAttribute('aria-label');
+    expect(button).toHaveAccessibleName('밥 하나 채팅 전체 보기');
+    expect(button.querySelector('p')).toBeNull();
+  });
+
+  it('새 메시지를 화면 읽기 프로그램에 조용히 알린다(aria-live polite)', () => {
+    render(<ChatStrip messages={[msg(1, 2, '밥', '하나')]} meId={1} onSend={() => true} onExpand={vi.fn()} />);
+    const live = screen.getByTestId('chat-strip-line').closest('[aria-live]');
+    expect(live).toHaveAttribute('aria-live', 'polite');
   });
 });

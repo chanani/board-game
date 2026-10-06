@@ -41,7 +41,7 @@ beforeEach(() => {
 
 describe('useRoomChat', () => {
   it('기록을 한 번 불러온 뒤 이 방으로 온 새 메시지를 붙이고 같은 id는 한 번만 둔다', async () => {
-    const { result } = renderHook(() => useRoomChat('ABC234', true, { meId: 1 }));
+    const { result } = renderHook(() => useRoomChat('ABC234', true));
     await waitFor(() => expect(result.current.messages).toHaveLength(2));
     expect(chatApi.history).toHaveBeenCalledTimes(1);
     expect(chatApi.history).toHaveBeenCalledWith('ABC234');
@@ -55,14 +55,14 @@ describe('useRoomChat', () => {
   });
 
   it('꺼져 있으면 기록도 구독도 하지 않는다', () => {
-    renderHook(() => useRoomChat('ABC234', false, { meId: 1 }));
+    renderHook(() => useRoomChat('ABC234', false));
 
     expect(chatApi.history).not.toHaveBeenCalled();
     expect(state.handlers.has('/user/queue/chat')).toBe(false);
   });
 
   it('send는 방 채팅 주소로 글을 보낸다', async () => {
-    const { result } = renderHook(() => useRoomChat('ABC234', true, { meId: 1 }));
+    const { result } = renderHook(() => useRoomChat('ABC234', true));
     await waitFor(() => expect(result.current.messages).toHaveLength(2));
 
     let sent = false;
@@ -74,7 +74,7 @@ describe('useRoomChat', () => {
 
   it('연결이 끊겨 보내지 못하면 false를 돌려주고 알린다', async () => {
     state.publish.mockReturnValue(false);
-    const { result } = renderHook(() => useRoomChat('ABC234', true, { meId: 1 }));
+    const { result } = renderHook(() => useRoomChat('ABC234', true));
 
     let sent = true;
     act(() => { sent = result.current.send('반가워요'); });
@@ -83,40 +83,25 @@ describe('useRoomChat', () => {
     expect(toast.show).toHaveBeenCalledWith('연결이 끊겨 있어요. 잠시 후 다시 시도해 주세요.');
   });
 
-  it('기록 이후에 온 남의 메시지만 안 읽은 수로 세고 markRead로 지운다', async () => {
-    const { result } = renderHook(() => useRoomChat('ABC234', true, { meId: 1 }));
-    await waitFor(() => expect(result.current.messages).toHaveLength(2));
-    expect(result.current.unread).toBe(0);
-
-    push({ ...message(3, 2), roomCode: 'ABC234' });
-    push({ ...message(4, 1), roomCode: 'ABC234' });
-    expect(result.current.unread).toBe(1);
-
-    act(() => result.current.markRead());
-    expect(result.current.unread).toBe(0);
-  });
-
-  it('다시 연결돼 기록을 새로 불러와도 그사이 받은 메시지를 읽음으로 바꾸지 않는다', async () => {
+  it('다시 연결되면 기록을 새로 불러와 끊긴 동안 놓친 메시지를 채운다', async () => {
     vi.mocked(chatApi.history).mockResolvedValue([]);
-    const { result, rerender } = renderHook(() => useRoomChat('ABC234', true, { meId: 1 }));
+    const { result, rerender } = renderHook(() => useRoomChat('ABC234', true));
     await waitFor(() => expect(chatApi.history).toHaveBeenCalledTimes(1));
     await act(async () => {});
 
     push({ ...message(3, 2), roomCode: 'ABC234' });
-    expect(result.current.unread).toBe(1);
-
-    vi.mocked(chatApi.history).mockResolvedValue([message(3, 2)]);
+    vi.mocked(chatApi.history).mockResolvedValue([message(3, 2), message(4, 2)]);
     state.connected = false;
     rerender();
     state.connected = true;
     rerender();
     await waitFor(() => expect(chatApi.history).toHaveBeenCalledTimes(2));
-    await act(async () => {});
 
-    expect(result.current.unread).toBe(1);
+    await waitFor(() => expect(result.current.messages.map((item) => item.id)).toEqual([3, 4]));
   });
+
   it('latest는 지금 받은 메시지만 알리고 기록 불러오기로는 바뀌지 않는다', async () => {
-    const { result } = renderHook(() => useRoomChat('ABC234', true, { meId: 1 }));
+    const { result } = renderHook(() => useRoomChat('ABC234', true));
     await waitFor(() => expect(result.current.messages).toHaveLength(2));
     expect(result.current.latest).toBeNull();
 

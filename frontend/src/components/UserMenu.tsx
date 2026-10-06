@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
@@ -17,7 +17,7 @@ function escapeIsMine(event: KeyboardEvent): boolean {
 function useDismiss(open: boolean, close: () => void, inside: React.RefObject<HTMLElement | null>) {
   const { pathname } = useLocation();
 
-  useEffect(() => close(), [pathname]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => close(), [pathname, close]);
 
   useEffect(() => {
     if (!open) {
@@ -25,6 +25,8 @@ function useDismiss(open: boolean, close: () => void, inside: React.RefObject<HT
     }
     const onKey = (event: KeyboardEvent) => {
       if (escapeIsMine(event)) {
+        // 처리한 Esc는 표시해 둬서, 같이 열려 있는 채팅 시트가 한 번 더 닫히지 않게 한다.
+        event.preventDefault();
         close();
       }
     };
@@ -49,7 +51,7 @@ export function UserMenu() {
   const { askLogout, modalProps } = useLogoutFlow();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
-  const close = () => setOpen(false);
+  const close = useCallback(() => setOpen(false), []);
   useDismiss(open, close, rootRef);
 
   const logout = () => {
@@ -59,7 +61,7 @@ export function UserMenu() {
 
   return (
     <div ref={rootRef} className="relative min-w-0">
-      <button type="button" aria-expanded={open} aria-controls="user-menu" onClick={() => setOpen((value) => !value)}
+      <button type="button" aria-expanded={open} aria-controls={open ? 'user-menu' : undefined} onClick={() => setOpen((value) => !value)}
         className="flex min-w-0 items-center gap-1 rounded-lg px-1.5 py-1 font-bold text-cream-50 hover:bg-black/15">
         <span className="min-w-0 max-w-[4.5rem] truncate sm:max-w-none">{member?.nickname}</span>
         <ChevronDownIcon />
@@ -69,7 +71,7 @@ export function UserMenu() {
           <motion.div id="user-menu" data-testid="user-menu" style={{ transformOrigin: 'top right' }}
             initial={{ opacity: 0, y: reduceMotion ? 0 : -8, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: reduceMotion ? 0 : -8, scale: 0.97 }} transition={{ duration: 0.18 }}
-            className="paper absolute right-0 top-full z-50 mt-2 flex w-[260px] max-w-[calc(100vw-2rem)] flex-col gap-3 p-3">
+            className="paper absolute right-1 top-full z-50 mt-2 flex w-[260px] max-w-[calc(100vw-2rem)] flex-col gap-3 p-3 sm:right-0">
             <div className="flex flex-col">
               <span className="text-xs text-stone-500">{member?.loginId}</span>
               <span className="font-black text-wood-800">{member?.nickname}</span>

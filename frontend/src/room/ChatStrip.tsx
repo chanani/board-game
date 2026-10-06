@@ -17,15 +17,19 @@ export function ChatStrip({ messages, meId, onSend, onExpand }: Props) {
   const recent = messages.slice(-SHOWN);
   return (
     <div data-testid="chat-strip" className="paper space-y-2 p-2.5">
-      <button type="button" aria-label="채팅 전체 보기" onClick={onExpand} className="block w-full space-y-1 text-left">
-        {recent.length === 0 ? <p className="text-xs text-stone-500">아직 대화가 없어요.</p> : null}
-        {recent.map((message) => (
-          <p key={message.id} data-testid="chat-strip-line" className="truncate text-xs text-wood-800">
-            <b className={message.spectator ? 'text-sky-700' : 'text-wood-700'}>{message.memberId === meId ? '나' : message.nickname}</b>
-            {message.spectator ? <> <SpectatorBadge /></> : null}
-            {' '}{message.text}
-          </p>
-        ))}
+      {/* 보이는 메시지 글이 그대로 버튼 이름이 되고, 끝에 화면 읽기용 "채팅 전체 보기"를 붙인다. */}
+      <button type="button" onClick={onExpand} className="block w-full text-left">
+        <span aria-live="polite" className="block space-y-1">
+          {recent.length === 0 ? <span className="block text-xs text-stone-500">아직 대화가 없어요.</span> : null}
+          {recent.map((message) => (
+            <span key={message.id} data-testid="chat-strip-line" className="block truncate text-xs text-wood-800">
+              <b className={message.spectator ? 'text-sky-700' : 'text-wood-700'}>{message.memberId === meId ? '나' : message.nickname}</b>
+              {message.spectator ? <> <SpectatorBadge /></> : null}
+              {' '}{message.text}
+            </span>
+          ))}
+        </span>
+        {' '}<span className="sr-only">채팅 전체 보기</span>
       </button>
       <ChatInput onSend={onSend} />
     </div>
