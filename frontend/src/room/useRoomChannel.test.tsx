@@ -151,6 +151,23 @@ describe('useRoomChannel', () => {
     }
   });
 
+  it('채팅 오류는 알림만 띄우고 errorSeq를 올리지 않는다(게임 화면의 카드 이동·중복 전송 방지를 건드리지 않게)', async () => {
+    vi.spyOn(roomsApi, 'get').mockResolvedValue(room('방', 'PLAYING'));
+    const { result } = renderHook(() => useRoomChannel('ABCDEF'));
+    await act(async () => {});
+    toast.show.mockClear();
+
+    act(() => state.handlers.get('/user/queue/errors')?.({ status: 429, code: 'CHAT_TOO_FAST', message: '메시지를 너무 빨리 보내고 있어요.' }));
+    act(() => state.handlers.get('/user/queue/errors')?.({ status: 400, code: 'INVALID_CHAT_MESSAGE', message: '메시지는 1~200자로 입력해 주세요.' }));
+
+    expect(result.current.errorSeq).toBe(0);
+    expect(toast.show).toHaveBeenCalledWith('메시지를 너무 빨리 보내고 있어요.');
+    expect(toast.show).toHaveBeenCalledWith('메시지는 1~200자로 입력해 주세요.');
+
+    act(() => state.handlers.get('/user/queue/errors')?.({ status: 400, code: 'NOT_YOUR_TURN', message: '차례가 아니에요.' }));
+    expect(result.current.errorSeq).toBe(1);
+  });
+
   it('동기화 오류가 NOT_IN_ROOM이어도 missing이 된다', async () => {
     vi.spyOn(roomsApi, 'get').mockResolvedValue(room('방', 'PLAYING'));
     const { result } = renderHook(() => useRoomChannel('ABCDEF'));

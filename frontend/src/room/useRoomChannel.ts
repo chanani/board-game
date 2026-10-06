@@ -6,6 +6,8 @@ import { useToast } from '../components/Toast';
 import { describeChanges } from '../lib/eventLog';
 import { useRealtime } from '../realtime/RealtimeContext';
 
+const CHAT_ERROR_CODES = new Set(['INVALID_CHAT_MESSAGE', 'CHAT_TOO_FAST']);
+
 const MAX_LOG = 5;
 const SYNC_RETRY_MS = 1000;
 const SYNC_MAX_TRIES = 5;
@@ -125,7 +127,10 @@ export function useRoomChannel(code: string, { poll = false }: Options = {}) {
       realtime.subscribe('/user/queue/game', (body) => acceptView(body as PaperSafariSessionView)),
       realtime.subscribe('/user/queue/errors', (body) => {
         const error = body as ApiErrorBody;
-        setErrorSeq((current) => current + 1);
+        // 채팅 오류는 게임 행동과 무관하므로 카드 이동·중복 전송 방지를 풀지 않는다.
+        if (!CHAT_ERROR_CODES.has(error.code)) {
+          setErrorSeq((current) => current + 1);
+        }
         if (error.code === 'NOT_IN_ROOM') {
           toast.show(LEFT_MESSAGE, 'info');
           setMissing(true);
