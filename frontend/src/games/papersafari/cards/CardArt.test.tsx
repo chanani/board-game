@@ -2,6 +2,7 @@ import { render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import type { CardView } from '../../../api/types';
 import { CardArt } from './CardArt';
+import { CardBack } from './CardBack';
 
 const NUMBER_KEYS = ['mouse', 'rabbit', 'monkey', 'zebra', 'giraffe', 'cheetah', 'hippo', 'crocodile', 'rhino', 'lion'];
 
@@ -29,5 +30,23 @@ describe('CardArt', () => {
     const { container } = render(<CardArt card={{ kind: 'WILD', value: 0 }} />);
 
     expect(container).toHaveTextContent('?');
+  });
+
+  it('여러 장을 그려도 무늬·그라데이션 id가 겹치지 않고 각자 자기 것을 가리킨다', () => {
+    const { container } = render(
+      <div>
+        <CardBack /><CardBack />
+        <CardArt card={{ kind: 'NUMBER', value: 9 }} /><CardArt card={{ kind: 'NUMBER', value: 9 }} />
+      </div>,
+    );
+
+    const ids = [...container.querySelectorAll('pattern, linearGradient')].map((element) => element.id);
+    expect(ids).toHaveLength(4);
+    expect(new Set(ids).size).toBe(4);
+    container.querySelectorAll('svg').forEach((svg) => {
+      const own = svg.querySelector('pattern, linearGradient')?.id;
+      const refs = [...svg.querySelectorAll('[fill]')].map((element) => element.getAttribute('fill'));
+      expect(refs).toContain(`url(#${own})`);
+    });
   });
 });

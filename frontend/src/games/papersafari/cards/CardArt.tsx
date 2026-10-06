@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import type { CardView } from '../../../api/types';
 import { animalName } from '../cards';
 import { ART_BY_KEY, artKeyOf } from './art';
@@ -8,7 +9,7 @@ export function CardArt({ card }: { card: CardView }) {
   const Art = ART_BY_KEY[key];
   const fox = card.kind === 'FOX';
   const special = card.kind !== 'NUMBER';
-  const gid = `sky-${key}`;
+  const gid = `sky-${key}-${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
   return (
     <svg viewBox="0 0 100 140" className="block h-full w-full" data-art={key} aria-hidden="true">
       <defs>
