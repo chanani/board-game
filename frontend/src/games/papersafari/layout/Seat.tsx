@@ -40,7 +40,7 @@ export function HandAnchor({ board, held, size, handLabel, className = '' }: Han
 
 /** side: 판 옆(기본), overlay: 판 오른쪽 위에 겹쳐 자리 너비를 판과 같게, none: 다른 곳에 따로 둔다. */
 export function Seat({ board, nickname, active, held, size, presence, handLabel, onSlotClick, canClick, pulseSlots, onZoom, turnRing, hand = 'side' }: Props) {
-  const handAnchor = <HandAnchor board={board} held={held} size={size} handLabel={handLabel} className={hand === 'overlay' ? 'absolute top-6 right-0 z-[6]' : 'mt-6'} />;
+  const handAnchor = <HandAnchor board={board} held={held} size={size} handLabel={handLabel} className={hand === 'overlay' ? 'pointer-events-none absolute top-6 right-0 z-[6]' : 'mt-6'} />;
   return (
     <div className={hand === 'side' ? 'relative flex items-start gap-2' : 'relative'}>
       <PlayerBoard board={board} nickname={nickname} active={active} turnRing={turnRing} size={size}

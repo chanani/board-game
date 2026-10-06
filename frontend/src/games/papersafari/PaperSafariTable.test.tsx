@@ -456,6 +456,7 @@ describe('모바일 게임 화면 (상대 판·내 차례·손 카드)', () => {
     expect(document.querySelectorAll('[data-zone="hand:2"]')).toHaveLength(1);
     const seat = hand.parentElement as HTMLElement;
     expect(seat).not.toHaveClass('flex');
+    expect(hand).toHaveClass('pointer-events-none');
   });
 
   it('모바일 상대 줄은 3px 간격이다', () => {
@@ -491,6 +492,7 @@ describe('모바일 게임 화면 (상대 판·내 차례·손 카드)', () => {
   it('되돌리기로 PLACE에서 DRAW로 돌아와도 내 차례 소리는 다시 나지 않는다', () => {
     const play = vi.fn();
     const held: HeldView = { playerId: ME, source: 'DISCARD', card: { kind: 'NUMBER', value: 4 } };
+    const myTurnPlays = () => play.mock.calls.filter(([name]) => name === 'myTurn');
     const ui = (view: PaperSafariSessionView) => (
       <SoundContext.Provider value={{ play, muted: false, toggleMuted: () => undefined }}>
         <PaperSafariTable {...baseProps(view)} />
@@ -498,9 +500,9 @@ describe('모바일 게임 화면 (상대 판·내 차례·손 카드)', () => {
     );
     const { rerender } = render(ui(build({ phase: 'DRAW', current: OPPONENT })));
     rerender(ui(build({ phase: 'DRAW', current: ME })));
-    expect(play).toHaveBeenCalledTimes(1);
+    expect(myTurnPlays()).toHaveLength(1);
     rerender(ui(build({ phase: 'PLACE', current: ME, held })));
     rerender(ui(build({ phase: 'DRAW', current: ME })));
-    expect(play.mock.calls.filter(([name]) => name === 'myTurn')).toHaveLength(1);
+    expect(myTurnPlays()).toHaveLength(1);
   });
 });

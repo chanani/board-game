@@ -74,7 +74,7 @@ body {
 
 @keyframes turn-glow { 0%, 100% { box-shadow: 0 0 0 2px var(--color-cream-50), 0 0 6px var(--color-mustard-400); } 50% { box-shadow: 0 0 0 2px var(--color-cream-50), 0 0 18px var(--color-mustard-400); } }
 .turn-glow { animation: turn-glow 1.4s ease-in-out infinite; }
-@keyframes turn-ring { 0%, 100% { filter: drop-shadow(0 0 3px var(--color-mustard-400)); } 50% { filter: drop-shadow(0 0 12px var(--color-mustard-400)); } }
+@keyframes turn-ring { 0%, 100% { box-shadow: 0 0 0 4px var(--color-mustard-400), 0 0 4px 4px var(--color-mustard-400); } 50% { box-shadow: 0 0 0 4px var(--color-mustard-400), 0 0 16px 4px var(--color-mustard-400); } }
 .turn-ring { animation: turn-ring 1.4s ease-in-out infinite; }
 @keyframes float-hint { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
 .float-hint { animation: float-hint 1.6s ease-in-out infinite; }

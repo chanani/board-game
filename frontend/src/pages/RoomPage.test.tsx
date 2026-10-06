@@ -131,6 +131,18 @@ describe('RoomPage 참가자 나가기 확인', () => {
     expect(roomsApi.leave).not.toHaveBeenCalled();
   });
 
+  it('대기실에서는 참가자도 확인 창 없이 바로 나간다', async () => {
+    const { roomsApi } = await import('../api/rooms');
+    vi.mocked(roomsApi.leave).mockResolvedValue(undefined);
+    setChannel({ room: { ...playing, status: 'WAITING' } });
+    renderRoom();
+
+    await userEvent.click(screen.getByRole('button', { name: '나가기' }));
+
+    expect(screen.queryByRole('dialog', { name: '정말 나갈까요?' })).not.toBeInTheDocument();
+    expect(roomsApi.leave).toHaveBeenCalledWith('ABC234');
+  });
+
   it('확인 창에서 나가기를 누르면 방을 나간다', async () => {
     const { roomsApi } = await import('../api/rooms');
     vi.mocked(roomsApi.leave).mockResolvedValue(undefined);
