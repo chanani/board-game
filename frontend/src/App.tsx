@@ -1,5 +1,5 @@
 import { MotionConfig } from 'motion/react';
-import { Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './auth/AuthContext';
 import { RequireAuth } from './auth/RequireAuth';
 import { Layout } from './components/Layout';
@@ -10,7 +10,6 @@ import { GameShelfPage } from './pages/GameShelfPage';
 import { LoginPage } from './pages/LoginPage';
 import { RecordsPage } from './pages/RecordsPage';
 import { RoomPage } from './pages/RoomPage';
-import { SettingsPage } from './pages/SettingsPage';
 import { SignupPage } from './pages/SignupPage';
 
 export default function App() {
@@ -29,7 +28,7 @@ export default function App() {
                   <Route path="/rooms/:code" element={<RoomPage />} />
                   <Route path="/records" element={<RecordsPage />} />
                   <Route path="/records/:memberId" element={<RecordsPage />} />
-                  <Route path="/settings" element={<SettingsPage />} />
+                  <Route path="/settings" element={<Navigate to="/" replace />} />
                 </Route>
               </Route>
             </Routes>

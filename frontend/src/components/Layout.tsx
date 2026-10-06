@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { NavLink, useLocation, useOutlet } from 'react-router-dom';
-import { useAuth } from '../auth/AuthContext';
 import { useRealtime } from '../realtime/RealtimeContext';
 import { ActiveRoomBar } from '../room/ActiveRoomBar';
 import { LogoMark } from './LogoMark';
-import { GearIcon, GridIcon, TrophyIcon } from './icons';
+import { GridIcon, TrophyIcon } from './icons';
+import { UserMenu } from './UserMenu';
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
   `flex shrink-0 items-center gap-1 whitespace-nowrap rounded-lg px-2 py-1.5 text-sm sm:px-3 ${isActive ? 'bg-black/30 font-bold text-cream-50' : 'text-cream-200 hover:bg-black/15'}`;
@@ -37,7 +37,6 @@ function useShowDisconnected(): boolean {
 }
 
 export function Layout() {
-  const { member } = useAuth();
   const disconnected = useShowDisconnected();
   const location = useLocation();
   const outlet = useOutlet();
@@ -61,11 +60,10 @@ export function Layout() {
             <nav className="flex shrink-0 gap-0.5 sm:gap-1">
               <NavLink to="/" end aria-label="게임 목록" className={linkClass}><GridIcon /><NavLabel full="게임 목록" short="목록" /></NavLink>
               <NavLink to="/records" aria-label="내 전적" className={linkClass}><TrophyIcon /><NavLabel full="내 전적" short="전적" /></NavLink>
-              <NavLink to="/settings" aria-label="설정" className={linkClass}><GearIcon /><NavLabel full="설정" short="설정" /></NavLink>
             </nav>
           </div>
           <div className="flex min-w-0 items-center gap-1.5 text-sm sm:gap-3">
-            <span className="min-w-0 max-w-[4.5rem] truncate font-bold text-cream-50 sm:max-w-none">{member?.nickname}</span>
+            <UserMenu />
           </div>
         </div>
       </header>

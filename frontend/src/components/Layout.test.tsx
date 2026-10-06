@@ -47,16 +47,16 @@ describe('Layout 상단바', () => {
     const home = screen.getByRole('link', { name: '보드게임 라운지' });
     expect(home).toHaveClass('whitespace-nowrap');
     expect(screen.getByText('앨리스')).toHaveClass('truncate');
+    expect(screen.getByRole('button', { name: /앨리스/ })).toBeInTheDocument();
   });
 
-  it('헤더에는 소리·로그아웃 버튼이 없고 설정 탭이 있다', () => {
+  it('헤더에는 설정 탭이 없고 닉네임 버튼만 있다', () => {
     render(ui());
 
+    expect(screen.queryByRole('link', { name: '설정' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /소리/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '로그아웃' })).not.toBeInTheDocument();
-    const settings = screen.getByRole('link', { name: '설정' });
-    expect(settings).toHaveAttribute('href', '/settings');
-    expect(settings.querySelector('svg')).not.toBeNull();
+    expect(screen.getByRole('button', { name: /앨리스/ })).toHaveAttribute('aria-expanded', 'false');
     expect(screen.getByRole('link', { name: '게임 목록' })).toBeInTheDocument();
   });
 });
@@ -67,7 +67,7 @@ describe('Layout 모바일 상단바', () => {
 
     const home = screen.getByRole('link', { name: '보드게임 라운지' });
     expect(home.querySelector('span.hidden.sm\\:inline')).toHaveTextContent('보드게임 라운지');
-    for (const [name, short] of [['게임 목록', '목록'], ['내 전적', '전적'], ['설정', '설정']]) {
+    for (const [name, short] of [['게임 목록', '목록'], ['내 전적', '전적']]) {
       const link = screen.getByRole('link', { name });
       expect(link.querySelector('svg')).not.toBeNull();
       expect(link.querySelector('.sm\\:hidden')).toHaveTextContent(short);
