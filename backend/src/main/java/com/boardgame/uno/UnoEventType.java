@@ -1,0 +1,5 @@
+package com.boardgame.uno;
+
+public enum UnoEventType {
+    START, FIRST_CARD_REDRAWN, PLAY, COLOR, DRAW, PASS, SKIP, REVERSE, PENALTY, CHALLENGE, UNO_CALL, UNO_CAUGHT, RESHUFFLE, GAME_END
+}

@@ -1,0 +1,8 @@
+package com.boardgame.uno;
+
+public enum UnoEventReason {
+    KEEP, NO_PLAYABLE, EMPTY_PILE,
+    DRAW_TWO, WILD_DRAW_FOUR, CHALLENGE_FAILED, CHALLENGE_GUILTY, UNO_CAUGHT,
+    GUILTY, INNOCENT,
+    EMPTY_HAND, FORFEIT
+}
