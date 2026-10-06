@@ -1,5 +1,11 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
+
+const motionState = vi.hoisted(() => ({ reduce: false }));
+vi.mock('motion/react', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('motion/react')>()),
+  useReducedMotion: () => motionState.reduce,
+}));
 import type { Room } from '../api/types';
 import { WaitingActionBar } from './WaitingActionBar';
 
@@ -52,6 +58,33 @@ describe('WaitingActionBar', () => {
     const after = screen.getByRole('button', { name: '준비 취소' });
     expect(after).toBe(button);
     expect(document.activeElement).toBe(after);
+  });
+
+  it('동작 줄이기에서는 체크와 글자가 등장 효과 없이 바로 최종 모습이다', () => {
+    motionState.reduce = true;
+    try {
+      const view = renderBar(2, notReadyRoom);
+      view.rerender(<WaitingActionBar room={room} meId={2} spectating={false} onStart={vi.fn()} onReady={vi.fn()} onSeat={vi.fn()} />);
+      const cancel = screen.getByRole('button', { name: '준비 취소' });
+
+      expect(cancel.querySelector('path')?.getAttribute('pathLength')).not.toBe('0');
+      expect(screen.getByText('준비 취소').style.opacity).not.toBe('0');
+    } finally {
+      motionState.reduce = false;
+    }
+  });
+
+  it('처음부터 준비 상태로 열면 등장 효과 없이 바로 보인다', () => {
+    renderBar(2);
+
+    expect(screen.getByText('준비 취소').style.opacity).not.toBe('0');
+  });
+
+  it('준비 상태가 바뀌면 글자가 투명에서 올라오며 나타난다', () => {
+    const view = renderBar(2, notReadyRoom);
+    view.rerender(<WaitingActionBar room={room} meId={2} spectating={false} onStart={vi.fn()} onReady={vi.fn()} onSeat={vi.fn()} />);
+
+    expect(screen.getByText('준비 취소').style.opacity).toBe('0');
   });
 
   it('시작할 수 없으면 버튼이 꺼지고 이유는 title과 숨김 문구에 담긴다', () => {

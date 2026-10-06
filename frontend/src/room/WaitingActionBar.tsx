@@ -84,6 +84,12 @@ function ReadyButton({ ready, onReady }: { ready: boolean; onReady: (ready: bool
   const [scope, animate] = useAnimate<HTMLDivElement>();
   const reduceMotion = useReducedMotion();
   const previous = useRef(ready);
+  // 첫 렌더(새로고침 등)와 동작 줄이기에서는 체크·글자 등장 효과 없이 바로 최종 모습을 보인다.
+  const changedOnce = useRef(false);
+  if (previous.current !== ready) {
+    changedOnce.current = true;
+  }
+  const entrance = changedOnce.current && !reduceMotion;
   useEffect(() => {
     const changed = previous.current !== ready;
     previous.current = ready;
@@ -97,8 +103,8 @@ function ReadyButton({ ready, onReady }: { ready: boolean; onReady: (ready: bool
       <Button variant={ready ? 'muted' : 'primary'} onClick={toggle} disabled={pending}
         className={`${MAIN_BUTTON} transition-colors duration-300`}>
         <span className="inline-flex items-center gap-1.5">
-          {ready ? <ReadyCheck /> : null}
-          <motion.span key={ready ? 'cancel' : 'ready'} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }}>
+          {ready ? <ReadyCheck animated={entrance} /> : null}
+          <motion.span key={ready ? 'cancel' : 'ready'} initial={entrance ? { opacity: 0, y: 6 } : false} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }}>
             {ready ? '준비 취소' : '준비하기'}
           </motion.span>
         </span>
@@ -108,11 +114,11 @@ function ReadyButton({ ready, onReady }: { ready: boolean; onReady: (ready: bool
 }
 
 /** 획을 긋듯 그려지는 초록 체크. */
-function ReadyCheck() {
+function ReadyCheck({ animated }: { animated: boolean }) {
   return (
     <svg data-testid="ready-check" aria-hidden="true" viewBox="0 0 16 16" className="h-4 w-4" fill="none">
       <motion.path d="M3 8.5l3 3 7-7" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"
-        className="text-green-700" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.35 }} />
+        className="text-green-700" initial={animated ? { pathLength: 0 } : false} animate={{ pathLength: 1 }} transition={{ duration: 0.35 }} />
     </svg>
   );
 }
