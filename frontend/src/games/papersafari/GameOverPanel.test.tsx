@@ -303,4 +303,20 @@ describe('GameOverPanel 단판 결과', () => {
     expect(within(dialog).getByRole('heading', { name: '밥님 승리!' })).toBeInTheDocument();
     expect(within(dialog).queryAllByTestId('score-row')).toHaveLength(0);
   });
+
+  it('상대가 나가서 끝나면 결과 배지·합계 없이 남은 사람 판 하나만 가운데 두고 안내 문구를 보여 준다', () => {
+    const hiddenBoard = { playerId: 2, slots: slots.map((slot, index) => ({ ...slot, faceUp: index < 2 })) };
+    renderPanel({ view: { ...game, winnerId: 2, lastRoundResult: null, round: { ...game.round, boards: [hiddenBoard] } } });
+
+    const dialog = screen.getByRole('dialog', { name: '게임 결과' });
+    expect(within(dialog).getByRole('heading', { name: '밥님 승리!' })).toBeInTheDocument();
+    expect(dialog).toHaveTextContent('상대가 나가서 게임이 끝났어요');
+    expect(within(dialog).queryAllByTestId('board-total')).toHaveLength(0);
+    expect(within(dialog).queryAllByTestId('column-badge')).toHaveLength(0);
+    expect(dialog).not.toHaveTextContent('합계 ?점');
+    const boards = within(dialog).getByTestId('result-boards');
+    expect(boards).not.toHaveClass('sm:grid-cols-2');
+    expect(boards).toHaveClass('justify-center');
+    expect(within(boards).getAllByTestId(/^board-\d+$/)).toHaveLength(1);
+  });
 });

@@ -137,8 +137,9 @@ function FooterButton({ guest, onReady, onClose }: { guest: boolean; onReady: ()
 export function GameOverPanel({ game, room, meId, nicknameOf, onReady, onClose }: Props) {
   const players = game.lastRoundResult?.players ?? [];
   const boards = game.round.boards;
-  // 기권으로 끝나 점수가 없으면 공개할 카드도 없으므로 바로 결과를 보여 준다.
-  const total = players.length === 0 ? 0 : boards.reduce((sum, board) => sum + board.slots.length, 0);
+  // 기권으로 끝나 점수가 없으면 공개할 카드도 없으므로 바로 결과를 보여 준다. 점수 배지·합계도 셀 수 없어 그리지 않는다.
+  const forfeited = players.length === 0;
+  const total = forfeited ? 0 : boards.reduce((sum, board) => sum + board.slots.length, 0);
   const { revealed, done } = useStagedReveal(total);
   useResultSound(done, players.find((player) => player.playerId === meId)?.outcome);
   const me = room.members.find((member) => member.id === meId);
@@ -161,12 +162,13 @@ export function GameOverPanel({ game, room, meId, nicknameOf, onReady, onClose }
             {done ? <HeadlineIcon won={game.winnerId !== null} /> : null}
             <h2 className="text-center text-2xl font-black">{done ? headline : '카드를 공개하는 중…'}</h2>
           </div>
+          {forfeited ? <p className="text-center text-sm font-bold text-wood-700">상대가 나가서 게임이 끝났어요</p> : null}
           {players.length > 0 ? <ScoreRows players={players} done={done} nicknameOf={labelOf} /> : null}
-          <div data-testid="result-boards" className={`${FELT_GRID} sm:grid-cols-2`}>
+          <div data-testid="result-boards" className={`${FELT_GRID} ${forfeited ? 'justify-center' : 'sm:grid-cols-2'}`}>
             {boards.map((board, boardIndex) => (
               <Felt key={board.playerId} className="p-3">
                 <PlayerBoard board={staged(board, boardIndex)} nickname={labelOf(board.playerId)} active={false} size="sm"
-                  result={resultFor(board, done, game.winnerId, labelOf, outcomeOf(board.playerId))} />
+                  result={forfeited ? undefined : resultFor(board, done, game.winnerId, labelOf, outcomeOf(board.playerId))} />
               </Felt>
             ))}
           </div>
