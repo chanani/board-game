@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { RulesCarousel } from './RulesCarousel';
-import { RULE_SUMMARY } from './rules';
+import { RULE_SLIDES, RULE_SUMMARY } from './rules';
 
 function renderCarousel() {
   render(<RulesCarousel open onClose={vi.fn()} />);
@@ -78,5 +78,18 @@ describe('RulesCarousel', () => {
 
   it('대기실 요약은 타잔을 버릴 수 없다고 알려준다', () => {
     expect(RULE_SUMMARY).toContain('덱에서 가져온 카드는 (타잔만 빼고) 버릴 수 있어요. 버린 카드 더미에서 가져온 카드는 반드시 교체해요.');
+  });
+
+  it('단판 규칙이라 슬라이드와 요약 어디에도 토큰이 없다', () => {
+    const texts = [...RULE_SLIDES.flatMap((slide) => [slide.title, ...slide.body]), ...RULE_SUMMARY];
+
+    texts.forEach((text) => expect(text).not.toMatch(/토큰/));
+  });
+
+  it('마지막 슬라이드는 가장 낮은 사람이 1승, 최저점 동점이면 무승부라고 알려준다', () => {
+    const last = RULE_SLIDES[RULE_SLIDES.length - 1].body.join(' ');
+
+    expect(last).toContain('1승');
+    expect(last).toContain('무승부');
   });
 });

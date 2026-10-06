@@ -13,16 +13,16 @@ import type { TableProps } from '../PaperSafariTable';
 const ROOMY_QUERY = '(min-width: 440px)';
 
 export function TableRail(props: TableProps) {
-  const { view, meId, opponents, myBoard, nicknameOf, presenceOf, tokensOf, canClickSlot, clickSlot, drawable, send, canDiscard, estimate, myTurn, instructionText, log } = props;
+  const { view, meId, opponents, myBoard, nicknameOf, presenceOf, canClickSlot, clickSlot, drawable, send, canDiscard, canUndo, estimate, myTurn, instructionText, log } = props;
   const round = view.game.round;
   const roomy = useMediaQuery(ROOMY_QUERY);
   return (
     <div className="space-y-3">
-      <Hud roundNumber={view.game.roundNumber} instruction={instructionText} myTurn={myTurn} log={log} compact />
+      <Hud instruction={instructionText} myTurn={myTurn} log={log} compact />
       <WoodRail className="flex justify-center-safe gap-1.5 overflow-x-auto px-3 py-2">
         {opponents.map((board) => (
           <div key={board.playerId} className="shrink-0">
-            <OpponentSeat board={board} nickname={nicknameOf(board.playerId)} tokens={tokensOf(board.playerId)}
+            <OpponentSeat board={board} nickname={nicknameOf(board.playerId)}
               active={round.currentPlayerId === board.playerId} held={round.held} presence={presenceOf(board.playerId)} />
           </div>
         ))}
@@ -32,9 +32,10 @@ export function TableRail(props: TableProps) {
           onDrawDeck={() => send({ type: 'DRAW_DECK' })} onDrawDiscard={() => send({ type: 'DRAW_DISCARD' })} />
         {myBoard ? (
           <div className="flex w-full items-start gap-2">
-          <Seat board={myBoard} nickname={`${nicknameOf(meId)} (나)`} tokens={tokensOf(meId)} active={myTurn}
+          <Seat board={myBoard} nickname={`${nicknameOf(meId)} (나)`} active={myTurn}
             held={round.held} size={roomy ? 'md' : 'sm'} presence={{}} handLabel="들고 있는 카드" onSlotClick={clickSlot} canClick={canClickSlot} pulseSlots={myTurn} />
-          <MySide canDiscard={canDiscard} estimate={estimate} onDiscard={() => send({ type: 'DISCARD' })} />
+          <MySide canDiscard={canDiscard} canUndo={canUndo} estimate={estimate}
+            onDiscard={() => send({ type: 'DISCARD' })} onUndo={() => send({ type: 'CANCEL_DRAW' })} />
           </div>
         ) : <SpectatorNotice />}
       </Felt>

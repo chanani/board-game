@@ -6,7 +6,7 @@ export type GameType = 'PAPER_SAFARI';
 export type ResultType = 'WIN' | 'DRAW' | 'LOSE';
 
 export type RoomStatus = 'WAITING' | 'PLAYING';
-export type RoomMember = { id: number; nickname: string; host: boolean; connected: boolean; offlineSeconds: number };
+export type RoomMember = { id: number; nickname: string; host: boolean; connected: boolean; offlineSeconds: number; ready: boolean };
 export type Room = {
   code: string;
   name: string;
@@ -33,7 +33,7 @@ export type RoomSummary = {
   spectatorCount: number;
 };
 
-export type GameActionType = 'FLIP' | 'DRAW_DECK' | 'DRAW_DISCARD' | 'SWAP' | 'DISCARD' | 'PEEK' | 'READY';
+export type GameActionType = 'FLIP' | 'DRAW_DECK' | 'DRAW_DISCARD' | 'SWAP' | 'DISCARD' | 'PEEK' | 'CANCEL_DRAW';
 export type GameAction = { type: GameActionType; column?: number; row?: number };
 
 export type CardKind = 'NUMBER' | 'ELEPHANT' | 'TARZAN' | 'FOX' | 'WILD';
@@ -51,17 +51,16 @@ export type RoundView = {
   boards: BoardView[];
 };
 export type PlayerResultView = { playerId: number; score: number; outcome: ResultType };
-export type GameStatus = 'IN_ROUND' | 'ROUND_OVER' | 'GAME_OVER';
+export type GameStatus = 'IN_ROUND' | 'GAME_OVER';
 export type PaperSafariView = {
   viewerId: number;
   status: GameStatus;
   roundNumber: number;
   round: RoundView;
-  tokens: Record<string, number>;
   lastRoundResult: { players: PlayerResultView[] } | null;
   winnerId: number | null;
 };
-export type PaperSafariSessionView = { game: PaperSafariView; readyPlayerIds: number[] };
+export type PaperSafariSessionView = { game: PaperSafariView };
 
 export type GameStat = {
   gameType: GameType;

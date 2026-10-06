@@ -27,8 +27,6 @@ export function StatSummary({ stat }: { stat: GameStat }) {
         <Row label="게임">{`${stat.matches}전`}</Row>
         <Row label="승·무·패">{`${stat.wins}승 ${stat.draws}무 ${stat.losses}패`}</Row>
         <Row label="승률">{percent(stat.winRate)}</Row>
-        <Row label="라운드">{`${stat.rounds}판 ${stat.roundWins}승 ${stat.roundDraws}무 ${stat.roundLosses}패`}</Row>
-        <Row label="라운드 승률">{percent(stat.roundWinRate)}</Row>
         <Row label="평균 점수">{decimal(stat.averageRoundScore)}</Row>
       </dl>
     </div>

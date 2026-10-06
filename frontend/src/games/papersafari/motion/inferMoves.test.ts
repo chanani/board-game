@@ -20,7 +20,7 @@ type Opts = { phase?: TurnPhase; round?: number; held?: HeldView | null; discard
 
 function view({ phase = 'DRAW', round = 1, held = null, discardTop = n(4), boards = [board(A), board(B)], status = 'IN_ROUND' }: Opts = {}): PaperSafariView {
   return {
-    viewerId: A, status, roundNumber: round, tokens: {}, lastRoundResult: null, winnerId: null,
+    viewerId: A, status, roundNumber: round, lastRoundResult: null, winnerId: null,
     round: { phase, currentPlayerId: A, deckSize: 30, discardTop, held, boards },
   };
 }

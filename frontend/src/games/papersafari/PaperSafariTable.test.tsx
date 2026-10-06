@@ -12,8 +12,8 @@ const room: Room = {
   code: 'ABC123', name: '테스트 방', gameType: 'PAPER_SAFARI', gameTypeName: '페이퍼 사파리', status: 'PLAYING',
   hostId: ME, maxPlayers: 4, locked: false, spectators: [],
   members: [
-    { id: ME, nickname: '앨리스', host: true, connected: true, offlineSeconds: 0 },
-    { id: OPPONENT, nickname: '밥', host: false, connected: true, offlineSeconds: 0 },
+    { id: ME, nickname: '앨리스', host: true, connected: true, offlineSeconds: 0, ready: false },
+    { id: OPPONENT, nickname: '밥', host: false, connected: true, offlineSeconds: 0, ready: false },
   ],
 };
 
@@ -31,9 +31,8 @@ type Setup = { phase: TurnPhase; current: number; held?: HeldView | null; mine?:
 
 function build({ phase, current, held = null, mine = faceDown() }: Setup): PaperSafariSessionView {
   return {
-    readyPlayerIds: [],
     game: {
-      viewerId: ME, status: 'IN_ROUND', roundNumber: 1, tokens: {}, lastRoundResult: null, winnerId: null,
+      viewerId: ME, status: 'IN_ROUND', roundNumber: 1, lastRoundResult: null, winnerId: null,
       round: {
         phase, currentPlayerId: current, deckSize: 40, discardTop: { kind: 'NUMBER', value: 4 }, held,
         boards: [{ playerId: ME, slots: mine }, { playerId: OPPONENT, slots: faceDown() }],
@@ -47,7 +46,7 @@ const nicknameOf = (memberId: number) => room.members.find((member) => member.id
 function baseProps(view: PaperSafariSessionView, send: () => void = vi.fn(), targetRoom: Room = room, onForfeit: (id: number) => void = vi.fn(), now = 0, errorSeq = 0) {
   return {
     view, room: targetRoom, meId: ME, log: [], send, nicknameOf,
-    receivedAt: 0, now, errorSeq, onForfeit, onCloseGameOver: vi.fn(),
+    receivedAt: 0, now, errorSeq, onForfeit, onCloseGameOver: vi.fn(), onReadyNext: vi.fn(),
   };
 }
 
@@ -328,7 +327,8 @@ describe('게임 화면 다듬기', () => {
   it('모바일 배치의 상단 안내는 한 줄 격자에 고정되고, 기록이 없어도 마지막 기록 줄 높이를 잡아 둔다', () => {
     setMediaMatches(false);
     render(<PaperSafariTable {...baseProps(build({ phase: 'DRAW', current: ME }))} />);
-    expect(screen.getByTestId('hud')).toHaveClass('grid', 'grid-cols-[auto_minmax(0,1fr)_auto]');
+    expect(screen.getByTestId('hud')).toHaveClass('grid', 'grid-cols-[minmax(0,1fr)_auto]');
+    expect(screen.getByTestId('hud')).not.toHaveTextContent('라운드');
     const lastLog = screen.getByTestId('last-log');
     expect(lastLog).toBeEmptyDOMElement();
     expect(lastLog).toHaveClass('h-4', 'truncate');
@@ -378,4 +378,70 @@ describe('게임 화면 다듬기', () => {
       expect(screen.getAllByRole('button', { name: /크게 보기/ })).toHaveLength(1);
     });
   });
+});
+
+describe('버린 카드 되돌리기', () => {
+  const fromDiscard: HeldView = { playerId: ME, source: 'DISCARD', card: { kind: 'NUMBER', value: 4 } };
+
+  it.each([true, false])('내 차례에 버린 카드 더미에서 가져온 카드를 들고 있으면 되돌리기로 CANCEL_DRAW를 보낸다 (PC 배치 %s)', async (wide) => {
+    setMediaMatches(wide);
+    const send = renderTable({ phase: 'PLACE', current: ME, held: fromDiscard });
+
+    await userEvent.click(screen.getByRole('button', { name: '되돌리기' }));
+
+    expect(send).toHaveBeenCalledWith({ type: 'CANCEL_DRAW' });
+  });
+
+  it('모바일에서는 오른쪽 칸의 버리기 위에 둔다', () => {
+    setMediaMatches(false);
+    renderTable({ phase: 'PLACE', current: ME, held: fromDiscard });
+
+    const buttons = within(screen.getByTestId('my-side')).getAllByRole('button');
+    expect(buttons.map((button) => button.getAttribute('aria-label') ?? button.textContent)).toEqual(['되돌리기', '버리기']);
+  });
+
+  it('PC에서는 버리기 옆에 둔다', () => {
+    setMediaMatches(true);
+    renderTable({ phase: 'PLACE', current: ME, held: fromDiscard });
+
+    const discard = screen.getByRole('button', { name: '버리기' });
+    expect(discard.parentElement).toContainElement(screen.getByRole('button', { name: '되돌리기' }));
+  });
+
+  it.each<[string, Setup]>([
+    ['덱에서 가져온 카드', { phase: 'PLACE', current: ME, held: { playerId: ME, source: 'DECK', card: { kind: 'NUMBER', value: 4 } } }],
+    ['상대가 버린 카드 더미에서 가져온 카드', { phase: 'PLACE', current: OPPONENT, held: { playerId: OPPONENT, source: 'DISCARD', card: { kind: 'NUMBER', value: 4 } } }],
+    ['카드를 들기 전', { phase: 'DRAW', current: ME }],
+  ])('%s에는 되돌리기가 없다', (_, setup) => {
+    for (const wide of [true, false]) {
+      setMediaMatches(wide);
+      const { unmount } = render(tableFor(build(setup), vi.fn()));
+      expect(screen.queryByRole('button', { name: '되돌리기' })).not.toBeInTheDocument();
+      unmount();
+    }
+  });
+});
+
+it.each([true, false])('게임 화면 어디에도 토큰 표시가 없다 (PC 배치 %s)', async (wide) => {
+  setMediaMatches(wide);
+  renderTable({ phase: 'DRAW', current: ME });
+  expect(screen.queryAllByLabelText(/토큰/)).toHaveLength(0);
+
+  await userEvent.click(screen.getByRole('button', { name: '밥님의 판 크게 보기' }));
+  expect(screen.queryAllByLabelText(/토큰/)).toHaveLength(0);
+});
+
+it('게임이 끝나면 게임 결과 창을 띄우고, 방장이 아닌 참가자의 다음 게임 준비는 onReadyNext를 부른다', async () => {
+  const view = build({ phase: 'ROUND_OVER', current: ME });
+  const over: PaperSafariSessionView = {
+    game: { ...view.game, status: 'GAME_OVER', winnerId: OPPONENT, viewerId: OPPONENT,
+      lastRoundResult: { players: [{ playerId: ME, score: 20, outcome: 'LOSE' }, { playerId: OPPONENT, score: 3, outcome: 'WIN' }] } },
+  };
+  const onReadyNext = vi.fn();
+  render(<PaperSafariTable {...baseProps(over)} meId={OPPONENT} onReadyNext={onReadyNext} />);
+
+  expect(screen.getByRole('dialog', { name: '게임 결과' })).toBeInTheDocument();
+  await userEvent.click(screen.getByRole('button', { name: '다음 게임 준비' }));
+
+  expect(onReadyNext).toHaveBeenCalledOnce();
 });

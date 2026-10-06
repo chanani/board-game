@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { PaperSafariView } from '../api/types';
 import { clearDismissals, gameOverKey, isDismissed, markDismissed } from './dismissals';
 
-const game = { winnerId: 2, tokens: { '1': 1, '2': 3 } } as unknown as PaperSafariView;
+const game = { winnerId: 2, lastRoundResult: { players: [{ playerId: 1, score: 9, outcome: 'LOSE' }, { playerId: 2, score: 3, outcome: 'WIN' }] } } as unknown as PaperSafariView;
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -10,8 +10,12 @@ afterEach(() => {
 });
 
 describe('결과 모달 닫음 기록', () => {
-  it('방 코드·승자·토큰으로 식별자를 만든다', () => {
-    expect(gameOverKey('ABC234', game)).toBe('ABC234:2:{"1":1,"2":3}');
+  it('방 코드·승자·점수로 식별자를 만든다', () => {
+    expect(gameOverKey('ABC234', game)).toBe('ABC234:2:[[1,9],[2,3]]');
+  });
+
+  it('점수가 없는 결과(기권으로 끝남)도 식별자를 만든다', () => {
+    expect(gameOverKey('ABC234', { winnerId: 1, lastRoundResult: null } as unknown as PaperSafariView)).toBe('ABC234:1:null');
   });
 
   it('닫았다고 적으면 닫은 것으로 본다', () => {

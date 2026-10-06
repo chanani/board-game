@@ -34,3 +34,19 @@ export const EyeIcon = ({ className }: IconProps) => (
 export const LockIcon = ({ className }: IconProps) => (
   <Svg className={className}><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></Svg>
 );
+
+export const UndoIcon = ({ className }: IconProps) => (
+  <Svg className={className}><path d="M9 14L4 9l5-5" /><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11" /></Svg>
+);
+
+export const CloseIcon = ({ className }: IconProps) => (
+  <Svg className={className}><path d="M6 6l12 12" /><path d="M18 6L6 18" /></Svg>
+);
+
+export const DoorIcon = ({ className }: IconProps) => (
+  <Svg className={className}><path d="M4 21h16" /><path d="M6 21V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v17" /><path d="M14 12h.01" /></Svg>
+);
+
+export const ChatIcon = ({ className }: IconProps) => (
+  <Svg className={className}><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z" /><path d="M8.5 12h.01" /><path d="M12 12h.01" /><path d="M15.5 12h.01" /></Svg>
+);

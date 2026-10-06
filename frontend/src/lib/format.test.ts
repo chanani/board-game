@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { canForfeit, decimal, offlineSecondsNow, percent, resultLabel } from './format';
 import type { RoomMember } from '../api/types';
 
-const offline = (seconds: number): RoomMember => ({ id: 2, nickname: '밥', host: false, connected: false, offlineSeconds: seconds });
+const offline = (seconds: number): RoomMember => ({ id: 2, nickname: '밥', host: false, connected: false, offlineSeconds: seconds, ready: false });
 
 describe('format', () => {
   it('승률은 퍼센트로, null은 - 로 보여준다', () => {

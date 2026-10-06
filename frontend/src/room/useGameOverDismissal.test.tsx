@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import type { PaperSafariView } from '../api/types';
 import { useGameOverDismissal } from './useGameOverDismissal';
 
-const over = { status: 'GAME_OVER', winnerId: 2, tokens: { '1': 1, '2': 3 } } as unknown as PaperSafariView;
+const over = { status: 'GAME_OVER', winnerId: 2, lastRoundResult: { players: [{ playerId: 1, score: 9, outcome: 'LOSE' }, { playerId: 2, score: 3, outcome: 'WIN' }] } } as unknown as PaperSafariView;
 
 afterEach(() => window.sessionStorage.clear());
 
@@ -24,7 +24,7 @@ describe('useGameOverDismissal', () => {
     const first = renderHook(() => useGameOverDismissal('ABC234', over, false));
     act(() => first.result.current.dismiss());
 
-    const next = { ...over, tokens: { '1': 3, '2': 2 }, winnerId: 1 } as PaperSafariView;
+    const next = { ...over, lastRoundResult: { players: [{ playerId: 1, score: 2, outcome: 'WIN' }, { playerId: 2, score: 8, outcome: 'LOSE' }] }, winnerId: 1 } as PaperSafariView;
     const second = renderHook(() => useGameOverDismissal('ABC234', next, false));
 
     expect(second.result.current.dismissed).toBe(false);
@@ -36,7 +36,7 @@ describe('useGameOverDismissal', () => {
     expect(result.current.dismissed).toBe(false);
   });
 
-  it('방이 다시 게임 중이 되면 승자·토큰이 같은 결과도 다시 닫히지 않은 것으로 본다', () => {
+  it('방이 다시 게임 중이 되면 승자·점수가 같은 결과도 다시 닫히지 않은 것으로 본다', () => {
     const hook = renderHook(({ playing }) => useGameOverDismissal('ABC234', over, playing), { initialProps: { playing: false } });
     act(() => hook.result.current.dismiss());
     expect(hook.result.current.dismissed).toBe(true);

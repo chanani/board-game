@@ -52,6 +52,17 @@ describe('RecordsPage', () => {
     expect(screen.getByText('승 패')).toBeInTheDocument();
   });
 
+  it('단판 규칙이라 라운드 통계 행과 토큰 표시는 보여주지 않는다', async () => {
+    renderPage();
+    await screen.findByText('2승 0무 1패');
+
+    expect(screen.queryByText('라운드')).not.toBeInTheDocument();
+    expect(screen.queryByText('라운드 승률')).not.toBeInTheDocument();
+    expect(screen.getByText('평균 점수')).toBeInTheDocument();
+    expect(await screen.findByText('밥')).toBeInTheDocument();
+    expect(screen.queryByText(/토큰/)).not.toBeInTheDocument();
+  });
+
   it('순위표 탭으로 바꿀 수 있다', async () => {
     renderPage();
     await screen.findByText('2승 0무 1패');

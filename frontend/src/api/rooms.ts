@@ -16,6 +16,7 @@ export const roomsApi = {
   watch: (code: string) => request<Room>(`${path(code)}/watch`, { method: 'POST' }),
   seat: (code: string) => request<Room>(`${path(code)}/seat`, { method: 'POST' }),
   leave: (code: string) => request<void>(`${path(code)}/leave`, { method: 'POST' }),
+  ready: (code: string, ready: boolean) => request<Room>(`${path(code)}/ready`, { method: 'POST', body: { ready } }),
   start: (code: string) => request<Room>(`${path(code)}/start`, { method: 'POST' }),
   forfeit: (code: string, memberId: number) => request<void>(`${path(code)}/members/${memberId}/forfeit`, { method: 'POST' }),
 };

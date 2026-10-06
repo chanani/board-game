@@ -9,7 +9,6 @@ export type Presence = { connected?: boolean; offlineSeconds?: number; onForfeit
 type Props = {
   board: BoardView;
   nickname: string;
-  tokens: number;
   active: boolean;
   held: HeldView | null;
   size: 'sm' | 'md' | 'lg';
@@ -21,11 +20,11 @@ type Props = {
   onZoom?: () => void;
 };
 
-export function Seat({ board, nickname, tokens, active, held, size, presence, handLabel, onSlotClick, canClick, pulseSlots, onZoom }: Props) {
+export function Seat({ board, nickname, active, held, size, presence, handLabel, onSlotClick, canClick, pulseSlots, onZoom }: Props) {
   const holding = held !== null && held.playerId === board.playerId;
   return (
     <div className="relative flex items-start gap-2">
-      <PlayerBoard board={board} nickname={nickname} tokens={tokens} active={active} size={size}
+      <PlayerBoard board={board} nickname={nickname} active={active} size={size}
         onSlotClick={onSlotClick} canClick={canClick} pulseSlots={pulseSlots} onZoom={onZoom} zoomLabel={`${nickname}님의 판 크게 보기`} {...presence} />
       <ZoneAnchor zone={handZone(board.playerId)} className={`mt-6 shrink-0 ${size === 'lg' ? 'min-h-[90px] w-16' : 'min-h-[67px] w-12'}`}>
         {holding ? (

@@ -8,7 +8,6 @@ import { cardAt, isZeroPair } from './score';
 type Props = {
   board: BoardView;
   nickname: string;
-  tokens: number;
   active: boolean;
   size?: 'sm' | 'md' | 'lg';
   pulseSlots?: boolean;
@@ -21,20 +20,9 @@ type Props = {
   onZoom?: () => void;
 };
 
-const TOKENS_TO_WIN = 3;
 const GAP = { sm: 'gap-1.5', md: 'gap-2.5', lg: 'gap-2.5' };
 
-function TokenCoins({ tokens }: { tokens: number }) {
-  return (
-    <span aria-label={`토큰 ${tokens}개`} className="flex items-center gap-1">
-      {Array.from({ length: TOKENS_TO_WIN }, (_, index) => (
-        <i key={index} className={`inline-block h-3 w-3 rounded-full ${index < tokens ? 'bg-mustard-400 shadow-[inset_0_-2px_0_var(--color-mustard-600)]' : 'bg-black/25'}`} />
-      ))}
-    </span>
-  );
-}
-
-export function PlayerBoard({ board, nickname, tokens, active, size = 'md', pulseSlots = false, onSlotClick, canClick, connected, offlineSeconds = 0, onForfeit, zoomLabel, onZoom }: Props) {
+export function PlayerBoard({ board, nickname, active, size = 'md', pulseSlots = false, onSlotClick, canClick, connected, offlineSeconds = 0, onForfeit, zoomLabel, onZoom }: Props) {
   const ordered = [...board.slots].sort((a, b) => a.row - b.row || a.column - b.column);
   const zeroColumns = new Set(
     [0, 1, 2].filter((column) => isZeroPair(cardAt(board, column, 0), cardAt(board, column, 1))),
@@ -60,7 +48,6 @@ export function PlayerBoard({ board, nickname, tokens, active, size = 'md', puls
             </button>
           ) : null}
         </span>
-        <TokenCoins tokens={tokens} />
       </div>
       <div className={`relative grid grid-cols-3 ${GAP[size]}`}>
         {onZoom ? (

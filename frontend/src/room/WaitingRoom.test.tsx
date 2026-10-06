@@ -8,8 +8,8 @@ import { WaitingRoom } from './WaitingRoom';
 const room: Room = {
   code: 'ABC234', name: '방', gameType: 'PAPER_SAFARI', gameTypeName: '페이퍼 사파리', status: 'WAITING', hostId: 1, maxPlayers: 4, locked: false, spectators: [],
   members: [
-    { id: 1, nickname: '앨리스', host: true, connected: true, offlineSeconds: 0 },
-    { id: 2, nickname: '밥', host: false, connected: false, offlineSeconds: 70 },
+    { id: 1, nickname: '앨리스', host: true, connected: true, offlineSeconds: 0, ready: false },
+    { id: 2, nickname: '밥', host: false, connected: false, offlineSeconds: 70, ready: false },
   ],
 };
 
@@ -42,7 +42,7 @@ describe('WaitingRoom', () => {
     const { container } = render(<ToastProvider><WaitingRoom room={room} meId={1} receivedAt={0} now={0} onStart={vi.fn()} onForfeit={vi.fn()} onSeat={vi.fn()} /></ToastProvider>);
 
     expect(container.querySelector('details')).toBeNull();
-    expect(screen.getByText(/토큰 3개를 먼저 모으면/)).toBeVisible();
+    expect(screen.getByText(/합이 가장 낮은 사람이 1승/)).toBeVisible();
   });
 
   it('관전자가 있으면 관전 중인 사람을 보여준다', () => {

@@ -17,12 +17,12 @@ const board: BoardView = {
 
 describe('PlayerBoard', () => {
   it('0점 쌍인 열의 카드를 표시하고 상대의 뒷면 카드는 값이 없다', () => {
-    render(<PlayerBoard board={board} nickname="밥" tokens={1} active={false} />);
+    render(<PlayerBoard board={board} nickname="밥" active={false} />);
 
     const slots = screen.getAllByTestId('slot');
     expect(slots.filter((slot) => slot.dataset.zeroPair === 'true')).toHaveLength(4);
     expect(screen.getAllByLabelText('뒷면 카드')).toHaveLength(2);
     expect(screen.getByText('밥')).toBeInTheDocument();
-    expect(screen.getByLabelText('토큰 1개')).toBeInTheDocument();
+    expect(screen.queryByLabelText(/토큰/)).not.toBeInTheDocument();
   });
 });

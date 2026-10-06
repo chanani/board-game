@@ -1,40 +1,160 @@
-import { render, screen, within } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
-import type { PaperSafariView } from '../../api/types';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { PaperSafariView, Room } from '../../api/types';
+import { SoundContext, type SoundApi } from '../../lib/sound';
 import { GameOverPanel } from './GameOverPanel';
 
-const names: Record<number, string> = { 1: '앨리스', 2: '밥' };
-const slots = [0, 1, 2].flatMap((column) => [0, 1].map((row) => ({ column, row, faceUp: true, known: false, card: { kind: 'NUMBER' as const, value: 3 } })));
+const names: Record<number, string> = { 1: '앨리스', 2: '밥', 3: '캐롤' };
+const nicknameOf = (id: number) => names[id];
+const slots = [0, 1, 2].flatMap((column) => [0, 1].map((row) => ({ column, row, faceUp: true, known: false, card: { kind: 'NUMBER' as const, value: column + 1 } })));
 
 const game: PaperSafariView = {
-  viewerId: 1, status: 'GAME_OVER', roundNumber: 3, tokens: { '1': 3, '2': 1 }, winnerId: 1,
-  lastRoundResult: { players: [{ playerId: 1, score: 12, outcome: 'WIN' }, { playerId: 2, score: 25, outcome: 'LOSE' }] },
+  viewerId: 1, status: 'GAME_OVER', roundNumber: 1, winnerId: 1,
+  lastRoundResult: { players: [{ playerId: 2, score: 25, outcome: 'LOSE' }, { playerId: 1, score: 12, outcome: 'WIN' }] },
   round: { phase: 'ROUND_OVER', currentPlayerId: 1, deckSize: 10, discardTop: null, held: null,
     boards: [{ playerId: 1, slots }, { playerId: 2, slots }] },
 };
+const tie: PaperSafariView = {
+  ...game, winnerId: null,
+  lastRoundResult: { players: [{ playerId: 1, score: 9, outcome: 'DRAW' }, { playerId: 2, score: 9, outcome: 'DRAW' }] },
+};
+const room: Room = {
+  code: 'ABC234', name: '앨리스의 방', gameType: 'PAPER_SAFARI', gameTypeName: '페이퍼 사파리', status: 'WAITING',
+  hostId: 1, maxPlayers: 4, locked: false, spectators: [],
+  members: [
+    { id: 1, nickname: '앨리스', host: true, connected: true, offlineSeconds: 0, ready: false },
+    { id: 2, nickname: '밥', host: false, connected: true, offlineSeconds: 0, ready: false },
+    { id: 3, nickname: '캐롤', host: false, connected: true, offlineSeconds: 0, ready: true },
+  ],
+};
 
-describe('GameOverPanel', () => {
-  it('마지막 라운드의 점수와 결과를 보여준다', () => {
-    render(<GameOverPanel game={game} meId={1} nicknameOf={(id) => names[id]} onClose={vi.fn()} />);
+type Options = { view?: PaperSafariView; meId?: number; onReady?: () => void; onClose?: () => void; targetRoom?: Room };
 
-    const dialog = screen.getByRole('dialog', { name: '게임 종료' });
-    expect(within(dialog).getByText('마지막 라운드 결과')).toBeInTheDocument();
-    expect(within(dialog).getByText(/12점/)).toBeInTheDocument();
-    expect(within(dialog).getByText(/25점/)).toBeInTheDocument();
-    expect(within(dialog).getAllByTestId('slot')).toHaveLength(12);
-    expect(within(dialog).getByTestId('result-boards')).toHaveClass('gap-11', 'p-[13px]');
+function renderPanel({ view = game, meId = 1, onReady = vi.fn(), onClose = vi.fn(), targetRoom = room }: Options = {}) {
+  return render(<GameOverPanel game={view} room={targetRoom} meId={meId} nicknameOf={nicknameOf} onReady={onReady} onClose={onClose} />);
+}
+
+function revealAll() {
+  for (let step = 0; step < 12; step += 1) {
+    act(() => { vi.advanceTimersByTime(120); });
+  }
+}
+
+afterEach(() => vi.useRealTimers());
+
+describe('GameOverPanel 단판 결과', () => {
+  it('카드를 모두 공개한 뒤에 낮은 점수부터 점수와 승자를 보여준다', () => {
+    vi.useFakeTimers();
+    renderPanel();
+    const dialog = screen.getByRole('dialog', { name: '게임 결과' });
+
+    expect(dialog).not.toHaveTextContent('12점');
+    expect(dialog).not.toHaveTextContent('승리!');
+
+    revealAll();
+
+    expect(within(dialog).getByRole('heading', { name: '🏆 앨리스님 승리!' })).toBeInTheDocument();
+    const rows = within(dialog).getAllByTestId('score-row');
+    expect(rows.map((row) => row.textContent)).toEqual([expect.stringContaining('앨리스'), expect.stringContaining('밥')]);
+    expect(rows[0]).toHaveTextContent('12점');
+    expect(rows[1]).toHaveTextContent('25점');
   });
 
-  it('자리에 없던 관전자도 승자와 순위를 보고 닫을 수 있다', async () => {
-    const onClose = vi.fn();
-    render(<GameOverPanel game={{ ...game, viewerId: 3 }} meId={3} nicknameOf={(id) => names[id]} onClose={onClose} />);
+  it('최저점이 동점이면 무승부예요를 보여준다', () => {
+    vi.useFakeTimers();
+    renderPanel({ view: tie });
+    revealAll();
 
-    const dialog = screen.getByRole('dialog', { name: '게임 종료' });
-    expect(within(dialog).getByRole('heading', { name: '앨리스님 승리!' })).toBeInTheDocument();
-    expect(within(dialog).queryByText('🏆')).not.toBeInTheDocument();
-    expect(within(dialog).queryByRole('button', { name: /준비/ })).not.toBeInTheDocument();
-    await userEvent.click(within(dialog).getByRole('button', { name: '대기실로 돌아가기' }));
-    expect(onClose).toHaveBeenCalled();
+    const dialog = screen.getByRole('dialog', { name: '게임 결과' });
+    expect(within(dialog).getByRole('heading', { name: '무승부예요' })).toBeInTheDocument();
+    expect(dialog).not.toHaveTextContent('승리!');
+  });
+
+  it('판 격자는 펠트 테두리(13px)만큼 여백과 간격을 둔다', () => {
+    renderPanel();
+
+    expect(screen.getByTestId('result-boards')).toHaveClass('gap-11', 'p-[13px]');
+    expect(within(screen.getByTestId('result-boards')).getAllByTestId('slot')).toHaveLength(12);
+  });
+
+  it('자리에 앉은 방장이 아닌 사람은 다음 게임 준비를 눌러 onReady를 부른다', async () => {
+    const onReady = vi.fn();
+    const onClose = vi.fn();
+    renderPanel({ meId: 2, onReady, onClose });
+
+    const button = screen.getByRole('button', { name: '다음 게임 준비' });
+    expect(button).toHaveClass('rounded-full');
+    await userEvent.click(button);
+
+    expect(onReady).toHaveBeenCalledOnce();
+    expect(onClose).not.toHaveBeenCalled();
+    expect(screen.queryByRole('button', { name: '대기실로' })).not.toBeInTheDocument();
+  });
+
+  it('방장은 다음 게임 준비 대신 대기실로를 누른다', async () => {
+    const onClose = vi.fn();
+    renderPanel({ meId: 1, onClose });
+
+    expect(screen.queryByRole('button', { name: '다음 게임 준비' })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: '대기실로' }));
+
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it('관전자도 대기실로를 눌러 닫는다', async () => {
+    const onClose = vi.fn();
+    renderPanel({ meId: 9, onClose });
+
+    expect(screen.queryByRole('button', { name: '다음 게임 준비' })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: '대기실로' }));
+
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it('방장을 뺀 사람들의 준비 칩을 보여주고, 준비한 사람은 초록 테두리와 ✔를 단다', () => {
+    renderPanel();
+
+    const chips = within(screen.getByTestId('ready-chips')).getAllByTestId('ready-chip');
+    expect(chips).toHaveLength(2);
+    expect(chips[0]).toHaveTextContent('밥');
+    expect(chips[0]).not.toHaveTextContent('✔');
+    expect(chips[0]).toHaveClass('rounded-full', 'border-2', 'px-3', 'py-1', 'border-cream-300');
+    expect(chips[1]).toHaveTextContent('✔');
+    expect(chips[1]).toHaveTextContent('캐롤');
+    expect(chips[1]).toHaveClass('border-safari-500');
+  });
+
+  it('토큰 표시는 없다', () => {
+    vi.useFakeTimers();
+    renderPanel();
+    revealAll();
+
+    expect(screen.queryByLabelText(/토큰/)).not.toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: '게임 결과' })).not.toHaveTextContent('토큰');
+  });
+
+  it('효과음은 모든 카드가 공개된 뒤에 한 번만 울리고, play가 바뀌어도 다시 울리지 않는다', () => {
+    vi.useFakeTimers();
+    const ui = (fn: SoundApi['play']) => (
+      <SoundContext.Provider value={{ play: fn, muted: false, toggleMuted: () => undefined }}>
+        <GameOverPanel game={game} room={room} meId={1} nicknameOf={nicknameOf} onReady={vi.fn()} onClose={vi.fn()} />
+      </SoundContext.Provider>
+    );
+    const play = vi.fn();
+    const utils = render(ui(play));
+
+    for (let step = 0; step < 11; step += 1) {
+      act(() => { vi.advanceTimersByTime(120); });
+    }
+    expect(play).not.toHaveBeenCalled();
+    act(() => { vi.advanceTimersByTime(120); });
+    expect(play).toHaveBeenCalledOnce();
+    expect(play).toHaveBeenCalledWith('roundWin');
+
+    const next = vi.fn();
+    utils.rerender(ui(next));
+    act(() => { vi.advanceTimersByTime(1000); });
+    expect(next).not.toHaveBeenCalled();
   });
 });

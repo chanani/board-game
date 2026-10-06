@@ -15,11 +15,11 @@ vi.mock('../room/useRoomChannel', () => ({
 const toast = vi.hoisted(() => ({ show: vi.fn() }));
 vi.mock('../components/Toast', () => ({ useToast: () => toast }));
 vi.mock('../auth/AuthContext', () => ({ useAuth: () => ({ member: { id: 3, loginId: 'carol01', nickname: '캐롤' } }) }));
-vi.mock('../api/rooms', () => ({ roomsApi: { seat: vi.fn(), leave: vi.fn(), start: vi.fn(), forfeit: vi.fn() } }));
+vi.mock('../api/rooms', () => ({ roomsApi: { seat: vi.fn(), leave: vi.fn(), start: vi.fn(), forfeit: vi.fn(), ready: vi.fn() } }));
 
 const members = [
-  { id: 1, nickname: '앨리스', host: true, connected: true, offlineSeconds: 0 },
-  { id: 2, nickname: '밥', host: false, connected: true, offlineSeconds: 0 },
+  { id: 1, nickname: '앨리스', host: true, connected: true, offlineSeconds: 0, ready: false },
+  { id: 2, nickname: '밥', host: false, connected: true, offlineSeconds: 0, ready: false },
 ];
 const baseRoom: Room = {
   code: 'ABC234', name: '앨리스의 방', gameType: 'PAPER_SAFARI', gameTypeName: '페이퍼 사파리', status: 'PLAYING',
@@ -108,36 +108,39 @@ describe('RoomPage 관전자 나가기', () => {
 });
 
 describe('RoomPage 결과 모달', () => {
+  const boardOf = (playerId: number) => ({ playerId, slots: [] });
   const finished: PaperSafariSessionView = {
-    readyPlayerIds: [],
     game: {
-      viewerId: 3, status: 'GAME_OVER', roundNumber: 3, tokens: { '1': 3, '3': 1 }, lastRoundResult: null, winnerId: 1,
-      round: { phase: 'ROUND_OVER', currentPlayerId: 1, deckSize: 0, discardTop: null, held: null, boards: [] },
+      viewerId: 3, status: 'GAME_OVER', roundNumber: 1, winnerId: 1,
+      lastRoundResult: { players: [{ playerId: 1, score: 3, outcome: 'WIN' }, { playerId: 3, score: 9, outcome: 'LOSE' }] },
+      round: { phase: 'ROUND_OVER', currentPlayerId: 1, deckSize: 0, discardTop: null, held: null, boards: [boardOf(1), boardOf(3)] },
     },
   };
   const waitingWithMe: Room = {
     ...baseRoom, status: 'WAITING', spectators: [],
-    members: [members[0], { id: 3, nickname: '캐롤', host: false, connected: true, offlineSeconds: 0 }],
+    members: [members[0], { id: 3, nickname: '캐롤', host: false, connected: true, offlineSeconds: 0, ready: false }],
   };
 
   it('한 번 닫은 게임 결과는 방에 다시 들어와도 뜨지 않는다', async () => {
-    setChannel({ room: waitingWithMe, view: finished });
+    setChannel({ room: { ...waitingWithMe, hostId: 3, members: [{ ...members[0], host: false }, { ...waitingWithMe.members[1], host: true }] }, view: finished });
     const first = renderRoom();
-    expect(await screen.findByRole('dialog', { name: '게임 종료' })).toBeInTheDocument();
+    expect(await screen.findByRole('dialog', { name: '게임 결과' })).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole('button', { name: '대기실로 돌아가기' }));
+    await userEvent.click(screen.getByRole('button', { name: '대기실로' }));
     first.unmount();
 
     renderRoom();
     await act(async () => {});
-    expect(screen.queryByRole('dialog', { name: '게임 종료' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: '게임 결과' })).not.toBeInTheDocument();
   });
 
-  it('같은 방에서 승자·토큰이 똑같은 다음 게임이 끝나면 결과를 다시 보여준다', async () => {
+  it('같은 방에서 승자·점수가 똑같은 다음 게임이 끝나면 결과를 다시 보여준다', async () => {
+    const { roomsApi } = await import('../api/rooms');
+    vi.mocked(roomsApi.ready).mockResolvedValue(waitingWithMe);
     setChannel({ room: waitingWithMe, view: finished });
     const page = renderRoom();
-    await userEvent.click(await screen.findByRole('button', { name: '대기실로 돌아가기' }));
-    expect(screen.queryByRole('dialog', { name: '게임 종료' })).not.toBeInTheDocument();
+    await userEvent.click(await screen.findByRole('button', { name: '다음 게임 준비' }));
+    expect(screen.queryByRole('dialog', { name: '게임 결과' })).not.toBeInTheDocument();
 
     const playingView: PaperSafariSessionView = { ...finished, game: { ...finished.game, status: 'IN_ROUND', winnerId: null } };
     setChannel({ room: { ...waitingWithMe, status: 'PLAYING' }, view: playingView });
@@ -147,7 +150,7 @@ describe('RoomPage 결과 모달', () => {
     setChannel({ room: waitingWithMe, view: finished });
     page.rerender(roomTree());
 
-    expect(await screen.findByRole('dialog', { name: '게임 종료' })).toBeInTheDocument();
+    expect(await screen.findByRole('dialog', { name: '게임 결과' })).toBeInTheDocument();
   });
 
   it('다른 방에서 닫은 결과 기록은 지우지 않는다', async () => {
@@ -160,15 +163,51 @@ describe('RoomPage 결과 모달', () => {
   });
 
   it('관전자도 게임 결과(승자)를 보고 닫을 수 있다', async () => {
-    const spectatorView: PaperSafariSessionView = { ...finished, game: { ...finished.game, tokens: { '1': 3, '2': 1 } } };
+    const spectatorView: PaperSafariSessionView = { game: { ...finished.game, round: { ...finished.game.round, boards: [boardOf(1), boardOf(2)] } } };
     setChannel({ room: { ...baseRoom, status: 'WAITING' }, view: spectatorView });
     renderRoom();
 
-    const dialog = await screen.findByRole('dialog', { name: '게임 종료' });
-    expect(within(dialog).getByRole('heading', { name: '앨리스님 승리!' })).toBeInTheDocument();
-    await userEvent.click(within(dialog).getByRole('button', { name: '대기실로 돌아가기' }));
+    const dialog = await screen.findByRole('dialog', { name: '게임 결과' });
+    expect(await within(dialog).findByRole('heading', { name: '🏆 앨리스님 승리!' }, { timeout: 3000 })).toBeInTheDocument();
+    await userEvent.click(within(dialog).getByRole('button', { name: '대기실로' }));
 
-    expect(screen.queryByRole('dialog', { name: '게임 종료' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: '게임 결과' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: '자리에 앉기' })).toBeInTheDocument();
+  });
+
+  it('참가자가 다음 게임 준비를 누르면 준비 요청을 보내고 결과 창을 닫는다', async () => {
+    const { roomsApi } = await import('../api/rooms');
+    vi.mocked(roomsApi.ready).mockResolvedValue(waitingWithMe);
+    setChannel({ room: waitingWithMe, view: finished });
+    renderRoom();
+
+    await userEvent.click(await screen.findByRole('button', { name: '다음 게임 준비' }));
+
+    expect(roomsApi.ready).toHaveBeenCalledWith('ABC234', true);
+    expect(screen.queryByRole('dialog', { name: '게임 결과' })).not.toBeInTheDocument();
+  });
+
+  it('준비 요청이 실패하면 알리고 결과 창을 그대로 둔다', async () => {
+    const { roomsApi } = await import('../api/rooms');
+    vi.mocked(roomsApi.ready).mockRejectedValue(new Error('실패'));
+    setChannel({ room: waitingWithMe, view: finished });
+    renderRoom();
+
+    await userEvent.click(await screen.findByRole('button', { name: '다음 게임 준비' }));
+
+    expect(toast.show).toHaveBeenCalled();
+    expect(screen.getByRole('dialog', { name: '게임 결과' })).toBeInTheDocument();
+  });
+
+  it('보던 게임이 끝나 자동으로 자리에 앉은 관전자도 결과를 본다', async () => {
+    setChannel({ room: { ...baseRoom, status: 'PLAYING' }, view: { game: { ...finished.game, status: 'IN_ROUND', winnerId: null } } });
+    const page = renderRoom();
+    await act(async () => {});
+
+    setChannel({ room: waitingWithMe, view: { game: { ...finished.game, round: { ...finished.game.round, boards: [boardOf(1), boardOf(2)] } } } });
+    page.rerender(roomTree());
+
+    expect(await screen.findByRole('dialog', { name: '게임 결과' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '다음 게임 준비' })).toBeInTheDocument();
   });
 });

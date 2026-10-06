@@ -13,7 +13,7 @@ vi.mock('motion/react', async (importOriginal) => ({
 function game(round: number, held: PaperSafariView['round']['held'], phase: PaperSafariView['round']['phase'] = 'DRAW'): PaperSafariView {
   const slots = [0, 1, 2].flatMap((column) => [0, 1].map((row) => ({ column, row, faceUp: false, known: false, card: null })));
   return {
-    viewerId: 1, status: 'IN_ROUND', roundNumber: round, tokens: {}, lastRoundResult: null, winnerId: null,
+    viewerId: 1, status: 'IN_ROUND', roundNumber: round, lastRoundResult: null, winnerId: null,
     round: { phase, currentPlayerId: 1, deckSize: 30, discardTop: { kind: 'NUMBER', value: 4 }, held,
       boards: [{ playerId: 1, slots }, { playerId: 2, slots }] },
   };

@@ -39,9 +39,8 @@ const room = (name: string, status: Room['status'] = 'WAITING'): Room => ({
 });
 
 const sessionView = (roundNumber: number): PaperSafariSessionView => ({
-  readyPlayerIds: [],
   game: {
-    viewerId: 1, status: 'IN_ROUND', roundNumber, tokens: {}, lastRoundResult: null, winnerId: null,
+    viewerId: 1, status: 'IN_ROUND', roundNumber, lastRoundResult: null, winnerId: null,
     round: { phase: 'DRAW', currentPlayerId: 1, deckSize: 30, discardTop: null, held: null, boards: [] },
   },
 });
@@ -168,7 +167,7 @@ describe('useRoomChannel', () => {
   it('떠난 플레이어도 마지막으로 본 닉네임으로 부른다', async () => {
     const withMembers = (ids: number[]): Room => ({
       ...room('방'),
-      members: ids.map((id) => ({ id, nickname: `플레이어${id}`, host: id === 1, connected: true, offlineSeconds: 0 })),
+      members: ids.map((id) => ({ id, nickname: `플레이어${id}`, host: id === 1, connected: true, offlineSeconds: 0, ready: false })),
     });
     vi.spyOn(roomsApi, 'get').mockResolvedValue(withMembers([1, 2]));
     const { result } = renderHook(() => useRoomChannel('ABCDEF'));

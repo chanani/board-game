@@ -23,6 +23,8 @@ export function RoomPage() {
   const toast = useToast();
   const meId = member?.id ?? 0;
   const [spectating, setSpectating] = useState(false);
+  // 게임이 끝나면 관전자는 자동으로 자리에 앉으므로, 게임을 지켜봤는지 따로 기억해 결과 창을 보여 준다.
+  const [watched, setWatched] = useState(false);
   // 관전자는 마지막 참가자가 나가 방이 사라져도 알림을 받지 못하므로 주기적으로 방을 확인한다.
   const { room, receivedAt, view, transition, log, missing, send, nicknameOf, errorSeq } = useRoomChannel(code, { poll: spectating });
   const [now, setNow] = useState(() => Date.now());
@@ -30,7 +32,11 @@ export function RoomPage() {
   const gameOver = useGameOverDismissal(code, view?.game ?? null, room?.status === 'PLAYING');
 
   useEffect(() => {
-    setSpectating(Boolean(room?.spectators.some((spectator) => spectator.id === meId)));
+    const watching = Boolean(room?.spectators.some((spectator) => spectator.id === meId));
+    setSpectating(watching);
+    if (watching && room?.status === 'PLAYING') {
+      setWatched(true);
+    }
   }, [room, meId]);
 
   useEffect(() => {
@@ -57,9 +63,9 @@ export function RoomPage() {
   }
 
   const playing = room.status === 'PLAYING';
-  const wasPlayer = view !== null && Object.hasOwn(view.game.tokens, String(meId));
-  // 관전자도 누가 이겼는지 볼 수 있게 결과 창을 띄운다.
-  const showGameOver = !playing && view?.game.status === 'GAME_OVER' && (wasPlayer || spectating) && !gameOver.dismissed;
+  const wasPlayer = view !== null && view.game.round.boards.some((board) => board.playerId === meId);
+  // 관전자(게임이 끝나 자동으로 앉은 사람 포함)도 누가 이겼는지 볼 수 있게 결과 창을 띄운다.
+  const showGameOver = !playing && view?.game.status === 'GAME_OVER' && (wasPlayer || spectating || watched) && !gameOver.dismissed;
   const spectatorCount = room.spectators.length;
   const showGame = view !== null && (playing || showGameOver);
 
@@ -114,6 +120,10 @@ export function RoomPage() {
           onForfeit={(memberId) => run(() => roomsApi.forfeit(code, memberId))}
           send={send}
           onCloseGameOver={gameOver.dismiss}
+          onReadyNext={() => run(async () => {
+            await roomsApi.ready(code, true);
+            gameOver.dismiss();
+          })}
           transition={transition}
         />
       ) : playing ? (
