@@ -159,6 +159,58 @@ class PaperSafariRoundTest {
     }
 
     @Test
+    void 버린_더미에서_가져온_카드는_되돌릴_수_있고_차례는_그대로다() {
+        PaperSafariRound round = startedRound(zeros(1));
+        round.drawFromDiscard(ALICE);
+
+        round.cancelDraw(ALICE);
+
+        assertThat(round.discardTop()).contains(Card.number(7));
+        assertThat(round.phase()).isEqualTo(TurnPhase.DRAW);
+        assertThat(round.currentPlayer()).isEqualTo(ALICE);
+        assertThat(round.viewFor(ALICE).held()).isNull();
+        assertThat(round.boardOf(ALICE).isFaceDown(new Position(1, 0))).isTrue();
+    }
+
+    @Test
+    void 되돌린_뒤에는_덱에서_다시_뽑을_수_있다() {
+        PaperSafariRound round = startedRound(zeros(1));
+        round.drawFromDiscard(ALICE);
+        round.cancelDraw(ALICE);
+
+        round.drawFromDeck(ALICE);
+
+        assertThat(round.phase()).isEqualTo(TurnPhase.PLACE);
+        assertThat(round.discardTop()).contains(Card.number(7));
+    }
+
+    @Test
+    void 덱에서_뽑은_카드는_되돌릴_수_없다() {
+        PaperSafariRound round = startedRound(zeros(1));
+        round.drawFromDeck(ALICE);
+
+        assertError(() -> round.cancelDraw(ALICE), ErrorCode.CANNOT_CANCEL_DRAW);
+        assertThat(round.phase()).isEqualTo(TurnPhase.PLACE);
+        assertThat(round.discardTop()).contains(Card.number(7));
+    }
+
+    @Test
+    void 자기_차례가_아니면_되돌릴_수_없다() {
+        PaperSafariRound round = startedRound(zeros(1));
+        round.drawFromDiscard(ALICE);
+
+        assertError(() -> round.cancelDraw(BOB), ErrorCode.NOT_YOUR_TURN);
+        assertThat(round.phase()).isEqualTo(TurnPhase.PLACE);
+    }
+
+    @Test
+    void 뽑기_단계에서는_되돌릴_수_없다() {
+        PaperSafariRound round = startedRound(zeros(1));
+
+        assertError(() -> round.cancelDraw(ALICE), ErrorCode.INVALID_PHASE);
+    }
+
+    @Test
     void 누군가_6장을_모두_공개하면_즉시_라운드가_끝나고_모든_카드가_공개된다() {
         PaperSafariRound round = startedRound(zeros(9));
 

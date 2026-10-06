@@ -24,6 +24,12 @@ enum PaperSafariCommand {
             game.drawFromDiscard(player);
         }
     },
+    CANCEL_DRAW {
+        @Override
+        void apply(PaperSafariGame game, PlayerId player, GameAction action) {
+            game.cancelDraw(player);
+        }
+    },
     SWAP {
         @Override
         void apply(PaperSafariGame game, PlayerId player, GameAction action) {

@@ -37,13 +37,10 @@ public class RoundResult {
     }
 
     public RoundOutcome outcomeOf(PlayerId player) {
-        if (!lowestPlayers().contains(player)) {
-            return RoundOutcome.LOSE;
-        }
         if (isDraw()) {
             return RoundOutcome.DRAW;
         }
-        return RoundOutcome.WIN;
+        return RoundOutcome.winOrLose(lowestPlayers().contains(player));
     }
 
     public Score scoreOf(PlayerId player) {

@@ -24,14 +24,14 @@ class RoundResultTest {
     }
 
     @Test
-    void 최저점이_같으면_무승부이고_동점자는_무_나머지는_패다() {
+    void 최저점이_같으면_전원_무승부다() {
         RoundResult result = RoundResult.of(scores(4, 4, 9));
 
         assertThat(result.winner()).isEmpty();
         assertThat(result.isDraw()).isTrue();
         assertThat(result.outcomeOf(a)).isEqualTo(RoundOutcome.DRAW);
         assertThat(result.outcomeOf(b)).isEqualTo(RoundOutcome.DRAW);
-        assertThat(result.outcomeOf(c)).isEqualTo(RoundOutcome.LOSE);
+        assertThat(result.outcomeOf(c)).isEqualTo(RoundOutcome.DRAW);
     }
 
     @Test

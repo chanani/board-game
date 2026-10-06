@@ -10,101 +10,100 @@ import java.util.Optional;
 public class PaperSafariGame {
 
     private final Seats seats;
-    private final Tokens tokens;
-    private final RoundSequence rounds;
+    private final PaperSafariRound round;
 
-    private PaperSafariGame(Seats seats, Tokens tokens, RoundSequence rounds) {
+    private PaperSafariGame(Seats seats, PaperSafariRound round) {
         this.seats = seats;
-        this.tokens = tokens;
-        this.rounds = rounds;
+        this.round = round;
     }
 
     public static PaperSafariGame start(List<PlayerId> players, RoundFactory factory) {
         Seats seats = Seats.of(players);
-        return new PaperSafariGame(seats, Tokens.forPlayers(seats), RoundSequence.begin(factory, seats));
+        return new PaperSafariGame(seats, factory.create(seats));
     }
 
     public void flipInitial(PlayerId player, Position position) {
         requireInProgress();
-        round().flipInitial(player, position);
+        round.flipInitial(player, position);
     }
 
     public void drawFromDeck(PlayerId player) {
         requireInProgress();
-        round().drawFromDeck(player);
+        round.drawFromDeck(player);
     }
 
     public void drawFromDiscard(PlayerId player) {
         requireInProgress();
-        round().drawFromDiscard(player);
+        round.drawFromDiscard(player);
+    }
+
+    public void cancelDraw(PlayerId player) {
+        requireInProgress();
+        round.cancelDraw(player);
     }
 
     public void swapAt(PlayerId player, Position position) {
         requireInProgress();
-        round().swapAt(player, position);
-        settleRound();
+        round.swapAt(player, position);
     }
 
     public void discardDrawn(PlayerId player) {
         requireInProgress();
-        round().discardDrawn(player);
-        settleRound();
+        round.discardDrawn(player);
     }
 
     public void peekAt(PlayerId player, Position position) {
         requireInProgress();
-        round().peekAt(player, position);
-        settleRound();
-    }
-
-    public void startNextRound() {
-        requireInProgress();
-        if (!round().isOver()) {
-            throw new BusinessException(ErrorCode.ROUND_NOT_OVER);
-        }
-        rounds.next(seats);
+        round.peekAt(player, position);
     }
 
     public void forfeit(PlayerId player) {
         requireInProgress();
-        round().leave(player);
+        round.leave(player);
     }
 
     public GameStatus status() {
-        if (winner().isPresent()) {
+        if (round.isOver()) {
             return GameStatus.GAME_OVER;
         }
-        if (round().isOver()) {
-            return GameStatus.ROUND_OVER;
+        if (seats.soleSurvivor().isPresent()) {
+            return GameStatus.GAME_OVER;
         }
         return GameStatus.IN_ROUND;
     }
 
     public Optional<PlayerId> winner() {
-        return tokens.champion().or(seats::soleSurvivor);
+        if (round.isOver()) {
+            return round.result().winner();
+        }
+        return seats.soleSurvivor();
+    }
+
+    public RoundOutcome outcomeOf(PlayerId player) {
+        Optional<PlayerId> winner = winner();
+        if (winner.isEmpty()) {
+            return drawUnlessForfeited(player);
+        }
+        return RoundOutcome.winOrLose(player.equals(winner.get()));
     }
 
     public Optional<RoundResult> lastRoundResult() {
-        if (!round().isOver()) {
+        if (!round.isOver()) {
             return Optional.empty();
         }
-        return Optional.of(round().result());
+        return Optional.of(round.result());
     }
 
     public RoundNumber roundNumber() {
-        return rounds.number();
+        return RoundNumber.FIRST;
     }
 
     public PlayerId currentPlayer() {
-        return round().currentPlayer();
+        return round.currentPlayer();
     }
 
     public TurnPhase phase() {
-        return round().phase();
-    }
-
-    public TokenCount tokensOf(PlayerId player) {
-        return tokens.countOf(player);
+        return round.phase();
     }
 
     public boolean isSeated(PlayerId player) {
@@ -118,26 +117,20 @@ public class PaperSafariGame {
                 viewer.value(),
                 status(),
                 roundNumber().value(),
-                round().viewFor(viewer),
-                tokens.toView(),
+                round.viewFor(viewer),
                 result,
                 winnerId);
     }
 
-    private PaperSafariRound round() {
-        return rounds.current();
-    }
-
-    private void settleRound() {
-        if (!round().isOver()) {
-            return;
+    private RoundOutcome drawUnlessForfeited(PlayerId player) {
+        if (!isSeated(player)) {
+            return RoundOutcome.LOSE;
         }
-        RoundResult result = round().result();
-        result.winner().ifPresent(tokens::award);
+        return RoundOutcome.DRAW;
     }
 
     private void requireInProgress() {
-        if (winner().isPresent()) {
+        if (status() == GameStatus.GAME_OVER) {
             throw new BusinessException(ErrorCode.GAME_ALREADY_OVER);
         }
     }

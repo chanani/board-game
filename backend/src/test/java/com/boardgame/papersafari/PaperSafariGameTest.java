@@ -25,26 +25,30 @@ class PaperSafariGameTest {
     private static final List<PlayerId> THREE = List.of(ALICE, BOB, CAROL);
 
     @Test
-    void 라운드_승자는_토큰을_하나_받는다() {
+    void 누군가_6장을_모두_공개해_라운드가_끝나면_게임도_끝나고_최저점_단독이_승리한다() {
         PaperSafariGame game = game(TWO, List.of(roundWonBy(ALICE)));
 
         playRound(game, ALICE, BOB);
 
-        assertThat(game.status()).isEqualTo(GameStatus.ROUND_OVER);
-        assertThat(game.tokensOf(ALICE)).isEqualTo(new TokenCount(1));
-        assertThat(game.tokensOf(BOB)).isEqualTo(TokenCount.ZERO);
+        assertThat(game.status()).isEqualTo(GameStatus.GAME_OVER);
+        assertThat(game.winner()).contains(ALICE);
+        assertThat(game.outcomeOf(ALICE)).isEqualTo(RoundOutcome.WIN);
+        assertThat(game.outcomeOf(BOB)).isEqualTo(RoundOutcome.LOSE);
+        assertThat(game.roundNumber()).isEqualTo(RoundNumber.FIRST);
         assertThat(game.lastRoundResult()).hasValueSatisfying(result ->
                 assertThat(result.winner()).contains(ALICE));
     }
 
     @Test
-    void 최저점이_같으면_라운드_무승부로_아무도_토큰을_받지_않는다() {
+    void 최저점이_같으면_승자_없이_전원_무승부로_게임이_끝난다() {
         PaperSafariGame game = game(TWO, List.of(tiedRound()));
 
         playRound(game, ALICE, BOB);
 
-        assertThat(game.tokensOf(ALICE)).isEqualTo(TokenCount.ZERO);
-        assertThat(game.tokensOf(BOB)).isEqualTo(TokenCount.ZERO);
+        assertThat(game.status()).isEqualTo(GameStatus.GAME_OVER);
+        assertThat(game.winner()).isEmpty();
+        assertThat(game.outcomeOf(ALICE)).isEqualTo(RoundOutcome.DRAW);
+        assertThat(game.outcomeOf(BOB)).isEqualTo(RoundOutcome.DRAW);
         assertThat(game.lastRoundResult()).hasValueSatisfying(result -> {
             assertThat(result.outcomeOf(ALICE)).isEqualTo(RoundOutcome.DRAW);
             assertThat(result.outcomeOf(BOB)).isEqualTo(RoundOutcome.DRAW);
@@ -52,45 +56,22 @@ class PaperSafariGameTest {
     }
 
     @Test
-    void 다음_라운드는_다음_좌석부터_시작한다() {
-        PaperSafariGame game = game(TWO, List.of(roundWonBy(ALICE), roundWonBy(ALICE)));
-        playRound(game, ALICE, BOB);
-
-        game.startNextRound();
-
-        assertThat(game.roundNumber()).isEqualTo(new RoundNumber(2));
-        assertThat(game.currentPlayer()).isEqualTo(BOB);
-        assertThat(game.phase()).isEqualTo(TurnPhase.SETUP_FLIP);
-        assertThat(game.status()).isEqualTo(GameStatus.IN_ROUND);
-        assertThat(game.lastRoundResult()).isEmpty();
-    }
-
-    @Test
-    void 라운드가_끝나기_전에는_다음_라운드를_시작할_수_없다() {
+    void 게임이_끝나면_어떤_행동도_할_수_없다() {
         PaperSafariGame game = game(TWO, List.of(roundWonBy(ALICE)));
+        playRound(game, ALICE, BOB);
 
-        assertError(game::startNextRound, ErrorCode.ROUND_NOT_OVER);
+        assertError(() -> game.drawFromDeck(BOB), ErrorCode.GAME_ALREADY_OVER);
+        assertError(() -> game.drawFromDiscard(BOB), ErrorCode.GAME_ALREADY_OVER);
+        assertError(() -> game.cancelDraw(BOB), ErrorCode.GAME_ALREADY_OVER);
+        assertError(() -> game.forfeit(ALICE), ErrorCode.GAME_ALREADY_OVER);
     }
 
     @Test
-    void 토큰_3개를_먼저_모으면_게임에서_승리하고_더_이상_진행할_수_없다() {
-        PaperSafariGame game = game(TWO, List.of(
-                roundWonBy(ALICE), roundWonBy(BOB), roundWonBy(ALICE), roundWonBy(ALICE)));
-
-        playRound(game, ALICE, BOB);
-        game.startNextRound();
-        playRound(game, BOB, ALICE);
-        game.startNextRound();
-        playRound(game, ALICE, BOB);
-        game.startNextRound();
+    void 무승부로_끝난_게임도_더_이상_진행할_수_없다() {
+        PaperSafariGame game = game(TWO, List.of(tiedRound()));
         playRound(game, ALICE, BOB);
 
-        assertThat(game.status()).isEqualTo(GameStatus.GAME_OVER);
-        assertThat(game.winner()).contains(ALICE);
-        assertThat(game.tokensOf(ALICE)).isEqualTo(new TokenCount(3));
-        assertThat(game.tokensOf(BOB)).isEqualTo(new TokenCount(1));
-        assertError(game::startNextRound, ErrorCode.GAME_ALREADY_OVER);
-        assertError(() -> game.forfeit(BOB), ErrorCode.GAME_ALREADY_OVER);
+        assertError(() -> game.drawFromDeck(BOB), ErrorCode.GAME_ALREADY_OVER);
     }
 
     @Test
@@ -101,7 +82,23 @@ class PaperSafariGameTest {
 
         assertThat(game.status()).isEqualTo(GameStatus.GAME_OVER);
         assertThat(game.winner()).contains(ALICE);
+        assertThat(game.outcomeOf(ALICE)).isEqualTo(RoundOutcome.WIN);
+        assertThat(game.outcomeOf(BOB)).isEqualTo(RoundOutcome.LOSE);
+        assertThat(game.lastRoundResult()).isEmpty();
         assertError(() -> game.flipInitial(ALICE, FIRST), ErrorCode.GAME_ALREADY_OVER);
+    }
+
+    @Test
+    void 세_명_중_두_명이_기권하면_마지막_남은_사람이_승리한다() {
+        PaperSafariGame game = game(THREE, List.of(
+                stack(List.of(WINNER_HAND, LOSER_HAND, LOSER_HAND), Card.number(7), zeros(5))));
+
+        game.forfeit(ALICE);
+        assertThat(game.status()).isEqualTo(GameStatus.IN_ROUND);
+        game.forfeit(CAROL);
+
+        assertThat(game.status()).isEqualTo(GameStatus.GAME_OVER);
+        assertThat(game.winner()).contains(BOB);
     }
 
     @Test
@@ -125,17 +122,16 @@ class PaperSafariGameTest {
     }
 
     @Test
-    void 라운드가_끝난_뒤_승자가_기권해도_라운드_결과는_바뀌지_않는다() {
+    void 버린_더미에서_가져온_카드를_되돌리면_다시_뽑기_단계가_된다() {
         PaperSafariGame game = game(TWO, List.of(roundWonBy(ALICE)));
-        playRound(game, ALICE, BOB);
+        game.flipInitial(ALICE, FIRST);
+        game.flipInitial(BOB, FIRST);
+        game.drawFromDiscard(ALICE);
 
-        game.forfeit(ALICE);
+        game.cancelDraw(ALICE);
 
-        assertThat(game.status()).isEqualTo(GameStatus.GAME_OVER);
-        assertThat(game.winner()).contains(BOB);
-        assertThat(game.lastRoundResult()).hasValueSatisfying(result ->
-                assertThat(result.winner()).contains(ALICE));
-        assertThat(game.tokensOf(ALICE)).isEqualTo(new TokenCount(1));
+        assertThat(game.phase()).isEqualTo(TurnPhase.DRAW);
+        assertThat(game.currentPlayer()).isEqualTo(ALICE);
     }
 
     @Test

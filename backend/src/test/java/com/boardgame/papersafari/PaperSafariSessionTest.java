@@ -21,6 +21,8 @@ import com.boardgame.game.RoundCompleted;
 import com.boardgame.game.RoundEntry;
 import com.boardgame.papersafari.view.PaperSafariSessionView;
 import com.boardgame.papersafari.view.PaperSafariView;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -87,11 +89,6 @@ class PaperSafariSessionTest {
         }
     }
 
-    private void readyAll(PaperSafariSession session) {
-        act(session, A, "READY");
-        act(session, B, "READY");
-    }
-
     @Test
     void 만들자마자_라운드_번호는_1이다() {
         PaperSafariSession session = session(List.of(roundWonBy(ALICE)));
@@ -122,51 +119,54 @@ class PaperSafariSessionTest {
     }
 
     @Test
-    void 라운드가_끝나면_라운드_결과를_돌려준다() {
+    void 준비_행동은_더_이상_받지_않는다() {
         PaperSafariSession session = session(List.of(roundWonBy(ALICE)));
 
-        List<GameOutcome> outcomes = playRound(session, A, B);
-
-        assertThat(outcomes).containsExactly(new RoundCompleted(1, List.of(
-                new RoundEntry(A, ResultType.WIN, 1),
-                new RoundEntry(B, ResultType.LOSE, 51))));
+        assertError(() -> act(session, A, "READY"), ErrorCode.INVALID_INPUT);
+        playRound(session, A, B);
+        assertError(() -> act(session, A, "READY"), ErrorCode.INVALID_INPUT);
     }
 
     @Test
-    void 라운드가_끝나기_전에는_준비할_수_없다() {
+    void 버린_더미에서_가져온_카드를_되돌리는_행동을_처리한다() {
         PaperSafariSession session = session(List.of(roundWonBy(ALICE)));
+        flipAll(session, A, B);
+        act(session, A, "DRAW_DISCARD");
 
-        assertError(() -> act(session, A, "READY"), ErrorCode.INVALID_PHASE);
+        List<GameOutcome> outcomes = act(session, A, "CANCEL_DRAW");
+
+        assertThat(outcomes).isEmpty();
+        assertThat(view(session, A).round().phase()).isEqualTo(TurnPhase.DRAW);
+        assertThat(view(session, A).round().currentPlayerId()).isEqualTo(A);
+        assertThat(view(session, A).round().held()).isNull();
     }
 
     @Test
-    void 남은_참가자가_모두_준비하면_다음_라운드가_시작된다() {
-        PaperSafariSession session = session(List.of(roundWonBy(ALICE), roundWonBy(ALICE)));
-        playRound(session, A, B);
-
-        assertThat(act(session, A, "READY")).isEmpty();
-        assertThat(sessionView(session, B).readyPlayerIds()).containsExactly(A);
-        act(session, B, "READY");
-
-        assertThat(view(session, A).roundNumber()).isEqualTo(2);
-        assertThat(view(session, A).round().phase()).isEqualTo(TurnPhase.SETUP_FLIP);
-        assertThat(sessionView(session, A).readyPlayerIds()).isEmpty();
-    }
-
-    @Test
-    void 마지막_라운드가_끝나면_라운드_결과와_게임_결과를_함께_돌려준다() {
-        PaperSafariSession session = session(List.of(roundWonBy(ALICE), roundWonBy(ALICE), roundWonBy(ALICE)));
-        playRound(session, A, B);
-        readyAll(session);
-        playRound(session, A, B);
-        readyAll(session);
+    void 라운드가_끝나면_라운드_결과와_게임_결과를_함께_돌려주고_게임이_끝난다() {
+        PaperSafariSession session = session(List.of(roundWonBy(ALICE)));
 
         List<GameOutcome> outcomes = playRound(session, A, B);
 
         assertThat(outcomes).containsExactly(
-                new RoundCompleted(3, List.of(new RoundEntry(A, ResultType.WIN, 1), new RoundEntry(B, ResultType.LOSE, 51))),
-                new GameCompleted(List.of(new MatchEntry(A, ResultType.WIN, 3, 0), new MatchEntry(B, ResultType.LOSE, 0, 1))));
+                new RoundCompleted(1, List.of(new RoundEntry(A, ResultType.WIN, 1), new RoundEntry(B, ResultType.LOSE, 51))),
+                new GameCompleted(List.of(new MatchEntry(A, ResultType.WIN, 0, 0), new MatchEntry(B, ResultType.LOSE, 0, 1))));
         assertThat(session.isFinished()).isTrue();
+        assertThat(session.isPlaying(A)).isFalse();
+        assertThat(view(session, B).status()).isEqualTo(GameStatus.GAME_OVER);
+        assertThat(view(session, B).winnerId()).isEqualTo(A);
+    }
+
+    @Test
+    void 최저점이_같으면_전원_무승부로_게임_결과를_돌려준다() {
+        PaperSafariSession session = session(List.of(GameFixtures.tiedRound()));
+
+        List<GameOutcome> outcomes = playRound(session, A, B);
+
+        assertThat(outcomes).containsExactly(
+                new RoundCompleted(1, List.of(new RoundEntry(A, ResultType.DRAW, 1), new RoundEntry(B, ResultType.DRAW, 1))),
+                new GameCompleted(List.of(new MatchEntry(A, ResultType.DRAW, 0, 0), new MatchEntry(B, ResultType.DRAW, 0, 1))));
+        assertThat(session.isFinished()).isTrue();
+        assertThat(view(session, A).winnerId()).isNull();
     }
 
     @Test
@@ -183,16 +183,11 @@ class PaperSafariSessionTest {
     }
 
     @Test
-    void 라운드가_끝난_뒤_기권해도_라운드_결과는_다시_보내지_않는다() {
+    void 게임이_끝난_뒤에는_기권할_수_없다() {
         PaperSafariSession session = session(List.of(roundWonBy(ALICE)));
         playRound(session, A, B);
 
-        List<GameOutcome> outcomes = session.forfeit(B);
-
-        assertThat(outcomes).hasSize(1);
-        assertThat(outcomes.get(0)).isEqualTo(new GameCompleted(List.of(
-                new MatchEntry(A, ResultType.WIN, 1, 0),
-                new MatchEntry(B, ResultType.LOSE, 0, 1))));
+        assertError(() -> session.forfeit(B), ErrorCode.GAME_ALREADY_OVER);
     }
 
     @Test
@@ -209,17 +204,31 @@ class PaperSafariSessionTest {
     }
 
     @Test
-    void 라운드_종료_후_준비하지_않은_사람이_기권하면_나머지로_다음_라운드가_시작된다() {
-        PaperSafariSession session = threePlayerSession(List.of(threePlayerRound(), threePlayerRound()));
-        playRound(session, A, B, C);
-        act(session, A, "READY");
-        act(session, B, "READY");
-        assertThat(view(session, A).roundNumber()).isEqualTo(1);
+    void 기권자가_있는_게임이_끝나면_기권자는_패배로_기록된다() {
+        PaperSafariSession session = threePlayerSession(List.of(threePlayerRound()));
+        session.forfeit(C);
 
-        List<GameOutcome> outcomes = session.forfeit(C);
+        List<GameOutcome> outcomes = playRound(session, A, B);
 
-        assertThat(outcomes).isEmpty();
-        assertThat(view(session, A).roundNumber()).isEqualTo(2);
-        assertThat(view(session, A).round().phase()).isEqualTo(TurnPhase.SETUP_FLIP);
+        assertThat(outcomes).containsExactly(
+                new RoundCompleted(1, List.of(new RoundEntry(A, ResultType.WIN, 1), new RoundEntry(B, ResultType.LOSE, 51))),
+                new GameCompleted(List.of(
+                        new MatchEntry(A, ResultType.WIN, 0, 0),
+                        new MatchEntry(B, ResultType.LOSE, 0, 1),
+                        new MatchEntry(C, ResultType.LOSE, 0, 2))));
+    }
+
+    @Test
+    void 화면_정보에는_토큰과_준비_목록이_없다() throws Exception {
+        PaperSafariSession session = session(List.of(roundWonBy(ALICE)));
+        playRound(session, A, B);
+
+        JsonNode json = new ObjectMapper().valueToTree(session.viewFor(A));
+
+        assertThat(json.has("readyPlayerIds")).isFalse();
+        assertThat(json.get("game").has("tokens")).isFalse();
+        assertThat(json.get("game").get("status").asText()).isEqualTo("GAME_OVER");
+        assertThat(json.get("game").get("roundNumber").asInt()).isEqualTo(1);
+        assertThat(json.get("game").get("winnerId").asLong()).isEqualTo(A);
     }
 }

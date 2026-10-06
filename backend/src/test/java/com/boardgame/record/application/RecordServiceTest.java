@@ -118,6 +118,25 @@ class RecordServiceTest {
     }
 
     @Test
+    void 단판이_동점으로_끝나면_라운드_점수와_무승부가_함께_기록된다() {
+        start();
+
+        round(1, ResultType.DRAW, 5, ResultType.DRAW, 5);
+        events.publishEvent(new GameCompletedEvent(matchKey, GameType.PAPER_SAFARI, STARTED, ENDED, new GameCompleted(
+                List.of(new MatchEntry(alice, ResultType.DRAW, 0, 0), new MatchEntry(bob, ResultType.DRAW, 0, 1)))));
+
+        GameMatch match = matchRepository.findByMatchKey(matchKey).orElseThrow();
+        assertThat(participantRepository.findByMatch(match))
+                .extracting(MatchParticipant::memberId, MatchParticipant::result)
+                .containsExactlyInAnyOrder(
+                        org.assertj.core.groups.Tuple.tuple(alice, ResultType.DRAW),
+                        org.assertj.core.groups.Tuple.tuple(bob, ResultType.DRAW));
+        assertThat(statOf(alice).matches().draws()).isEqualTo(1);
+        assertThat(statOf(bob).matches().draws()).isEqualTo(1);
+        assertThat(statOf(alice).rounds().scoreSum()).isEqualTo(5);
+    }
+
+    @Test
     void 같은_이벤트가_두_번_와도_한_번만_기록된다() {
         start();
         start();

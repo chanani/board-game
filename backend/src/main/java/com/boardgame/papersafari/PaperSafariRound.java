@@ -70,6 +70,14 @@ public class PaperSafariRound {
         finishTurn();
     }
 
+    public void cancelDraw(PlayerId player) {
+        turn.require(player, TurnPhase.PLACE);
+        DrawnCard drawn = turn.drawn();
+        drawn.validateCancelable();
+        table.discard(drawn.card());
+        turn.putBack();
+    }
+
     public void leave(PlayerId player) {
         turn.leave(player).ifPresent(drawn -> table.discard(drawn.card()));
         removeBoardUnlessOver(player);

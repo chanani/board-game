@@ -42,6 +42,10 @@ public class Turn {
         step = Step.placing(drawn);
     }
 
+    public void putBack() {
+        step = Step.of(TurnPhase.DRAW);
+    }
+
     public DrawnCard drawn() {
         return step.drawn();
     }

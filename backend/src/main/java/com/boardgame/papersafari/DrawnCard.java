@@ -17,6 +17,12 @@ public record DrawnCard(Card card, DrawSource source) {
         return fromDeck() && card.is(CardKind.ELEPHANT);
     }
 
+    public void validateCancelable() {
+        if (fromDeck()) {
+            throw new BusinessException(ErrorCode.CANNOT_CANCEL_DRAW);
+        }
+    }
+
     public void validateDiscardable() {
         if (!fromDeck()) {
             throw new BusinessException(ErrorCode.MUST_SWAP_DISCARD_CARD);

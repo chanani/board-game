@@ -18,7 +18,6 @@ import com.boardgame.papersafari.view.PaperSafariView;
 import com.boardgame.papersafari.view.PlayerResultView;
 import com.boardgame.papersafari.view.SlotView;
 import java.util.List;
-import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 class PaperSafariViewTest {
@@ -101,24 +100,24 @@ class PaperSafariViewTest {
         assertThat(view.round().deckSize()).isEqualTo(2);
         assertThat(view.round().discardTop()).isEqualTo(new CardView(CardKind.NUMBER, 7));
         assertThat(view.round().held()).isNull();
-        assertThat(view.tokens()).isEqualTo(Map.of(1L, 0, 2L, 0));
         assertThat(view.lastRoundResult()).isNull();
         assertThat(view.winnerId()).isNull();
     }
 
     @Test
-    void 라운드가_끝나면_모든_카드와_결과를_보여준다() {
+    void 게임이_끝나면_모든_카드와_결과와_승자를_보여준다() {
         PaperSafariGame game = game(TWO, List.of(roundWonBy(ALICE)));
         playRound(game, ALICE, BOB);
 
         PaperSafariView view = game.viewFor(BOB);
 
-        assertThat(view.status()).isEqualTo(GameStatus.ROUND_OVER);
+        assertThat(view.status()).isEqualTo(GameStatus.GAME_OVER);
+        assertThat(view.roundNumber()).isEqualTo(1);
+        assertThat(view.winnerId()).isEqualTo(1L);
         assertThat(slotOf(view, ALICE, new Position(1, 1)).card()).isEqualTo(new CardView(CardKind.NUMBER, 0));
         assertThat(slotOf(view, BOB, new Position(2, 1)).card()).isEqualTo(new CardView(CardKind.NUMBER, 8));
         assertThat(view.lastRoundResult().players()).containsExactly(
                 new PlayerResultView(1L, 1, RoundOutcome.WIN),
                 new PlayerResultView(2L, 51, RoundOutcome.LOSE));
-        assertThat(view.tokens()).isEqualTo(Map.of(1L, 1, 2L, 0));
     }
 }
