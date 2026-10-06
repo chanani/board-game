@@ -93,7 +93,7 @@ export function GameLobbyPage() {
         <div className="flex items-center gap-3">
           <div className="h-16 w-12 overflow-hidden rounded shadow-lg"><PaperSafariBoxArt /></div>
           <div>
-            <Link to="/" className="text-sm font-semibold text-cream-200 hover:text-cream-50">← 게임 선반</Link>
+            <Link to="/" className="text-sm font-semibold text-cream-200 hover:text-cream-50">← 게임 목록</Link>
             <h1 className="text-xl font-black text-cream-50">페이퍼 사파리</h1>
           </div>
         </div>

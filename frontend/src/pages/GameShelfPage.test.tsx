@@ -63,4 +63,15 @@ describe('GameShelfPage', () => {
 
     expect(await screen.findByText('방 화면')).toBeInTheDocument();
   });
+
+  it('제목과 부제, 규칙 보기 버튼을 보여준다', async () => {
+    list.mockResolvedValue([]);
+    renderShelf();
+
+    expect(screen.getByText('오늘은 뭘 할까요?')).toBeInTheDocument();
+    expect(screen.getByText('목록에서 게임을 골라 주세요')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /규칙 보기/ }));
+
+    expect(await screen.findByRole('dialog', { name: '페이퍼 사파리 규칙' })).toBeInTheDocument();
+  });
 });

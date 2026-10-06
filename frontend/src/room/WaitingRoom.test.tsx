@@ -36,4 +36,11 @@ describe('WaitingRoom', () => {
 
     expect(screen.getByRole('button', { name: '게임 시작' })).toBeEnabled();
   });
+
+  it('규칙은 펼치지 않아도 항상 보인다', () => {
+    const { container } = render(<ToastProvider><WaitingRoom room={room} meId={1} receivedAt={0} now={0} onStart={vi.fn()} onForfeit={vi.fn()} /></ToastProvider>);
+
+    expect(container.querySelector('details')).toBeNull();
+    expect(screen.getByText(/토큰 3개를 먼저 모으면/)).toBeVisible();
+  });
 });

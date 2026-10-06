@@ -4,11 +4,13 @@ import { gamesApi } from '../api/games';
 import { messageOf } from '../api/http';
 import { roomsApi } from '../api/rooms';
 import type { GameSummary, GameType } from '../api/types';
+import { BookIcon } from '../components/icons';
 import { RollingNumber } from '../components/RollingNumber';
 import { useToast } from '../components/Toast';
 import { WoodRail } from '../components/WoodRail';
 import { CATALOG, COMING_SOON_SLOTS, lobbyPath } from '../games/catalog';
 import { GameBox } from '../games/GameBox';
+import { RulesCarousel } from '../games/papersafari/RulesCarousel';
 
 const POLL_MS = 5000;
 const DEFAULT_NAMES: Record<GameType, string> = { PAPER_SAFARI: '페이퍼 사파리' };
@@ -35,6 +37,7 @@ export function GameShelfPage() {
   const navigate = useNavigate();
   const toast = useToast();
   const [summaries, setSummaries] = useState<GameSummary[] | null>(null);
+  const [rulesOpen, setRulesOpen] = useState(false);
   const failedRef = useRef(false);
 
   useEffect(() => {
@@ -75,7 +78,7 @@ export function GameShelfPage() {
   return (
     <div className="mx-auto max-w-4xl pt-6">
       <h1 className="mb-1 text-center text-2xl font-black text-cream-50 drop-shadow">오늘은 뭘 할까요?</h1>
-      <p className="mb-8 text-center text-sm text-cream-200/80">선반에서 게임 상자를 골라 주세요</p>
+      <p className="mb-8 text-center text-sm text-cream-200/80">목록에서 게임을 골라 주세요</p>
       <div className="flex flex-wrap items-end justify-center gap-10 px-6">
         {CATALOG.map((entry) => {
           const summary = summaryOf(entry.gameType);
@@ -85,6 +88,10 @@ export function GameShelfPage() {
               <GameBox entry={entry} name={name} onOpen={() => navigate(lobbyPath(entry.gameType))} />
               <p className="mt-3 text-sm font-bold text-cream-50">{name}</p>
               <p className="text-xs text-cream-200/70">{entry.tagline}</p>
+              <button type="button" onClick={() => setRulesOpen(true)}
+                className="press-3d mt-3 inline-flex items-center gap-1.5 rounded-full bg-cream-50 px-3 py-1 text-xs font-bold text-wood-800 shadow">
+                <BookIcon className="h-4 w-4" />규칙 보기
+              </button>
               <Counts summary={summaries ? summary ?? emptySummary(entry.gameType, name) : undefined} />
             </div>
           );
@@ -97,6 +104,7 @@ export function GameShelfPage() {
         ))}
       </div>
       <WoodRail className="mx-2 mt-4 h-4" />
+      <RulesCarousel open={rulesOpen} onClose={() => setRulesOpen(false)} />
     </div>
   );
 }

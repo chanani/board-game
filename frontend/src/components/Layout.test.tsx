@@ -48,4 +48,13 @@ describe('Layout 상단바', () => {
     expect(screen.getByText('앨리스')).toHaveClass('truncate');
     expect(screen.getByRole('button', { name: '로그아웃' })).toHaveClass('whitespace-nowrap');
   });
+
+  it('메뉴 이름은 게임 목록이고 음소거 버튼은 이모지 대신 아이콘이다', () => {
+    render(ui());
+
+    expect(screen.getByRole('link', { name: '게임 목록' })).toBeInTheDocument();
+    const mute = screen.getByRole('button', { name: '소리 끄기' });
+    expect(mute.querySelector('svg')).not.toBeNull();
+    expect(mute).not.toHaveTextContent('🔊');
+  });
 });
