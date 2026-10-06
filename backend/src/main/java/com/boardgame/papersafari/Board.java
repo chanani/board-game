@@ -64,10 +64,6 @@ public class Board {
     }
 
     public Score score() {
-        return Position.columns().mapToObj(this::columnScore).reduce(Score.ZERO, Score::plus);
-    }
-
-    private Score columnScore(int column) {
-        return ColumnScore.of(cardAt(Position.top(column)), cardAt(Position.bottom(column)));
+        return BoardScore.of(this).total();
     }
 }
