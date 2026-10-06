@@ -56,12 +56,13 @@ export function UnoTable({ view, room, meId, log, receivedAt, now, errorSeq, nic
   useEffect(() => {
     pendingUntil.current = 0;
   }, [view, errorSeq]);
-  const send = (action: GameAction) => {
+  const send = (action: GameAction): boolean => {
     if (Date.now() < pendingUntil.current) {
-      return;
+      return false;
     }
     pendingUntil.current = Date.now() + PENDING_MS;
     rawSend(action);
+    return true;
   };
 
   const [pendingWild, setPendingWild] = useState<UnoCard | null>(null);
@@ -72,10 +73,16 @@ export function UnoTable({ view, room, meId, log, receivedAt, now, errorSeq, nic
   }, [myTurn]);
   const counts = colorCounts(game.hand ?? []);
 
-  const revealSeq = game.events.find((event) => event.type === 'CHALLENGE')?.seq ?? null;
-  const [closedRevealSeq, setClosedRevealSeq] = useState<number | null>(null);
-  const closeReveal = useCallback(() => setClosedRevealSeq(revealSeq), [revealSeq]);
-  const showReveal = game.reveal !== null && revealSeq !== null && revealSeq !== closedRevealSeq;
+  // 공개는 서버가 UNO_CALL·UNO_CAUGHT 묶음에도 남겨 두므로(R25) 이벤트가 아니라 reveal 자체로 한 번만 보인다.
+  const [revealClosed, setRevealClosed] = useState(false);
+  const closeReveal = useCallback(() => setRevealClosed(true), []);
+  const hasReveal = game.reveal !== null;
+  useEffect(() => {
+    if (!hasReveal) {
+      setRevealClosed(false);
+    }
+  }, [hasReveal]);
+  const showReveal = hasReveal && !revealClosed;
   // +4를 낸 순간의 "지금 색"을 기억해 공개 창에서 그 색 카드를 표시한다(서버 화면에는 바뀐 색만 있다).
   const lastColor = useRef(game.currentColor);
   const lastStage = useRef(game.stage);
@@ -90,6 +97,15 @@ export function UnoTable({ view, room, meId, log, receivedAt, now, errorSeq, nic
 
   // 남의 도전 결과는 알림으로만(D10). 처음 그린 화면의 이벤트는 알리지 않는다.
   const seenSeq = useRef(maxSeq(game.events));
+  // 이벤트 순번은 판마다 다시 시작하므로, 새 판이 시작되면 본 순번과 닫은 공개를 처음으로 되돌린다.
+  const gameStart = useRef(game.startedAt);
+  useEffect(() => {
+    if (gameStart.current !== game.startedAt) {
+      gameStart.current = game.startedAt;
+      seenSeq.current = 0;
+      setRevealClosed(false);
+    }
+  }, [game.startedAt]);
   useEffect(() => {
     const fresh = game.events.filter((event) => event.seq > seenSeq.current);
     seenSeq.current = Math.max(seenSeq.current, maxSeq(game.events));
@@ -182,10 +198,13 @@ export function UnoTable({ view, room, meId, log, receivedAt, now, errorSeq, nic
   );
 
   const pickWild = (color: UnoColor) => {
-    if (pendingWild) {
-      send({ type: 'PLAY', cardId: pendingWild.id, color });
+    if (!pendingWild) {
+      return;
     }
-    setPendingWild(null);
+    // 잠금 때문에 보내지 못했으면 창을 열어 둬서 다시 고를 수 있게 한다.
+    if (send({ type: 'PLAY', cardId: pendingWild.id, color })) {
+      setPendingWild(null);
+    }
   };
   const dialogs = (
     <>

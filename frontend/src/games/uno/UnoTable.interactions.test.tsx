@@ -129,6 +129,22 @@ describe('UnoTable 도전', () => {
     expect(screen.queryByRole('dialog', { name: '캐롤님의 카드' })).not.toBeInTheDocument();
   });
 
+  it('도전자의 공개는 다른 사람의 우노 외침 묶음에도 남아 있다가 reveal이 사라지면 닫힌다', async () => {
+    const reveal: Partial<UnoView> = {
+      stage: 'PLAY', currentPlayerId: 1, currentColor: 'GREEN',
+      reveal: { playerId: 3, cards: [num('BLUE', 1, 76)], guilty: false },
+      events: [unoEvent(7, 'CHALLENGE', { actorId: 1, targetId: 3, reason: 'INNOCENT' })],
+    };
+    const { rerender } = render(table(reveal, vi.fn()));
+    expect(await screen.findByRole('dialog', { name: '캐롤님의 카드' })).toBeInTheDocument();
+
+    rerender(table({ ...reveal, events: [unoEvent(8, 'UNO_CALL', { actorId: 2 })] }, vi.fn()));
+    expect(screen.getByRole('dialog', { name: '캐롤님의 카드' })).toBeInTheDocument();
+
+    rerender(table({ ...reveal, reveal: null, events: [unoEvent(9, 'UNO_CALL', { actorId: 3 })] }, vi.fn()));
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: '캐롤님의 카드' })).not.toBeInTheDocument());
+  });
+
   it('도전 실패 공개는 5초 뒤 저절로 닫힌다', () => {
     vi.useFakeTimers();
     render(table({
@@ -148,6 +164,28 @@ describe('UnoTable 도전', () => {
 
     expect(toast.show).toHaveBeenCalledWith('밥님이 도전에 실패해 6장을 뽑고 차례를 건너뛰어요', 'info');
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+});
+
+describe('UnoTable 잠금 중 와일드', () => {
+  it('보내기 잠금 때문에 못 보낸 와일드는 색 고르기 창을 열어 둔다', async () => {
+    const send = vi.fn();
+    render(table({}, send));
+    await userEvent.click(within(screen.getByTestId('uno-action-bar')).getByRole('button', { name: '카드 뽑기' }));
+    await userEvent.click(screen.getByRole('button', { name: '와일드, 낼 수 있어요' }));
+
+    await userEvent.click(within(await screen.findByRole('dialog', { name: '색을 골라 주세요' })).getByRole('button', { name: /^초록/ }));
+
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('dialog', { name: '색을 골라 주세요' })).toBeInTheDocument();
+  });
+
+  it('새 판이 시작되면 이전 판의 도전 알림 순번에 막히지 않는다', () => {
+    const { rerender } = render(table({ currentPlayerId: 2, events: [unoEvent(40, 'UNO_CALL', { actorId: 2 })] }, vi.fn()));
+
+    rerender(table({ currentPlayerId: 3, startedAt: 999, events: [unoEvent(2, 'CHALLENGE', { actorId: 2, targetId: 3, reason: 'INNOCENT' })] }, vi.fn()));
+
+    expect(toast.show).toHaveBeenCalledWith('밥님이 도전에 실패해 6장을 뽑고 차례를 건너뛰어요', 'info');
   });
 });
 
