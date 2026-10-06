@@ -10,8 +10,11 @@ export const roomsApi = {
     return room ?? null;
   },
   get: (code: string) => request<Room>(path(code)),
-  create: (name: string, gameType: GameType) => request<Room>('/api/rooms', { method: 'POST', body: { name, gameType } }),
-  join: (code: string) => request<Room>(`${path(code)}/join`, { method: 'POST' }),
+  create: (name: string, gameType: GameType, maxPlayers: number, password?: string) =>
+    request<Room>('/api/rooms', { method: 'POST', body: { name, gameType, maxPlayers, password } }),
+  join: (code: string, password?: string) => request<Room>(`${path(code)}/join`, { method: 'POST', body: { password } }),
+  watch: (code: string) => request<Room>(`${path(code)}/watch`, { method: 'POST' }),
+  seat: (code: string) => request<Room>(`${path(code)}/seat`, { method: 'POST' }),
   leave: (code: string) => request<void>(`${path(code)}/leave`, { method: 'POST' }),
   start: (code: string) => request<Room>(`${path(code)}/start`, { method: 'POST' }),
   forfeit: (code: string, memberId: number) => request<void>(`${path(code)}/members/${memberId}/forfeit`, { method: 'POST' }),

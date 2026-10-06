@@ -10,7 +10,7 @@ const OPPONENT = 2;
 
 const room: Room = {
   code: 'ABC123', name: '테스트 방', gameType: 'PAPER_SAFARI', gameTypeName: '페이퍼 사파리', status: 'PLAYING',
-  hostId: ME, maxPlayers: 4,
+  hostId: ME, maxPlayers: 4, locked: false, spectators: [],
   members: [
     { id: ME, nickname: '앨리스', host: true, connected: true, offlineSeconds: 0 },
     { id: OPPONENT, nickname: '밥', host: false, connected: true, offlineSeconds: 0 },

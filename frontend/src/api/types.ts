@@ -15,7 +15,9 @@ export type Room = {
   status: RoomStatus;
   hostId: number;
   maxPlayers: number;
+  locked: boolean;
   members: RoomMember[];
+  spectators: { id: number; nickname: string }[];
 };
 export type RoomSummary = {
   code: string;
@@ -25,6 +27,10 @@ export type RoomSummary = {
   playerCount: number;
   maxPlayers: number;
   hostNickname: string;
+  status: RoomStatus;
+  locked: boolean;
+  roundNumber: number | null;
+  spectatorCount: number;
 };
 
 export type GameActionType = 'FLIP' | 'DRAW_DECK' | 'DRAW_DISCARD' | 'SWAP' | 'DISCARD' | 'PEEK' | 'READY';

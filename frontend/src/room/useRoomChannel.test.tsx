@@ -34,7 +34,7 @@ const room = (name: string, status: Room['status'] = 'WAITING'): Room => ({
   gameTypeName: '페이퍼 사파리',
   status,
   hostId: 1,
-  maxPlayers: 4,
+  maxPlayers: 4, locked: false, spectators: [],
   members: [],
 });
 

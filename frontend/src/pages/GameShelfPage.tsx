@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { gamesApi } from '../api/games';
 import { messageOf } from '../api/http';
 import { roomsApi } from '../api/rooms';
 import type { GameSummary, GameType } from '../api/types';
 import { BookIcon } from '../components/icons';
+import { usePolling } from '../lib/usePolling';
 import { RollingNumber } from '../components/RollingNumber';
 import { useToast } from '../components/Toast';
 import { WoodRail } from '../components/WoodRail';
@@ -12,7 +13,7 @@ import { CATALOG, COMING_SOON_SLOTS, lobbyPath } from '../games/catalog';
 import { GameBox } from '../games/GameBox';
 import { RulesCarousel } from '../games/papersafari/RulesCarousel';
 
-const POLL_MS = 5000;
+const POLL_MS = 1000;
 const DEFAULT_NAMES: Record<GameType, string> = { PAPER_SAFARI: '페이퍼 사파리' };
 
 function Counts({ summary }: { summary: GameSummary | undefined }) {
@@ -51,27 +52,19 @@ export function GameShelfPage() {
       .catch(() => undefined);
   }, [navigate]);
 
-  const load = useCallback(() => {
-    gamesApi
-      .list()
-      .then((next) => {
-        failedRef.current = false;
-        setSummaries(next);
-      })
-      .catch((error) => {
-        if (!failedRef.current) {
-          toast.show(messageOf(error));
-        }
-        failedRef.current = true;
-        setSummaries(null);
-      });
-  }, [toast]);
-
-  useEffect(() => {
-    load();
-    const timer = window.setInterval(load, POLL_MS);
-    return () => window.clearInterval(timer);
-  }, [load]);
+  usePolling(() => gamesApi
+    .list()
+    .then((next) => {
+      failedRef.current = false;
+      setSummaries(next);
+    })
+    .catch((error) => {
+      if (!failedRef.current) {
+        toast.show(messageOf(error));
+      }
+      failedRef.current = true;
+      setSummaries(null);
+    }), POLL_MS);
 
   const summaryOf = (gameType: GameType) => summaries?.find((item) => item.gameType === gameType);
 

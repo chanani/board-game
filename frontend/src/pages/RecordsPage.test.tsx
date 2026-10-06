@@ -46,15 +46,15 @@ describe('RecordsPage', () => {
   it('내 통계와 최근 경기를 보여준다', async () => {
     renderPage();
 
-    expect(await screen.findByText(/3전 2승 0무 1패/)).toBeInTheDocument();
-    expect(screen.getByText('승률 66.7%')).toBeInTheDocument();
+    expect(await screen.findByText('2승 0무 1패')).toBeInTheDocument();
+    expect(screen.getByText('승률').nextElementSibling).toHaveTextContent('66.7%');
     expect(await screen.findByText('밥')).toBeInTheDocument();
     expect(screen.getByText('승 패')).toBeInTheDocument();
   });
 
   it('순위표 탭으로 바꿀 수 있다', async () => {
     renderPage();
-    await screen.findByText(/3전 2승 0무 1패/);
+    await screen.findByText('2승 0무 1패');
 
     await userEvent.click(screen.getByRole('button', { name: '순위표' }));
 
@@ -142,6 +142,6 @@ describe('RecordsPage', () => {
 
     renderPage();
 
-    expect(await screen.findByText('승률 -')).toBeInTheDocument();
+    expect((await screen.findByText('승률')).nextElementSibling).toHaveTextContent('-');
   });
 });
