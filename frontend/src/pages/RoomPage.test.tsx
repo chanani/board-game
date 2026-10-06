@@ -4,6 +4,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { PaperSafariSessionView, Room } from '../api/types';
 import { RoomPage } from './RoomPage';
+import { setMediaMatches } from '../test/media';
 
 const channel = vi.hoisted(() => ({ value: {} as Record<string, unknown>, options: undefined as unknown }));
 vi.mock('../room/useRoomChannel', () => ({
@@ -431,6 +432,18 @@ describe('RoomPage 상태 바', () => {
     expect(within(bar).queryByRole('button', { name: /진행 기록/ })).not.toBeInTheDocument();
     expect(within(bar).queryByRole('button', { name: /방 코드/ })).not.toBeInTheDocument();
     expect(screen.getByTestId('turn-bar')).toBeInTheDocument();
+  });
+
+  it('휴대폰을 눕힌 게임 화면에서는 상태 바를 테이블 왼쪽 칸으로 옮기고 칩을 감싼다', async () => {
+    setMediaMatches((query) => query.includes('orientation: landscape'));
+    setChannel({ room: { ...waiting, status: 'PLAYING' }, view: playingView });
+    renderRoom();
+    await act(async () => {});
+
+    const aside = screen.getByTestId('table-aside');
+    expect(within(aside).getByTestId('room-status-bar')).toBeInTheDocument();
+    expect(screen.getAllByTestId('room-status-bar')).toHaveLength(1);
+    expect(screen.getByTestId('room-chips')).toHaveClass('flex-wrap');
   });
 
   it('상태 칩은 이모지 대신 아이콘을 쓴다', async () => {

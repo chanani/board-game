@@ -1,13 +1,12 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import type { BoardView, GameAction, PaperSafariSessionView, Room, SlotView } from '../../api/types';
 import { GameOverPanel } from './GameOverPanel';
 import type { SeatTimer } from './PlayerBoard';
-import { TableRail } from './layout/TableRail';
-import { TableRound } from './layout/TableRound';
+import { TableRound, type TableDensity } from './layout/TableRound';
 import { TurnBar } from './layout/TurnBar';
 import { seatOrder } from './layout/seats';
 import type { Presence } from './layout/Seat';
-import { PC_QUERY, useMediaQuery } from '../../lib/useMediaQuery';
+import { useTableLayout, type TableLayout } from '../../lib/useTableLayout';
 import { canForfeit, offlineSecondsNow } from '../../lib/format';
 import { estimateBoard } from './score';
 import { useSound } from '../../lib/sound';
@@ -54,7 +53,11 @@ type Props = {
   onCloseGameOver: () => void;
   onReadyNext: () => void;
   transition?: ViewTransition | null;
+  /** 휴대폰을 눕힌 화면에서 차례 안내 위, 왼쪽 칸에 함께 쌓을 방 정보(상태 바). */
+  aside?: ReactNode;
 };
+
+const DENSITY_OF: Record<TableLayout, TableDensity> = { pc: 'pc', landscape: 'compact', tablet: 'compact', portrait: 'mini' };
 
 function placeText(canDiscard: boolean, compact: boolean): string {
   if (compact) {
@@ -94,14 +97,16 @@ function maskPending(view: PaperSafariSessionView, pending: Set<string>): PaperS
   return { game: { ...view.game, round: { ...view.game.round, boards } } };
 }
 
-export function PaperSafariTable({ view: rawView, room, meId, log, receivedAt, now, errorSeq, nicknameOf, onForfeit, send: rawSend, onCloseGameOver, onReadyNext, transition }: Props) {
+export function PaperSafariTable({ view: rawView, room, meId, log, receivedAt, now, errorSeq, nicknameOf, onForfeit, send: rawSend, onCloseGameOver, onReadyNext, transition, aside }: Props) {
   const { play } = useSound();
   const finale = useFinale(rawView.game, transition ?? null, () => play('flip'));
   const view = maskPending(rawView, finale.pending);
   const game = view.game;
   const round = game.round;
   const pendingUntil = useRef(0);
-  const wide = useMediaQuery(PC_QUERY);
+  const layout = useTableLayout();
+  const wide = layout === 'pc';
+  const landscape = layout === 'landscape';
   const myTurn = round.currentPlayerId === meId;
   const containerRef = useRef<HTMLDivElement>(null);
   const { ghosts, hidden, lifted } = useCardMotion(containerRef, transition ?? null, errorSeq);
@@ -199,15 +204,31 @@ export function PaperSafariTable({ view: rawView, room, meId, log, receivedAt, n
   };
   // 시간이 내 행동을 기다릴 때(내 차례, 또는 아직 안 뒤집은 시작 뒤집기)만 5초 경고음을 낸다.
   const waitingOnMe = needsFlip || (myTurn && round.phase !== 'SETUP_FLIP' && round.phase !== 'ROUND_OVER');
-  const Layout = wide ? TableRound : TableRail;
+
+  const turnBar = (
+    <TurnBar instruction={instructionText} myTurn={myTurn} log={log} nicknameOf={nicknameOf} compact={!wide} stacked={landscape} locked={finale.active}
+      deadline={game.deadline} serverNow={game.serverNow} onWarn={waitingOnMe ? () => play('tick') : undefined} />
+  );
 
   return (
     <HiddenZonesContext.Provider value={hidden}>
       <LiftedZonesContext.Provider value={lifted}>
       <div ref={containerRef} inert={finale.active} className={finale.active ? 'pointer-events-none' : undefined}>
-        <TurnBar instruction={instructionText} myTurn={myTurn} log={log} nicknameOf={nicknameOf} compact={!wide} locked={finale.active}
-          deadline={game.deadline} serverNow={game.serverNow} onWarn={waitingOnMe ? () => play('tick') : undefined} />
-        <Layout {...tableProps} />
+        {landscape ? (
+          // 눕힌 휴대폰은 높이가 낮아, 방 정보와 차례 안내를 왼쪽 좁은 칸에 세로로 쌓고 테이블에 높이를 모두 준다.
+          <div data-testid="landscape-table" className="grid grid-cols-[10.5rem_1fr] items-start gap-3">
+            <div data-testid="table-aside" className="sticky top-2 space-y-2">
+              {aside}
+              {turnBar}
+            </div>
+            <TableRound {...tableProps} density="compact" />
+          </div>
+        ) : (
+          <>
+            {turnBar}
+            <TableRound {...tableProps} density={DENSITY_OF[layout]} />
+          </>
+        )}
       </div>
       <GhostLayer ghosts={ghosts} />
       {finale.phase === 'banner' ? <GameEndBanner /> : null}

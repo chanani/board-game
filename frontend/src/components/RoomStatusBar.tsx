@@ -35,6 +35,8 @@ type Props = {
   room: Room;
   playing: boolean;
   onLeave: () => void;
+  /** 휴대폰을 눕힌 게임 화면의 왼쪽 좁은 칸: 칩을 여러 줄로 감싼다. */
+  stacked?: boolean;
 };
 
 /** 좁은 화면에서는 칩 글자를 아이콘으로 대신하고, 읽기 프로그램에는 그대로 읽힌다. */
@@ -46,7 +48,7 @@ function WideLabel({ children }: { children: ReactNode }) {
  * 방 맨 위 상태 바. 첫 줄은 방 이름과 (대기 중) 코드 복사, 나가기. 둘째 줄은 칩을 줄바꿈 없이 한 줄에 두고,
  * 좁은 화면에서는 글씨와 아이콘을 줄여 360px 폭에서도 넘치지 않게 한다.
  */
-export function RoomStatusBar({ room, playing, onLeave }: Props) {
+export function RoomStatusBar({ room, playing, onLeave, stacked = false }: Props) {
   const spectatorCount = room.spectators.length;
   return (
     <div data-testid="room-status-bar" className="relative z-20 rounded-2xl border border-(--status-border) bg-(--status-bg) px-3 py-2 backdrop-blur-[2px]">
@@ -55,7 +57,7 @@ export function RoomStatusBar({ room, playing, onLeave }: Props) {
         {playing ? null : <CodeChip code={room.code} />}
         <Button variant="danger" className="shrink-0 rounded-lg px-2.5 py-1 text-xs sm:px-3 sm:py-1.5 sm:text-sm" onClick={onLeave}>나가기</Button>
       </div>
-      <div className="mt-1 flex flex-nowrap items-center gap-1 overflow-hidden sm:gap-1.5" data-testid="room-chips">
+      <div className={`mt-1 flex items-center gap-1 sm:gap-1.5 ${stacked ? 'flex-wrap' : 'flex-nowrap overflow-hidden'}`} data-testid="room-chips">
         <RoomChip><CardsIcon /> {room.gameTypeName}</RoomChip>
         <RoomChip tone={playing ? 'green' : 'plain'}>{playing ? <><DotIcon className="h-3 w-3" /> 게임 중</> : '대기 중'}</RoomChip>
         <RoomChip label={`인원 ${room.members.length}/${room.maxPlayers}명`}><PeopleIcon /> {room.members.length}/{room.maxPlayers}명</RoomChip>

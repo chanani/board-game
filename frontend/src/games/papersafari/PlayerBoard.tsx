@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import type { BoardView, SlotView } from '../../api/types';
 import { Countdown } from '../../components/Countdown';
-import { CardFace } from './CardFace';
+import { CardFace, type CardSize } from './CardFace';
 import { ZoneAnchor } from './motion/ZoneAnchor';
 import { slotZone } from './motion/zones';
 import { CrownIcon } from '../../components/icons';
@@ -21,7 +21,7 @@ type Props = {
   active: boolean;
   /** 내 차례일 때 판 테두리 안쪽에 겨자색 링과 빛을 단다(바깥으로 번지지 않아 위 정보를 덮지 않는다). */
   turnRing?: boolean;
-  size?: 'xs' | 'sm' | 'md' | 'lg';
+  size?: CardSize;
   pulseSlots?: boolean;
   onSlotClick?: (slot: SlotView) => void;
   canClick?: (slot: SlotView) => boolean;
@@ -33,7 +33,9 @@ type Props = {
   timer?: SeatTimer;
 };
 
-const GAP = { xs: 'gap-1', sm: 'gap-1.5', md: 'gap-2.5', lg: 'gap-2.5' };
+/** 가장 작은 판은 여백과 이름표도 줄여, 세로 휴대폰 둥근 테이블의 한 줄(상대·덱·상대)에 들어가게 한다. */
+const PAD = { mini: 'p-1', xs: 'p-2', sm: 'p-2', md: 'p-2', lg: 'p-2' };
+const GAP = { mini: 'gap-0.5', xs: 'gap-1', sm: 'gap-1.5', md: 'gap-2.5', lg: 'gap-2.5' };
 
 export function PlayerBoard({ result, board, nickname, active, turnRing = false, size = 'md', pulseSlots = false, onSlotClick, canClick, connected, offlineSeconds = 0, onForfeit, zoomLabel, onZoom, timer }: Props) {
   const ordered = [...board.slots].sort((a, b) => a.row - b.row || a.column - b.column);
@@ -46,13 +48,13 @@ export function PlayerBoard({ result, board, nickname, active, turnRing = false,
 
   return (
     <div data-testid={`board-${board.playerId}`} data-winner={result ? result.winner : undefined}
-      className={`rounded-2xl bg-black/15 p-2 backdrop-blur-[1px] ${result ? 'mx-auto w-fit' : ''} ${turnRing ? 'ring-[3px] ring-inset ring-(--turn-ring) turn-ring' : ''} ${result?.winner ? 'ring-[3px] ring-mustard-400 shadow-[0_0_18px_rgb(242_179_61/0.7)]' : ''}`}>
-      <div className="mb-2 flex items-center justify-between gap-2 text-sm">
+      className={`rounded-2xl bg-black/15 ${PAD[size]} backdrop-blur-[1px] ${result ? 'mx-auto w-fit' : ''} ${turnRing ? 'ring-[3px] ring-inset ring-(--turn-ring) turn-ring' : ''} ${result?.winner ? 'ring-[3px] ring-mustard-400 shadow-[0_0_18px_rgb(242_179_61/0.7)]' : ''}`}>
+      <div className={`flex items-center justify-between gap-2 text-sm ${size === 'mini' ? 'mb-1' : 'mb-2'}`}>
         <span className="flex min-w-0 flex-wrap items-center gap-1.5">
           {connected !== undefined ? (
             <span aria-hidden="true" className={`inline-block h-2 w-2 shrink-0 rounded-full ${connected ? 'bg-green-500' : 'bg-stone-400'}`} />
           ) : null}
-          <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold shadow-[0_2px_0_rgb(0_0_0/0.3)] ${active ? 'turn-glow bg-(--turn-tag-bg) text-(--turn-tag-ink)' : 'bg-cream-50 text-wood-800'}`}>{result?.winner ? <CrownIcon className="mr-1 inline h-3.5 w-3.5 align-[-2px]" testId="winner-crown" /> : null}{result ? result.tag : nickname}</span>
+          <span className={`rounded-full py-0.5 font-bold ${size === 'mini' ? 'inline-block max-w-[5.5rem] truncate px-1.5 align-middle text-[10px]' : 'px-2.5 text-xs'} shadow-[0_2px_0_rgb(0_0_0/0.3)] ${active ? 'turn-glow bg-(--turn-tag-bg) text-(--turn-tag-ink)' : 'bg-cream-50 text-wood-800'}`}>{result?.winner ? <CrownIcon className="mr-1 inline h-3.5 w-3.5 align-[-2px]" testId="winner-crown" /> : null}{result ? result.tag : nickname}</span>
           {timer ? <Countdown size="sm" deadline={timer.deadline} serverNow={timer.serverNow} /> : null}
           {connected === false ? <span className="felt-ink text-xs">연결 끊김 {offlineSeconds}초</span> : null}
           {onForfeit ? (

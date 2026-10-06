@@ -16,6 +16,7 @@ import { useRoomChannel } from '../room/useRoomChannel';
 import { LeaveConfirmModal } from '../room/LeaveConfirmModal';
 import { WaitingRoom } from '../room/WaitingRoom';
 import { RoomBackdrop, RoomThemeProvider } from '../room/roomTheme';
+import { useTableLayout } from '../lib/useTableLayout';
 
 function isPresent(room: Room, meId: number): boolean {
   return room.members.some((member) => member.id === meId) || room.spectators.some((spectator) => spectator.id === meId);
@@ -34,6 +35,7 @@ export function RoomPage() {
   const { room, receivedAt, view, transition, log, missing, send, nicknameOf, errorSeq } = useRoomChannel(code, { poll: spectating });
   const [now, setNow] = useState(() => Date.now());
   const [confirmLeave, setConfirmLeave] = useState(false);
+  const layout = useTableLayout();
   const gameOver = useGameOverDismissal(code, view?.game ?? null, room?.status === 'PLAYING');
   // 이 화면은 REST 입장(참가·관전) 뒤에만 오므로 채팅도 방 채널과 같은 시점에 시작한다.
   const chat = useRoomChat(code, room !== null && !missing, { meId });
@@ -108,13 +110,18 @@ export function RoomPage() {
     });
   };
 
+  // 휴대폰을 눕힌 게임 화면은 상태 바를 테이블 왼쪽 칸으로 옮긴다.
+  const landscapeGame = showGame && layout === 'landscape';
+  const statusBar = <RoomStatusBar room={room} playing={playing} onLeave={requestLeave} stacked={landscapeGame} />;
+
   return (
     <RoomThemeProvider value={room.theme}>
     <div data-theme={room.theme} className={`space-y-4 ${playing ? 'lg:pb-20' : ''}`}>
       <RoomBackdrop theme={room.theme} />
-      <RoomStatusBar room={room} playing={playing} onLeave={requestLeave} />
+      {landscapeGame ? null : statusBar}
       {showGame && view ? (
         <PaperSafariTable
+          aside={landscapeGame ? statusBar : undefined}
           view={view}
           room={room}
           meId={meId}

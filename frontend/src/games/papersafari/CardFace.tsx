@@ -8,14 +8,16 @@ type Props = {
   card: CardView | null;
   faceUp: boolean;
   known: boolean;
-  size?: 'xs' | 'sm' | 'md' | 'lg';
+  size?: CardSize;
   highlight?: boolean;
   pulse?: boolean;
   sparkle?: boolean;
   onClick?: () => void;
 };
 
-const SIZES = { xs: 'h-14 w-10', sm: 'h-[67px] w-12', md: 'h-[90px] w-16', lg: 'h-28 w-20' };
+export type CardSize = 'mini' | 'xs' | 'sm' | 'md' | 'lg';
+
+const SIZES = { mini: 'h-10 w-7', xs: 'h-14 w-10', sm: 'h-[67px] w-12', md: 'h-[90px] w-16', lg: 'h-28 w-20' };
 
 function labelOf(card: CardView | null, faceUp: boolean, known: boolean): string {
   if (!card) {

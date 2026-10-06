@@ -42,6 +42,12 @@ function build({ phase, current, held = null, mine = faceDown() }: Setup): Paper
   };
 }
 
+function withOpponents(count: number): PaperSafariSessionView {
+  const view = build({ phase: 'DRAW', current: ME });
+  const others = Array.from({ length: count }, (_, index) => ({ playerId: OPPONENT + index, slots: faceDown() }));
+  return { game: { ...view.game, round: { ...view.game.round, boards: [view.game.round.boards[0], ...others] } } };
+}
+
 const nicknameOf = (memberId: number) => room.members.find((member) => member.id === memberId)?.nickname ?? '떠난 플레이어';
 
 function baseProps(view: PaperSafariSessionView, send: () => void = vi.fn(), targetRoom: Room = room, onForfeit: (id: number) => void = vi.fn(), now = 0, errorSeq = 0) {
@@ -413,21 +419,40 @@ describe('게임 화면 다듬기', () => {
     expect(lastLog).toHaveClass('min-w-0', 'truncate');
   });
 
-  it('모바일 상대 판은 가로 스크롤 없이 한 줄에 두 명씩 놓고, 남는 한 명은 가운데에 둔다', () => {
+  it('세로 휴대폰은 가장 작은 둥근 테이블: 상대 카드 폭 28px, 덱도 작게, 가로 스크롤 줄은 없다', () => {
     setMediaMatches(false);
     render(<PaperSafariTable {...baseProps(build({ phase: 'DRAW', current: ME }))} />);
-    const rail = screen.getByTestId('opponent-rail');
-    expect(rail).toHaveClass('flex', 'flex-wrap', 'justify-center');
-    expect(rail).not.toHaveClass('overflow-x-auto');
-    const seat = within(rail).getByRole('button', { name: '밥님의 판 크게 보기' }).closest('[data-testid="opponent-cell"]');
-    expect(seat).toHaveClass('basis-[calc(50%-4px)]');
+    expect(screen.getByTestId('table-round')).toHaveAttribute('data-density', 'mini');
+    expect(screen.queryByTestId('opponent-rail')).not.toBeInTheDocument();
+    const seat = screen.getByTestId('opponent-seat');
+    within(seat).getAllByRole('button', { name: '뒷면 카드' }).forEach((card) => expect(card).toHaveClass('w-7'));
+    expect(screen.getByRole('button', { name: '덱에서 뽑기' })).toHaveClass('w-10');
   });
 
-  it('좁은 휴대폰에서는 상대 카드를 가장 작은 크기로 그려 두 명이 한 줄에 들어가게 한다', () => {
+  it('세로 휴대폰에서도 상대 4명이 PC처럼 위 두 명, 양옆 두 명으로 앉는다', () => {
     setMediaMatches(false);
-    render(<PaperSafariTable {...baseProps(build({ phase: 'DRAW', current: ME }))} />);
-    const card = within(screen.getByTestId('opponent-rail')).getAllByRole('button', { name: '뒷면 카드' })[0];
-    expect(card).toHaveClass('w-10');
+    render(<PaperSafariTable {...baseProps(withOpponents(4))} />);
+    expect(screen.getAllByTestId('opponent-seat')).toHaveLength(4);
+    const piles = screen.getByRole('button', { name: '덱에서 뽑기' }).closest('.grid') as HTMLElement;
+    expect(within(piles).getAllByTestId('opponent-seat')).toHaveLength(2);
+  });
+
+  it('휴대폰을 눕히면 줄인 둥근 테이블과, 방 정보·차례 안내를 쌓은 왼쪽 칸을 둔다', () => {
+    setMediaMatches((query) => query.includes('orientation: landscape'));
+    render(<PaperSafariTable {...baseProps(build({ phase: 'DRAW', current: ME }))} aside={<div data-testid="aside-slot" />} />);
+    const aside = screen.getByTestId('table-aside');
+    expect(within(aside).getByTestId('aside-slot')).toBeInTheDocument();
+    expect(within(aside).getByTestId('turn-bar')).toHaveClass('flex-col');
+    expect(screen.getByTestId('table-round')).toHaveAttribute('data-density', 'compact');
+    within(screen.getByTestId('opponent-seat')).getAllByRole('button', { name: '뒷면 카드' }).forEach((card) => expect(card).toHaveClass('w-10'));
+  });
+
+  it('세로라도 폭이 넉넉한 태블릿은 왼쪽 칸 없이 줄인 둥근 테이블을 쓴다', () => {
+    setMediaMatches((query) => query === '(min-width: 640px)');
+    render(<PaperSafariTable {...baseProps(build({ phase: 'DRAW', current: ME }))} aside={<div data-testid="aside-slot" />} />);
+    expect(screen.queryByTestId('table-aside')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('aside-slot')).not.toBeInTheDocument();
+    expect(screen.getByTestId('table-round')).toHaveAttribute('data-density', 'compact');
   });
 
   it('좁은 휴대폰에서는 내 판 카드를 한 단계 작게 그려 버리기 칸과 한 줄에 들어가게 한다', () => {
@@ -452,7 +477,11 @@ describe('게임 화면 다듬기', () => {
     it.each([true, false])('상대 판을 누르면 큰 판과 예상 점수를 보여 준다 (PC 배치 %s)', async (wide) => {
       setMediaMatches(wide);
       render(<PaperSafariTable {...baseProps(withOpponentCards())} />);
-      expect(screen.getByTestId('opponent-estimate')).toHaveTextContent('예상 7점');
+      if (wide) {
+        expect(screen.getByTestId('opponent-estimate')).toHaveTextContent('예상 7점');
+      } else {
+        expect(screen.queryByTestId('opponent-estimate')).not.toBeInTheDocument();
+      }
 
       await userEvent.click(screen.getByRole('button', { name: '밥님의 판 크게 보기' }));
 
@@ -593,12 +622,6 @@ describe('모바일 게임 화면 (상대 판·내 차례·손 카드)', () => {
     const board = screen.getByTestId('board-1');
     expect(board).toHaveClass('ring-inset', 'turn-ring');
     expect(board).not.toHaveClass('ring-4');
-  });
-
-  it('모바일 상대 판 줄은 내 펠트와 조금 띄운다', () => {
-    setMediaMatches(false);
-    render(<PaperSafariTable {...baseProps(build({ phase: 'DRAW', current: ME }))} />);
-    expect(screen.getByTestId('opponent-rail')).toHaveClass('mb-5');
   });
 
   it('되돌리기로 PLACE에서 DRAW로 돌아와도 내 차례 소리는 다시 나지 않는다', () => {
