@@ -32,6 +32,9 @@ describe('WaitingRoom', () => {
 
     expect(screen.getAllByTestId('chair')).toHaveLength(4);
     expect(screen.getAllByLabelText('빈자리')).toHaveLength(2);
+    // 빈자리 글씨는 투명도 대신 테마별 흐린 글자색을 쓴다(밝은 펠트에서 대비 유지).
+    expect(screen.getAllByText('빈자리')[0]).toHaveClass('felt-ink-muted');
+    expect(screen.getAllByText('빈자리')[0].className).not.toMatch(/opacity-/);
     expect(screen.getByText('앨리스')).toBeInTheDocument();
   });
 
@@ -131,6 +134,8 @@ describe('WaitingRoom', () => {
     renderRoom({ room: { ...room, spectators: [{ id: 3, nickname: '캐롤' }, { id: 4, nickname: '데이브' }] } });
 
     expect(screen.getByText('관전 중: 캐롤, 데이브')).toBeInTheDocument();
+    // 오로라 눈밭·해변 모래 위에서도 읽히게 테마별 알약 바탕(pill)을 쓴다.
+    expect(screen.getByText('관전 중: 캐롤, 데이브').closest('p')).toHaveClass('pill');
     expect(screen.queryByRole('button', { name: '자리에 앉기' })).not.toBeInTheDocument();
   });
 

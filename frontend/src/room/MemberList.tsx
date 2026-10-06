@@ -65,7 +65,7 @@ export function MemberList({ members, maxPlayers, meId, receivedAt, now, onForfe
             {member ? (
               <Seated member={member} meId={meId} receivedAt={receivedAt} now={now} onForfeit={onForfeit} onKick={onKick} />
             ) : (
-              <span aria-hidden="true" className="felt-ink text-xs font-semibold opacity-60">빈자리</span>
+              <span aria-hidden="true" className="felt-ink-muted text-xs font-semibold">빈자리</span>
             )}
           </li>
         );
@@ -95,12 +95,12 @@ function Seated(props: SeatedProps) {
   const remove = removeActionOf(props);
   return (
     <>
-      <span className="flex max-w-full items-center rounded-full bg-black/40 px-2 text-sm font-bold text-cream-50">
+      <span className="pill-strong flex max-w-full items-center rounded-full px-2 text-sm font-bold">
         <span className="truncate">{member.nickname}</span>
         {member.id === meId ? <span className="shrink-0 text-xs">&nbsp;(나)</span> : null}
       </span>
       <StatusChip member={member} />
-      {!member.connected ? <span className="felt-ink text-xs opacity-80">연결 끊김 {offlineSecondsNow(member, receivedAt, now)}초</span> : null}
+      {!member.connected ? <span className="felt-ink-muted text-xs">연결 끊김 {offlineSecondsNow(member, receivedAt, now)}초</span> : null}
       {remove ? (
         <Button variant="danger" className="px-2 py-0.5 text-xs" onClick={remove}>내보내기</Button>
       ) : null}

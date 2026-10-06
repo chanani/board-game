@@ -48,7 +48,7 @@ export function PlayerBoard({ result, board, nickname, active, turnRing = false,
             <span aria-hidden="true" className={`inline-block h-2 w-2 shrink-0 rounded-full ${connected ? 'bg-green-500' : 'bg-stone-400'}`} />
           ) : null}
           <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold shadow-[0_2px_0_rgb(0_0_0/0.3)] ${active ? 'turn-glow bg-(--accent) text-(--accent-text)' : 'bg-cream-50 text-wood-800'}`}>{result ? result.tag : nickname}</span>
-          {connected === false ? <span className="felt-ink text-xs opacity-90">연결 끊김 {offlineSeconds}초</span> : null}
+          {connected === false ? <span className="felt-ink text-xs">연결 끊김 {offlineSeconds}초</span> : null}
           {onForfeit ? (
             <button type="button" onClick={onForfeit} className="rounded-md bg-red-50 px-1.5 py-0.5 text-xs font-medium text-red-700 hover:bg-red-100">
               내보내기

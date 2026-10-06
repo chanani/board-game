@@ -68,9 +68,9 @@ export function Hud({ instruction, myTurn, log, nicknameOf, compact = false }: P
           </div>
         ) : null}
       </div>
-      <p data-testid="last-log" className="col-span-full flex h-4 w-full justify-center text-xs leading-4 text-cream-50">
+      <p data-testid="last-log" className="col-span-full flex h-4 w-full justify-center text-xs leading-4">
         {latest ? (
-          <span className="flex max-w-full items-center gap-1 rounded-full bg-black/45 px-2">
+          <span className="pill-strong flex max-w-full items-center gap-1 rounded-full px-2">
             <KindDot kind={latest.kind} small />
             <span className="truncate"><Sentence entry={latest} nicknameOf={nicknameOf} /></span>
           </span>

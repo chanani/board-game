@@ -55,7 +55,7 @@ export function WaitingRoom({ room, meId, receivedAt, now, onStart, onReady, onF
           </div>
         </Felt>
         {room.spectators.length > 0 ? (
-          <p className="flex w-fit items-center gap-1.5 rounded-full bg-black/35 px-3 py-1 text-sm text-cream-50"><BinocularsIcon /> 관전 중: {room.spectators.map((spectator) => spectator.nickname).join(', ')}</p>
+          <p className="flex w-fit items-center gap-1.5 pill rounded-full px-3 py-1 text-sm"><BinocularsIcon /> 관전 중: {room.spectators.map((spectator) => spectator.nickname).join(', ')}</p>
         ) : null}
       </section>
       <div className="flex flex-col gap-6">
@@ -93,7 +93,7 @@ function CodeChip({ code }: { code: string }) {
   );
 }
 
-const NOTE = 'rounded-xl bg-black/35 px-2.5 py-1 text-[11px] leading-snug text-cream-50 sm:text-xs';
+const NOTE = 'pill rounded-xl px-2.5 py-1 text-[11px] leading-snug sm:text-xs';
 
 function startBlocker(members: RoomMember[]): string | null {
   if (members.length < 2) {

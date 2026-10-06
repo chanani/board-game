@@ -21,7 +21,7 @@ export function OpponentSeat({ board, nickname, active, held, presence, handOver
     <div>
       <Seat board={board} nickname={nickname} active={active} held={held} size="sm" presence={presence}
         handLabel={`${nickname}님이 들고 있는 카드`} onZoom={() => setOpen(true)} hand={handOverlay ? 'overlay' : 'side'} />
-      <span data-testid="opponent-estimate" className="mt-1 block w-fit rounded-full bg-black/35 px-2 py-0.5 text-xs font-bold text-cream-50">예상 {score}점</span>
+      <span data-testid="opponent-estimate" className="mt-1 block w-fit pill rounded-full px-2 py-0.5 text-xs font-bold">예상 {score}점</span>
       <OpponentBoardModal open={open} board={board} nickname={nickname} presence={{ connected: presence.connected, offlineSeconds: presence.offlineSeconds }} onClose={() => setOpen(false)} />
     </div>
   );

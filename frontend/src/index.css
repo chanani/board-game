@@ -31,11 +31,8 @@ body {
   @apply text-stone-800 antialiased;
   min-height: 100vh;
   background-color: var(--color-wood-800);
-  background-image:
-    radial-gradient(ellipse at 50% 0%, rgb(255 220 160 / 0.12), transparent 60%),
-    radial-gradient(ellipse at 50% 120%, rgb(0 0 0 / 0.55), transparent 60%),
-    repeating-linear-gradient(92deg, rgb(255 255 255 / 0.025) 0 2px, transparent 2px 9px),
-    linear-gradient(180deg, #3b2614, #24160b);
+  /* 원목 테마 배경(:root의 --room-bg)과 같은 값을 쓴다. 방 밖은 늘 원목이다. */
+  background-image: var(--room-bg);
   background-attachment: fixed;
 }
 
@@ -70,6 +67,10 @@ body {
   --status-border: rgb(255 250 240 / 0.15);
   --plate-bg: #1c5a37;
   --plate-text: #fffaf0;
+  --felt-ink-muted: rgb(255 250 240 / 0.6);
+  --pill-bg: rgb(0 0 0 / 0.35);
+  --pill-bg-strong: rgb(0 0 0 / 0.45);
+  --pill-ink: #fffaf0;
 }
 
 [data-theme="SUNSET"] {
@@ -93,6 +94,10 @@ body {
   --status-border: rgb(255 247 237 / 0.25);
   --plate-bg: #fff7ed;
   --plate-text: #9a3412;
+  --felt-ink-muted: #7c3f1d;
+  --pill-bg: rgb(63 29 11 / 0.7);
+  --pill-bg-strong: rgb(63 29 11 / 0.78);
+  --pill-ink: #fff7ed;
 }
 
 [data-theme="MOONLIT"] {
@@ -125,6 +130,10 @@ body {
   --status-border: rgb(224 242 254 / 0.18);
   --plate-bg: #5eead4;
   --plate-text: #083344;
+  --felt-ink-muted: #a5c8d8;
+  --pill-bg: rgb(2 6 23 / 0.55);
+  --pill-bg-strong: rgb(2 6 23 / 0.65);
+  --pill-ink: #e0f2fe;
 }
 
 [data-theme="AURORA"] {
@@ -133,8 +142,9 @@ body {
   --rim-1: #e2e8f0;
   --rim-2: #94a3b8;
   --table-shadow: rgb(15 23 42 / 0.45);
-  --felt-ink: #f8fafc;
-  --felt-ink-shadow: 0 1px 2px rgb(15 23 42 / 0.85);
+  --felt-ink: #0c2a4a;
+  --felt-ink-shadow: 0 0 2px rgb(240 249 255 / 0.95), 0 0 6px rgb(240 249 255 / 0.85);
+  --felt-ink-muted: #24476b;
   --back-a: #1e40af;
   --back-b: #3b82f6;
   --back-angle: 30deg;
@@ -149,6 +159,9 @@ body {
   --status-border: rgb(240 249 255 / 0.2);
   --plate-bg: #a7f3d0;
   --plate-text: #064e3b;
+  --pill-bg: rgb(11 29 58 / 0.85);
+  --pill-bg-strong: rgb(11 29 58 / 0.9);
+  --pill-ink: #f0f9ff;
 }
 
 [data-theme="BEACH"] {
@@ -172,6 +185,10 @@ body {
   --status-border: rgb(255 255 255 / 0.25);
   --plate-bg: #f97316;
   --plate-text: #431407;
+  --felt-ink-muted: #5b4a2a;
+  --pill-bg: rgb(8 47 73 / 0.85);
+  --pill-bg-strong: rgb(8 47 73 / 0.9);
+  --pill-ink: #f0f9ff;
 }
 
 /* 방 배경 장면. 방 화면 뒤(고정)와 방 만들기 미리보기 타일이 함께 쓴다. 장식 크기는 장면 크기(cq 단위)에 맞춘다. */
@@ -235,6 +252,23 @@ body {
 @utility felt-ink {
   color: var(--felt-ink);
   text-shadow: var(--felt-ink-shadow);
+}
+
+/* 흐린 펠트 글자(빈자리, 연결 끊김). 투명도를 겹치지 않고 테마별 색으로 대비를 지킨다. */
+@utility felt-ink-muted {
+  color: var(--felt-ink-muted);
+  text-shadow: var(--felt-ink-shadow);
+}
+
+/* 배경·펠트 위에 뜨는 작은 알약(관전 중, 안내, 덱 장수, 예상 점수 등). 오로라 눈밭·해변 모래에서도 읽히게 테마별 바탕을 쓴다. */
+@utility pill {
+  background: var(--pill-bg);
+  color: var(--pill-ink);
+}
+
+@utility pill-strong {
+  background: var(--pill-bg-strong);
+  color: var(--pill-ink);
 }
 
 @utility paper {

@@ -20,9 +20,9 @@ export function MySide({ canDiscard, canUndo, estimate, onDiscard, onUndo, hand 
       <Button variant="secondary" className="px-2!" disabled={!canDiscard} onClick={onDiscard}>버리기</Button>
       {hand ? <div className="flex justify-center py-1.5">{hand}</div> : null}
       {estimate ? (
-        <span className="rounded-2xl bg-black/35 px-2 py-1 text-center text-xs break-keep text-cream-50">
+        <span className="pill rounded-2xl px-2 py-1 text-center text-xs break-keep">
           현재 예상 점수 <strong className="text-lg text-mustard-400 @max-[110px]:text-base">{estimate.score}</strong>
-          {estimate.hidden > 0 ? <span className="estimate-hidden-note block text-cream-200/80 @max-[110px]:hidden">(+ 가려진 {estimate.hidden}장)</span> : null}
+          {estimate.hidden > 0 ? <span className="estimate-hidden-note block opacity-85 @max-[110px]:hidden">(+ 가려진 {estimate.hidden}장)</span> : null}
         </span>
       ) : null}
     </div>

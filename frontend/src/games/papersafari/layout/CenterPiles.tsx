@@ -29,7 +29,7 @@ export function CenterPiles({ deckSize, discardTop, drawable, onDrawDeck, onDraw
             <CardBack />
           </button>
         </ZoneAnchor>
-        <span className="relative z-[1] mt-1.5 rounded-full bg-black/35 px-2 text-xs font-bold text-cream-50">덱 {deckSize}장</span>
+        <span className="relative z-[1] mt-1.5 pill rounded-full px-2 text-xs font-bold">덱 {deckSize}장</span>
       </div>
       <div className="flex flex-col items-center gap-1">
         <ZoneAnchor zone={DISCARD}>
@@ -40,7 +40,7 @@ export function CenterPiles({ deckSize, discardTop, drawable, onDrawDeck, onDraw
             <div className={`${SIZE_CLASS[size]} rounded-[10%/7%] border-2 border-dashed border-cream-50/40`} />
           )}
         </ZoneAnchor>
-        <span className="relative z-[1] mt-1.5 rounded-full bg-black/35 px-2 text-xs font-bold text-cream-50">버린 카드</span>
+        <span className="relative z-[1] mt-1.5 pill rounded-full px-2 text-xs font-bold">버린 카드</span>
       </div>
     </div>
   );
