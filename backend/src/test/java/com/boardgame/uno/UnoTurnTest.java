@@ -253,6 +253,20 @@ class UnoTurnTest {
     }
 
     @Test
+    void R16_REVERSE_뒤_DRAW_TWO는_반대쪽_다음_사람이_받고_그_다음_사람이_한다() {
+        UnoGame game = game(List.of(A, B, C), List.of(List.of(num(RED, 2), drawTwo(RED), num(BLUE, 1), num(BLUE, 2)), B_HAND, C_HAND), FIRST, filler(10));
+        play(game, A, num(RED, 2));
+        play(game, B, reverse(RED));
+
+        play(game, A, drawTwo(RED));
+
+        assertThat(game.cardCount(C)).isEqualTo(6);
+        assertThat(game.cardCount(B)).isEqualTo(3);
+        assertThat(game.actor()).isEqualTo(B);
+        assertThat(game.latestEvents().get(1).target()).isEqualTo(C);
+    }
+
+    @Test
     void R17_DRAW_TWO면_다음_사람이_2장을_뽑고_차례를_잃는다() {
         UnoGame game = threePlayers();
         play(game, A, num(RED, 2));

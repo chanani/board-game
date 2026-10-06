@@ -12,6 +12,8 @@ public class UnoRound {
     static final int SKIP_ONE = 2;
     private static final int DRAW_TWO_COUNT = 2;
     private static final int TWO_PLAYERS = 2;
+    private static final int FOUR = 4;
+    private static final int CHALLENGE_PENALTY = 2;
 
     private final UnoTable table;
     private final UnoPlayers players;
@@ -79,12 +81,20 @@ public class UnoRound {
         progress.requireDrawnOrAny(cardId);
         requirePlayable(card);
         UnoColor color = colorFor(card, chosen);
+        boolean legalFour = holdsNoActiveColor(player);
         players.closeCatch();
         players.discardFrom(player, cardId);
         table.discard(card, color);
         events.add(UnoEvent.play(player, card, chosenColorOf(card, color)));
         players.settleUno(player);
-        resolve(player, card, events);
+        resolve(player, card, legalFour, events);
+    }
+
+    // R11: 낼 때(손에서 빼기 전, 새 색을 칠하기 전) 현재 색 카드가 없었는지. 현재 색이 없으면 합법.
+    private boolean holdsNoActiveColor(PlayerId player) {
+        return table.color()
+                .map(color -> !players.holdsColor(player, color))
+                .orElse(true);
     }
 
     private void requirePlayable(UnoCard card) {
@@ -108,14 +118,87 @@ public class UnoRound {
         return null;
     }
 
-    // R15~R17. (Task 4가 WILD_DRAW_FOUR 갈래를 더한다.)
-    void resolve(PlayerId player, UnoCard card, EventBatch events) {
+    // R15~R18
+    void resolve(PlayerId player, UnoCard card, boolean legalFour, EventBatch events) {
         switch (card.kind()) {
             case SKIP -> skipNext(events);
             case REVERSE -> reverse(player, events);
             case DRAW_TWO -> drawTwoNext(events);
-            case NUMBER, WILD, WILD_DRAW_FOUR -> passTurn(NEXT);
+            case WILD_DRAW_FOUR -> awaitChallenge(new FourCharge(player, legalFour, players.cardsOf(player)));
+            case NUMBER, WILD -> passTurn(NEXT);
         }
+    }
+
+    // R18: 다음 사람(받는 사람)이 도전할지 고른다.
+    private void awaitChallenge(FourCharge charge) {
+        progress.charge(charge);
+        players.endTurn();
+        players.advance(NEXT);
+        progress.begin(Turn.challenge(players.current()));
+    }
+
+    // R20·R21·R22
+    public void challenge(PlayerId player, EventBatch events) {
+        progress.requireActor(player);
+        progress.requireStage(UnoStage.CHALLENGE);
+        players.closeCatch();
+        FourCharge charge = progress.takeCharge();
+        progress.reveal(new ChallengeReveal(player, charge));
+        if (charge.legal()) {
+            challengeFails(player, charge, events);
+            return;
+        }
+        challengeSucceeds(player, charge, events);
+    }
+
+    // R20: 낸 사람이 4장. +4 카드와 고른 색은 그대로, 받는 사람이 정상 차례를 한다(D9).
+    private void challengeSucceeds(PlayerId challenger, FourCharge charge, EventBatch events) {
+        events.add(UnoEvent.challenge(challenger, charge.by(), UnoEventReason.GUILTY));
+        penalize(charge.by(), FOUR, UnoEventReason.CHALLENGE_GUILTY, events);
+        progress.begin(Turn.play(challenger));
+    }
+
+    // R21: 받는 사람이 6장을 뽑고 차례를 잃는다.
+    private void challengeFails(PlayerId challenger, FourCharge charge, EventBatch events) {
+        events.add(UnoEvent.challenge(challenger, charge.by(), UnoEventReason.INNOCENT));
+        penalize(challenger, FOUR + CHALLENGE_PENALTY, UnoEventReason.CHALLENGE_FAILED, events);
+        passTurn(NEXT);
+    }
+
+    // R19
+    public void accept(PlayerId player, EventBatch events) {
+        progress.requireActor(player);
+        progress.requireStage(UnoStage.CHALLENGE);
+        players.closeCatch();
+        progress.takeCharge();
+        penalize(player, FOUR, UnoEventReason.WILD_DRAW_FOUR, events);
+        passTurn(NEXT);
+    }
+
+    public Optional<FourCharge> pendingCharge() {
+        return progress.pendingCharge();
+    }
+
+    public boolean isChargedBy(PlayerId player) {
+        return progress.pendingCharge()
+                .filter(charge -> charge.isBy(player))
+                .isPresent();
+    }
+
+    public void clearCharge() {
+        progress.clearCharge();
+    }
+
+    public Optional<ChallengeReveal> revealFor(PlayerId viewer) {
+        return progress.revealFor(viewer);
+    }
+
+    // R22: 도전 처리 직후 상태에서만 공개한다.
+    void forgetRevealUnless(EventBatch batch) {
+        if (batch.has(UnoEventType.CHALLENGE)) {
+            return;
+        }
+        progress.forgetReveal();
     }
 
     private void skipNext(EventBatch events) {

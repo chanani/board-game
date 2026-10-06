@@ -4,15 +4,44 @@ import com.boardgame.common.error.BusinessException;
 import com.boardgame.common.error.ErrorCode;
 import java.util.Optional;
 
-// 지금 단계와 단계 순번. (Task 4에서 +4 도전 상태 ChallengeState가 세 번째 필드로 들어온다.)
+// 지금 단계, 단계 순번, +4 도전 상태.
 public class UnoProgress {
 
     private Turn turn;
     private StageSeq seq;
+    private final ChallengeState challenge = new ChallengeState();
 
     public UnoProgress(Turn first) {
         this.turn = first;
         this.seq = StageSeq.first();
+    }
+
+    public void charge(FourCharge next) {
+        challenge.charge(next);
+    }
+
+    public Optional<FourCharge> pendingCharge() {
+        return challenge.pending();
+    }
+
+    public FourCharge takeCharge() {
+        return challenge.take();
+    }
+
+    public void clearCharge() {
+        challenge.clear();
+    }
+
+    public void reveal(ChallengeReveal next) {
+        challenge.reveal(next);
+    }
+
+    public Optional<ChallengeReveal> revealFor(PlayerId viewer) {
+        return challenge.revealFor(viewer);
+    }
+
+    public void forgetReveal() {
+        challenge.forgetReveal();
     }
 
     public void begin(Turn next) {

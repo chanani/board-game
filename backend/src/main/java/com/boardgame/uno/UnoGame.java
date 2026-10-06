@@ -47,16 +47,33 @@ public class UnoGame {
         run(player, batch -> round.keep(player, batch));
     }
 
+    public void challenge(PlayerId player) {
+        run(player, batch -> round.challenge(player, batch));
+    }
+
+    public void accept(PlayerId player) {
+        run(player, batch -> round.accept(player, batch));
+    }
+
+    public Optional<FourCharge> pendingCharge() {
+        return round.pendingCharge();
+    }
+
+    public Optional<ChallengeReveal> revealFor(PlayerId viewer) {
+        return round.revealFor(viewer);
+    }
+
     // 사람이 한 행동: 남은 참가자인지 본 뒤 상태를 바꾼다. (Task 6이 맨 앞에 게임 끝 검사를 더한다.)
     private void run(PlayerId player, Consumer<EventBatch> action) {
         requirePlayer(player);
         apply(false, action);
     }
 
-    // 이벤트를 모아 성공했을 때만 기록을 바꾼다. (Task 4가 도전 공개 지우기, Task 6이 게임 끝 정산을 더한다.)
+    // 이벤트를 모아 성공했을 때만 기록을 바꾼다. (Task 6이 게임 끝 정산을 더한다.)
     private void apply(boolean auto, Consumer<EventBatch> action) {
         EventBatch batch = events.open(auto);
         action.accept(batch);
+        round.forgetRevealUnless(batch);
         events.commit(batch);
     }
 
