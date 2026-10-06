@@ -7,8 +7,7 @@ import com.boardgame.chat.domain.ChatMessage;
 import com.boardgame.chat.domain.ChatRateLimiter;
 import com.boardgame.chat.domain.ChatText;
 import com.boardgame.chat.infra.ChatRegistry;
-import com.boardgame.common.error.BusinessException;
-import com.boardgame.common.error.ErrorCode;
+import com.boardgame.room.application.OccupantContext;
 import com.boardgame.room.application.RoomService;
 import com.boardgame.room.domain.RoomClosedEvent;
 import com.boardgame.room.domain.RoomCode;
@@ -39,23 +38,27 @@ public class ChatService {
         this.clock = clock;
     }
 
-    public void send(String code, long memberId, String rawText) {
-        String nickname = roomService.nicknameOf(code, memberId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_IN_ROOM));
+    public void send(String rawCode, long memberId, String rawText) {
+        String code = RoomCode.parse(rawCode).value();
         ChatText text = new ChatText(rawText);
-        limiter.require(memberId);
-        ChatMessage message = new ChatMessage(ids.incrementAndGet(), new ChatAuthor(memberId, nickname),
-                new ChatBody(text, clock.instant()));
-        registry.logOf(RoomCode.parse(code).value()).append(message);
-        messagingTemplate.convertAndSend("/topic/rooms/" + RoomCode.parse(code).value() + "/chat",
-                ChatMessageResponse.from(message));
+        roomService.withOccupant(code, memberId, context -> deliver(code, memberId, text, context));
     }
 
-    public List<ChatMessage> history(String code, long memberId) {
-        if (!roomService.isOccupant(code, memberId)) {
-            throw new BusinessException(ErrorCode.NOT_IN_ROOM);
-        }
-        return registry.logOf(RoomCode.parse(code).value()).asList();
+    // 방 잠금 안에서 실행된다: 방 닫힘 정리와 겹쳐도 닫힌 방의 로그가 다시 생기지 않는다.
+    private Void deliver(String code, long memberId, ChatText text, OccupantContext context) {
+        limiter.require(memberId);
+        ChatMessage message = new ChatMessage(ids.incrementAndGet(), new ChatAuthor(memberId, context.nickname()),
+                new ChatBody(text, clock.instant()));
+        registry.append(code, message);
+        ChatMessageResponse payload = ChatMessageResponse.from(code, message);
+        context.occupantIds().forEach(id -> messagingTemplate.convertAndSendToUser(String.valueOf(id),
+                "/queue/chat", payload));
+        return null;
+    }
+
+    public List<ChatMessage> history(String rawCode, long memberId) {
+        String code = RoomCode.parse(rawCode).value();
+        return roomService.withOccupant(code, memberId, context -> registry.messages(code));
     }
 
     public void clear(String code) {

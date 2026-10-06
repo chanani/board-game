@@ -22,7 +22,7 @@ public class ChatController {
     @GetMapping
     public List<ChatMessageResponse> history(@PathVariable String code, Principal principal) {
         return chatService.history(code, LoginMember.idOf(principal)).stream()
-                .map(ChatMessageResponse::from)
+                .map(message -> ChatMessageResponse.from(code.toUpperCase(), message))
                 .toList();
     }
 }

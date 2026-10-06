@@ -20,7 +20,7 @@ import org.springframework.stereotype.Component;
 public class RoomTopicGuard implements ChannelInterceptor {
 
     private static final String TOPIC_PREFIX = "/topic";
-    private static final Pattern ROOM_TOPIC = Pattern.compile("^/topic/rooms/([A-Z0-9]{6})(/chat)?$");
+    private static final Pattern ROOM_TOPIC = Pattern.compile("^/topic/rooms/([A-Z0-9]{6})$");
 
     private final ObjectProvider<RoomService> roomService;
 

@@ -84,13 +84,10 @@ class RoomTopicGuardTest {
     }
 
     @Test
-    void 방_참가자는_채팅_토픽도_구독할_수_있고_그_밖의_하위_경로는_막는다() {
+    void 채팅은_개인_큐로만_전달하므로_방_하위_토픽_구독은_막는다() {
         when(roomService.isOccupant("ABCDEF", 7L)).thenReturn(true);
         LoginMember user = new LoginMember(7L, "칠");
-        Message<?> chat = message(StompCommand.SUBSCRIBE, "/topic/rooms/ABCDEF/chat", user);
 
-        assertThat(guard.preSend(chat, null)).isSameAs(chat);
-        assertThat(guard.preSend(message(StompCommand.SUBSCRIBE, "/topic/rooms/ABCDEF/other", user), null)).isNull();
-        assertThat(guard.preSend(message(StompCommand.SUBSCRIBE, "/topic/rooms/ABCDEF/chat/x", user), null)).isNull();
+        assertThat(guard.preSend(message(StompCommand.SUBSCRIBE, "/topic/rooms/ABCDEF/chat", user), null)).isNull();
     }
 }

@@ -34,6 +34,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Stream;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -137,13 +138,14 @@ public class RoomService {
         return broadcast(room);
     }
 
-    public synchronized Optional<String> nicknameOf(String rawCode, long memberId) {
-        return registry.find(RoomCode.parse(rawCode))
-                .stream()
-                .flatMap(room -> Stream.concat(room.participants().stream(), room.spectators().stream()))
-                .filter(participant -> participant.memberId() == memberId)
-                .map(Participant::nickname)
-                .findFirst();
+    // 방 잠금 안에서 함수를 실행한다. 방 사람이 아니면 NOT_IN_ROOM. 채팅의 확인·기록·전달을 방 닫힘과 원자적으로 묶는 용도다.
+    public synchronized <T> T withOccupant(String rawCode, long memberId, Function<OccupantContext, T> action) {
+        Room room = registry.find(RoomCode.parse(rawCode)).filter(found -> found.isOccupant(memberId))
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_IN_ROOM));
+        List<Participant> everyone = Stream.concat(room.participants().stream(), room.spectators().stream()).toList();
+        String nickname = everyone.stream().filter(person -> person.memberId() == memberId)
+                .map(Participant::nickname).findFirst().orElseThrow();
+        return action.apply(new OccupantContext(nickname, everyone.stream().map(Participant::memberId).toList()));
     }
 
     private void saveAndNotifyClosed(Room room) {

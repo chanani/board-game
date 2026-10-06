@@ -269,7 +269,7 @@ class StompGameFlowTest {
     }
 
     @Test
-    void 방_참가자와_관전자는_채팅을_주고받고_방_밖_사람은_받지_못한다() throws Exception {
+    void 방_참가자와_관전자는_채팅을_개인_큐로_받고_나간_사람과_방_밖_사람은_받지_못한다() throws Exception {
         Player host = player();
         Player guest = player();
         Player watcher = player();
@@ -278,9 +278,10 @@ class StompGameFlowTest {
         StompSession outsiderStomp = connect(outsiderCredentials[1], recordingProblems(problems));
         String code = startedRoom(host, guest);
         post("/api/rooms/" + code + "/watch", Map.of(), watcher.cookie());
-        BlockingQueue<JsonNode> hostChat = subscribe(host.stomp(), "/topic/rooms/" + code + "/chat");
-        BlockingQueue<JsonNode> watcherChat = subscribe(watcher.stomp(), "/topic/rooms/" + code + "/chat");
-        BlockingQueue<JsonNode> outsiderChat = subscribe(outsiderStomp, "/topic/rooms/" + code + "/chat");
+        BlockingQueue<JsonNode> hostChat = subscribe(host.stomp(), "/user/queue/chat");
+        BlockingQueue<JsonNode> guestChat = subscribe(guest.stomp(), "/user/queue/chat");
+        BlockingQueue<JsonNode> watcherChat = subscribe(watcher.stomp(), "/user/queue/chat");
+        BlockingQueue<JsonNode> outsiderChat = subscribe(outsiderStomp, "/user/queue/chat");
         Thread.sleep(500);
 
         host.stomp().send("/app/rooms/" + code + "/chat", Map.of("text", "안녕"));
@@ -288,14 +289,21 @@ class StompGameFlowTest {
         JsonNode received = watcherChat.poll(5, TimeUnit.SECONDS);
         assertThat(received).isNotNull();
         assertThat(received.get("text").asText()).isEqualTo("안녕");
+        assertThat(received.get("roomCode").asText()).isEqualTo(code);
         assertThat(received.get("memberId").asLong()).isEqualTo(host.id());
         assertThat(hostChat.poll(5, TimeUnit.SECONDS)).isNotNull();
+        assertThat(guestChat.poll(5, TimeUnit.SECONDS)).isNotNull();
         assertThat(outsiderChat.poll(1, TimeUnit.SECONDS)).isNull();
         assertThat(problems).isEmpty();
         assertThat(outsiderStomp.isConnected()).isTrue();
 
-        watcher.stomp().send("/app/rooms/" + code + "/chat", Map.of("text", "   "));
-        JsonNode error = watcher.errors().poll(5, TimeUnit.SECONDS);
+        post("/api/rooms/" + code + "/leave", Map.of(), watcher.cookie());
+        host.stomp().send("/app/rooms/" + code + "/chat", Map.of("text", "두번째"));
+        assertThat(hostChat.poll(5, TimeUnit.SECONDS)).isNotNull();
+        assertThat(watcherChat.poll(1, TimeUnit.SECONDS)).isNull();
+
+        guest.stomp().send("/app/rooms/" + code + "/chat", Map.of("text", "   "));
+        JsonNode error = guest.errors().poll(5, TimeUnit.SECONDS);
         assertThat(error).isNotNull();
         assertThat(error.get("code").asText()).isEqualTo("INVALID_CHAT_MESSAGE");
     }

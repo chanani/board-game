@@ -1,12 +1,14 @@
 package com.boardgame.chat;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.boardgame.chat.application.ChatService;
+import com.boardgame.chat.infra.ChatRegistry;
 import com.boardgame.common.error.BusinessException;
 import com.boardgame.room.application.RoomNotifier;
 import com.boardgame.room.application.RoomService;
@@ -32,9 +34,11 @@ class ChatApiTest {
     @Autowired
     private ChatService chatService;
     @Autowired
-    private RoomService roomService;
+    private ChatRegistry chatRegistry;
     @Autowired
     private ApplicationEventPublisher events;
+    @Autowired
+    private RoomService roomService;
     @MockitoBean
     private RoomNotifier notifier;
 
@@ -73,7 +77,7 @@ class ChatApiTest {
         User outsider = ApiUsers.create(mockMvc);
         String code = createRoom(host);
 
-        org.assertj.core.api.Assertions.assertThatThrownBy(() -> chatService.send(code, outsider.id(), "hi"))
+        assertThatThrownBy(() -> chatService.send(code, outsider.id(), "hi"))
                 .isInstanceOf(BusinessException.class);
         roomService.leave(code, host.id());
     }
@@ -92,16 +96,32 @@ class ChatApiTest {
     }
 
     @Test
-    void 모두_나가_방이_닫히면_이벤트로_기록이_지워진다() throws Exception {
+    void 모두_나가_방이_닫히면_예전_코드의_로그가_실제로_지워진다() throws Exception {
         User host = ApiUsers.create(mockMvc);
         String code = createRoom(host);
         chatService.send(code, host.id(), "사라질 말");
+        assertThat(chatRegistry.contains(code)).isTrue();
+
+        mockMvc.perform(post("/api/rooms/" + code + "/leave").session(host.session()))
+                .andExpect(status().is2xxSuccessful());
+
+        assertThat(chatRegistry.contains(code)).isFalse();
+    }
+
+    @Test
+    void 닫혔거나_없는_방의_기록을_읽어도_로그가_만들어지지_않는다() throws Exception {
+        User host = ApiUsers.create(mockMvc);
+        String code = createRoom(host);
         roomService.leave(code, host.id());
 
-        User next = ApiUsers.create(mockMvc);
-        String newCode = createRoom(next);
+        assertThatThrownBy(() -> chatService.history(code, host.id())).isInstanceOf(BusinessException.class);
+        assertThatThrownBy(() -> chatService.send(code, host.id(), "늦은 말")).isInstanceOf(BusinessException.class);
+        assertThat(chatRegistry.contains(code)).isFalse();
 
-        assertThat(chatService.history(newCode, next.id())).isEmpty();
-        roomService.leave(newCode, next.id());
+        User other = ApiUsers.create(mockMvc);
+        String openCode = createRoom(other);
+        assertThat(chatService.history(openCode, other.id())).isEmpty();
+        assertThat(chatRegistry.contains(openCode)).isFalse();
+        roomService.leave(openCode, other.id());
     }
 }
