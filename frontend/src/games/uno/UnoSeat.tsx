@@ -23,8 +23,8 @@ export function UnoSeat({ player, nickname, active, backWidth, maxBacks, timer, 
     <div role="group" aria-label={label} data-testid="uno-seat" data-player={player.playerId} className="flex flex-col items-center gap-1">
       <div className="flex items-center gap-1.5">
         {connected !== undefined ? <span aria-hidden="true" className={`inline-block h-2 w-2 rounded-full ${connected ? 'bg-green-500' : 'bg-stone-400'}`} /> : null}
-        <span className={`max-w-[5.5rem] truncate rounded-full px-2.5 py-0.5 text-xs font-bold shadow-[0_2px_0_rgb(0_0_0/0.3)] ${active ? 'turn-glow bg-(--turn-tag-bg) text-(--turn-tag-ink)' : 'bg-cream-50 text-wood-800'}`}>{nickname}</span>
-        {catchable ? <span data-testid="catch-badge" aria-label="우노를 안 외쳤어요" className="rounded-full bg-red-600 p-0.5 text-white"><AlertIcon className="h-3 w-3" /></span> : null}
+        <span className={`max-w-[5.5rem] truncate md:max-w-[7rem] rounded-full px-2.5 py-0.5 text-xs font-bold shadow-[0_2px_0_rgb(0_0_0/0.3)] ${active ? 'turn-glow bg-(--turn-tag-bg) text-(--turn-tag-ink)' : 'bg-cream-50 text-wood-800'}`}>{nickname}</span>
+        {catchable ? <span data-testid="catch-badge" role="img" aria-label="우노를 안 외쳤어요" className="rounded-full bg-red-600 p-0.5 text-white"><AlertIcon className="h-3 w-3" /></span> : null}
         {timer ? <Countdown size="sm" deadline={timer.deadline} serverNow={timer.serverNow} /> : null}
       </div>
       {connected === false ? <span className="felt-ink text-xs">연결 끊김 {offlineSeconds}초</span> : null}

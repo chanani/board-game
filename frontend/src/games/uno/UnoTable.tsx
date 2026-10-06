@@ -29,6 +29,7 @@ export function UnoTable({ view, room, meId, log, receivedAt, now, nicknameOf, s
   const rows = seatRows(opponentIds.length);
   const maxBacks = layout === 'portrait' && opponentIds.length >= 3 ? 4 : 7;
 
+  const draw = () => send({ type: 'DRAW' });
   const playCard = (card: UnoCard) => {
     if (isWild(card)) {
       return;
@@ -62,7 +63,7 @@ export function UnoTable({ view, room, meId, log, receivedAt, now, nicknameOf, s
 
   const center = (
     <UnoCenter drawPileCount={game.drawPileCount} discardTop={game.discardTop} discardCount={game.discardCount} currentColor={game.currentColor}
-      direction={game.direction} canDraw={myTurn && game.stage === 'PLAY'} onDraw={() => send({ type: 'DRAW' })} cardWidth={sizes.center} />
+      direction={game.direction} canDraw={myTurn && game.stage === 'PLAY'} onDraw={draw} cardWidth={sizes.center} />
   );
   const felt = (
     <Felt shape="oval" className={`mx-auto flex w-full flex-col ${FELT[layout]}`}>
@@ -85,7 +86,7 @@ export function UnoTable({ view, room, meId, log, receivedAt, now, nicknameOf, s
   );
   const mine = game.hand === null ? <SpectatorNotice /> : (
     <div className="space-y-1">
-      <UnoActionBar stage={game.stage} myTurn={myTurn} onDraw={() => send({ type: 'DRAW' })} onPlayDrawn={playDrawn} onKeep={() => send({ type: 'KEEP' })} />
+      <UnoActionBar stage={game.stage} myTurn={myTurn} onDraw={draw} onPlayDrawn={playDrawn} onKeep={() => send({ type: 'KEEP' })} />
       <UnoHand cards={game.hand} playableIds={game.playableCardIds} myTurn={myTurn && (game.stage === 'PLAY' || game.stage === 'DRAWN')}
         layout={layout} zoneId={meId} onPlay={playCard} />
     </div>

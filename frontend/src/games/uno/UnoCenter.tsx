@@ -17,15 +17,21 @@ type Props = {
 
 const UNDER_TILTS = [-8, 6];
 
+/** 모션은 scaleX를 rotate보다 먼저 적용하므로, 좌우 반전 아래에서는 +360이 눈에는 시계 반대 방향으로 돈다. */
+export function spinOf(direction: UnoDirection): { scaleX: number; rotate: number } {
+  return { scaleX: direction === 'CLOCKWISE' ? 1 : -1, rotate: 360 };
+}
+
 function DirectionArrows({ direction, size }: { direction: UnoDirection; size: number }) {
   const reduce = useReducedMotion();
   const clockwise = direction === 'CLOCKWISE';
   const label = clockwise ? '진행 방향: 시계 방향' : '진행 방향: 시계 반대 방향';
-  const spin = reduce ? undefined : { rotate: clockwise ? 360 : -360 };
+  const { scaleX, rotate } = spinOf(direction);
+  const spin = reduce ? undefined : { rotate };
   return (
-    <motion.svg role="img" aria-label={label} data-direction={direction} viewBox="0 0 100 100" width={size} height={size}
+    <motion.svg key={direction} role="img" aria-label={label} data-direction={direction} viewBox="0 0 100 100" width={size} height={size}
       className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-white/40"
-      style={{ scaleX: clockwise ? 1 : -1 }}
+      style={{ scaleX }}
       animate={spin} transition={{ repeat: Infinity, duration: 20, ease: 'linear' }}>
       <g fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
         <path d="M50 6 A44 44 0 0 1 94 50" />
@@ -49,7 +55,7 @@ export function UnoCenter({ drawPileCount, discardTop, discardCount, currentColo
       <div className="relative flex items-center justify-center gap-4 px-2 py-2">
         <DirectionArrows direction={direction} size={ringSize} />
         <div className="flex flex-col items-center gap-1">
-          <button type="button" aria-label="카드 뽑기" data-uno-zone="draw" disabled={!canDraw} onClick={onDraw}
+          <button type="button" aria-label={`카드 뽑기, 남은 ${drawPileCount}장`} data-uno-zone="draw" disabled={!canDraw} onClick={onDraw}
             className={`press-3d relative flex flex-col items-center rounded-lg disabled:cursor-not-allowed ${canDraw ? 'turn-glow' : ''}`}>
             <span aria-hidden="true" className="relative block" style={{ width: cardWidth + 4, height: height + 4 }}>
               {[2, 1, 0].map((offset) => (

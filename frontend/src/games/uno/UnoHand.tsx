@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type KeyboardEvent, type RefObject } from 'react';
+import { Fragment, useEffect, useRef, useState, type KeyboardEvent, type RefObject } from 'react';
 import type { UnoCard } from '../../api/types';
 import { useMediaQuery } from '../../lib/useMediaQuery';
 import type { TableLayout } from '../../lib/useTableLayout';
@@ -50,6 +50,7 @@ function useFreshIds(cards: UnoCard[]): Set<number> {
     }
     const added = new Set([...ids].filter((id) => !previous.has(id)));
     if (added.size === 0) {
+      setFresh((current) => (current.size === 0 ? current : new Set()));
       return;
     }
     setFresh(added);
@@ -94,7 +95,7 @@ export function UnoHand({ cards, playableIds, myTurn, layout, zoneId, onPlay }: 
     setSelected(card.id);
   };
   const keyPress = (event: KeyboardEvent, card: UnoCard, playable: boolean) => {
-    if (event.key !== 'Enter' && event.key !== ' ') {
+    if (event.repeat || (event.key !== 'Enter' && event.key !== ' ')) {
       return;
     }
     event.preventDefault();
@@ -106,7 +107,6 @@ export function UnoHand({ cards, playableIds, myTurn, layout, zoneId, onPlay }: 
 
   const count = sorted.length;
   const innerWidth = count === 0 ? 0 : (count - 1) * step + sizes.hand;
-  const selectedIndex = sorted.findIndex((card) => card.id === selected);
   return (
     <div ref={boxRef} role="group" aria-label={`내 카드 ${cards.length}장`} data-testid="uno-hand" data-uno-zone={`hand:${zoneId}`}
       className={scroll ? 'overflow-x-auto' : 'overflow-x-clip'}
@@ -121,8 +121,9 @@ export function UnoHand({ cards, playableIds, myTurn, layout, zoneId, onPlay }: 
           const dropY = Math.abs(angle) * 1.2;
           const isFresh = fresh.has(card.id);
           return (
-            <button key={card.id} type="button" data-testid="hand-card" data-card-id={card.id} data-angle={angle}
-              data-lifted={playable ? 'true' : undefined} data-selected={isSelected ? 'true' : undefined} data-fresh={isFresh ? 'true' : undefined}
+            <Fragment key={card.id}>
+            <button type="button" data-testid="hand-card" data-card-id={card.id} data-angle={angle}
+              data-lifted={playable ? 'true' : undefined} aria-pressed={isSelected} data-selected={isSelected ? 'true' : undefined} data-fresh={isFresh ? 'true' : undefined}
               aria-disabled={blocked ? 'true' : undefined}
               aria-label={`${cardName(card)}${playable ? ', 낼 수 있어요' : ''}`}
               onClick={() => press(card, playable)} onKeyDown={(event) => keyPress(event, card, playable)}
@@ -135,13 +136,14 @@ export function UnoHand({ cards, playableIds, myTurn, layout, zoneId, onPlay }: 
               }}>
               <UnoCardFace card={card} width={sizes.hand} decorative />
             </button>
+            {isSelected ? (
+              <button type="button" aria-label={`${cardName(card)} 내기`} onClick={() => press(card, true)}
+                className="press-3d absolute rounded-full bg-(--accent) px-3 py-1 text-xs font-bold text-(--accent-text) shadow"
+                style={{ left: index * step + sizes.hand / 2, top: 0, zIndex: count + 1, transform: 'translateX(-50%)' }}>내기</button>
+            ) : null}
+            </Fragment>
           );
         })}
-        {selectedIndex >= 0 ? (
-          <button type="button" onClick={() => press(sorted[selectedIndex], true)}
-            className="press-3d absolute rounded-full bg-(--accent) px-3 py-1 text-xs font-bold text-(--accent-text) shadow"
-            style={{ left: selectedIndex * step + sizes.hand / 2, top: 0, zIndex: count + 1, transform: 'translateX(-50%)' }}>내기</button>
-        ) : null}
       </div>
     </div>
   );

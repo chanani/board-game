@@ -50,7 +50,7 @@ describe('UnoTable 배치', () => {
     renderTable({ currentColor: 'GREEN', direction: 'COUNTER_CLOCKWISE', drawPileCount: 61, discardCount: 3 });
 
     const center = screen.getByTestId('uno-center');
-    expect(within(center).getByRole('button', { name: '카드 뽑기' })).toHaveTextContent('61장');
+    expect(within(center).getByRole('button', { name: '카드 뽑기, 남은 61장' })).toHaveTextContent('61장');
     expect(within(center).getByRole('img', { name: '빨강 5' })).toBeInTheDocument();
     expect(within(center).getAllByTestId('discard-under')).toHaveLength(2);
     expect(screen.getByTestId('color-ring')).toHaveAttribute('data-color', 'GREEN');
@@ -61,7 +61,7 @@ describe('UnoTable 배치', () => {
   it('내 PLAY 차례에는 뽑을 더미를 누르면 DRAW를 보낸다', async () => {
     const send = renderTable();
 
-    await userEvent.click(within(screen.getByTestId('uno-center')).getByRole('button', { name: '카드 뽑기' }));
+    await userEvent.click(within(screen.getByTestId('uno-center')).getByRole('button', { name: /^카드 뽑기/ }));
 
     expect(send).toHaveBeenCalledWith({ type: 'DRAW' });
   });
@@ -77,7 +77,7 @@ describe('UnoTable 배치', () => {
   it('남의 차례에는 뽑을 더미가 막히고 행동 바가 비어 있다', () => {
     renderTable({ currentPlayerId: 2, playableCardIds: [] });
 
-    expect(within(screen.getByTestId('uno-center')).getByRole('button', { name: '카드 뽑기' })).toBeDisabled();
+    expect(within(screen.getByTestId('uno-center')).getByRole('button', { name: /^카드 뽑기/ })).toBeDisabled();
     expect(within(screen.getByTestId('uno-action-bar')).queryByRole('button')).not.toBeInTheDocument();
     expect(screen.getByTestId('instruction')).toHaveTextContent('밥님의 차례예요.');
   });
@@ -98,6 +98,15 @@ describe('UnoTable 배치', () => {
     await userEvent.click(within(bar).getByRole('button', { name: '뽑은 카드 내기' }));
     expect(send).toHaveBeenLastCalledWith({ type: 'PLAY', cardId: 13 });
     expect(screen.getByRole('button', { name: '빨강 2' })).toHaveAttribute('aria-disabled', 'true');
+  });
+
+  it('와일드 카드를 눌러도 아직 아무것도 보내지 않는다', async () => {
+    setMediaMatches(true);
+    const send = renderTable();
+
+    await userEvent.click(screen.getByRole('button', { name: '와일드, 낼 수 있어요' }));
+
+    expect(send).not.toHaveBeenCalled();
   });
 
   it('갖고 넘기기는 KEEP을 보낸다', async () => {

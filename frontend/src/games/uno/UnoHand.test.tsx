@@ -62,7 +62,9 @@ describe('UnoHand', () => {
     await userEvent.click(red2);
     expect(onPlay).not.toHaveBeenCalled();
     expect(red2).toHaveAttribute('data-selected', 'true');
-    await userEvent.click(screen.getByRole('button', { name: '내기' }));
+    expect(red2).toHaveAttribute('aria-pressed', 'true');
+    expect(red2.nextElementSibling).toBe(screen.getByRole('button', { name: '빨강 2 내기' }));
+    await userEvent.click(screen.getByRole('button', { name: '빨강 2 내기' }));
     expect(onPlay).toHaveBeenCalledWith(num('RED', 2, 3));
 
     await userEvent.click(screen.getByRole('button', { name: '빨강 건너뛰기, 낼 수 있어요' }));
@@ -79,7 +81,7 @@ describe('UnoHand', () => {
     await userEvent.click(document.body);
 
     expect(red2).not.toHaveAttribute('data-selected');
-    expect(screen.queryByRole('button', { name: '내기' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '빨강 2 내기' })).not.toBeInTheDocument();
   });
 
   it('키보드 Enter는 포인터 종류와 상관없이 바로 낸다', () => {
@@ -89,6 +91,14 @@ describe('UnoHand', () => {
     fireEvent.keyDown(screen.getByRole('button', { name: '와일드, 낼 수 있어요' }), { key: 'Enter' });
 
     expect(onPlay).toHaveBeenCalledWith(wild(100));
+  });
+
+  it('키를 누르고 있어도 한 번만 낸다', () => {
+    const { onPlay } = renderHand();
+
+    fireEvent.keyDown(screen.getByRole('button', { name: '와일드, 낼 수 있어요' }), { key: 'Enter', repeat: true });
+
+    expect(onPlay).not.toHaveBeenCalled();
   });
 
   it('PC에서는 부채꼴로 기울이고 휴대폰에서는 한 줄로 둔다', () => {
