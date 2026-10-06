@@ -169,7 +169,7 @@ export function PaperSafariTable({ view, room, meId, log, receivedAt, now, error
   const instructionText = instruction(round.phase, myTurn, needsFlip, nicknameOf(round.currentPlayerId), canDiscard);
 
   const footer = myBoard ? (
-    <div className="flex items-center justify-between gap-3">
+    <div className="flex flex-wrap items-center justify-between gap-3">
       <Button variant="secondary" disabled={!canDiscard} onClick={() => send({ type: 'DISCARD' })}>버리기</Button>
       {estimate ? (
         <span className="rounded-full bg-black/35 px-3 py-1 text-sm text-cream-50">
