@@ -48,9 +48,9 @@ describe('GameLobbyPage', () => {
     renderLobby();
     await screen.findByText('열린방');
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: '＋ 방 만들기' }));
+    await userEvent.click(screen.getByRole('button', { name: '방 만들기' }));
 
-    const dialog = await screen.findByRole('dialog', { name: '방 만들기' });
+    const dialog = await screen.findByRole('dialog', { name: '새 방 만들기' });
     expect(within(within(dialog).getByRole('radiogroup', { name: '최대 인원' })).getAllByRole('radio')).toHaveLength(4);
     expect(within(dialog).queryByLabelText('비밀번호')).not.toBeInTheDocument();
     await userEvent.clear(within(dialog).getByLabelText('방 이름'));
@@ -58,7 +58,7 @@ describe('GameLobbyPage', () => {
     await userEvent.click(within(dialog).getByRole('radio', { name: '3' }));
     await userEvent.click(within(dialog).getByRole('switch', { name: '비공개방' }));
     await userEvent.type(within(dialog).getByLabelText('비밀번호'), '1234');
-    await userEvent.click(within(dialog).getByRole('button', { name: '만들기' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: '방 만들기' }));
 
     expect(api.create).toHaveBeenCalledWith('우리방', 'PAPER_SAFARI', 3, 'WOOD', '1234');
     expect(await screen.findByText('방 화면')).toBeInTheDocument();
@@ -67,10 +67,10 @@ describe('GameLobbyPage', () => {
   it('방 만들기에서 고른 테마로 방을 만든다', async () => {
     renderLobby();
     await screen.findByText('열린방');
-    await userEvent.click(screen.getByRole('button', { name: '＋ 방 만들기' }));
-    const dialog = await screen.findByRole('dialog', { name: '방 만들기' });
+    await userEvent.click(screen.getByRole('button', { name: '방 만들기' }));
+    const dialog = await screen.findByRole('dialog', { name: '새 방 만들기' });
     await userEvent.click(within(dialog).getByRole('radio', { name: '설원 오로라' }));
-    await userEvent.click(within(dialog).getByRole('button', { name: '만들기' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: '방 만들기' }));
 
     expect(api.create).toHaveBeenCalledWith('앨리스의 방', 'PAPER_SAFARI', 5, 'AURORA', undefined);
   });
@@ -89,8 +89,8 @@ describe('GameLobbyPage', () => {
   it('기본은 5명 공개방이다', async () => {
     renderLobby();
     await screen.findByText('열린방');
-    await userEvent.click(screen.getByRole('button', { name: '＋ 방 만들기' }));
-    await userEvent.click(within(await screen.findByRole('dialog', { name: '방 만들기' })).getByRole('button', { name: '만들기' }));
+    await userEvent.click(screen.getByRole('button', { name: '방 만들기' }));
+    await userEvent.click(within(await screen.findByRole('dialog', { name: '새 방 만들기' })).getByRole('button', { name: '방 만들기' }));
 
     expect(api.create).toHaveBeenCalledWith('앨리스의 방', 'PAPER_SAFARI', 5, 'WOOD', undefined);
   });
@@ -112,6 +112,30 @@ describe('GameLobbyPage', () => {
     expect(screen.getByRole('heading', { name: '게임 중인 방' })).toBeInTheDocument();
     expect(screen.getAllByText('게임 진행 중')).toHaveLength(2);
     expect(screen.getAllByText('2명')).toHaveLength(2);
+  });
+
+  it('기다리는 방과 게임 중인 방은 각각 종이 패널 안의 2열 격자이고 개수 배지가 있다', async () => {
+    renderLobby();
+    const waitingHeading = await screen.findByRole('heading', { name: '기다리는 방' });
+    await screen.findByText('열린방');
+
+    for (const [name, count] of [['기다리는 방', '2'], ['게임 중인 방', '2']] as const) {
+      const panel = screen.getByRole('heading', { name }).closest('section') as HTMLElement;
+      expect(panel).toHaveClass('paper');
+      expect(within(panel).getByTestId('room-count')).toHaveTextContent(count);
+      const list = within(panel).getByRole('list');
+      expect(list).toHaveClass('grid', 'sm:grid-cols-2');
+    }
+    expect(waitingHeading.closest('section')).toContainElement(screen.getByRole('button', { name: '방 만들기' }));
+  });
+
+  it('빈 목록 안내도 같은 패널 안에 있다', async () => {
+    api.list.mockResolvedValue([]);
+    renderLobby();
+    const empty = await screen.findByText('지금 진행 중인 게임이 없어요.');
+
+    expect(empty.closest('section')).toBe(screen.getByRole('heading', { name: '게임 중인 방' }).closest('section'));
+    expect(screen.getByRole('heading', { name: '게임 중인 방' }).closest('section')).toHaveClass('paper');
   });
 
   it('공개 방은 관전하고 비공개 방은 막혀 있다', async () => {

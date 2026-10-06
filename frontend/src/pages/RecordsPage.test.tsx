@@ -70,7 +70,8 @@ describe('RecordsPage', () => {
 
     await userEvent.click(screen.getByRole('button', { name: '순위표' }));
 
-    expect(await screen.findByText(/6전 5승/)).toBeInTheDocument();
+    expect(await screen.findByRole('img', { name: '5승 0무 1패' })).toBeInTheDocument();
+    expect(screen.getByText('83.3%')).toBeInTheDocument();
   });
 
   const statsOf = (memberId: number, nickname: string, winRate: number | null = 0.5) => ({

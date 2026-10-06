@@ -6,8 +6,7 @@ import { recordsApi } from '../api/records';
 import { roomsApi } from '../api/rooms';
 import type { GameStat, Ranking, RoomSummary, RoomTheme } from '../api/types';
 import { useAuth } from '../auth/AuthContext';
-import { BinocularsIcon, CrownIcon, LockIcon, RefreshIcon } from '../components/icons';
-import { Felt } from '../components/Felt';
+import { BinocularsIcon, CrownIcon, LockIcon, PlusIcon, RefreshIcon } from '../components/icons';
 import { Button, Panel, TextInput } from '../components/ui';
 import { useToast } from '../components/Toast';
 import { entryBySlug } from '../games/catalog';
@@ -21,6 +20,24 @@ import { StatSummary } from '../records/StatSummary';
 
 const POLL_MS = 1000;
 type Asking = { code: string; name: string; error: string | null };
+
+/** 방 목록 패널(종이) 안의 카드 격자와 카드 바깥 모양. 카드 내부 구성은 그대로 두고 테두리·그림자·둥글기만 패널에 맞춘다. */
+const ROOM_GRID = 'grid gap-2.5 sm:grid-cols-2';
+const ROOM_CARD = 'flex items-center justify-between gap-3 rounded-2xl border border-cream-200 bg-cream-50 px-3.5 py-3 shadow-[0_2px_0_var(--color-cream-300),0_6px_12px_rgb(0_0_0/0.08)]';
+
+function RoomListTitle({ title, count }: { title: string; count: number }) {
+  return (
+    <div className="flex items-center gap-2">
+      <h2 className="font-bold text-wood-800">{title}</h2>
+      <span data-testid="room-count" aria-label={`${count}개`}
+        className="min-w-6 rounded-full bg-cream-200 px-2 py-0.5 text-center text-xs font-bold tabular-nums text-wood-700">{count}</span>
+    </div>
+  );
+}
+
+function EmptyRooms({ children }: { children: string }) {
+  return <p className="rounded-xl bg-cream px-3 py-4 text-center text-sm text-stone-500">{children}</p>;
+}
 
 export function GameLobbyPage() {
   const { slug = '' } = useParams();
@@ -142,70 +159,76 @@ export function GameLobbyPage() {
             <Button type="submit" variant="secondary">입장</Button>
           </form>
         </Panel>
-        <Felt className="mt-10 p-4">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="font-bold text-cream-50">기다리는 방</h2>
-            <div className="flex items-center gap-2">
-              <Button onClick={() => setCreating(true)}>＋ 방 만들기</Button>
-              <button type="button" aria-label="새로고침" onClick={refresh} className="rounded-full p-1 text-cream-200 hover:text-cream-50">
-                <motion.span className="block" animate={{ rotate: spins * 360 }} transition={reduceMotion ? { duration: 0 } : { duration: 0.5 }}>
-                  <RefreshIcon className="h-5 w-5" />
-                </motion.span>
-              </button>
+        <div className="space-y-6 pt-2">
+          <section className="paper p-4">
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <RoomListTitle title="기다리는 방" count={waiting.length} />
+              <div className="flex items-center gap-1.5">
+                <button type="button" aria-label="새로고침" onClick={refresh} className="rounded-full p-1.5 text-stone-500 hover:bg-cream-200/60 hover:text-wood-800">
+                  <motion.span className="block" animate={{ rotate: spins * 360 }} transition={reduceMotion ? { duration: 0 } : { duration: 0.5 }}>
+                    <RefreshIcon className="h-5 w-5" />
+                  </motion.span>
+                </button>
+                <Button onClick={() => setCreating(true)} className="inline-flex items-center gap-1"><PlusIcon className="h-4 w-4" />방 만들기</Button>
+              </div>
             </div>
-          </div>
-          {waiting.length === 0 ? <p className="text-sm text-cream-200">지금은 열린 방이 없어요. 방을 만들어 친구를 불러보세요!</p> : null}
-          <ul className="grid gap-2 sm:grid-cols-2">
-            {waiting.map((room, index) => {
-              const full = room.playerCount >= room.maxPlayers;
-              return (
-                <motion.li
-                  key={room.code}
-                  className="paper flex items-center justify-between p-3"
-                  initial={{ y: -16, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: index * 0.05 }}
-                >
-                  <div>
-                    <p className="flex items-center gap-1 font-medium">
-                      {room.name}
-                      {room.locked ? <span role="img" aria-label="비공개"><LockIcon className="h-4 w-4 text-stone-500" /></span> : null}
-                    </p>
-                    <p className="flex items-center gap-1 text-xs text-stone-500">
-                      <CrownIcon className="h-3.5 w-3.5" />{room.hostNickname} · {room.playerCount}/{room.maxPlayers}
-                    </p>
-                    <p className="mt-0.5 text-xs text-stone-500"><ThemeBadge theme={room.theme} /></p>
-                  </div>
-                  <Button variant="secondary" disabled={full} onClick={() => joinFromList(room)}>
-                    {full ? '가득 참' : '참가'}
-                  </Button>
-                </motion.li>
-              );
-            })}
-          </ul>
-        </Felt>
-        <Felt className="mt-[3.25rem] p-4">
-          <h2 className="mb-3 font-bold text-cream-50">게임 중인 방</h2>
-          {playing.length === 0 ? <p className="text-sm text-cream-200">지금 진행 중인 게임이 없어요.</p> : null}
-          <ul className="grid gap-2 sm:grid-cols-2">
-            {playing.map((room) => (
-              <li key={room.code} className="paper flex items-center justify-between p-3">
-                <div>
-                  <p className="font-medium">{room.name}</p>
-                  <p className="text-xs text-stone-500">
-                    <span>게임 진행 중</span> · <span>{room.playerCount}명</span> · <span aria-label={`관전 ${room.spectatorCount}명`}><BinocularsIcon className="mr-0.5 inline h-3 w-3 align-[-1px]" />{room.spectatorCount}</span>
-                  </p>
-                  <p className="mt-0.5 text-xs text-stone-500"><ThemeBadge theme={room.theme} /></p>
-                </div>
-                {room.locked ? (
-                  <Button variant="secondary" disabled className="inline-flex items-center gap-1"><LockIcon className="h-4 w-4" />비공개</Button>
-                ) : (
-                  <Button variant="secondary" onClick={() => enter(() => roomsApi.watch(room.code))}>관전하기</Button>
-                )}
-              </li>
-            ))}
-          </ul>
-        </Felt>
+            {waiting.length === 0 ? <EmptyRooms>지금은 열린 방이 없어요. 방을 만들어 친구를 불러보세요!</EmptyRooms> : (
+              <ul className={ROOM_GRID}>
+                {waiting.map((room, index) => {
+                  const full = room.playerCount >= room.maxPlayers;
+                  return (
+                    <motion.li
+                      key={room.code}
+                      className={ROOM_CARD}
+                      initial={{ y: -16, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      transition={{ delay: index * 0.05 }}
+                    >
+                      <div className="min-w-0">
+                        <p className="flex items-center gap-1 font-medium">
+                          {room.name}
+                          {room.locked ? <span role="img" aria-label="비공개"><LockIcon className="h-4 w-4 text-stone-500" /></span> : null}
+                        </p>
+                        <p className="flex items-center gap-1 text-xs text-stone-500">
+                          <CrownIcon className="h-3.5 w-3.5" />{room.hostNickname} · {room.playerCount}/{room.maxPlayers}
+                        </p>
+                        <p className="mt-0.5 text-xs text-stone-500"><ThemeBadge theme={room.theme} /></p>
+                      </div>
+                      <Button variant="secondary" disabled={full} onClick={() => joinFromList(room)}>
+                        {full ? '가득 참' : '참가'}
+                      </Button>
+                    </motion.li>
+                  );
+                })}
+              </ul>
+            )}
+          </section>
+          <section className="paper p-4">
+            <div className="mb-3 flex items-center">
+              <RoomListTitle title="게임 중인 방" count={playing.length} />
+            </div>
+            {playing.length === 0 ? <EmptyRooms>지금 진행 중인 게임이 없어요.</EmptyRooms> : (
+              <ul className={ROOM_GRID}>
+                {playing.map((room) => (
+                  <li key={room.code} className={ROOM_CARD}>
+                    <div className="min-w-0">
+                      <p className="font-medium">{room.name}</p>
+                      <p className="text-xs text-stone-500">
+                        <span>게임 진행 중</span> · <span>{room.playerCount}명</span> · <span aria-label={`관전 ${room.spectatorCount}명`}><BinocularsIcon className="mr-0.5 inline h-3 w-3 align-[-1px]" />{room.spectatorCount}</span>
+                      </p>
+                      <p className="mt-0.5 text-xs text-stone-500"><ThemeBadge theme={room.theme} /></p>
+                    </div>
+                    {room.locked ? (
+                      <Button variant="secondary" disabled className="inline-flex items-center gap-1"><LockIcon className="h-4 w-4" />비공개</Button>
+                    ) : (
+                      <Button variant="secondary" onClick={() => enter(() => roomsApi.watch(room.code))}>관전하기</Button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        </div>
       </div>
       <div className="space-y-4">
         <Panel>

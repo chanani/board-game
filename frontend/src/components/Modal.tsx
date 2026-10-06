@@ -5,9 +5,9 @@ import { useEffect, useRef, type KeyboardEvent, type ReactNode } from 'react';
 /** first: 첫 버튼(기본), dialog: 대화상자 자체. 갑자기 뜨는 창은 dialog로 두어 치던 Enter·Space가 버튼을 누르지 않게 한다. */
 type InitialFocus = 'first' | 'dialog';
 
-type Props = { open: boolean; title: string; onClose?: () => void; children: ReactNode; wide?: boolean; padding?: 'normal' | 'roomy'; initialFocus?: InitialFocus };
+type Props = { open: boolean; title: string; onClose?: () => void; children: ReactNode; wide?: boolean; padding?: 'normal' | 'roomy' | 'snug'; initialFocus?: InitialFocus };
 
-const PADDING = { normal: 'p-6', roomy: 'p-5 sm:p-8' };
+const PADDING = { normal: 'p-6', roomy: 'p-5 sm:p-8', snug: 'p-5' };
 
 const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), [tabindex]:not([tabindex="-1"])';
 

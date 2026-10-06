@@ -12,7 +12,7 @@ describe('CreateRoomModal', () => {
     await userEvent.click(screen.getByRole('radio', { name: '3' }));
     await userEvent.click(screen.getByRole('switch', { name: '비공개방' }));
     await userEvent.type(screen.getByLabelText('비밀번호'), '1234');
-    await userEvent.click(screen.getByRole('button', { name: '만들기' }));
+    await userEvent.click(screen.getByRole('button', { name: '방 만들기' }));
 
     expect(onCreate).toHaveBeenCalledWith('앨리스의 방', 3, 'WOOD', '1234');
   });
@@ -21,7 +21,7 @@ describe('CreateRoomModal', () => {
     const onCreate = vi.fn();
     render(<CreateRoomModal open defaultName="방" onClose={vi.fn()} onCreate={onCreate} />);
 
-    await userEvent.click(screen.getByRole('button', { name: '만들기' }));
+    await userEvent.click(screen.getByRole('button', { name: '방 만들기' }));
 
     expect(onCreate).toHaveBeenCalledWith('방', 5, 'WOOD', undefined);
   });
@@ -31,9 +31,9 @@ describe('CreateRoomModal', () => {
     render(<CreateRoomModal open defaultName="방" onClose={vi.fn()} onCreate={onCreate} />);
     await userEvent.click(screen.getByRole('switch', { name: '비공개방' }));
 
-    await userEvent.click(screen.getByRole('button', { name: '만들기' }));
+    await userEvent.click(screen.getByRole('button', { name: '방 만들기' }));
     await userEvent.type(screen.getByLabelText('비밀번호'), '12');
-    await userEvent.click(screen.getByRole('button', { name: '만들기' }));
+    await userEvent.click(screen.getByRole('button', { name: '방 만들기' }));
 
     expect(onCreate).not.toHaveBeenCalled();
   });
@@ -45,10 +45,10 @@ describe('CreateRoomModal', () => {
 
     await userEvent.clear(input);
     await userEvent.type(input, '   ');
-    await userEvent.click(screen.getByRole('button', { name: '만들기' }));
+    await userEvent.click(screen.getByRole('button', { name: '방 만들기' }));
     expect(onCreate).not.toHaveBeenCalled();
     await userEvent.type(input, ' 새방 ');
-    await userEvent.click(screen.getByRole('button', { name: '만들기' }));
+    await userEvent.click(screen.getByRole('button', { name: '방 만들기' }));
 
     expect(onCreate).toHaveBeenCalledWith('새방', 5, 'WOOD', undefined);
   });
@@ -77,7 +77,7 @@ describe('CreateRoomModal', () => {
 
     await userEvent.click(within(group).getByRole('radio', { name: '달빛 정글' }));
     expect(within(group).getByRole('radio', { name: '달빛 정글' })).toHaveAttribute('aria-checked', 'true');
-    await userEvent.click(screen.getByRole('button', { name: '만들기' }));
+    await userEvent.click(screen.getByRole('button', { name: '방 만들기' }));
 
     expect(onCreate).toHaveBeenCalledWith('방', 5, 'MOONLIT', undefined);
   });
@@ -104,5 +104,52 @@ describe('CreateRoomModal', () => {
     await userEvent.click(toggle);
     await waitFor(() => expect(screen.queryByTestId('password-reveal')).not.toBeInTheDocument());
     expect(screen.queryByLabelText('비밀번호')).not.toBeInTheDocument();
+  });
+
+  it('제목은 "새 방 만들기"이고 구역 제목과 "비공개방" 토글이 있다', async () => {
+    render(<CreateRoomModal open defaultName="방" onClose={vi.fn()} onCreate={vi.fn()} />);
+    const dialog = await screen.findByRole('dialog', { name: '새 방 만들기' });
+
+    expect(within(dialog).getByRole('heading', { name: '새 방 만들기' })).toBeInTheDocument();
+    expect(within(dialog).getByText('방 이름')).toBeInTheDocument();
+    expect(within(dialog).getByText('최대 인원')).toBeInTheDocument();
+    expect(within(dialog).getByText('테마')).toBeInTheDocument();
+    expect(within(dialog).getByRole('switch')).toHaveAccessibleName('비공개방');
+    expect(within(dialog).queryByText(/비밀번호로만 입장/)).not.toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: '취소' })).toBeInTheDocument();
+  });
+
+  it('최대 인원은 2~5 라디오 묶음이고 화살표 키로 옮긴다', async () => {
+    const onCreate = vi.fn();
+    render(<CreateRoomModal open defaultName="방" onClose={vi.fn()} onCreate={onCreate} />);
+    const group = screen.getByRole('radiogroup', { name: '최대 인원' });
+    const seats = within(group).getAllByRole('radio');
+
+    expect(seats.map((seat) => seat.textContent)).toEqual(['2', '3', '4', '5']);
+    expect(within(group).getByRole('radio', { name: '5' })).toHaveAttribute('tabindex', '0');
+    expect(within(group).getByRole('radio', { name: '2' })).toHaveAttribute('tabindex', '-1');
+
+    within(group).getByRole('radio', { name: '5' }).focus();
+    await userEvent.keyboard('{ArrowLeft}');
+    expect(within(group).getByRole('radio', { name: '4' })).toHaveAttribute('aria-checked', 'true');
+    expect(within(group).getByRole('radio', { name: '4' })).toHaveFocus();
+    await userEvent.keyboard('{ArrowRight}{ArrowRight}');
+    expect(within(group).getByRole('radio', { name: '2' })).toHaveAttribute('aria-checked', 'true');
+
+    await userEvent.click(screen.getByRole('button', { name: '방 만들기' }));
+    expect(onCreate).toHaveBeenCalledWith('방', 2, 'WOOD', undefined);
+  });
+
+  it('비밀번호 칸 위 간격은 펼쳐지는 영역 안쪽에 있어 높이와 함께 나타난다', async () => {
+    render(<CreateRoomModal open defaultName="방" onClose={vi.fn()} onCreate={vi.fn()} />);
+
+    await userEvent.click(screen.getByRole('switch', { name: '비공개방' }));
+    const reveal = await screen.findByTestId('password-reveal');
+    const inner = reveal.firstElementChild as HTMLElement;
+
+    expect(inner).toHaveClass('pt-3');
+    expect(reveal.className).not.toMatch(/\b(m|mt|my|pt|py)-/);
+    expect(within(inner).getByLabelText('비밀번호')).toBeInTheDocument();
+    expect(within(inner).getByText(/4~20자/)).toBeInTheDocument();
   });
 });

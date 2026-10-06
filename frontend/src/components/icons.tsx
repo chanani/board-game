@@ -43,6 +43,10 @@ export const CloseIcon = ({ className }: IconProps) => (
   <Svg className={className}><path d="M6 6l12 12" /><path d="M18 6L6 18" /></Svg>
 );
 
+export const PlusIcon = ({ className }: IconProps) => (
+  <Svg className={className}><path d="M12 5v14" /><path d="M5 12h14" /></Svg>
+);
+
 export const DoorIcon = ({ className }: IconProps) => (
   <Svg className={className}><path d="M4 21h16" /><path d="M6 21V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v17" /><path d="M14 12h.01" /></Svg>
 );
