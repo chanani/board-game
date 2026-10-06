@@ -28,6 +28,13 @@ public enum ErrorCode {
     GAME_NOT_STARTED(HttpStatus.CONFLICT, "게임이 시작되지 않았습니다."),
     INVALID_ROOM_NAME(HttpStatus.BAD_REQUEST, "방 이름은 1~20자로 입력해 주세요."),
     FORFEIT_NOT_ALLOWED_YET(HttpStatus.CONFLICT, "연결이 끊긴 지 60초가 지나야 기권 처리할 수 있습니다."),
+    INVALID_CAPACITY(HttpStatus.BAD_REQUEST, "최대 인원은 2~5명 중에서 골라 주세요."),
+    INVALID_ROOM_PASSWORD(HttpStatus.BAD_REQUEST, "방 비밀번호는 4~20자로 입력해 주세요."),
+    ROOM_PASSWORD_MISMATCH(HttpStatus.FORBIDDEN, "비밀번호가 맞지 않아요."),
+    ROOM_PRIVATE(HttpStatus.FORBIDDEN, "비공개방은 관전할 수 없어요."),
+    ROOM_NOT_PLAYING(HttpStatus.CONFLICT, "게임 중인 방만 관전할 수 있어요. 참가하기를 눌러 주세요."),
+    NOT_SPECTATOR(HttpStatus.CONFLICT, "관전 중인 사람만 자리에 앉을 수 있어요."),
+    SESSION_REPLACED(HttpStatus.UNAUTHORIZED, "다른 곳에서 로그인해서 로그아웃됐어요."),
     INVALID_PLAYER_TOTAL(HttpStatus.BAD_REQUEST, "인원 수는 0명 이상이어야 합니다."),
 
     INVALID_PLAYER_COUNT(HttpStatus.BAD_REQUEST, "페이퍼 사파리는 2~5명이 플레이할 수 있습니다."),

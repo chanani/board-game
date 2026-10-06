@@ -21,7 +21,7 @@ class RoomTest {
     private final AtomicReference<FakeGameSession> created = new AtomicReference<>();
 
     private Room openRoom() {
-        return Room.open(new RoomProfile(new RoomCode("ABCDEF"), new RoomName("방"), GameType.PAPER_SAFARI), alice);
+        return Room.open(new RoomProfile(new RoomCode("ABCDEF"), new RoomName("방"), new RoomSettings(GameType.PAPER_SAFARI, Capacity.max(GameType.PAPER_SAFARI), RoomLock.open())), alice);
     }
 
     private RoomGame start(Room room, long requester) {
@@ -49,8 +49,8 @@ class RoomTest {
     void 참가하면_순서대로_들어오고_이미_있으면_무시한다() {
         Room room = openRoom();
 
-        room.join(bob);
-        room.join(bob);
+        room.join(bob, null, new FakeRoomPasswordHasher());
+        room.join(bob, null, new FakeRoomPasswordHasher());
 
         assertThat(room.memberIds()).containsExactly(1L, 2L);
     }
@@ -58,18 +58,18 @@ class RoomTest {
     @Test
     void 최대_인원을_넘으면_ROOM_FULL() {
         Room room = openRoom();
-        room.join(new Participant(2L, "둘"));
-        room.join(new Participant(3L, "셋"));
-        room.join(new Participant(4L, "넷"));
-        room.join(new Participant(5L, "다섯"));
+        room.join(new Participant(2L, "둘"), null, new FakeRoomPasswordHasher());
+        room.join(new Participant(3L, "셋"), null, new FakeRoomPasswordHasher());
+        room.join(new Participant(4L, "넷"), null, new FakeRoomPasswordHasher());
+        room.join(new Participant(5L, "다섯"), null, new FakeRoomPasswordHasher());
 
-        assertError(() -> room.join(new Participant(6L, "여섯")), ErrorCode.ROOM_FULL);
+        assertError(() -> room.join(new Participant(6L, "여섯"), null, new FakeRoomPasswordHasher()), ErrorCode.ROOM_FULL);
     }
 
     @Test
     void 방장이_나가면_다음_사람이_방장이다() {
         Room room = openRoom();
-        room.join(bob);
+        room.join(bob, null, new FakeRoomPasswordHasher());
 
         room.leave(1L);
 
@@ -90,7 +90,7 @@ class RoomTest {
     void 방장만_시작할_수_있고_혼자서는_시작할_수_없다() {
         Room room = openRoom();
         assertError(() -> start(room, 1L), ErrorCode.NOT_ENOUGH_PLAYERS);
-        room.join(bob);
+        room.join(bob, null, new FakeRoomPasswordHasher());
 
         assertError(() -> start(room, 2L), ErrorCode.NOT_ROOM_HOST);
     }
@@ -98,7 +98,7 @@ class RoomTest {
     @Test
     void 시작하면_진행_중이고_새로운_사람은_참가할_수_없다() {
         Room room = openRoom();
-        room.join(bob);
+        room.join(bob, null, new FakeRoomPasswordHasher());
 
         RoomGame game = start(room, 1L);
 
@@ -108,8 +108,8 @@ class RoomTest {
         assertThat(room.isWaitingFor(GameType.PAPER_SAFARI)).isFalse();
         assertThat(room.isPlaying(2L)).isTrue();
         assertThat(room.viewFor(2L)).contains("view-2");
-        room.join(bob);
-        assertError(() -> room.join(carol), ErrorCode.ROOM_ALREADY_PLAYING);
+        room.join(bob, null, new FakeRoomPasswordHasher());
+        assertError(() -> room.join(carol, null, new FakeRoomPasswordHasher()), ErrorCode.ROOM_ALREADY_PLAYING);
         assertError(() -> start(room, 1L), ErrorCode.ROOM_ALREADY_PLAYING);
     }
 
@@ -124,7 +124,7 @@ class RoomTest {
     @Test
     void 진행_중_행동은_세션으로_전달된다() {
         Room room = openRoom();
-        room.join(bob);
+        room.join(bob, null, new FakeRoomPasswordHasher());
         start(room, 1L);
 
         room.act(2L, new GameAction("DRAW_DECK", null, null));
@@ -135,7 +135,7 @@ class RoomTest {
     @Test
     void 진행_중에_나가면_기권_처리되고_결과를_돌려준다() {
         Room room = openRoom();
-        room.join(bob);
+        room.join(bob, null, new FakeRoomPasswordHasher());
         start(room, 1L);
 
         assertThat(room.leave(2L)).containsExactly(new GameCompleted(List.of()));
@@ -148,16 +148,39 @@ class RoomTest {
     @Test
     void 게임이_끝나면_대기_상태로_돌아가_다시_시작할_수_있다() {
         Room room = openRoom();
-        room.join(bob);
+        room.join(bob, null, new FakeRoomPasswordHasher());
         start(room, 1L);
         created.get().finish();
 
         assertThat(room.status()).isEqualTo(RoomStatus.WAITING);
         assertThat(room.leave(2L)).isEmpty();
-        room.join(carol);
+        room.join(carol, null, new FakeRoomPasswordHasher());
         RoomGame second = start(room, 1L);
 
         assertThat(second.session()).isSameAs(created.get());
         assertThat(room.currentGame()).isSameAs(second);
+    }
+
+    @Test
+    void 세_명짜리_방이_차면_네_번째는_ROOM_FULL() {
+        Room room = Room.open(new RoomProfile(new RoomCode("ABCDEF"), new RoomName("방"), new RoomSettings(
+                GameType.PAPER_SAFARI, Capacity.of(GameType.PAPER_SAFARI, 3), RoomLock.open())), alice);
+        room.join(bob, null, new FakeRoomPasswordHasher());
+        room.join(carol, null, new FakeRoomPasswordHasher());
+
+        assertError(() -> room.join(new Participant(4L, "넷"), null, new FakeRoomPasswordHasher()),
+                ErrorCode.ROOM_FULL);
+    }
+
+    @Test
+    void 멤버가_잠긴_방에_다시_들어올_때는_비밀번호를_보지_않는다() {
+        FakeRoomPasswordHasher hasher = new FakeRoomPasswordHasher();
+        RoomLock lock = RoomLock.locked(hasher.hash(new RawRoomPassword("1234")));
+        Room room = Room.open(new RoomProfile(new RoomCode("ABCDEF"), new RoomName("방"), new RoomSettings(
+                GameType.PAPER_SAFARI, Capacity.max(GameType.PAPER_SAFARI), lock)), alice);
+
+        room.join(alice, null, hasher);
+
+        assertError(() -> room.join(bob, null, hasher), ErrorCode.ROOM_PASSWORD_MISMATCH);
     }
 }

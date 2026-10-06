@@ -2,7 +2,6 @@ package com.boardgame.room.domain;
 
 import com.boardgame.common.error.BusinessException;
 import com.boardgame.common.error.ErrorCode;
-import com.boardgame.game.GameType;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -10,11 +9,11 @@ public class RoomMembers {
 
     private final List<Participant> members = new ArrayList<>();
 
-    public void add(Participant participant, GameType gameType) {
+    public void add(Participant participant, Capacity capacity) {
         if (contains(participant.memberId())) {
             return;
         }
-        if (members.size() >= gameType.maxPlayers()) {
+        if (capacity.isFull(members.size())) {
             throw new BusinessException(ErrorCode.ROOM_FULL);
         }
         members.add(participant);

@@ -50,8 +50,16 @@ public class RoomController {
     }
 
     @PostMapping("/{code}/join")
-    public RoomResponse join(@PathVariable String code, @AuthenticationPrincipal LoginMember member) {
-        return roomService.join(code, member);
+    public RoomResponse join(@PathVariable String code, @AuthenticationPrincipal LoginMember member,
+                             @RequestBody(required = false) JoinRoomRequest request) {
+        return roomService.join(code, member, passwordOf(request));
+    }
+
+    private String passwordOf(JoinRoomRequest request) {
+        if (request == null) {
+            return null;
+        }
+        return request.password();
     }
 
     @PostMapping("/{code}/leave")

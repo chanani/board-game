@@ -10,7 +10,11 @@ import com.boardgame.game.RoundCompleted;
 import com.boardgame.game.RoundEntry;
 import com.boardgame.game.event.GameCompletedEvent;
 import com.boardgame.game.event.RoundCompletedEvent;
+import com.boardgame.room.domain.Capacity;
 import com.boardgame.room.domain.FakeGameSession;
+import com.boardgame.room.domain.FakeRoomPasswordHasher;
+import com.boardgame.room.domain.RoomLock;
+import com.boardgame.room.domain.RoomSettings;
 import com.boardgame.room.domain.Participant;
 import com.boardgame.room.domain.Room;
 import com.boardgame.room.domain.RoomCode;
@@ -30,9 +34,9 @@ class OutcomePublisherTest {
     private final OutcomePublisher publisher = new OutcomePublisher(published::add);
 
     private Room startedRoom() {
-        Room room = Room.open(new RoomProfile(new RoomCode("ABCDEF"), new RoomName("방"), GameType.PAPER_SAFARI),
+        Room room = Room.open(new RoomProfile(new RoomCode("ABCDEF"), new RoomName("방"), new RoomSettings(GameType.PAPER_SAFARI, Capacity.max(GameType.PAPER_SAFARI), RoomLock.open())),
                 new Participant(1L, "앨리스"));
-        room.join(new Participant(2L, "밥"));
+        room.join(new Participant(2L, "밥"), null, new FakeRoomPasswordHasher());
         room.start(1L, FakeGameSession::new, "match-1", STARTED);
         return room;
     }

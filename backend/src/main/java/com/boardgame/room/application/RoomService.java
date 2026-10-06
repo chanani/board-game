@@ -12,15 +12,20 @@ import com.boardgame.room.api.CreateRoomRequest;
 import com.boardgame.room.api.GameSummaryResponse;
 import com.boardgame.room.api.RoomResponse;
 import com.boardgame.room.api.RoomSummaryResponse;
+import com.boardgame.room.domain.Capacity;
 import com.boardgame.room.domain.GameOccupancies;
 import com.boardgame.room.domain.Participant;
 import com.boardgame.room.domain.Room;
 import com.boardgame.room.domain.RoomCode;
 import com.boardgame.room.domain.RoomCodeGenerator;
 import com.boardgame.room.domain.RoomGame;
+import com.boardgame.room.domain.RawRoomPassword;
+import com.boardgame.room.domain.RoomLock;
 import com.boardgame.room.domain.RoomName;
+import com.boardgame.room.domain.RoomPasswordHasher;
 import com.boardgame.room.domain.RoomProfile;
 import com.boardgame.room.domain.RoomRegistry;
+import com.boardgame.room.domain.RoomSettings;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.List;
@@ -43,10 +48,12 @@ public class RoomService {
     private final ApplicationEventPublisher eventPublisher;
     private final Clock clock;
     private final PresenceTracker presence;
+    private final RoomPasswordHasher hasher;
 
     public RoomService(RoomRegistry registry, RoomCodeGenerator codeGenerator, GameSessionFactories sessionFactories,
                        RoomNotifier notifier, OutcomePublisher outcomePublisher,
-                       ApplicationEventPublisher eventPublisher, Clock clock, PresenceTracker presence) {
+                       ApplicationEventPublisher eventPublisher, Clock clock, PresenceTracker presence,
+                       RoomPasswordHasher hasher) {
         this.registry = registry;
         this.codeGenerator = codeGenerator;
         this.sessionFactories = sessionFactories;
@@ -55,11 +62,12 @@ public class RoomService {
         this.eventPublisher = eventPublisher;
         this.clock = clock;
         this.presence = presence;
+        this.hasher = hasher;
     }
 
     public synchronized RoomResponse create(LoginMember member, CreateRoomRequest request) {
         requireNotInAnyRoom(member.id());
-        RoomProfile profile = new RoomProfile(newCode(), new RoomName(request.name()), requireGameType(request));
+        RoomProfile profile = new RoomProfile(newCode(), new RoomName(request.name()), settingsOf(request));
         Room room = Room.open(profile, participantOf(member));
         registry.save(room);
         presence.baseline(room.memberIds(), clock.instant());
@@ -80,10 +88,10 @@ public class RoomService {
                 .toList();
     }
 
-    public synchronized RoomResponse join(String rawCode, LoginMember member) {
+    public synchronized RoomResponse join(String rawCode, LoginMember member, String password) {
         Room room = find(rawCode);
         requireNotInOtherRoom(member.id(), room);
-        room.join(participantOf(member));
+        room.join(participantOf(member), password, hasher);
         registry.save(room);
         presence.baseline(room.memberIds(), clock.instant());
         return broadcast(room);
@@ -187,6 +195,25 @@ public class RoomService {
                 .filter(code -> !registry.exists(code))
                 .findFirst()
                 .orElseThrow();
+    }
+
+    private RoomSettings settingsOf(CreateRoomRequest request) {
+        GameType type = requireGameType(request);
+        return new RoomSettings(type, capacityOf(type, request.maxPlayers()), lockOf(request.password()));
+    }
+
+    private Capacity capacityOf(GameType type, Integer maxPlayers) {
+        if (maxPlayers == null) {
+            return Capacity.max(type);
+        }
+        return Capacity.of(type, maxPlayers);
+    }
+
+    private RoomLock lockOf(String password) {
+        if (password == null || password.isBlank()) {
+            return RoomLock.open();
+        }
+        return RoomLock.locked(hasher.hash(new RawRoomPassword(password)));
     }
 
     private GameType requireGameType(CreateRoomRequest request) {

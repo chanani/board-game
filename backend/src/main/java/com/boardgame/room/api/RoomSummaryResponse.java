@@ -13,6 +13,6 @@ public record RoomSummaryResponse(String code, String name, GameType gameType, S
         GameType gameType = room.gameType();
         Participant host = participants.get(0);
         return new RoomSummaryResponse(room.codeValue(), room.nameValue(), gameType, gameType.displayName(),
-                participants.size(), gameType.maxPlayers(), host.nickname());
+                participants.size(), room.capacity(), host.nickname());
     }
 }

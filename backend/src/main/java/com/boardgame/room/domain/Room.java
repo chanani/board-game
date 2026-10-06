@@ -24,16 +24,17 @@ public class Room {
 
     public static Room open(RoomProfile profile, Participant host) {
         RoomMembers members = new RoomMembers();
-        members.add(host, profile.gameType());
+        members.add(host, profile.capacity());
         return new Room(profile, members);
     }
 
-    public void join(Participant participant) {
+    public void join(Participant participant, String password, RoomPasswordHasher hasher) {
         if (members.contains(participant.memberId())) {
             return;
         }
         requireWaiting();
-        members.add(participant, profile.gameType());
+        profile.lock().require(password, hasher);
+        members.add(participant, profile.capacity());
     }
 
     public List<GameOutcome> leave(long memberId) {
@@ -117,6 +118,14 @@ public class Room {
     public String nameValue() {
         RoomName name = profile.name();
         return name.value();
+    }
+
+    public int capacity() {
+        return profile.capacity().value();
+    }
+
+    public boolean isLocked() {
+        return profile.lock().isLocked();
     }
 
     public GameType gameType() {

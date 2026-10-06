@@ -282,4 +282,76 @@ class RoomApiTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
     }
+
+    private ResultActions createWith(User host, String extraJson) throws Exception {
+        return mockMvc.perform(post("/api/rooms").session(host.session())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"비밀방\",\"gameType\":\"PAPER_SAFARI\"," + extraJson + "}"));
+    }
+
+    private ResultActions joinWith(User user, String code, String body) throws Exception {
+        return mockMvc.perform(post("/api/rooms/{code}/join", code).session(user.session())
+                .contentType(MediaType.APPLICATION_JSON).content(body));
+    }
+
+    private String createdWith(User host, String extraJson) throws Exception {
+        String body = createWith(host, extraJson).andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        return JsonPath.read(body, "$.code");
+    }
+
+    @Test
+    void 비밀번호와_정원을_정해_만들면_해시나_원문이_응답에_없다() throws Exception {
+        User host = ApiUsers.create(mockMvc);
+
+        String body = createWith(host, "\"maxPlayers\":3,\"password\":\"1234\"")
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.maxPlayers").value(3))
+                .andExpect(jsonPath("$.locked").value(true))
+                .andReturn().getResponse().getContentAsString();
+
+        assertThat(body).doesNotContain("1234").doesNotContain("$2a$");
+    }
+
+    @Test
+    void 범위를_벗어난_정원과_짧은_비밀번호는_400() throws Exception {
+        User host = ApiUsers.create(mockMvc);
+
+        createWith(host, "\"maxPlayers\":6").andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_CAPACITY"));
+        createWith(host, "\"password\":\"12\"").andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_ROOM_PASSWORD"));
+    }
+
+    @Test
+    void 잠긴_방은_맞는_비밀번호로만_들어가고_멤버는_다시_들어갈_수_있다() throws Exception {
+        User host = ApiUsers.create(mockMvc);
+        User guest = ApiUsers.create(mockMvc);
+        String code = createdWith(host, "\"password\":\"1234\"");
+
+        join(guest, code).andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("ROOM_PASSWORD_MISMATCH"));
+        joinWith(guest, code, "{\"password\":\"0000\"}").andExpect(status().isForbidden());
+        joinWith(guest, code, "{\"password\":\"1234\"}").andExpect(status().isOk());
+        join(guest, code).andExpect(status().isOk());
+    }
+
+    @Test
+    void 정원이_찬_방은_409() throws Exception {
+        User host = ApiUsers.create(mockMvc);
+        String code = createdWith(host, "\"maxPlayers\":2");
+        join(ApiUsers.create(mockMvc), code).andExpect(status().isOk());
+
+        join(ApiUsers.create(mockMvc), code).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("ROOM_FULL"));
+    }
+
+    @Test
+    void 정원과_비밀번호를_생략하면_최대_인원의_공개방이다() throws Exception {
+        User host = ApiUsers.create(mockMvc);
+
+        createRoom(host, "공개방").andExpect(status().isCreated())
+                .andExpect(jsonPath("$.maxPlayers").value(5))
+                .andExpect(jsonPath("$.locked").value(false));
+    }
 }

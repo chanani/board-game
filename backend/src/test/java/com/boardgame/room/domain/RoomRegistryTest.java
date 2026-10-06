@@ -12,14 +12,14 @@ class RoomRegistryTest {
     private final RoomRegistry registry = new RoomRegistry();
 
     private Room room(String code, long hostId) {
-        RoomProfile profile = new RoomProfile(new RoomCode(code), new RoomName("방"), GameType.PAPER_SAFARI);
+        RoomProfile profile = new RoomProfile(new RoomCode(code), new RoomName("방"), new RoomSettings(GameType.PAPER_SAFARI, Capacity.max(GameType.PAPER_SAFARI), RoomLock.open()));
         return Room.open(profile, new Participant(hostId, "호스트" + hostId));
     }
 
     @Test
     void 저장한_방을_코드와_회원으로_찾는다() {
         Room room = room("ABCDEF", 1L);
-        room.join(new Participant(2L, "밥"));
+        room.join(new Participant(2L, "밥"), null, new FakeRoomPasswordHasher());
 
         registry.save(room);
 
@@ -32,7 +32,7 @@ class RoomRegistryTest {
     @Test
     void 나간_회원은_색인에서_빠지고_빈_방은_사라진다() {
         Room room = room("ABCDEF", 1L);
-        room.join(new Participant(2L, "밥"));
+        room.join(new Participant(2L, "밥"), null, new FakeRoomPasswordHasher());
         registry.save(room);
 
         room.leave(2L);

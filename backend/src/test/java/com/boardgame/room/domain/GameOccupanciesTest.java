@@ -10,10 +10,10 @@ import org.junit.jupiter.api.Test;
 class GameOccupanciesTest {
 
     private Room room(String code, long... memberIds) {
-        RoomProfile profile = new RoomProfile(new RoomCode(code), new RoomName("방"), GameType.PAPER_SAFARI);
+        RoomProfile profile = new RoomProfile(new RoomCode(code), new RoomName("방"), new RoomSettings(GameType.PAPER_SAFARI, Capacity.max(GameType.PAPER_SAFARI), RoomLock.open()));
         Room room = Room.open(profile, new Participant(memberIds[0], "회원" + memberIds[0]));
         for (int i = 1; i < memberIds.length; i++) {
-            room.join(new Participant(memberIds[i], "회원" + memberIds[i]));
+            room.join(new Participant(memberIds[i], "회원" + memberIds[i]), null, new FakeRoomPasswordHasher());
         }
         return room;
     }
