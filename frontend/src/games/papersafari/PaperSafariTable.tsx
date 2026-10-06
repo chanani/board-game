@@ -205,7 +205,7 @@ export function PaperSafariTable({ view: rawView, room, meId, log, receivedAt, n
     <HiddenZonesContext.Provider value={hidden}>
       <LiftedZonesContext.Provider value={lifted}>
       <div ref={containerRef} inert={finale.active} className={finale.active ? 'pointer-events-none' : undefined}>
-        <TurnBar instruction={instructionText} myTurn={myTurn} log={log} nicknameOf={nicknameOf} compact={!wide}
+        <TurnBar instruction={instructionText} myTurn={myTurn} log={log} nicknameOf={nicknameOf} compact={!wide} locked={finale.active}
           deadline={game.deadline} serverNow={game.serverNow} onWarn={waitingOnMe ? () => play('tick') : undefined} />
         <Layout {...tableProps} />
       </div>

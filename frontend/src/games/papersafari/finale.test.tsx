@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { LogEntry } from '../../lib/eventLog';
 import type { BoardView, PaperSafariSessionView, PaperSafariView, Room, SlotView } from '../../api/types';
@@ -173,5 +173,17 @@ describe('게임 종료 연출', () => {
     expect(document.querySelectorAll('[data-testid="slot"] [data-side="front"]')).toHaveLength(12);
     advance(1200);
     expect(play.mock.calls.filter(([name]) => name === 'flip')).toHaveLength(0);
+  });
+
+  it('진행 기록 창을 열어 둔 채 게임이 끝나면 창을 닫는다', async () => {
+    vi.useRealTimers();
+    const log: LogEntry[] = [{ id: 1, at: 0, kind: 'place', actorId: OPPONENT, text: '밥이 카드를 놓았어요' }];
+    const { rerender } = render(ui(playing, null, log));
+    fireEvent.click(screen.getByRole('button', { name: '진행 기록 보기' }));
+    expect(screen.getByRole('dialog', { name: '진행 기록' })).toBeInTheDocument();
+
+    rerender(ui(over(), null, log));
+
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: '진행 기록' })).not.toBeInTheDocument());
   });
 });

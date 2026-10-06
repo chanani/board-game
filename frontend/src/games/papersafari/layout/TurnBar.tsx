@@ -13,6 +13,8 @@ type Props = {
   deadline: number | null | undefined;
   serverNow: number | undefined;
   onWarn?: () => void;
+  /** 게임 끝 연출처럼 테이블이 잠긴 동안: 열려 있던 진행 기록 창을 닫는다. */
+  locked?: boolean;
   /** PC가 아닌 배치: 글씨 text-xs, 패딩을 줄인다. */
   compact?: boolean;
 };
@@ -21,11 +23,14 @@ type Props = {
  * 차례 문구 + 카운트다운 + 최근 진행 내역을 한 줄에 둔다. 줄바꿈 없이 높이를 고정하고, 넘치면 진행 내역부터 말줄임한다.
  * 펠트의 나무 테두리(box-shadow 13px)는 레이아웃에 잡히지 않으므로 PC는 mb-8(보이는 간격 19px)로 테이블과 띄운다.
  */
-export function TurnBar({ instruction, myTurn, log, nicknameOf, deadline, serverNow, onWarn, compact = false }: Props) {
+export function TurnBar({ instruction, myTurn, log, nicknameOf, deadline, serverNow, onWarn, locked = false, compact = false }: Props) {
   const size = compact ? 'mb-4 h-8 gap-1.5 px-2 text-xs' : 'mb-8 h-10 gap-2 px-4 text-sm';
   const tone = myTurn ? 'turn-glow border-transparent bg-(--accent) text-(--accent-text)' : 'border-(--status-border) bg-(--status-bg) text-cream-50';
   const latest = log[0];
   const [open, setOpen] = useState(false);
+  if (locked && open) {
+    setOpen(false);
+  }
   const line = latest ? (
     <>
       <span aria-hidden="true" className="mr-1">·</span>
