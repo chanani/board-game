@@ -1,4 +1,3 @@
-// B/uno/UnoMatch.java
 package com.boardgame.uno;
 
 import java.time.Instant;

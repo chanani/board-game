@@ -1,4 +1,3 @@
-// B/uno/UnoSessionFactory.java
 package com.boardgame.uno;
 
 import com.boardgame.game.GameSession;

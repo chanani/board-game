@@ -1,4 +1,3 @@
-// B/uno/UnoViewContext.java
 package com.boardgame.uno;
 
 import java.util.List;

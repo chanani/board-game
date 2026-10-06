@@ -1,4 +1,3 @@
-// B/uno/UnoAutoActors.java
 package com.boardgame.uno;
 
 import java.util.ArrayList;

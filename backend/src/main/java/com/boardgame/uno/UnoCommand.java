@@ -1,4 +1,3 @@
-// B/uno/UnoCommand.java
 package com.boardgame.uno;
 
 import com.boardgame.common.error.BusinessException;

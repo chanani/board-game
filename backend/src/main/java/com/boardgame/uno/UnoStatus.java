@@ -1,4 +1,3 @@
-// B/uno/UnoStatus.java
 package com.boardgame.uno;
 
 public enum UnoStatus {

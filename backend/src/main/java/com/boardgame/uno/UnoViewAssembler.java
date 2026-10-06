@@ -1,4 +1,3 @@
-// B/uno/UnoViewAssembler.java
 package com.boardgame.uno;
 
 import com.boardgame.uno.view.UnoCardView;

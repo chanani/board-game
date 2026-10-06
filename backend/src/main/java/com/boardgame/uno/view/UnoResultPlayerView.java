@@ -1,4 +1,3 @@
-// UnoResultPlayerView.java
 package com.boardgame.uno.view;
 
 import java.util.List;

@@ -1,4 +1,3 @@
-// B/uno/UnoCountdown.java
 package com.boardgame.uno;
 
 import java.time.Clock;

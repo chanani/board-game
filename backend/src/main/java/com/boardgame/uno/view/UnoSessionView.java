@@ -1,4 +1,3 @@
-// UnoSessionView.java
 package com.boardgame.uno.view;
 
 public record UnoSessionView(String gameType, UnoView game) {

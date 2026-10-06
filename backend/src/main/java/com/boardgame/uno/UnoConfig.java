@@ -1,4 +1,3 @@
-// B/uno/UnoConfig.java
 package com.boardgame.uno;
 
 import java.util.concurrent.ThreadLocalRandom;

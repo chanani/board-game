@@ -1,4 +1,3 @@
-// UnoRevealView.java
 package com.boardgame.uno.view;
 
 import com.boardgame.uno.ChallengeReveal;
