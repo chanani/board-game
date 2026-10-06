@@ -16,6 +16,8 @@ import type { LogEntry } from '../../lib/eventLog';
 import { GhostLayer } from './motion/GhostLayer';
 import { HiddenZonesContext, LiftedZonesContext } from './motion/ZoneAnchor';
 import { useCardMotion } from './motion/useCardMotion';
+import { GameEndBanner } from './layout/GameEndBanner';
+import { slotKey, useFinale } from './useFinale';
 
 const PENDING_MS = 3000;
 
@@ -80,7 +82,22 @@ function instruction(phase: string, myTurn: boolean, needsFlip: boolean, current
   return '엿볼 내 뒷면 카드를 고르세요.';
 }
 
-export function PaperSafariTable({ view, room, meId, log, receivedAt, now, errorSeq, nicknameOf, onForfeit, send: rawSend, onCloseGameOver, onReadyNext, transition }: Props) {
+/** 연출 중에는 직전까지 뒷면이던 칸을 아직 뒷면으로 그려, 차례로 뒤집히게 한다. */
+function maskPending(view: PaperSafariSessionView, pending: Set<string>): PaperSafariSessionView {
+  if (pending.size === 0) {
+    return view;
+  }
+  const boards = view.game.round.boards.map((board) => ({
+    ...board,
+    slots: board.slots.map((slot) => (pending.has(slotKey(board.playerId, slot.column, slot.row)) ? { ...slot, faceUp: false, known: false } : slot)),
+  }));
+  return { game: { ...view.game, round: { ...view.game.round, boards } } };
+}
+
+export function PaperSafariTable({ view: rawView, room, meId, log, receivedAt, now, errorSeq, nicknameOf, onForfeit, send: rawSend, onCloseGameOver, onReadyNext, transition }: Props) {
+  const { play } = useSound();
+  const finale = useFinale(rawView.game, transition ?? null, () => play('flip'));
+  const view = maskPending(rawView, finale.pending);
   const game = view.game;
   const round = game.round;
   const pendingUntil = useRef(0);
@@ -88,7 +105,6 @@ export function PaperSafariTable({ view, room, meId, log, receivedAt, now, error
   const myTurn = round.currentPlayerId === meId;
   const containerRef = useRef<HTMLDivElement>(null);
   const { ghosts, hidden, lifted } = useCardMotion(containerRef, transition ?? null, errorSeq);
-  const { play } = useSound();
   const wasMyTurn = useRef(false);
 
   useEffect(() => {
@@ -112,7 +128,7 @@ export function PaperSafariTable({ view, room, meId, log, receivedAt, now, error
     rawSend(action);
   };
 
-  if (game.status === 'GAME_OVER') {
+  if (finale.phase === 'done') {
     return <GameOverPanel game={game} room={room} meId={meId} nicknameOf={nicknameOf} onReady={onReadyNext} onClose={onCloseGameOver} />;
   }
 
@@ -188,12 +204,13 @@ export function PaperSafariTable({ view, room, meId, log, receivedAt, now, error
   return (
     <HiddenZonesContext.Provider value={hidden}>
       <LiftedZonesContext.Provider value={lifted}>
-      <div ref={containerRef}>
+      <div ref={containerRef} inert={finale.active} className={finale.active ? 'pointer-events-none' : undefined}>
         <TurnBar instruction={instructionText} myTurn={myTurn} log={log} nicknameOf={nicknameOf} compact={!wide}
           deadline={game.deadline} serverNow={game.serverNow} onWarn={waitingOnMe ? () => play('tick') : undefined} />
         <Layout {...tableProps} />
       </div>
       <GhostLayer ghosts={ghosts} />
+      {finale.phase === 'banner' ? <GameEndBanner /> : null}
       </LiftedZonesContext.Provider>
     </HiddenZonesContext.Provider>
   );

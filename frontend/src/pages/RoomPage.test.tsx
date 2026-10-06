@@ -60,7 +60,10 @@ function roomTree() {
 beforeEach(() => {
   toast.show.mockReset();
 });
-afterEach(() => window.sessionStorage.clear());
+afterEach(() => {
+  window.sessionStorage.clear();
+  vi.useRealTimers();
+});
 
 describe('RoomPage 관전자', () => {
   it('관전자는 방에 있는 사람으로 보고 내보내지 않으며 관전 인원을 보여준다', async () => {
@@ -267,10 +270,15 @@ describe('RoomPage 결과 모달', () => {
     page.rerender(roomTree());
     await act(async () => {});
 
+    vi.useFakeTimers();
     setChannel({ room: waitingWithMe, view: finished });
     page.rerender(roomTree());
+    // 결과 창은 마무리 연출(카드 뒤집기 → "게임 끝!" 배너)이 끝난 뒤에 열린다.
+    expect(screen.queryByRole('dialog', { name: '게임 결과' })).not.toBeInTheDocument();
+    act(() => { vi.advanceTimersByTime(2500); });
+    vi.useRealTimers();
 
-    expect(await screen.findByRole('dialog', { name: '게임 결과' })).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: '게임 결과' })).toBeInTheDocument();
   });
 
   it('다른 방에서 닫은 결과 기록은 지우지 않는다', async () => {
@@ -324,10 +332,13 @@ describe('RoomPage 결과 모달', () => {
     const page = renderRoom();
     await act(async () => {});
 
+    vi.useFakeTimers();
     setChannel({ room: waitingWithMe, view: { game: { ...finished.game, round: { ...finished.game.round, boards: [boardOf(1), boardOf(2)] } } } });
     page.rerender(roomTree());
+    act(() => { vi.advanceTimersByTime(2500); });
+    vi.useRealTimers();
 
-    expect(await screen.findByRole('dialog', { name: '게임 결과' })).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: '게임 결과' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '다음 게임 준비' })).toBeInTheDocument();
   });
 });

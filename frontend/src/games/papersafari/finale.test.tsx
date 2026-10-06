@@ -1,0 +1,145 @@
+import { act, render, screen } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { BoardView, PaperSafariSessionView, PaperSafariView, Room, SlotView } from '../../api/types';
+import { SoundContext } from '../../lib/sound';
+import type { ViewTransition } from '../../room/useRoomChannel';
+import { PaperSafariTable } from './PaperSafariTable';
+
+const motionState = vi.hoisted(() => ({ reduced: false }));
+vi.mock('motion/react', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('motion/react')>();
+  return { ...actual, useReducedMotion: () => motionState.reduced };
+});
+
+const ME = 1;
+const OPPONENT = 2;
+
+const room: Room = {
+  code: 'ABC123', name: '테스트 방', gameType: 'PAPER_SAFARI', gameTypeName: '페이퍼 사파리', status: 'PLAYING',
+  hostId: ME, maxPlayers: 4, locked: false, spectators: [], theme: 'WOOD',
+  members: [
+    { id: ME, nickname: '앨리스', host: true, connected: true, offlineSeconds: 0, ready: false },
+    { id: OPPONENT, nickname: '밥', host: false, connected: true, offlineSeconds: 0, ready: false },
+  ],
+};
+
+function slots(faceUp: boolean): SlotView[] {
+  return [0, 1, 2].flatMap((column) => [0, 1].map((row) => ({
+    column, row, faceUp, known: false, card: faceUp ? { kind: 'NUMBER' as const, value: column + row * 3 + 1 } : null,
+  })));
+}
+
+function boards(faceUp: boolean): BoardView[] {
+  return [{ playerId: ME, slots: slots(faceUp) }, { playerId: OPPONENT, slots: slots(faceUp) }];
+}
+
+const playing: PaperSafariView = {
+  viewerId: ME, status: 'IN_ROUND', roundNumber: 1, lastRoundResult: null, winnerId: null,
+  round: { phase: 'DRAW', currentPlayerId: OPPONENT, deckSize: 40, discardTop: { kind: 'NUMBER', value: 4 }, held: null, boards: boards(false) },
+};
+
+const result = { players: [{ playerId: ME, score: 21, outcome: 'LOSE' as const }, { playerId: OPPONENT, score: 3, outcome: 'WIN' as const }] };
+
+function over(lastRoundResult: PaperSafariView['lastRoundResult'] = result): PaperSafariView {
+  return {
+    ...playing, status: 'GAME_OVER', winnerId: OPPONENT, lastRoundResult,
+    round: { ...playing.round, phase: 'ROUND_OVER', boards: boards(true) },
+  };
+}
+
+const nicknameOf = (memberId: number) => room.members.find((member) => member.id === memberId)?.nickname ?? '떠난 플레이어';
+const play = vi.fn();
+
+function ui(game: PaperSafariView, transition: ViewTransition | null = null) {
+  const view: PaperSafariSessionView = { game };
+  return (
+    <SoundContext.Provider value={{ play, muted: false, toggleMuted: () => undefined }}>
+      <PaperSafariTable view={view} room={room} meId={ME} log={[]} receivedAt={0} now={0} errorSeq={0} nicknameOf={nicknameOf}
+        onForfeit={vi.fn()} send={vi.fn()} onCloseGameOver={vi.fn()} onReadyNext={vi.fn()} transition={transition} />
+    </SoundContext.Provider>
+  );
+}
+
+const banner = () => screen.queryByText('게임 끝!');
+const resultDialog = () => screen.queryByRole('dialog', { name: '게임 결과' });
+const advance = (ms: number) => act(() => { vi.advanceTimersByTime(ms); });
+
+describe('게임 종료 연출', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    motionState.reduced = false;
+    play.mockReset();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('게임 중에 끝나면 뒷면 카드를 차례로 뒤집고, "게임 끝!" 배너를 보인 뒤 결과 창을 연다', () => {
+    const { rerender } = render(ui(playing));
+    const ended = over();
+    rerender(ui(ended));
+
+    expect(resultDialog()).not.toBeInTheDocument();
+    expect(banner()).not.toBeInTheDocument();
+    expect(screen.getByTestId('turn-bar').closest('[inert]')).not.toBeNull();
+    expect(document.querySelectorAll('[data-testid="slot"] [data-side="front"]').length).toBeLessThan(12);
+
+    advance(1200);
+    expect(document.querySelectorAll('[data-testid="slot"] [data-side="front"]')).toHaveLength(12);
+    expect(banner()?.closest('[role="status"]')).not.toBeNull();
+    expect(screen.getByText('점수를 계산하고 있어요')).toBeInTheDocument();
+    expect(resultDialog()).not.toBeInTheDocument();
+    expect(play.mock.calls.filter(([name]) => name === 'flip').length).toBeGreaterThan(0);
+
+    advance(1300);
+    expect(banner()).not.toBeInTheDocument();
+    expect(resultDialog()).toBeInTheDocument();
+  });
+
+  it('처음부터 끝난 게임으로 열면(새로고침·늦은 입장) 연출 없이 결과 창을 바로 연다', () => {
+    render(ui(over()));
+
+    expect(banner()).not.toBeInTheDocument();
+    expect(resultDialog()).toBeInTheDocument();
+  });
+
+  it('게임 중 상태에서 끝난 상태로 넘어오는 전환과 함께 새로 열려도 연출한다', () => {
+    const ended = over();
+    render(ui(ended, { seq: 3, from: playing, to: ended, animate: true }));
+
+    expect(resultDialog()).not.toBeInTheDocument();
+    advance(1200);
+    expect(banner()).toBeInTheDocument();
+    advance(1300);
+    expect(resultDialog()).toBeInTheDocument();
+  });
+
+  it('동작 줄이기면 연출 없이 결과 창을 바로 연다', () => {
+    motionState.reduced = true;
+    const { rerender } = render(ui(playing));
+    rerender(ui(over()));
+
+    expect(banner()).not.toBeInTheDocument();
+    expect(resultDialog()).toBeInTheDocument();
+  });
+
+  it('상대가 나가서(라운드 결과 없음) 끝나면 결과 창을 바로 연다', () => {
+    const { rerender } = render(ui(playing));
+    rerender(ui(over(null)));
+
+    expect(banner()).not.toBeInTheDocument();
+    expect(resultDialog()).toBeInTheDocument();
+  });
+
+  it('같은 게임에서 여러 번 다시 그려도 배너는 한 번만 나온다', () => {
+    const { rerender } = render(ui(playing));
+    rerender(ui(over()));
+    advance(2500);
+    expect(resultDialog()).toBeInTheDocument();
+
+    rerender(ui(over()));
+    rerender(ui(over()));
+    expect(banner()).not.toBeInTheDocument();
+    expect(resultDialog()).toBeInTheDocument();
+  });
+});
