@@ -33,8 +33,8 @@ public class RoomController {
     }
 
     @GetMapping
-    public List<RoomSummaryResponse> waitingRooms(@RequestParam(required = false) GameType gameType) {
-        return roomService.waitingRooms(gameType);
+    public List<RoomSummaryResponse> rooms(@RequestParam(required = false) GameType gameType) {
+        return roomService.rooms(gameType);
     }
 
     @GetMapping("/me")

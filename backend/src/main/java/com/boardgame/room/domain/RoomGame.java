@@ -24,6 +24,10 @@ public record RoomGame(GameSession session, String matchKey, Instant startedAt) 
         return session.forfeit(memberId);
     }
 
+    public int roundNumber() {
+        return session.roundNumber();
+    }
+
     public Object viewFor(long memberId) {
         return session.viewFor(memberId);
     }

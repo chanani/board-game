@@ -53,6 +53,11 @@ public class FakeGameSession implements GameSession {
         return !finished && players.contains(memberId) && !forfeited.contains(memberId);
     }
 
+    @Override
+    public int roundNumber() {
+        return 1;
+    }
+
     public void finish() {
         finished = true;
     }

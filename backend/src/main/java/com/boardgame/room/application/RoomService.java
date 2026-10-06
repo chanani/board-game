@@ -16,6 +16,7 @@ import com.boardgame.room.domain.Capacity;
 import com.boardgame.room.domain.GameOccupancies;
 import com.boardgame.room.domain.Participant;
 import com.boardgame.room.domain.Room;
+import com.boardgame.room.domain.RoomStatus;
 import com.boardgame.room.domain.RoomCode;
 import com.boardgame.room.domain.RoomCodeGenerator;
 import com.boardgame.room.domain.RoomGame;
@@ -28,6 +29,7 @@ import com.boardgame.room.domain.RoomRegistry;
 import com.boardgame.room.domain.RoomSettings;
 import java.time.Clock;
 import java.time.Duration;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -74,9 +76,11 @@ public class RoomService {
         return broadcast(room);
     }
 
-    public synchronized List<RoomSummaryResponse> waitingRooms(GameType gameType) {
+    public synchronized List<RoomSummaryResponse> rooms(GameType gameType) {
         return registry.all().stream()
-                .filter(room -> room.isWaitingFor(gameType))
+                .filter(room -> room.isFor(gameType))
+                .sorted(Comparator.comparing((Room room) -> room.status() == RoomStatus.PLAYING)
+                        .thenComparing(Room::codeValue))
                 .map(RoomSummaryResponse::from)
                 .toList();
     }

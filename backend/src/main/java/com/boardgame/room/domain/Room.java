@@ -84,8 +84,19 @@ public class Room {
         return status() == RoomStatus.PLAYING && game.isPlaying(memberId);
     }
 
-    public boolean isWaitingFor(GameType type) {
-        return status() == RoomStatus.WAITING && (type == null || type == gameType());
+    public boolean isFor(GameType type) {
+        return type == null || type == gameType();
+    }
+
+    public Optional<Integer> roundNumber() {
+        if (status() != RoomStatus.PLAYING) {
+            return Optional.empty();
+        }
+        return Optional.of(game.roundNumber());
+    }
+
+    public int spectatorCount() {
+        return 0;
     }
 
     public RoomGame currentGame() {

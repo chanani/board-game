@@ -121,6 +121,29 @@ class RoomApiTest {
     }
 
     @Test
+    void 방_목록에_게임_중인_방과_진행_라운드와_잠금_여부가_함께_나온다() throws Exception {
+        User host = ApiUsers.create(mockMvc);
+        User guest = ApiUsers.create(mockMvc);
+        User viewer = ApiUsers.create(mockMvc);
+        String waiting = createdCode(host);
+        User host2 = ApiUsers.create(mockMvc);
+        String playing = createdCode(host2);
+        join(guest, playing).andExpect(status().isOk());
+        start(host2, playing).andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/rooms").param("gameType", "PAPER_SAFARI").session(viewer.session()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.code == '%s')].status".formatted(waiting)).value("WAITING"))
+                .andExpect(jsonPath("$[?(@.code == '%s')].roundNumber".formatted(waiting)).value((Object) null))
+                .andExpect(jsonPath("$[?(@.code == '%s')].status".formatted(playing)).value("PLAYING"))
+                .andExpect(jsonPath("$[?(@.code == '%s')].roundNumber".formatted(playing)).value(1))
+                .andExpect(jsonPath("$[?(@.code == '%s')].locked".formatted(playing)).value(false))
+                .andExpect(jsonPath("$[?(@.code == '%s')].maxPlayers".formatted(playing)).value(5))
+                .andExpect(jsonPath("$[?(@.code == '%s')].spectatorCount".formatted(playing)).value(0))
+                .andExpect(jsonPath("$[*].locked").exists());
+    }
+
+    @Test
     void 이미_방에_있으면_새_방을_만들거나_다른_방에_들어갈_수_없다() throws Exception {
         User host = ApiUsers.create(mockMvc);
         User other = ApiUsers.create(mockMvc);

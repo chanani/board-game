@@ -63,6 +63,12 @@ public class PaperSafariSession implements GameSession {
         return !isFinished() && game.isSeated(new PlayerId(memberId));
     }
 
+    @Override
+    public int roundNumber() {
+        RoundNumber number = game.roundNumber();
+        return number.value();
+    }
+
     private void apply(long memberId, GameAction action) {
         if (READY.equals(action.type())) {
             voteReady(memberId);

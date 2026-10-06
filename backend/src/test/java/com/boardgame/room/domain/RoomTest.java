@@ -41,8 +41,8 @@ class RoomTest {
         assertThat(room.codeValue()).isEqualTo("ABCDEF");
         assertThat(room.nameValue()).isEqualTo("방");
         assertThat(room.participants()).containsExactly(alice);
-        assertThat(room.isWaitingFor(GameType.PAPER_SAFARI)).isTrue();
-        assertThat(room.isWaitingFor(null)).isTrue();
+        assertThat(room.isFor(GameType.PAPER_SAFARI)).isTrue();
+        assertThat(room.isFor(null)).isTrue();
     }
 
     @Test
@@ -105,7 +105,8 @@ class RoomTest {
         assertThat(game.matchKey()).isEqualTo("match-1");
         assertThat(game.startedAt()).isEqualTo(NOW);
         assertThat(room.status()).isEqualTo(RoomStatus.PLAYING);
-        assertThat(room.isWaitingFor(GameType.PAPER_SAFARI)).isFalse();
+        assertThat(room.isFor(GameType.PAPER_SAFARI)).isTrue();
+        assertThat(room.roundNumber()).contains(1);
         assertThat(room.isPlaying(2L)).isTrue();
         assertThat(room.viewFor(2L)).contains("view-2");
         room.join(bob, null, new FakeRoomPasswordHasher());

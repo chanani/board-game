@@ -93,6 +93,13 @@ class PaperSafariSessionTest {
     }
 
     @Test
+    void 만들자마자_라운드_번호는_1이다() {
+        PaperSafariSession session = session(List.of(roundWonBy(ALICE)));
+
+        assertThat(session.roundNumber()).isEqualTo(1);
+    }
+
+    @Test
     void 행동_종류에_따라_게임을_진행한다() {
         PaperSafariSession session = session(List.of(roundWonBy(ALICE)));
 

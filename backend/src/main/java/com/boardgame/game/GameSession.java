@@ -13,4 +13,6 @@ public interface GameSession {
     boolean isFinished();
 
     boolean isPlaying(long memberId);
+
+    int roundNumber();
 }
