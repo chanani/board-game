@@ -145,6 +145,7 @@ describe('GameOverPanel 단판 결과', () => {
     const notes = mine.getAllByTestId('wild-note');
     expect(notes.map((note) => note.textContent)).toEqual(['', '와일드 → 8', '']);
     expect(notes[1]).toHaveClass('text-[10px]');
+    expect(within(screen.getByTestId('board-2')).queryAllByTestId('wild-note')).toHaveLength(0);
   });
 
   it('결과 판은 열 배지 사이 간격을 넓게 둔다', () => {

@@ -87,7 +87,7 @@ export function PlayerBoard({ result, board, nickname, active, turnRing = false,
             {badge}
           </span>
         ))}
-        {result?.notes?.map((note, column) => (
+        {result?.notes?.some(Boolean) && result.notes.map((note, column) => (
           <span key={`note-${column}`} data-testid="wild-note" className="felt-ink -mt-1.5 justify-self-center whitespace-nowrap text-[10px] font-bold leading-none">
             {note}
           </span>

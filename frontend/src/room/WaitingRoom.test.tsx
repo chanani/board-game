@@ -66,7 +66,8 @@ describe('WaitingRoom', () => {
     await userEvent.click(within(chairs[2]).getByRole('button', { name: '내보내기' }));
 
     const dialog = screen.getByRole('dialog');
-    expect(within(dialog).getByText('에린님을 내보낼까요?')).toBeVisible();
+    // 모달은 motion으로 첫 프레임에 opacity 0을 그리므로, 애니메이션 프레임이 돈 뒤에 보이는지 확인한다.
+    await waitFor(() => expect(within(dialog).getByText('에린님을 내보낼까요?')).toBeVisible());
     await userEvent.click(within(dialog).getByRole('button', { name: '취소' }));
     expect(onKick).not.toHaveBeenCalled();
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
