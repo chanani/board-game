@@ -83,6 +83,14 @@ describe('Modal', () => {
     expect(onClose).toHaveBeenCalledOnce();
   });
 
+  it('✕ 버튼은 높이 0인 고정 줄에 눌려 납작해지지 않는다(스크롤 때 동그란 배경이 아이콘을 다 덮게)', () => {
+    render(<Modal open title="결과" onClose={() => {}}><p>내용</p></Modal>);
+
+    const row = screen.getByRole('button', { name: '닫기' }).parentElement;
+
+    expect(row).toHaveClass('sticky', 'h-0', 'items-start');
+  });
+
   it('배경을 누르면 닫히고 안쪽을 누르면 닫히지 않는다', async () => {
     const onClose = vi.fn();
     render(<Modal open title="결과" onClose={onClose}><p>내용</p></Modal>);
