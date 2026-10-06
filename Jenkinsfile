@@ -15,7 +15,7 @@ pipeline {
         DB_PASSWORD = credentials('board-game-db-password')
 
         // 브라우저로 접속하는 주소(오리진)를 쉼표로. 실제 도메인·포트에 맞게 고친다.
-        WS_ORIGINS    = 'https://*.chanhan.cloud,http://localhost:[*]'
+        WS_ORIGINS    = 'http://ohuniverse.cloud,https://ohuniverse.cloud,http://www.ohuniverse.cloud,https://www.ohuniverse.cloud'
         // https로 서비스하면 'true'.
         COOKIE_SECURE = 'false'
 
