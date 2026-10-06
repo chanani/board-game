@@ -16,18 +16,27 @@ import org.springframework.stereotype.Component;
 public class JsonAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
     private final ObjectMapper objectMapper;
+    private final ReplacedSessions replacedSessions;
 
-    public JsonAuthenticationEntryPoint(ObjectMapper objectMapper) {
+    public JsonAuthenticationEntryPoint(ObjectMapper objectMapper, ReplacedSessions replacedSessions) {
         this.objectMapper = objectMapper;
+        this.replacedSessions = replacedSessions;
     }
 
     @Override
     public void commence(HttpServletRequest request, HttpServletResponse response,
                          AuthenticationException exception) throws IOException {
-        ErrorCode errorCode = ErrorCode.UNAUTHORIZED;
+        ErrorCode errorCode = errorCodeFor(request);
         response.setStatus(errorCode.statusCode());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
         objectMapper.writeValue(response.getWriter(), ErrorResponse.of(errorCode));
+    }
+
+    private ErrorCode errorCodeFor(HttpServletRequest request) {
+        if (replacedSessions.contains(request.getRequestedSessionId())) {
+            return ErrorCode.SESSION_REPLACED;
+        }
+        return ErrorCode.UNAUTHORIZED;
     }
 }

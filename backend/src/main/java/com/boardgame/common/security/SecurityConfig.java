@@ -24,7 +24,8 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
                                                    SecurityContextRepository securityContextRepository,
-                                                   JsonAuthenticationEntryPoint authenticationEntryPoint)
+                                                   JsonAuthenticationEntryPoint authenticationEntryPoint,
+                                                   ActiveSessions activeSessions)
             throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
@@ -36,6 +37,8 @@ public class SecurityConfig {
                 .logout(logout -> logout
                         .logoutRequestMatcher(PathPatternRequestMatcher.withDefaults()
                                 .matcher(HttpMethod.POST, "/api/auth/logout"))
+                        .addLogoutHandler((request, response, authentication) ->
+                                activeSessions.forget(request.getSession(false)))
                         .logoutSuccessHandler(new HttpStatusReturningLogoutSuccessHandler(HttpStatus.NO_CONTENT)))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(HttpMethod.POST, "/api/members", "/api/auth/login").permitAll()

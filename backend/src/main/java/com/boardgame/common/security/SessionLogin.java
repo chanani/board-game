@@ -13,9 +13,11 @@ import org.springframework.stereotype.Component;
 public class SessionLogin {
 
     private final SecurityContextRepository securityContextRepository;
+    private final ActiveSessions activeSessions;
 
-    public SessionLogin(SecurityContextRepository securityContextRepository) {
+    public SessionLogin(SecurityContextRepository securityContextRepository, ActiveSessions activeSessions) {
         this.securityContextRepository = securityContextRepository;
+        this.activeSessions = activeSessions;
     }
 
     public void establish(LoginMember member, HttpServletRequest request, HttpServletResponse response) {
@@ -24,6 +26,7 @@ public class SessionLogin {
         context.setAuthentication(UsernamePasswordAuthenticationToken.authenticated(member, null, List.of()));
         SecurityContextHolder.setContext(context);
         securityContextRepository.saveContext(context, request, response);
+        activeSessions.replace(member.id(), request.getSession());
     }
 
     private void renewSessionIdIfPresent(HttpServletRequest request) {
