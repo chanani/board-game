@@ -14,6 +14,8 @@ import com.boardgame.room.domain.RoomCode;
 import com.boardgame.room.domain.RoomPasswordHash;
 import com.boardgame.room.domain.RoomPasswordHasher;
 import com.boardgame.room.domain.RoomRegistry;
+import com.boardgame.support.FakeTaskScheduler;
+import com.boardgame.support.FixedRandom;
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
@@ -25,7 +27,8 @@ class RoomServicePasswordTest {
     private final RoomRegistry registry = new RoomRegistry();
     private final LockSpyHasher hasher = new LockSpyHasher();
     private final RoomService service = new RoomService(registry, () -> new RoomCode("ABCDEF"), null,
-            mock(RoomNotifier.class), null, null, Clock.systemUTC(), new PresenceTracker(), hasher);
+            mock(RoomNotifier.class), null, null, Clock.systemUTC(), new PresenceTracker(), hasher,
+            new TurnTimer(new FakeTaskScheduler()), new FixedRandom(0));
 
     private final class LockSpyHasher implements RoomPasswordHasher {
 

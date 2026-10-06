@@ -9,8 +9,12 @@ import com.boardgame.game.ResultType;
 import com.boardgame.game.RoundCompleted;
 import com.boardgame.game.RoundEntry;
 import com.boardgame.papersafari.view.PaperSafariSessionView;
+import java.time.Clock;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.Random;
 import java.util.stream.IntStream;
 
 public class PaperSafariSession implements GameSession {
@@ -20,28 +24,53 @@ public class PaperSafariSession implements GameSession {
 
     private final PaperSafariGame game;
     private final List<Long> participants;
+    private final TurnCountdown countdown;
 
     public PaperSafariSession(List<Long> memberIds, RoundFactory factory) {
+        this(memberIds, factory, Clock.systemUTC());
+    }
+
+    public PaperSafariSession(List<Long> memberIds, RoundFactory factory, Clock clock) {
         this.participants = List.copyOf(memberIds);
         this.game = PaperSafariGame.start(memberIds.stream().map(PlayerId::new).toList(), factory);
+        this.countdown = new TurnCountdown(clock);
     }
 
     @Override
     public List<GameOutcome> act(long memberId, GameAction action) {
         PaperSafariCommand command = PaperSafariCommand.of(action.type());
         command.apply(game, new PlayerId(memberId), action);
-        return outcomesIfFinished();
+        return changed();
     }
 
     @Override
     public List<GameOutcome> forfeit(long memberId) {
         game.forfeit(new PlayerId(memberId));
-        return outcomesIfFinished();
+        return changed();
+    }
+
+    @Override
+    public List<GameOutcome> autoAct(Random random) {
+        game.autoAct(random);
+        return changed();
+    }
+
+    @Override
+    public Optional<Instant> deadline() {
+        if (isFinished()) {
+            return Optional.empty();
+        }
+        return Optional.of(countdown.deadline());
+    }
+
+    public Instant awaitingSince() {
+        return countdown.awaitingSince();
     }
 
     @Override
     public Object viewFor(long memberId) {
-        return new PaperSafariSessionView(game.viewFor(new PlayerId(memberId)));
+        TurnTiming timing = countdown.timing(!isFinished());
+        return new PaperSafariSessionView(game.viewFor(new PlayerId(memberId), timing));
     }
 
     @Override
@@ -58,6 +87,12 @@ public class PaperSafariSession implements GameSession {
     public int roundNumber() {
         RoundNumber number = game.roundNumber();
         return number.value();
+    }
+
+    // 상태가 바뀌었으니 마감을 다시 잡는다.
+    private List<GameOutcome> changed() {
+        countdown.restart();
+        return outcomesIfFinished();
     }
 
     // 행동은 끝난 게임에서 거부되므로, 행동 직후 끝나 있으면 이번 행동으로 끝난 것이다.

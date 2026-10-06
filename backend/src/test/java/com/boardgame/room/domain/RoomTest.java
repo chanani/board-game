@@ -9,6 +9,7 @@ import com.boardgame.game.GameCompleted;
 import com.boardgame.game.GameType;
 import java.time.Instant;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 
@@ -128,6 +129,27 @@ class RoomTest {
         room.join(bob, null, new FakeRoomPasswordHasher());
         assertError(() -> room.join(carol, null, new FakeRoomPasswordHasher()), ErrorCode.ROOM_ALREADY_PLAYING);
         assertError(() -> start(room, 1L), ErrorCode.ROOM_ALREADY_PLAYING);
+    }
+
+    @Test
+    void 시작_전에는_자동_행동을_할_수_없고_마감도_없다() {
+        Room room = openRoom();
+
+        assertError(() -> room.autoAct(new Random(0)), ErrorCode.GAME_NOT_STARTED);
+        assertThat(room.deadline()).isEmpty();
+    }
+
+    @Test
+    void 진행_중이면_자동_행동을_게임에_맡기고_끝나면_마감이_없다() {
+        Room room = openRoom();
+        room.join(bob, null, new FakeRoomPasswordHasher());
+        start(room, 1L);
+
+        room.autoAct(new Random(0));
+
+        assertThat(created.get().autoActs()).isEqualTo(1);
+        created.get().finish();
+        assertThat(room.deadline()).isEmpty();
     }
 
     @Test

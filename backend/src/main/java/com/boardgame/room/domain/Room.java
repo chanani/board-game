@@ -9,6 +9,7 @@ import com.boardgame.game.GameType;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.Random;
 import java.util.function.Function;
 
 public class Room {
@@ -128,6 +129,24 @@ public class Room {
         List<GameOutcome> outcomes = game.act(memberId, action);
         settleIfJustFinished(true);
         return outcomes;
+    }
+
+    /** 시간 초과로 서버가 대신 행동한다. 게임이 그 행동으로 끝나면 직접 행동했을 때처럼 정리한다. */
+    public List<GameOutcome> autoAct(Random random) {
+        if (status() != RoomStatus.PLAYING) {
+            throw new BusinessException(ErrorCode.GAME_NOT_STARTED);
+        }
+        List<GameOutcome> outcomes = game.autoAct(random);
+        settleIfJustFinished(true);
+        return outcomes;
+    }
+
+    /** 진행 중인 게임이 행동을 기다리는 마감. 진행 중이 아니면 비어 있다. */
+    public Optional<Instant> deadline() {
+        if (status() != RoomStatus.PLAYING) {
+            return Optional.empty();
+        }
+        return game.deadline();
     }
 
     public Optional<Object> viewFor(long memberId) {

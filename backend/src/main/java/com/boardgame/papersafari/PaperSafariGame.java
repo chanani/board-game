@@ -6,15 +6,18 @@ import com.boardgame.papersafari.view.PaperSafariView;
 import com.boardgame.papersafari.view.RoundResultView;
 import java.util.List;
 import java.util.Optional;
+import java.util.Random;
 
 public class PaperSafariGame {
 
     private final Seats seats;
     private final PaperSafariRound round;
+    private final AutoActors autoActors;
 
     private PaperSafariGame(Seats seats, PaperSafariRound round) {
         this.seats = seats;
         this.round = round;
+        this.autoActors = new AutoActors();
     }
 
     public static PaperSafariGame start(List<PlayerId> players, RoundFactory factory) {
@@ -23,43 +26,49 @@ public class PaperSafariGame {
     }
 
     public void flipInitial(PlayerId player, Position position) {
-        requireInProgress();
+        requireHumanTurn();
         round.flipInitial(player, position);
     }
 
     public void drawFromDeck(PlayerId player) {
-        requireInProgress();
+        requireHumanTurn();
         round.drawFromDeck(player);
     }
 
     public void drawFromDiscard(PlayerId player) {
-        requireInProgress();
+        requireHumanTurn();
         round.drawFromDiscard(player);
     }
 
     public void cancelDraw(PlayerId player) {
-        requireInProgress();
+        requireHumanTurn();
         round.cancelDraw(player);
     }
 
     public void swapAt(PlayerId player, Position position) {
-        requireInProgress();
+        requireHumanTurn();
         round.swapAt(player, position);
     }
 
     public void discardDrawn(PlayerId player) {
-        requireInProgress();
+        requireHumanTurn();
         round.discardDrawn(player);
     }
 
     public void peekAt(PlayerId player, Position position) {
-        requireInProgress();
+        requireHumanTurn();
         round.peekAt(player, position);
     }
 
     public void forfeit(PlayerId player) {
-        requireInProgress();
+        requireHumanTurn();
         round.leave(player);
+    }
+
+    // 시간 초과: 지금 기다리는 행동을 대신 하고, 누구 대신이었는지 기억한다.
+    public void autoAct(Random random) {
+        requireInProgress();
+        autoActors.replaceWith(round.autoAct(random));
     }
 
     public GameStatus status() {
@@ -111,6 +120,10 @@ public class PaperSafariGame {
     }
 
     public PaperSafariView viewFor(PlayerId viewer) {
+        return viewFor(viewer, TurnTiming.untimed());
+    }
+
+    public PaperSafariView viewFor(PlayerId viewer, TurnTiming timing) {
         RoundResultView result = lastRoundResult().map(RoundResult::toView).orElse(null);
         Long winnerId = winner().map(PlayerId::value).orElse(null);
         return new PaperSafariView(
@@ -119,7 +132,11 @@ public class PaperSafariGame {
                 roundNumber().value(),
                 round.viewFor(viewer),
                 result,
-                winnerId);
+                winnerId,
+                timing.deadline(),
+                timing.serverNow(),
+                autoActors.firstId(),
+                autoActors.ids());
     }
 
     private RoundOutcome drawUnlessForfeited(PlayerId player) {
@@ -127,6 +144,12 @@ public class PaperSafariGame {
             return RoundOutcome.LOSE;
         }
         return RoundOutcome.DRAW;
+    }
+
+    // 사람의 행동(기권 포함)이 오면 직전 자동 행동 표시를 지운다.
+    private void requireHumanTurn() {
+        requireInProgress();
+        autoActors.clear();
     }
 
     private void requireInProgress() {

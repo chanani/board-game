@@ -33,9 +33,12 @@ import java.time.Duration;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.Random;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Stream;
+import java.time.Instant;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
@@ -53,11 +56,14 @@ public class RoomService {
     private final Clock clock;
     private final PresenceTracker presence;
     private final RoomPasswordHasher hasher;
+    private final TurnTimer turnTimer;
+    private final Random random;
 
     public RoomService(RoomRegistry registry, RoomCodeGenerator codeGenerator, GameSessionFactories sessionFactories,
                        RoomNotifier notifier, OutcomePublisher outcomePublisher,
                        ApplicationEventPublisher eventPublisher, Clock clock, PresenceTracker presence,
-                       RoomPasswordHasher hasher) {
+                       RoomPasswordHasher hasher, TurnTimer turnTimer,
+                       @Qualifier(TurnTimerConfig.RANDOM) Random random) {
         this.registry = registry;
         this.codeGenerator = codeGenerator;
         this.sessionFactories = sessionFactories;
@@ -67,6 +73,8 @@ public class RoomService {
         this.clock = clock;
         this.presence = presence;
         this.hasher = hasher;
+        this.turnTimer = turnTimer;
+        this.random = random;
     }
 
     // 비밀번호 해시(BCrypt)는 느리므로 서비스 전체 잠금 밖에서 먼저 만든다.
@@ -167,6 +175,7 @@ public class RoomService {
         List<GameOutcome> outcomes = room.leave(memberId);
         baselineNewcomers(room, before);
         saveAndNotifyClosed(room);
+        rearm(room);
         broadcastUnlessEmpty(room);
         outcomePublisher.publish(room, outcomes, clock.instant());
     }
@@ -202,6 +211,7 @@ public class RoomService {
         RoomGame game = room.start(memberId, memberIds -> sessionFactories.create(gameType, memberIds),
                 UUID.randomUUID().toString(), clock.instant());
         presence.baseline(room.memberIds(), clock.instant());
+        rearm(room);
         RoomResponse response = broadcast(room);
         eventPublisher.publishEvent(
                 new GameStartedEvent(game.matchKey(), gameType, room.memberIds(), game.startedAt()));
@@ -224,8 +234,36 @@ public class RoomService {
         List<GameOutcome> outcomes = room.act(memberId, action);
         baselineNewcomers(room, before);
         saveAndNotifyClosed(room);
+        rearm(room);
         broadcast(room);
         outcomePublisher.publish(room, outcomes, clock.instant());
+    }
+
+    // 예약 스레드에서 들어온다. 같은 잠금 안에서 판번호가 최신일 때만 대신 행동하므로, 사람의 행동과 겹쳐 적용되지 않는다.
+    private synchronized void timeout(RoomCode code, TimerVersion version) {
+        Optional<Room> found = registry.find(code).filter(room -> turnTimer.isCurrent(code, version));
+        if (found.isEmpty()) {
+            return;
+        }
+        Room room = found.get();
+        List<Long> before = room.memberIds();
+        List<GameOutcome> outcomes = room.autoAct(random);
+        baselineNewcomers(room, before);
+        saveAndNotifyClosed(room);
+        rearm(room);
+        broadcast(room);
+        outcomePublisher.publish(room, outcomes, clock.instant());
+    }
+
+    // 상태가 바뀔 때마다 새 판번호로 다시 건다. 기다리는 행동이 없거나(게임 끝) 방이 사라졌으면 취소한다.
+    private void rearm(Room room) {
+        RoomCode code = room.code();
+        Optional<Instant> deadline = room.deadline().filter(ignored -> registry.exists(code));
+        if (deadline.isEmpty()) {
+            turnTimer.cancel(code);
+            return;
+        }
+        turnTimer.arm(code, deadline.get(), version -> timeout(code, version));
     }
 
     public synchronized void sync(String rawCode, long memberId) {
@@ -250,6 +288,7 @@ public class RoomService {
         List<GameOutcome> outcomes = room.leave(targetId);
         baselineNewcomers(room, before);
         saveAndNotifyClosed(room);
+        rearm(room);
         broadcastUnlessEmpty(room);
         outcomePublisher.publish(room, outcomes, clock.instant());
     }

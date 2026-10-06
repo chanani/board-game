@@ -5,6 +5,8 @@ import com.boardgame.game.GameOutcome;
 import com.boardgame.game.GameSession;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
+import java.util.Random;
 
 public record RoomGame(GameSession session, String matchKey, Instant startedAt) {
 
@@ -22,6 +24,14 @@ public record RoomGame(GameSession session, String matchKey, Instant startedAt) 
 
     public List<GameOutcome> forfeit(long memberId) {
         return session.forfeit(memberId);
+    }
+
+    public List<GameOutcome> autoAct(Random random) {
+        return session.autoAct(random);
+    }
+
+    public Optional<Instant> deadline() {
+        return session.deadline();
     }
 
     public int roundNumber() {

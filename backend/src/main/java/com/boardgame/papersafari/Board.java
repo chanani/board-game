@@ -59,6 +59,12 @@ public class Board {
         return slots.values().stream().anyMatch(slot -> !slot.isFaceUp());
     }
 
+    public List<Position> faceDownPositions() {
+        return Position.all().stream()
+                .filter(this::isFaceDown)
+                .toList();
+    }
+
     public boolean allFaceUp() {
         return !hasFaceDown();
     }

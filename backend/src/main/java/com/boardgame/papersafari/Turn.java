@@ -34,6 +34,13 @@ public class Turn {
         }
     }
 
+    public void requirePlaying() {
+        TurnPhase phase = step.phase();
+        if (!phase.isPlaying()) {
+            throw new BusinessException(ErrorCode.INVALID_PHASE);
+        }
+    }
+
     public void beginPlaying() {
         step = Step.of(TurnPhase.DRAW);
     }

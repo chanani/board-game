@@ -32,6 +32,13 @@ public class PlayerBoards {
         board.reveal(position);
     }
 
+    public List<PlayerId> notFlipped() {
+        return boards.entrySet().stream()
+                .filter(entry -> !entry.getValue().hasFaceUp())
+                .map(Map.Entry::getKey)
+                .toList();
+    }
+
     public boolean everyoneFlipped() {
         return boards.values().stream().allMatch(Board::hasFaceUp);
     }

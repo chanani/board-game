@@ -3,7 +3,9 @@ package com.boardgame.papersafari;
 import com.boardgame.common.error.BusinessException;
 import com.boardgame.common.error.ErrorCode;
 import com.boardgame.papersafari.view.RoundView;
+import java.util.List;
 import java.util.Optional;
+import java.util.Random;
 
 public class PaperSafariRound {
 
@@ -56,6 +58,64 @@ public class PaperSafariRound {
         turn.require(player, TurnPhase.PEEK);
         boards.peek(player, position);
         finishTurn();
+    }
+
+    // 시간 초과: 지금 기다리는 행동을 대신 한다. 대신 행동한 사람들을 돌려준다.
+    public List<PlayerId> autoAct(Random random) {
+        PositionPicker picker = new PositionPicker(random);
+        if (turn.isSettingUp()) {
+            return autoFlip(picker);
+        }
+        PlayerId current = currentPlayer();
+        autoPlay(current, picker);
+        return List.of(current);
+    }
+
+    private List<PlayerId> autoFlip(PositionPicker picker) {
+        List<PlayerId> pending = boards.notFlipped();
+        pending.forEach(player -> boards.flipInitial(player, anyFaceDown(player, picker)));
+        startPlayingIfReady();
+        return pending;
+    }
+
+    private void autoPlay(PlayerId current, PositionPicker picker) {
+        turn.requirePlaying();
+        if (turn.phase() == TurnPhase.PEEK) {
+            autoPeek(current, picker);
+            return;
+        }
+        autoDrawIfNeeded(current);
+        swapAt(current, picker.any());
+    }
+
+    private void autoDrawIfNeeded(PlayerId current) {
+        if (turn.phase() != TurnPhase.DRAW) {
+            return;
+        }
+        if (table.discardTop().isEmpty()) {
+            drawFromDeck(current);
+            return;
+        }
+        drawFromDiscard(current);
+    }
+
+    private void autoPeek(PlayerId current, PositionPicker picker) {
+        Optional<Position> target = picker.anyOf(faceDownOf(current));
+        if (target.isEmpty()) {
+            finishTurn();
+            return;
+        }
+        peekAt(current, target.get());
+    }
+
+    private Position anyFaceDown(PlayerId player, PositionPicker picker) {
+        Optional<Position> position = picker.anyOf(faceDownOf(player));
+        return position.orElseThrow();
+    }
+
+    private List<Position> faceDownOf(PlayerId player) {
+        Board board = boards.boardOf(player);
+        return board.faceDownPositions();
     }
 
     public boolean knows(PlayerId player, Position position) {

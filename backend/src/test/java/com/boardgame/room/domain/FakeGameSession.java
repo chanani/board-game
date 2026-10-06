@@ -4,9 +4,12 @@ import com.boardgame.game.GameAction;
 import com.boardgame.game.GameCompleted;
 import com.boardgame.game.GameOutcome;
 import com.boardgame.game.GameSession;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
+import java.util.Random;
 import java.util.Set;
 
 public class FakeGameSession implements GameSession {
@@ -17,6 +20,7 @@ public class FakeGameSession implements GameSession {
     private final List<Long> forfeitCalls = new ArrayList<>();
     private boolean finished;
     private boolean finishOnAct;
+    private int autoActs;
 
     public FakeGameSession(List<Long> players) {
         this.players = List.copyOf(players);
@@ -41,6 +45,21 @@ public class FakeGameSession implements GameSession {
         }
         finished = true;
         return List.of(new GameCompleted(List.of()));
+    }
+
+    @Override
+    public List<GameOutcome> autoAct(Random random) {
+        autoActs++;
+        return List.of();
+    }
+
+    @Override
+    public Optional<Instant> deadline() {
+        return Optional.empty();
+    }
+
+    public int autoActs() {
+        return autoActs;
     }
 
     @Override
