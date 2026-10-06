@@ -111,7 +111,7 @@ export function Modal({ open, title, onClose, children, wide = false, padding = 
             {onClose ? (
               <div className="pointer-events-none sticky top-0 z-10 flex h-0 justify-end">
                 <button type="button" aria-label="닫기" data-close onClick={onClose}
-                  className="pointer-events-auto -mr-3 -mt-3 rounded-full bg-cream-50/80 p-1.5 text-stone-500 hover:bg-cream-200 hover:text-wood-800">
+                  className="pointer-events-auto -mr-2 -mt-2 rounded-full bg-cream-50 p-1.5 shadow-[0_0_0_4px_var(--color-cream-50)] text-stone-500 hover:bg-cream-200 hover:text-wood-800">
                   <CloseIcon className="h-5 w-5" />
                 </button>
               </div>

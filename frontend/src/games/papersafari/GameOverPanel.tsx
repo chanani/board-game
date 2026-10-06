@@ -7,7 +7,8 @@ import { Modal } from '../../components/Modal';
 import { RollingNumber } from '../../components/RollingNumber';
 import { useSound } from '../../lib/sound';
 import { resultLabel } from '../../lib/format';
-import { PlayerBoard } from './PlayerBoard';
+import { MedalIcon, DrawIcon } from '../../components/icons';
+import { PlayerBoard, type BoardResult } from './PlayerBoard';
 import { cardAt, columnScore } from './score';
 
 type Props = {
@@ -50,17 +51,31 @@ function useResultSound(done: boolean, outcome: PlayerResultView['outcome'] | un
   }, [done, outcome]);
 }
 
-function columnScores(board: BoardView): string {
-  return [0, 1, 2]
-    .map((column) => {
-      const top = cardAt(board, column, 0);
-      const bottom = cardAt(board, column, 1);
-      return top && bottom ? columnScore(top, bottom) : '?';
-    })
-    .join(' + ');
+function columnValues(board: BoardView): (number | null)[] {
+  return [0, 1, 2].map((column) => {
+    const top = cardAt(board, column, 0);
+    const bottom = cardAt(board, column, 1);
+    return top && bottom ? columnScore(top, bottom) : null;
+  });
 }
 
-function ScoreRows({ players, done, nicknameOf }: { players: PlayerResultView[]; done: boolean; nicknameOf: Props['nicknameOf'] }) {
+function totalLabel(values: (number | null)[]): string {
+  return values.includes(null) ? '합계 ?점' : `합계 ${values.reduce<number>((sum, value) => sum + (value ?? 0), 0)}점`;
+}
+
+function resultFor(board: BoardView, done: boolean, winnerId: number | null, label: (id: number) => string, outcome: PlayerResultView['outcome'] | undefined): BoardResult {
+  const values = columnValues(board);
+  const winner = done && winnerId === board.playerId;
+  const suffix = done && outcome ? ` · ${resultLabel(outcome)}` : '';
+  return {
+    tag: `${winner ? '👑 ' : ''}${label(board.playerId)}${suffix}`,
+    total: done ? totalLabel(values) : '합계 …',
+    badges: values.map((value) => (done ? String(value ?? '?') : '…')),
+    winner,
+  };
+}
+
+function ScoreRows({ players, done, nicknameOf }: { players: PlayerResultView[]; done: boolean; nicknameOf: (memberId: number) => string }) {
   // 카드가 모두 뒤집히기 전에는 자리 순서로 두고 점수·승패를 숨겨, 점수를 센 뒤에 승자를 보여 준다.
   const rows = done ? [...players].sort((a, b) => a.score - b.score) : players;
   const won = (result: PlayerResultView) => done && result.outcome === 'WIN';
@@ -128,20 +143,25 @@ export function GameOverPanel({ game, room, meId, nicknameOf, onReady, onClose }
     ...board,
     slots: board.slots.map((slot, slotIndex) => (offsets[boardIndex] + slotIndex < revealed || total === 0 ? slot : { ...slot, faceUp: false })),
   });
-  const headline = game.winnerId !== null ? `🏆 ${nicknameOf(game.winnerId)}님 승리!` : '무승부예요';
+  const labelOf = (id: number) => `${nicknameOf(id)}${id === meId ? ' (나)' : ''}`;
+  const headline = game.winnerId !== null ? `${nicknameOf(game.winnerId)}님 승리!` : '무승부예요';
+  const outcomeOf = (id: number) => players.find((player) => player.playerId === id)?.outcome;
 
   return (
     <>
       <Confetti active={done && game.winnerId !== null} />
       <Modal open title="게임 결과" onClose={onClose} wide padding="roomy" initialFocus="dialog">
         <div className="space-y-6">
-          <h2 className="text-center text-2xl font-black">{done ? headline : '카드를 공개하는 중…'}</h2>
-          {players.length > 0 ? <ScoreRows players={players} done={done} nicknameOf={nicknameOf} /> : null}
+          <div className="flex flex-col items-center gap-1">
+            {done ? (game.winnerId !== null ? <MedalIcon /> : <DrawIcon />) : null}
+            <h2 className="text-center text-2xl font-black">{done ? headline : '카드를 공개하는 중…'}</h2>
+          </div>
+          {players.length > 0 ? <ScoreRows players={players} done={done} nicknameOf={labelOf} /> : null}
           <div data-testid="result-boards" className={`${FELT_GRID} sm:grid-cols-2`}>
             {boards.map((board, boardIndex) => (
               <Felt key={board.playerId} className="p-3">
-                <PlayerBoard board={staged(board, boardIndex)} nickname={nicknameOf(board.playerId)} active={false} size="sm" />
-                <p className="mt-1 text-center text-xs text-cream-50">열 점수 {done ? columnScores(board) : '…'}</p>
+                <PlayerBoard board={staged(board, boardIndex)} nickname={labelOf(board.playerId)} active={false} size="sm"
+                  result={resultFor(board, done, game.winnerId, labelOf, outcomeOf(board.playerId))} />
               </Felt>
             ))}
           </div>

@@ -256,7 +256,7 @@ describe('RoomPage 결과 모달', () => {
     renderRoom();
 
     const dialog = await screen.findByRole('dialog', { name: '게임 결과' });
-    expect(await within(dialog).findByRole('heading', { name: '🏆 앨리스님 승리!' }, { timeout: 3000 })).toBeInTheDocument();
+    expect(await within(dialog).findByRole('heading', { name: '앨리스님 승리!' }, { timeout: 3000 })).toBeInTheDocument();
     await userEvent.click(within(dialog).getByRole('button', { name: '대기실로' }));
 
     expect(screen.queryByRole('dialog', { name: '게임 결과' })).not.toBeInTheDocument();

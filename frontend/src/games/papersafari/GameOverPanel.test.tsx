@@ -54,7 +54,7 @@ describe('GameOverPanel 단판 결과', () => {
 
     revealAll();
 
-    expect(within(dialog).getByRole('heading', { name: '🏆 앨리스님 승리!' })).toBeInTheDocument();
+    expect(within(dialog).getByRole('heading', { name: '앨리스님 승리!' })).toBeInTheDocument();
     const rows = within(dialog).getAllByTestId('score-row');
     expect(rows.map((row) => row.textContent)).toEqual([expect.stringContaining('앨리스'), expect.stringContaining('밥')]);
     expect(rows[0]).toHaveTextContent('12점');
@@ -69,6 +69,47 @@ describe('GameOverPanel 단판 결과', () => {
     const dialog = screen.getByRole('dialog', { name: '게임 결과' });
     expect(within(dialog).getByRole('heading', { name: '무승부예요' })).toBeInTheDocument();
     expect(dialog).not.toHaveTextContent('승리!');
+  });
+
+  it('트로피 이모지 대신 메달 아이콘을 쓰고, 내 이름에는 (나)를 붙인다', () => {
+    vi.useFakeTimers();
+    renderPanel();
+    revealAll();
+
+    const dialog = screen.getByRole('dialog', { name: '게임 결과' });
+    expect(dialog).not.toHaveTextContent('🏆');
+    expect(dialog.querySelector('svg[aria-hidden="true"]')).not.toBeNull();
+    expect(within(dialog).getAllByTestId('score-row')[0]).toHaveTextContent('앨리스 (나)');
+    expect(within(dialog).getAllByTestId('score-row')[1]).not.toHaveTextContent('(나)');
+    expect(within(screen.getByTestId('board-1')).getByText(/앨리스 \(나\)/)).toBeInTheDocument();
+  });
+
+  it('승자 판만 금색으로 강조하고 열 점수 배지와 합계는 공개 뒤에 보인다', () => {
+    vi.useFakeTimers();
+    renderPanel();
+    const before = within(screen.getByTestId('board-1')).getAllByTestId('column-badge');
+    expect(before.map((badge) => badge.textContent)).toEqual(['…', '…', '…']);
+    expect(screen.getByTestId('board-1')).toHaveAttribute('data-winner', 'false');
+
+    revealAll();
+
+    expect(screen.getByTestId('board-1')).toHaveAttribute('data-winner', 'true');
+    expect(screen.getByTestId('board-1')).toHaveClass('ring-mustard-400');
+    expect(screen.getByTestId('board-2')).toHaveAttribute('data-winner', 'false');
+    expect(screen.getByTestId('board-1')).toHaveTextContent('👑 앨리스 (나) · 승');
+    const badges = within(screen.getByTestId('board-1')).getAllByTestId('column-badge');
+    expect(badges).toHaveLength(3);
+    expect(within(screen.getByTestId('board-1')).getByTestId('board-total')).toHaveTextContent(/^합계 \d+점$/);
+  });
+
+  it('무승부면 어느 판도 승자 강조가 없다', () => {
+    vi.useFakeTimers();
+    renderPanel({ view: tie });
+    revealAll();
+
+    expect(screen.getByTestId('board-1')).toHaveAttribute('data-winner', 'false');
+    expect(screen.getByTestId('board-2')).toHaveAttribute('data-winner', 'false');
+    expect(screen.getByRole('dialog', { name: '게임 결과' })).not.toHaveTextContent('👑');
   });
 
   it('판 격자는 펠트 테두리(13px)만큼 여백과 간격을 둔다', () => {
@@ -193,7 +234,7 @@ describe('GameOverPanel 단판 결과', () => {
     renderPanel({ view: { ...game, winnerId: 2, lastRoundResult: null } });
 
     const dialog = screen.getByRole('dialog', { name: '게임 결과' });
-    expect(within(dialog).getByRole('heading', { name: '🏆 밥님 승리!' })).toBeInTheDocument();
+    expect(within(dialog).getByRole('heading', { name: '밥님 승리!' })).toBeInTheDocument();
     expect(within(dialog).queryAllByTestId('score-row')).toHaveLength(0);
   });
 });
