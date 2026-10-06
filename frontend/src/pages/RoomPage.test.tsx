@@ -23,7 +23,7 @@ vi.mock('../room/useRoomChat', () => ({
     return { messages: [{ id: 1, memberId: 1, nickname: '앨리스', text: '잘 부탁해요', sentAt: '2026-10-06T00:00:00Z' }], send: chat.send, unread: chat.unread, markRead: chat.markRead };
   },
 }));
-vi.mock('../api/rooms', () => ({ roomsApi: { seat: vi.fn(), leave: vi.fn(), start: vi.fn(), forfeit: vi.fn(), kick: vi.fn(), ready: vi.fn() } }));
+vi.mock('../api/rooms', () => ({ roomsApi: { seat: vi.fn(), leave: vi.fn(), start: vi.fn(), forfeit: vi.fn(), kick: vi.fn(), ready: vi.fn(), updateSettings: vi.fn() } }));
 
 const members = [
   { id: 1, nickname: '앨리스', host: true, connected: true, offlineSeconds: 0, ready: false },
@@ -453,5 +453,53 @@ describe('RoomPage 상태 바', () => {
     const chips = screen.getByTestId('room-chips');
     expect(chips.textContent).not.toMatch(/[\u{1F300}-\u{1FAFF}]/u);
     expect(chips.querySelectorAll('svg').length).toBeGreaterThanOrEqual(3);
+  });
+});
+
+describe('RoomPage 방 설정', () => {
+  const me = { id: 3, nickname: '캐롤', host: false, connected: true, offlineSeconds: 0, ready: false };
+  const hostWaiting: Room = {
+    ...baseRoom, status: 'WAITING', spectators: [], hostId: 3,
+    members: [{ ...members[0], host: false }, { ...me, host: true }],
+  };
+
+  it('대기 중인 방장에게만 방 설정 버튼이 있고, 저장하면 설정 API를 부른다', async () => {
+    const { roomsApi } = await import('../api/rooms');
+    vi.mocked(roomsApi.updateSettings).mockResolvedValue(hostWaiting);
+    setChannel({ room: hostWaiting });
+    renderRoom();
+    await act(async () => {});
+
+    await userEvent.click(within(screen.getByTestId('room-status-bar')).getByRole('button', { name: '방 설정' }));
+    await userEvent.click(within(await screen.findByRole('dialog', { name: '방 설정' })).getByRole('button', { name: '저장' }));
+
+    expect(roomsApi.updateSettings).toHaveBeenCalledWith('ABC234', hostWaiting.maxPlayers, hostWaiting.theme);
+  });
+
+  it('방장이 아니거나 게임 중이면 방 설정 버튼이 없다', async () => {
+    setChannel({ room: { ...hostWaiting, hostId: 1, members: [members[0], me] } });
+    const guest = renderRoom();
+    await act(async () => {});
+    expect(screen.queryByRole('button', { name: '방 설정' })).not.toBeInTheDocument();
+    guest.unmount();
+
+    setChannel({ room: { ...hostWaiting, status: 'PLAYING' } });
+    renderRoom();
+    await act(async () => {});
+    expect(screen.queryByRole('button', { name: '방 설정' })).not.toBeInTheDocument();
+  });
+
+  it('저장이 실패하면 오류를 알리고 창을 그대로 둔다', async () => {
+    const { roomsApi } = await import('../api/rooms');
+    vi.mocked(roomsApi.updateSettings).mockRejectedValue(new Error('지금 있는 인원보다 적게 줄일 수 없어요.'));
+    setChannel({ room: hostWaiting });
+    renderRoom();
+    await act(async () => {});
+
+    await userEvent.click(screen.getByRole('button', { name: '방 설정' }));
+    await userEvent.click(within(await screen.findByRole('dialog', { name: '방 설정' })).getByRole('button', { name: '저장' }));
+
+    await waitFor(() => expect(toast.show).toHaveBeenCalled());
+    expect(screen.getByRole('dialog', { name: '방 설정' })).toBeInTheDocument();
   });
 });

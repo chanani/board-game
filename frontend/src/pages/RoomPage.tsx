@@ -14,6 +14,7 @@ import { useGameOverDismissal } from '../room/useGameOverDismissal';
 import { useRoomChat } from '../room/useRoomChat';
 import { useRoomChannel } from '../room/useRoomChannel';
 import { LeaveConfirmModal } from '../room/LeaveConfirmModal';
+import { RoomSettingsModal } from '../room/RoomSettingsModal';
 import { WaitingRoom } from '../room/WaitingRoom';
 import { RoomBackdrop, RoomThemeProvider } from '../room/roomTheme';
 import { useTableLayout } from '../lib/useTableLayout';
@@ -35,6 +36,7 @@ export function RoomPage() {
   const { room, receivedAt, view, transition, log, missing, send, nicknameOf, errorSeq } = useRoomChannel(code, { poll: spectating });
   const [now, setNow] = useState(() => Date.now());
   const [confirmLeave, setConfirmLeave] = useState(false);
+  const [editingSettings, setEditingSettings] = useState(false);
   const layout = useTableLayout();
   const gameOver = useGameOverDismissal(code, view?.game ?? null, room?.status === 'PLAYING');
   // 이 화면은 REST 입장(참가·관전) 뒤에만 오므로 채팅도 방 채널과 같은 시점에 시작한다.
@@ -81,6 +83,7 @@ export function RoomPage() {
   }
 
   const playing = room.status === 'PLAYING';
+  const canEditSettings = !playing && !spectating && room.hostId === meId;
   const wasPlayer = view !== null && view.game.round.boards.some((board) => board.playerId === meId);
   // 관전자(게임이 끝나 자동으로 앉은 사람 포함)도 누가 이겼는지 볼 수 있게 결과 창을 띄운다.
   const showGameOver = !playing && view?.game.status === 'GAME_OVER' && (wasPlayer || spectating || watched) && !gameOver.dismissed;
@@ -112,7 +115,7 @@ export function RoomPage() {
 
   // 휴대폰을 눕힌 게임 화면은 상태 바를 테이블 왼쪽 칸으로 옮긴다.
   const landscapeGame = showGame && layout === 'landscape';
-  const statusBar = <RoomStatusBar room={room} playing={playing} onLeave={requestLeave} stacked={landscapeGame} />;
+  const statusBar = <RoomStatusBar room={room} playing={playing} onLeave={requestLeave} onSettings={canEditSettings ? () => setEditingSettings(true) : undefined} stacked={landscapeGame} />;
 
   return (
     <RoomThemeProvider value={room.theme}>
@@ -158,6 +161,19 @@ export function RoomPage() {
       {playing ? (
         <ChatLauncher messages={chat.messages} meId={meId} onSend={chat.send} unread={chat.unread} onOpen={chat.markRead} />
       ) : null}
+      <RoomSettingsModal
+        open={editingSettings && canEditSettings}
+        room={room}
+        onClose={() => setEditingSettings(false)}
+        onSave={async (maxPlayers, theme) => {
+          try {
+            await roomsApi.updateSettings(code, maxPlayers, theme);
+          } catch (error) {
+            toast.show(messageOf(error));
+            throw error;
+          }
+        }}
+      />
       <LeaveConfirmModal open={confirmLeave} onCancel={() => setConfirmLeave(false)} onConfirm={leave} />
     </div>
     </RoomThemeProvider>

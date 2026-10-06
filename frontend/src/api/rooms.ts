@@ -17,6 +17,8 @@ export const roomsApi = {
   seat: (code: string) => request<Room>(`${path(code)}/seat`, { method: 'POST' }),
   leave: (code: string) => request<void>(`${path(code)}/leave`, { method: 'POST' }),
   ready: (code: string, ready: boolean) => request<Room>(`${path(code)}/ready`, { method: 'POST', body: { ready } }),
+  updateSettings: (code: string, maxPlayers: number, theme: RoomTheme) =>
+    request<Room>(`${path(code)}/settings`, { method: 'PATCH', body: { maxPlayers, theme } }),
   start: (code: string) => request<Room>(`${path(code)}/start`, { method: 'POST' }),
   kick: (code: string, memberId: number) => request<void>(`${path(code)}/members/${memberId}/kick`, { method: 'POST' }),
   forfeit: (code: string, memberId: number) => request<void>(`${path(code)}/members/${memberId}/forfeit`, { method: 'POST' }),

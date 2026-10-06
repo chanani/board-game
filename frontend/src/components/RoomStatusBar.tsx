@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import type { Room } from '../api/types';
-import { BinocularsIcon, CardsIcon, CopyIcon, LockIcon, PeopleIcon } from './icons';
+import { BinocularsIcon, CardsIcon, CopyIcon, GearIcon, LockIcon, PeopleIcon } from './icons';
 import { useToast } from './Toast';
 import { Button } from './ui';
 
@@ -32,6 +32,8 @@ type Props = {
   room: Room;
   playing: boolean;
   onLeave: () => void;
+  /** 있으면(대기 중인 방장) 첫 줄에 방 설정 버튼을 둔다. */
+  onSettings?: () => void;
   /** 휴대폰을 눕힌 게임 화면의 왼쪽 좁은 칸: 칩을 여러 줄로 감싼다. */
   stacked?: boolean;
 };
@@ -45,12 +47,18 @@ function WideLabel({ children }: { children: ReactNode }) {
  * 방 맨 위 상태 바. 첫 줄은 방 이름과 (대기 중) 코드 복사, 나가기. 둘째 줄은 칩을 줄바꿈 없이 한 줄에 두고,
  * 좁은 화면에서는 글씨와 아이콘을 줄여 360px 폭에서도 넘치지 않게 한다.
  */
-export function RoomStatusBar({ room, playing, onLeave, stacked = false }: Props) {
+export function RoomStatusBar({ room, playing, onLeave, onSettings, stacked = false }: Props) {
   const spectatorCount = room.spectators.length;
   return (
     <div data-testid="room-status-bar" className="relative z-20 rounded-2xl border border-(--status-border) bg-(--status-bg) px-3 py-2 backdrop-blur-[2px]">
       <div data-testid="room-title-row" className="flex items-center gap-2">
         <h1 className="min-w-0 flex-1 truncate text-base font-black text-cream-50 drop-shadow sm:text-xl">{room.name}</h1>
+        {onSettings ? (
+          <button type="button" onClick={onSettings} aria-label="방 설정"
+            className="pill press-3d flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-semibold sm:px-2.5 sm:py-1 sm:text-xs">
+            <GearIcon className="h-3.5 w-3.5" /><span className="hidden sm:inline">방 설정</span>
+          </button>
+        ) : null}
         {playing ? null : <CodeChip code={room.code} />}
         <Button variant="danger" className="shrink-0 rounded-lg px-2.5 py-1 text-xs sm:px-3 sm:py-1.5 sm:text-sm" onClick={onLeave}>나가기</Button>
       </div>

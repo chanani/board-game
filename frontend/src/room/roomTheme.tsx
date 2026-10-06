@@ -1,5 +1,6 @@
 import { createContext, useContext } from 'react';
 import { createPortal } from 'react-dom';
+import { AnimatePresence, motion } from 'motion/react';
 import type { RoomTheme } from '../api/types';
 
 /** 방 테마 5종. 색과 배경은 index.css의 [data-theme] 변수에 있고, 여기에는 이름과 목록용 색 점만 둔다. */
@@ -26,10 +27,14 @@ export function useRoomTheme(): RoomTheme {
   return useContext(RoomThemeContext);
 }
 
-/** 방 화면 전체 배경(하늘·노을·눈밭 등). 방 화면에만 그려지고 방을 떠나면 함께 사라진다. */
+/** 방 화면 전체 배경(하늘·노을·눈밭 등). 방 화면에만 그려지고 방을 떠나면 함께 사라진다. 테마가 바뀌면 부드럽게 갈아 낀다. */
 export function RoomBackdrop({ theme }: { theme: RoomTheme }) {
   return createPortal(
-    <div aria-hidden="true" data-testid="room-backdrop" data-theme={theme} className="room-scene pointer-events-none fixed inset-0 -z-10" />,
+    <AnimatePresence initial={false}>
+      <motion.div key={theme} data-testid="room-backdrop" data-theme={theme} aria-hidden="true"
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }}
+        className="room-scene pointer-events-none fixed inset-0 -z-10" />
+    </AnimatePresence>,
     document.body,
   );
 }
