@@ -115,4 +115,15 @@ describe('useRoomChat', () => {
 
     expect(result.current.unread).toBe(1);
   });
+  it('latest는 지금 받은 메시지만 알리고 기록 불러오기로는 바뀌지 않는다', async () => {
+    const { result } = renderHook(() => useRoomChat('ABC234', true, { meId: 1 }));
+    await waitFor(() => expect(result.current.messages).toHaveLength(2));
+    expect(result.current.latest).toBeNull();
+
+    push({ ...message(3, 2, '안녕하세요'), spectator: true, roomCode: 'ABC234' });
+
+    expect(result.current.latest).toMatchObject({ id: 3, memberId: 2, text: '안녕하세요', spectator: true });
+    push({ ...message(4, 2), roomCode: 'ZZZ999' });
+    expect(result.current.latest?.id).toBe(3);
+  });
 });

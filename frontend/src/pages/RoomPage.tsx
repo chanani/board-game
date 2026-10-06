@@ -147,7 +147,7 @@ export function RoomPage() {
           onForfeit={(memberId) => run(() => roomsApi.forfeit(code, memberId))}
           onKick={(memberId) => run(() => roomsApi.kick(code, memberId))}
           onSeat={() => run(() => roomsApi.seat(code))}
-          chat={{ messages: chat.messages, onSend: chat.send }}
+          chat={{ messages: chat.messages, onSend: chat.send, latest: chat.latest }}
         />
       )}
       {playing ? (

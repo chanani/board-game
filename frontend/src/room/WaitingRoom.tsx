@@ -10,9 +10,11 @@ import { PC_QUERY, useMediaQuery } from '../lib/useMediaQuery';
 import { ChatPanel } from './ChatPanel';
 import { KickConfirmModal } from './KickConfirmModal';
 import { MemberList } from './MemberList';
+import { useSeatBubbles } from './useSeatBubbles';
 import { WaitingActionBar } from './WaitingActionBar';
 
-type Chat = { messages: ChatMessage[]; onSend: (text: string) => boolean };
+/** latest: 지금 막 받은 메시지(기록 제외). 앉은 사람의 말이면 그 자리 위에 말풍선을 띄운다. */
+type Chat = { messages: ChatMessage[]; onSend: (text: string) => boolean; latest?: ChatMessage | null };
 
 type Props = {
   room: Room;
@@ -37,6 +39,7 @@ export function WaitingRoom({ room, meId, receivedAt, now, onStart, onReady, onF
   const [kickTarget, setKickTarget] = useState<RoomMember | null>(null);
   const wide = useMediaQuery(PC_QUERY);
   const [rulesOpen, setRulesOpen] = useState(false);
+  const bubbles = useSeatBubbles(room.status === 'WAITING' ? chat.latest ?? null : null);
   const canKick = !spectating && room.status === 'WAITING' && room.hostId === meId;
   const askKick = (memberId: number) => setKickTarget(room.members.find((member) => member.id === memberId) ?? null);
   const confirmKick = () => {
@@ -51,7 +54,7 @@ export function WaitingRoom({ room, meId, receivedAt, now, onStart, onReady, onF
       <section aria-label="테이블" className={`flex flex-col items-center gap-[37px] ${FELT_RIM}`}>
         {/* 테이블 위에는 자리만 둔다. 가운데가 비어 있으니 펠트를 낮게(정사각형~3:2) 그린다. */}
         <Felt shape="round" className="aspect-square w-full max-w-[640px] sm:aspect-[3/2]">
-          <MemberList members={room.members} maxPlayers={room.maxPlayers} meId={meId} receivedAt={receivedAt} now={now}
+          <MemberList members={room.members} maxPlayers={room.maxPlayers} meId={meId} receivedAt={receivedAt} now={now} bubbles={bubbles}
             onForfeit={spectating ? undefined : onForfeit} onKick={canKick ? askKick : undefined} />
         </Felt>
         <WaitingActionBar room={room} meId={meId} spectating={spectating} onStart={onStart} onReady={onReady} onSeat={onSeat} />

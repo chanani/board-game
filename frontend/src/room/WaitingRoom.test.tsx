@@ -1,6 +1,7 @@
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ChatMessage } from '../api/chat';
 import type { Room } from '../api/types';
 import { ToastProvider } from '../components/Toast';
 import { setMediaMatches } from '../test/media';
@@ -211,5 +212,65 @@ describe('WaitingRoom', () => {
 
     await act(async () => finish());
     expect(screen.getByRole('button', { name: '준비하기' })).toBeEnabled();
+  });
+  describe('채팅 말풍선', () => {
+    const live = (id: number, memberId: number, text: string, extra: Partial<ChatMessage> = {}): ChatMessage => ({
+      id, memberId, nickname: memberId === 1 ? '앨리스' : '밥', text, sentAt: '2026-10-06T00:00:00Z', ...extra,
+    });
+    const view = (latest: ChatMessage | null, messages: ChatMessage[] = []) => (
+      <ToastProvider>
+        <WaitingRoom room={room} meId={1} receivedAt={0} now={0} onStart={vi.fn()} onReady={vi.fn()} onForfeit={vi.fn()} onKick={vi.fn()} onSeat={vi.fn()}
+          chat={{ messages, onSend: vi.fn(() => true), latest }} />
+      </ToastProvider>
+    );
+
+    beforeEach(() => { vi.useFakeTimers(); });
+    afterEach(() => { vi.useRealTimers(); });
+
+    it('앉은 사람이 지금 말하면 그 자리 위에 작은 말풍선이 뜨고 4초 뒤 사라진다', () => {
+      const { rerender } = render(view(null));
+      rerender(view(live(5, 2, '안녕하세요')));
+
+      const bubble = screen.getByTestId('seat-bubble-2');
+      expect(bubble).toHaveTextContent('안녕하세요');
+      expect(bubble).toHaveAttribute('aria-hidden', 'true');
+      expect(bubble).toHaveClass('line-clamp-2', 'max-w-[160px]');
+      expect(within(screen.getAllByTestId('chair')[1]).getByTestId('seat-bubble-2')).toBe(bubble);
+
+      act(() => { vi.advanceTimersByTime(3999); });
+      expect(screen.getByTestId('seat-bubble-2')).toBeInTheDocument();
+      act(() => { vi.advanceTimersByTime(1); });
+      expect(screen.queryByTestId('seat-bubble-2')).not.toBeInTheDocument();
+    });
+
+    it('같은 사람이 다시 말하면 내용을 바꾸고 그때부터 4초를 다시 센다', () => {
+      const { rerender } = render(view(live(5, 2, '안녕하세요')));
+      act(() => { vi.advanceTimersByTime(3000); });
+      rerender(view(live(6, 2, '준비할게요')));
+
+      expect(screen.getByTestId('seat-bubble-2')).toHaveTextContent('준비할게요');
+      act(() => { vi.advanceTimersByTime(3999); });
+      expect(screen.getByTestId('seat-bubble-2')).toHaveTextContent('준비할게요');
+      act(() => { vi.advanceTimersByTime(1); });
+      expect(screen.queryByTestId('seat-bubble-2')).not.toBeInTheDocument();
+    });
+
+    it('자기 말도 자기 자리 위에 뜬다', () => {
+      render(view(live(5, 1, '시작할게요')));
+
+      expect(within(screen.getAllByTestId('chair')[0]).getByTestId('seat-bubble-1')).toHaveTextContent('시작할게요');
+    });
+
+    it('기록으로만 있는 메시지에는 말풍선이 없다', () => {
+      render(view(null, [live(1, 2, '예전 말')]));
+
+      expect(screen.queryByTestId('seat-bubble-2')).not.toBeInTheDocument();
+    });
+
+    it('관전자의 말에는 말풍선이 없다', () => {
+      render(view(live(5, 2, '구경할게요', { spectator: true })));
+
+      expect(screen.queryByTestId('seat-bubble-2')).not.toBeInTheDocument();
+    });
   });
 });

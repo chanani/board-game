@@ -16,7 +16,7 @@ function merge(current: ChatMessage[], incoming: ChatMessage[]): ChatMessage[] {
 
 const lastIdOf = (messages: ChatMessage[]) => messages.at(-1)?.id ?? 0;
 
-const strip = ({ id, memberId, nickname, text, sentAt }: ChatPush): ChatMessage => ({ id, memberId, nickname, text, sentAt });
+const strip = ({ id, memberId, nickname, text, sentAt, spectator }: ChatPush): ChatMessage => ({ id, memberId, nickname, text, sentAt, spectator });
 
 /**
  * 방 채팅. 기록은 REST로 한 번 불러오고, 새 메시지는 개인 큐로 받아 이 방 것만 남긴다.
@@ -26,6 +26,8 @@ export function useRoomChat(code: string, enabled: boolean, { meId }: Options = 
   const { realtime, connected } = useRealtime();
   const toast = useToast();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  /** 지금 막 받은 메시지(기록 불러오기로는 바뀌지 않는다). 대기실 말풍선이 쓴다. */
+  const [latest, setLatest] = useState<ChatMessage | null>(null);
   const [readId, setReadId] = useState(0);
   const droppedRef = useRef(false);
   const initializedRef = useRef(false);
@@ -33,6 +35,7 @@ export function useRoomChat(code: string, enabled: boolean, { meId }: Options = 
 
   useEffect(() => {
     setMessages([]);
+    setLatest(null);
     setReadId(0);
     initializedRef.current = false;
   }, [code]);
@@ -83,7 +86,9 @@ export function useRoomChat(code: string, enabled: boolean, { meId }: Options = 
       if (push.roomCode?.toUpperCase() !== target) {
         return;
       }
-      setMessages((current) => merge(current, [strip(push)]));
+      const message = strip(push);
+      setMessages((current) => merge(current, [message]));
+      setLatest(message);
     });
   }, [code, enabled, realtime]);
 
@@ -107,5 +112,5 @@ export function useRoomChat(code: string, enabled: boolean, { meId }: Options = 
     setReadId((current) => Math.max(current, lastIdOf(messages)));
   }, [messages]);
 
-  return { messages, send, unread, markRead };
+  return { messages, latest, send, unread, markRead };
 }

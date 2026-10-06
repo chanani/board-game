@@ -3,6 +3,7 @@ import type { RoomMember } from '../api/types';
 import { canForfeit, offlineSecondsNow } from '../lib/format';
 import { Button } from '../components/ui';
 import { CheckIcon, CrownIcon } from '../components/icons';
+import { SeatBubble, type SeatBubbles } from './useSeatBubbles';
 
 type Props = {
   members: RoomMember[];
@@ -14,6 +15,8 @@ type Props = {
   onForfeit?: (memberId: number) => void;
   /** 있으면(대기 중인 방장) 나 말고 모든 참가자 의자에 내보내기 버튼을 둔다. */
   onKick?: (memberId: number) => void;
+  /** 사람 id별 말풍선 내용(대기실 채팅). */
+  bubbles?: SeatBubbles;
 };
 
 type Point = { left: number; top: number };
@@ -40,7 +43,7 @@ function positionOf(maxPlayers: number, index: number): Point {
   return { left: 50 + 34 * Math.cos(angle), top: 44 + 30 * Math.sin(angle) };
 }
 
-export function MemberList({ members, maxPlayers, meId, receivedAt, now, onForfeit, onKick }: Props) {
+export function MemberList({ members, maxPlayers, meId, receivedAt, now, onForfeit, onKick, bubbles }: Props) {
   const seats = Array.from({ length: maxPlayers }, (_, index) => members[index] ?? null);
   return (
     <ul aria-label="자리" className="absolute inset-0">
@@ -50,6 +53,7 @@ export function MemberList({ members, maxPlayers, meId, receivedAt, now, onForfe
           <li key={member ? member.id : `empty-${index}`} data-testid="chair"
             style={{ left: `${left}%`, top: `${top}%` }}
             className="absolute flex w-24 -translate-x-1/2 -translate-y-6 flex-col items-center gap-1 sm:-translate-y-7">
+            {member ? <SeatBubble memberId={member.id} bubble={bubbles?.get(member.id)} /> : null}
             <AnimatePresence mode="wait">
               {member ? (
                 <motion.div key="taken" initial={{ scale: 0, y: -20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0 }}
