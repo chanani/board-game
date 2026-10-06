@@ -38,3 +38,14 @@ describe('Layout 연결 안내', () => {
     expect(screen.getByText(BANNER)).toBeInTheDocument();
   });
 });
+
+describe('Layout 상단바', () => {
+  it('좁은 화면에서도 줄바꿈 없이 홈 링크 이름과 닉네임을 유지한다', () => {
+    render(ui());
+
+    const home = screen.getByRole('link', { name: '보드게임 라운지' });
+    expect(home).toHaveClass('whitespace-nowrap');
+    expect(screen.getByText('앨리스')).toHaveClass('truncate');
+    expect(screen.getByRole('button', { name: '로그아웃' })).toHaveClass('whitespace-nowrap');
+  });
+});
