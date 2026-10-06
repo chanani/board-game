@@ -27,11 +27,29 @@ public class Room {
     }
 
     public void join(Participant participant, String password, RoomPasswordHasher hasher) {
+        RoomLock lock = lockToPass(participant.memberId());
+        lock.require(password, hasher);
+        admit(participant, lock);
+    }
+
+    /** 들어오려는 사람이 통과해야 할 잠금. 이미 참가자면 확인할 것이 없다. 느린 비밀번호 확인은 호출자가 잠금 밖에서 한다. */
+    public RoomLock lockToPass(long memberId) {
+        if (occupants.isPlayer(memberId)) {
+            return RoomLock.open();
+        }
+        requireWaiting();
+        return profile.lock();
+    }
+
+    /** lockToPass로 받은 잠금을 통과한 사람을 들인다. 그사이 잠금이 달라졌으면 들이지 않는다. */
+    public void admit(Participant participant, RoomLock passed) {
         if (occupants.isPlayer(participant.memberId())) {
             return;
         }
         requireWaiting();
-        profile.lock().require(password, hasher);
+        if (!profile.lock().equals(passed)) {
+            throw new BusinessException(ErrorCode.ROOM_PASSWORD_MISMATCH);
+        }
         occupants.addPlayer(participant, profile.capacity());
     }
 

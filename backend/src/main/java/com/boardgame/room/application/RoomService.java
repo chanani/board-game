@@ -67,9 +67,15 @@ public class RoomService {
         this.hasher = hasher;
     }
 
-    public synchronized RoomResponse create(LoginMember member, CreateRoomRequest request) {
+    // 비밀번호 해시(BCrypt)는 느리므로 서비스 전체 잠금 밖에서 먼저 만든다.
+    public RoomResponse create(LoginMember member, CreateRoomRequest request) {
+        RoomSettings settings = settingsOf(request);
+        return open(member, new RoomName(request.name()), settings);
+    }
+
+    private synchronized RoomResponse open(LoginMember member, RoomName name, RoomSettings settings) {
         requireNotInAnyRoom(member.id());
-        RoomProfile profile = new RoomProfile(newCode(), new RoomName(request.name()), settingsOf(request));
+        RoomProfile profile = new RoomProfile(newCode(), name, settings);
         Room room = Room.open(profile, participantOf(member));
         registry.save(room);
         presence.baseline(room.memberIds(), clock.instant());
@@ -92,10 +98,23 @@ public class RoomService {
                 .toList();
     }
 
-    public synchronized RoomResponse join(String rawCode, LoginMember member, String password) {
+    // 잠금을 잠깐 잡아 통과할 잠금만 받아 오고, 느린 비밀번호 확인은 잠금 밖에서 한 뒤 다시 잠가 들인다.
+    public RoomResponse join(String rawCode, LoginMember member, String password) {
+        RoomLock lock = lockToPass(rawCode, member.id());
+        lock.require(password, hasher);
+        return admit(rawCode, member, lock);
+    }
+
+    private synchronized RoomLock lockToPass(String rawCode, long memberId) {
+        Room room = find(rawCode);
+        requireNotInOtherRoom(memberId, room);
+        return room.lockToPass(memberId);
+    }
+
+    private synchronized RoomResponse admit(String rawCode, LoginMember member, RoomLock passed) {
         Room room = find(rawCode);
         requireNotInOtherRoom(member.id(), room);
-        room.join(participantOf(member), password, hasher);
+        room.admit(participantOf(member), passed);
         registry.save(room);
         presence.baseline(room.memberIds(), clock.instant());
         return broadcast(room);

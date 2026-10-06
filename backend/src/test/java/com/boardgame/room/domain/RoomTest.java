@@ -285,4 +285,30 @@ class RoomTest {
         assertThat(room.isEmpty()).isTrue();
         assertThat(room.occupantIds()).containsExactly(3L);
     }
+
+    @Test
+    void 확인한_잠금이_방의_잠금과_다르면_들이지_않는다() {
+        FakeRoomPasswordHasher hasher = new FakeRoomPasswordHasher();
+        RoomLock lock = RoomLock.locked(hasher.hash(new RawRoomPassword("1234")));
+        Room room = Room.open(new RoomProfile(new RoomCode("ABCDEF"), new RoomName("방"),
+                new RoomSettings(GameType.PAPER_SAFARI, Capacity.max(GameType.PAPER_SAFARI), lock)), alice);
+
+        assertError(() -> room.admit(bob, RoomLock.open()), ErrorCode.ROOM_PASSWORD_MISMATCH);
+        assertThat(room.lockToPass(bob.memberId())).isEqualTo(lock);
+        assertThat(room.lockToPass(alice.memberId())).isEqualTo(RoomLock.open());
+
+        room.admit(bob, lock);
+
+        assertThat(room.memberIds()).containsExactly(1L, 2L);
+    }
+
+    @Test
+    void 게임_중이면_잠금을_묻기_전에_막는다() {
+        Room room = openRoom();
+        room.join(bob, null, new FakeRoomPasswordHasher());
+        start(room, 1L);
+
+        assertError(() -> room.lockToPass(carol.memberId()), ErrorCode.ROOM_ALREADY_PLAYING);
+        assertError(() -> room.admit(carol, RoomLock.open()), ErrorCode.ROOM_ALREADY_PLAYING);
+    }
 }
