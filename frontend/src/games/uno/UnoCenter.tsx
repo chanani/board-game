@@ -22,6 +22,9 @@ export function spinOf(direction: UnoDirection): { scaleX: number; rotate: numbe
   return { scaleX: direction === 'CLOCKWISE' ? 1 : -1, rotate: 360 };
 }
 
+/** 가운데 더미를 두르는 고리 지름(카드 폭의 배수). 가운데 칸보다 조금만 커서 상대 자리 배지까지 닿지 않는다. */
+export const RING_SCALE = 2.6;
+
 function DirectionArrows({ direction, size }: { direction: UnoDirection; size: number }) {
   const reduce = useReducedMotion();
   const clockwise = direction === 'CLOCKWISE';
@@ -51,8 +54,8 @@ export function UnoCenter({ drawPileCount, discardTop, discardCount, currentColo
   const reduce = useReducedMotion();
   const height = cardWidth * 1.5;
   const unders = Math.min(Math.max(discardCount - 1, 0), 2);
+  const ringSize = cardWidth * RING_SCALE;
   const ring = currentColor ? COLOR_HEX[currentColor] : 'rgb(255 255 255 / 0.4)';
-  const ringSize = cardWidth * 3.4;
   return (
     <div data-testid="uno-center" className="relative flex flex-col items-center">
       <div className="relative flex items-center justify-center gap-4 px-2 py-2">

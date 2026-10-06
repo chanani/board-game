@@ -81,4 +81,12 @@ describe('ChatStrip', () => {
     expect(box()).toHaveClass('h-[80px]');
     screen.getAllByTestId('chat-strip-line').forEach((line) => expect(line).toHaveClass('h-6', 'shrink-0'));
   });
+
+  it('좁은 자리(compact)에서는 짧은 안내 문구를 쓴다', () => {
+    const { rerender } = render(<ChatStrip messages={[]} meId={1} onSend={() => true} onExpand={vi.fn()} />);
+    expect(screen.getByRole('textbox', { name: '채팅 입력' })).toHaveAttribute('placeholder', '메시지를 입력해요');
+
+    rerender(<ChatStrip messages={[]} meId={1} onSend={() => true} onExpand={vi.fn()} compact />);
+    expect(screen.getByRole('textbox', { name: '채팅 입력' })).toHaveAttribute('placeholder', '메시지');
+  });
 });

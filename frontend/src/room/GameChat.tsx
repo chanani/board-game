@@ -12,10 +12,12 @@ type Props = {
   messages: ChatMessage[];
   meId: number;
   onSend: (text: string) => boolean;
+  /** strip을 눕힌 화면의 좁은 왼쪽 칸에 둘 때. */
+  compact?: boolean;
 };
 
 /** 게임 중 채팅: panel은 오른쪽 채팅 칸, strip은 최근 3줄 채팅 줄(누르면 전체 채팅 시트). */
-export function GameChat({ variant, messages, meId, onSend }: Props) {
+export function GameChat({ variant, messages, meId, onSend, compact = false }: Props) {
   const [sheetOpen, setSheetOpen] = useState(false);
   const closeSheet = useCallback(() => setSheetOpen(false), []);
 
@@ -29,7 +31,7 @@ export function GameChat({ variant, messages, meId, onSend }: Props) {
   }
   return (
     <>
-      <ChatStrip messages={messages} meId={meId} onSend={onSend} onExpand={() => setSheetOpen(true)} />
+      <ChatStrip messages={messages} meId={meId} onSend={onSend} onExpand={() => setSheetOpen(true)} compact={compact} />
       <ChatSheet messages={messages} meId={meId} onSend={onSend} open={sheetOpen} onClose={closeSheet} />
     </>
   );

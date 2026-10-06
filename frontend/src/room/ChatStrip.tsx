@@ -11,13 +11,15 @@ type Props = {
   onSend: (text: string) => boolean;
   /** 메시지 줄을 눌러 전체 채팅(시트)을 열 때. */
   onExpand: () => void;
+  /** 좁은 자리라 입력칸 안내 문구를 짧게 쓸지. */
+  compact?: boolean;
 };
 
 /**
  * PC가 아닌 게임 화면의 채팅 줄: 최근 메시지 3개를 메신저처럼 작은 말풍선으로 보여 주고 아래에 입력칸을 둔다.
  * 내 말은 오른쪽 노란 풍선, 다른 사람은 왼쪽에 그 사람 색으로. 말풍선 칸은 늘 3개 높이라 메시지가 와도 테이블이 밀리지 않는다.
  */
-export function ChatStrip({ messages, meId, onSend, onExpand }: Props) {
+export function ChatStrip({ messages, meId, onSend, onExpand, compact = false }: Props) {
   const recent = messages.slice(-SHOWN);
   const toneOf = useChatTone();
   return (
@@ -48,7 +50,7 @@ export function ChatStrip({ messages, meId, onSend, onExpand }: Props) {
         </span>
         {' '}<span className="sr-only">채팅 전체 보기</span>
       </button>
-      <ChatInput onSend={onSend} />
+      <ChatInput onSend={onSend} compact={compact} />
     </div>
   );
 }

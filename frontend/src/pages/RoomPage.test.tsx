@@ -437,6 +437,24 @@ describe('RoomPage 준비와 채팅', () => {
     expect(within(screen.getByTestId('table-aside')).getByTestId('chat-strip')).toBeInTheDocument();
   });
 
+  it('눕힌 화면의 좁은 채팅 줄은 잘리지 않는 짧은 안내 문구를 쓴다', async () => {
+    setMediaMatches((query) => query.includes('orientation: landscape'));
+    setChannel({ room: { ...waiting, status: 'PLAYING' }, view: playingView });
+    renderRoom();
+    await act(async () => {});
+
+    expect(within(screen.getByTestId('table-aside')).getByRole('textbox', { name: '채팅 입력' })).toHaveAttribute('placeholder', '메시지');
+  });
+
+  it('세로 휴대폰의 채팅 줄은 원래 안내 문구를 쓴다', async () => {
+    setMediaMatches(false);
+    setChannel({ room: { ...waiting, status: 'PLAYING' }, view: playingView });
+    renderRoom();
+    await act(async () => {});
+
+    expect(within(screen.getByTestId('chat-strip')).getByRole('textbox', { name: '채팅 입력' })).toHaveAttribute('placeholder', '메시지를 입력해요');
+  });
+
   it('폭은 PC만큼 넓어도 높이가 낮은 눕힌 화면이면 왼쪽 칸에 채팅 줄을 두고 PC 채팅 칸은 없다', async () => {
     setMediaMatches((query) => query === PC_QUERY || query.includes('orientation: landscape'));
     setChannel({ room: { ...waiting, status: 'PLAYING' }, view: playingView });

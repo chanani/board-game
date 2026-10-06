@@ -131,7 +131,7 @@ export function RoomPage() {
   // 폭이 넓어도 눕힌 화면(낮은 높이)이면 좁은 왼쪽 칸에 들어가므로 채팅 줄을 쓴다.
   const chatShown = playing || showGame;
   const chatVariant = pcChat && layout !== 'landscape' ? 'panel' : 'strip';
-  const gameChat = chatShown ? <GameChat variant={chatVariant} messages={chat.messages} meId={meId} onSend={chat.send} /> : null;
+  const gameChat = chatShown ? <GameChat variant={chatVariant} messages={chat.messages} meId={meId} onSend={chat.send} compact={landscapeGame} /> : null;
   const chatBeside = chatShown && !landscapeGame && chatVariant === 'panel';
   const chatBelow = chatShown && !landscapeGame && chatVariant === 'strip';
 

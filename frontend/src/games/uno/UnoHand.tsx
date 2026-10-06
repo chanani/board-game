@@ -3,7 +3,7 @@ import type { UnoCard } from '../../api/types';
 import { useMediaQuery } from '../../lib/useMediaQuery';
 import type { TableLayout } from '../../lib/useTableLayout';
 import { cardName, sortHand } from './cards';
-import { fanAngle, handSpacing, UNO_SIZES } from './layout';
+import { fanAngle, handSpacing, useUnoSizes } from './layout';
 import { UnoCardFace } from './UnoCardFace';
 
 type Props = {
@@ -65,11 +65,12 @@ function useFreshIds(cards: UnoCard[]): Set<number> {
 
 export function UnoHand({ cards, playableIds, myTurn, layout, zoneId, onPlay }: Props) {
   const fine = useMediaQuery('(pointer: fine)');
-  const sizes = UNO_SIZES[layout];
+  const sizes = useUnoSizes(layout);
   const sorted = sortHand(cards);
   const boxRef = useRef<HTMLDivElement>(null);
   const width = useWidth(boxRef);
-  const { step, scroll } = handSpacing(sorted.length, width, sizes);
+  const edgeAngle = layout === 'pc' ? Math.abs(fanAngle(0, sorted.length)) : 0;
+  const { step, scroll, inset } = handSpacing(sorted.length, width, sizes, edgeAngle);
   const fresh = useFreshIds(cards);
   const [selected, setSelected] = useState<number | null>(null);
   const cardKey = cards.map((card) => card.id).join(',');
@@ -108,7 +109,7 @@ export function UnoHand({ cards, playableIds, myTurn, layout, zoneId, onPlay }: 
   };
 
   const count = sorted.length;
-  const innerWidth = count === 0 ? 0 : (count - 1) * step + sizes.hand;
+  const innerWidth = count === 0 ? 0 : (count - 1) * step + sizes.hand + inset * 2;
   return (
     <div ref={boxRef} role="group" aria-label={`내 카드 ${cards.length}장`} data-testid="uno-hand" data-uno-zone={`hand:${zoneId}`}
       className={scroll ? 'overflow-x-auto' : 'overflow-x-clip'}
@@ -131,7 +132,7 @@ export function UnoHand({ cards, playableIds, myTurn, layout, zoneId, onPlay }: 
               onClick={() => press(card, playable)} onKeyDown={(event) => keyPress(event, card, playable)}
               className={`absolute rounded-lg transition-transform duration-200 focus-visible:outline-2 focus-visible:outline-mustard-400 ${isFresh ? 'ring-4 ring-yellow-300' : ''}`}
               style={{
-                left: index * step, top: TOP, zIndex: index, width: sizes.hand, height: sizes.hand * 1.5,
+                left: inset + index * step, top: TOP, zIndex: index, width: sizes.hand, height: sizes.hand * 1.5,
                 transform: `translateY(${dropY - lift}px) rotate(${angle}deg)`,
                 opacity: blocked ? 0.55 : undefined,
                 filter: playable ? 'drop-shadow(0 0 6px rgb(255 255 255 / 0.9))' : undefined,
@@ -141,7 +142,7 @@ export function UnoHand({ cards, playableIds, myTurn, layout, zoneId, onPlay }: 
             {isSelected ? (
               <button type="button" aria-label={`${cardName(card)} 내기`} onClick={() => press(card, true)}
                 className="press-3d absolute rounded-full bg-(--accent) px-3 py-1 text-xs font-bold text-(--accent-text) shadow"
-                style={{ left: index * step + sizes.hand / 2, top: 0, zIndex: count + 1, transform: 'translateX(-50%)' }}>내기</button>
+                style={{ left: inset + index * step + sizes.hand / 2, top: 0, zIndex: count + 1, transform: 'translateX(-50%)' }}>내기</button>
             ) : null}
             </Fragment>
           );

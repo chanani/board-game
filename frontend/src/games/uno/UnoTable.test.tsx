@@ -4,6 +4,8 @@ import { describe, expect, it, vi } from 'vitest';
 import type { Room, UnoSessionView, UnoView } from '../../api/types';
 import { LANDSCAPE_PHONE_QUERY } from '../../lib/useTableLayout';
 import { setMediaMatches } from '../../test/media';
+import { UNO_SIZES } from './layout';
+import { RING_SCALE } from './UnoCenter';
 import { UnoTable } from './UnoTable';
 import { num, unoSession } from './unoFixtures';
 
@@ -159,6 +161,45 @@ describe('UnoTable 배치', () => {
     expect(within(aside).getByText('상태 바')).toBeInTheDocument();
     expect(within(aside).getByText('채팅 줄')).toBeInTheDocument();
     expect(within(aside).getByTestId('turn-bar')).toBeInTheDocument();
+  });
+
+  it('PC 테이블은 화면 높이에 맞춰 펠트 높이를 줄여 손패와 행동 줄까지 한 화면에 들어간다', () => {
+    setMediaMatches(true);
+    renderTable();
+
+    const felt = screen.getByTestId('uno-table').querySelector('.felt') as HTMLElement;
+    expect(felt.className).toContain('min-h-[min(560px,calc(100dvh-34rem))]');
+    expect(felt.className).not.toContain('60vh');
+  });
+
+  it('눕힌 화면의 펠트는 상대 자리와 가운데 더미를 가로로 나란히 둔다', () => {
+    setMediaMatches((query) => query === LANDSCAPE_PHONE_QUERY);
+    renderTable();
+
+    const felt = screen.getByTestId('uno-table').querySelector('.felt') as HTMLElement;
+    expect(felt.className).toContain('flex-row');
+    expect(felt.className).not.toContain('flex-col');
+  });
+
+  it('상대 자리는 진행 방향 화살표 위에 그리고, 화살표 고리는 가운데 더미 가까이 작게 둔다', () => {
+    setMediaMatches(true);
+    renderTable();
+
+    screen.getAllByTestId('opponent-seat').forEach((seat) => expect(seat.className).toContain('z-10'));
+    const arrows = screen.getByRole('img', { name: '진행 방향: 시계 방향' });
+    expect(Number(arrows.getAttribute('width'))).toBeCloseTo(UNO_SIZES.pc.center * RING_SCALE);
+    expect(RING_SCALE).toBeLessThanOrEqual(2.6);
+  });
+
+  it('PC에서 상대가 3명 이상이면 왼쪽·위·오른쪽으로 펼쳐 앉힌다', () => {
+    setMediaMatches(true);
+    renderTable({ players: [1, 2, 3, 4, 5].map((playerId) => ({ playerId, cardCount: 7, unoDeclared: false })), participantIds: [1, 2, 3, 4, 5] });
+
+    const top = screen.getByTestId('seat-row-top');
+    expect(top.className).toContain('justify-around');
+    expect(within(top).getAllByTestId('opponent-seat')).toHaveLength(2);
+    expect(within(screen.getByTestId('seat-left')).getByTestId('opponent-seat')).toBeInTheDocument();
+    expect(within(screen.getByTestId('seat-right')).getByTestId('opponent-seat')).toBeInTheDocument();
   });
 
   it('PC에서는 내 차례 안내를 긴 문구로 보여 준다', () => {

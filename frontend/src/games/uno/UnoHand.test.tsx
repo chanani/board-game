@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { UnoCard } from '../../api/types';
 import { setMediaMatches } from '../../test/media';
+import { fanOverhang, handSpacing, PC_TALL_QUERY, UNO_PC_SHORT_SIZES, UNO_SIZES } from './layout';
 import { UnoHand } from './UnoHand';
 import { drawTwo, num, skip, wild } from './unoFixtures';
 
@@ -118,6 +119,26 @@ describe('UnoHand', () => {
 
     rerender(<UnoHand cards={CARDS} playableIds={[3]} myTurn layout="portrait" zoneId={1} onPlay={vi.fn()} />);
     expect(screen.getAllByTestId('hand-card')[0]).toHaveAttribute('data-angle', '0');
+  });
+
+  it('첫 카드와 마지막 카드가 줄 양끝 여백 안에 들어 잘리지 않는다', () => {
+    setMediaMatches(true);
+    renderHand();
+
+    const inner = screen.getByTestId('uno-hand').firstElementChild as HTMLElement;
+    const cards = screen.getAllByTestId('hand-card');
+    const { step, inset } = handSpacing(4, 0, UNO_SIZES.pc, 6);
+    expect(inset).toBeGreaterThanOrEqual(fanOverhang(88, 6));
+    expect(parseFloat(cards[0].style.left)).toBe(inset);
+    expect(parseFloat(cards[3].style.left)).toBe(inset + step * 3);
+    expect(parseFloat(inner.style.width)).toBe(inset * 2 + step * 3 + 88);
+  });
+
+  it('높이가 낮은 PC 화면에서는 작은 카드를 쓴다', () => {
+    setMediaMatches((query) => query !== PC_TALL_QUERY);
+    renderHand();
+
+    expect(screen.getAllByTestId('hand-card')[0].style.width).toBe(`${UNO_PC_SHORT_SIZES.hand}px`);
   });
 
   it('방금 받은 카드는 1.2초 동안 표시한다', () => {

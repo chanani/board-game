@@ -16,7 +16,7 @@ import { ChallengePrompt } from './ChallengePrompt';
 import { ChallengeReveal } from './ChallengeReveal';
 import { ColorPicker } from './ColorPicker';
 import { describeUnoEvent } from './describe';
-import { UNO_SIZES, unoInstruction } from './layout';
+import { unoInstruction, useUnoSizes } from './layout';
 import { UnoActionBar } from './UnoActionBar';
 import { UnoCenter } from './UnoCenter';
 import { UnoHand } from './UnoHand';
@@ -29,10 +29,12 @@ import { useUnoFinale } from './useUnoFinale';
 
 const PENDING_MS = 3000;
 
+// PC 펠트는 화면 높이에서 머리글·상태 바·차례 줄·행동 줄·손패 몫(약 34rem)을 뺀 만큼까지만 늘어나 한 화면에 들어간다.
+// 눕힌 화면은 높이가 낮아 상대 자리와 가운데 더미를 가로로 나란히 둔다.
 const FELT: Record<TableLayout, string> = {
-  pc: 'min-h-[min(60vh,560px)] max-w-6xl justify-center gap-6 px-[6%] py-6',
-  landscape: 'gap-2 px-[6%] py-3',
-  portrait: 'gap-3 px-3 py-4',
+  pc: 'flex-col min-h-[min(560px,calc(100dvh-34rem))] max-w-6xl justify-center gap-3 px-[6%] py-3',
+  landscape: 'flex-row items-center justify-center gap-3 px-[4%] py-2',
+  portrait: 'flex-col gap-3 px-3 py-4',
 };
 
 const maxSeq = (events: { seq: number }[]) => events.reduce((max, event) => Math.max(max, event.seq), 0);
@@ -49,7 +51,7 @@ export function UnoTable({ view, room, meId, log, receivedAt, now, errorSeq, nic
   const game = view.game;
   const layout = useTableLayout();
   const wide = layout === 'pc';
-  const sizes = UNO_SIZES[layout];
+  const sizes = useUnoSizes(layout);
   const myTurn = game.status === 'IN_PROGRESS' && game.currentPlayerId === meId;
   const opponentIds = seatOrder(game.players.map((player) => player.playerId), meId).filter((id) => id !== meId);
   const rows = seatRows(opponentIds.length);
@@ -161,7 +163,7 @@ export function UnoTable({ view, room, meId, log, receivedAt, now, errorSeq, nic
     const member = room.members.find((candidate) => candidate.id === player.playerId);
     const active = game.status === 'IN_PROGRESS' && game.currentPlayerId === player.playerId;
     return (
-      <div key={player.playerId} data-testid="opponent-seat">
+      <div key={player.playerId} data-testid="opponent-seat" className="relative z-10">
         <UnoSeat player={player} nickname={nicknameOf(player.playerId)} active={active} backWidth={sizes.back} maxBacks={maxBacks}
           timer={active && game.deadline !== null ? { deadline: game.deadline, serverNow: game.serverNow } : undefined}
           connected={member?.connected} offlineSeconds={member ? offlineSecondsNow(member, receivedAt, now) : 0}
@@ -177,20 +179,22 @@ export function UnoTable({ view, room, meId, log, receivedAt, now, errorSeq, nic
       direction={game.direction} canDraw={myTurn && game.stage === 'PLAY'} onDraw={draw} cardWidth={sizes.center} />
   );
   const felt = (
-    <Felt shape="oval" className={`mx-auto flex w-full flex-col ${FELT[layout]}`}>
+    <Felt shape="oval" className={`mx-auto flex w-full ${FELT[layout]}`}>
       {wide ? (
         <>
-          {rows.top.length > 0 ? <div className="flex items-start justify-center gap-12">{rows.top.map(seatAt)}</div> : null}
+          {rows.top.length > 0 ? (
+            <div data-testid="seat-row-top" className={`flex items-start gap-12 ${rows.top.length > 1 ? 'justify-around' : 'justify-center'}`}>{rows.top.map(seatAt)}</div>
+          ) : null}
           <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4">
-            <div className="justify-self-start">{seatAt(rows.left)}</div>
+            <div data-testid="seat-left" className="justify-self-start">{seatAt(rows.left)}</div>
             {center}
-            <div className="justify-self-end">{seatAt(rows.right)}</div>
+            <div data-testid="seat-right" className="justify-self-end">{seatAt(rows.right)}</div>
           </div>
         </>
       ) : (
         <>
-          <div data-testid="opponent-row" className="flex flex-wrap items-start justify-center gap-x-2 gap-y-3">{opponentIds.map(seat)}</div>
-          <div className="flex justify-center">{center}</div>
+          <div data-testid="opponent-row" className={`flex flex-wrap items-start justify-center gap-x-2 gap-y-3 ${layout === 'landscape' ? 'min-w-0 flex-1' : ''}`}>{opponentIds.map(seat)}</div>
+          <div className="flex shrink-0 justify-center">{center}</div>
         </>
       )}
     </Felt>
@@ -247,7 +251,7 @@ export function UnoTable({ view, room, meId, log, receivedAt, now, errorSeq, nic
           <div className="space-y-2">{felt}{mine}</div>
         </div>
       ) : (
-        <div className="space-y-3">{turnBar}{felt}{mine}</div>
+        <div className={wide ? 'space-y-2' : 'space-y-3'}>{turnBar}{felt}{mine}</div>
       )}
       <UnoGhostLayer ghosts={ghosts} />
       {finale === 'banner' ? <GameEndBanner /> : null}
