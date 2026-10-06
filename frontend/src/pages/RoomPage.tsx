@@ -111,7 +111,7 @@ export function RoomPage() {
 
   return (
     <RoomThemeProvider value={room.theme}>
-    <div data-theme={room.theme} className={`space-y-4 ${playing ? 'pb-20' : ''}`}>
+    <div data-theme={room.theme} className={`space-y-4 ${playing ? 'lg:pb-20' : ''}`}>
       <RoomBackdrop theme={room.theme} />
       <RoomStatusBar room={room} playing={playing} onLeave={requestLeave}
         log={showGame ? <LogPopover log={log} nicknameOf={nicknameOf} /> : null} />

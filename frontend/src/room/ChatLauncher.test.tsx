@@ -32,6 +32,22 @@ describe('ChatLauncher', () => {
     await waitFor(() => expect(screen.queryByRole('dialog', { name: '채팅' })).not.toBeInTheDocument());
   });
 
+  it('PC에서는 버튼이 오른쪽 아래에 떠 있다', () => {
+    render(<ChatLauncher messages={messages} meId={1} onSend={vi.fn()} unread={0} onOpen={vi.fn()} />);
+
+    expect(screen.getByRole('button', { name: '채팅 열기' })).toHaveClass('fixed', 'bottom-4', 'right-4');
+  });
+
+  it('모바일에서는 버튼이 떠 있지 않고 화면 맨 아래 줄에 놓여 내 판 옆 예상 점수를 가리지 않는다', () => {
+    setMediaMatches(false);
+    render(<ChatLauncher messages={messages} meId={1} onSend={vi.fn()} unread={0} onOpen={vi.fn()} />);
+
+    const button = screen.getByRole('button', { name: '채팅 열기' });
+    expect(button).not.toHaveClass('fixed');
+    expect(button.parentElement).toHaveAttribute('data-testid', 'chat-launcher-dock');
+    expect(button.parentElement).toHaveClass('flex', 'justify-end');
+  });
+
   it('모바일에서는 아래 시트로 열린다', async () => {
     setMediaMatches(false);
     render(<ChatLauncher messages={messages} meId={1} onSend={vi.fn()} unread={0} onOpen={vi.fn()} />);

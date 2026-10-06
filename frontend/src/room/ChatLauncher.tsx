@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'motion/react';
-import { useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import type { ChatMessage } from '../api/chat';
 import { ChatIcon, CloseIcon } from '../components/icons';
 import { PC_QUERY, useMediaQuery } from '../lib/useMediaQuery';
@@ -21,8 +21,16 @@ function escapeIsMine(event: KeyboardEvent): boolean {
   return event.key === 'Escape' && !event.defaultPrevented && document.querySelector('[aria-modal="true"]') === null;
 }
 
+/** PC는 버튼이 그대로 떠 있다. 모바일은 떠 있는 버튼이 내 판 옆 칸(예상 점수)을 덮으므로 화면 맨 아래 줄에 놓는다. */
+function LauncherDock({ pc, children }: { pc: boolean; children: ReactNode }) {
+  if (pc) {
+    return <>{children}</>;
+  }
+  return <div data-testid="chat-launcher-dock" className="flex justify-end px-1">{children}</div>;
+}
+
 /**
- * 게임 중 채팅. 오른쪽 아래 말풍선 버튼으로 연다. PC는 오른쪽 서랍, 모바일은 아래 시트.
+ * 게임 중 채팅. 말풍선 버튼으로 연다(PC는 오른쪽 아래에 떠 있고, 모바일은 화면 맨 아래 줄). PC는 오른쪽 서랍, 모바일은 아래 시트.
  * 모달(z-40) 아래 층(z-30)에 두어 상대 보드·규칙 모달을 가리거나 클릭을 가로채지 않는다.
  * 게임 화면은 방 화면이라 "돌아가기" 바가 뜨지 않는다. 알림(토스트)은 z-50으로 이 위에 뜨고,
  * 모바일 시트가 열려 있는 동안에는 html[data-chat-sheet]로 시트 위로 올린다.
@@ -69,8 +77,9 @@ export function ChatLauncher({ messages, meId, onSend, unread, onOpen }: Props) 
   return (
     <>
       {open ? null : (
+        <LauncherDock pc={pc}>
         <motion.button type="button" aria-label={label} onClick={() => setOpen(true)} whileTap={{ scale: 0.9 }}
-          className="press-3d fixed bottom-4 right-4 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-mustard-400 text-wood-800 shadow-[0_4px_0_var(--color-mustard-600),0_10px_18px_rgb(0_0_0/0.4)] hover:bg-mustard-300">
+          className={`press-3d ${pc ? 'fixed bottom-4 right-4' : 'relative'} z-30 flex h-14 w-14 items-center justify-center rounded-full bg-mustard-400 text-wood-800 shadow-[0_4px_0_var(--color-mustard-600),0_10px_18px_rgb(0_0_0/0.4)] hover:bg-mustard-300`}>
           <ChatIcon className="h-7 w-7" />
           {unread > 0 ? (
             <motion.span key={unread} aria-hidden="true" initial={{ scale: 0.4 }} animate={{ scale: 1 }}
@@ -80,6 +89,7 @@ export function ChatLauncher({ messages, meId, onSend, unread, onOpen }: Props) 
             </motion.span>
           ) : null}
         </motion.button>
+        </LauncherDock>
       )}
       <AnimatePresence>
         {open ? (
