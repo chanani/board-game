@@ -32,6 +32,12 @@ describe('RoundResultModal', () => {
     expect(dialog).toHaveTextContent('밥');
   });
 
+  it('판 격자는 펠트 테두리(13px)만큼 여백과 간격을 둔다', () => {
+    render(<RoundResultModal view={view} meId={1} nicknameOf={nicknameOf} onReady={vi.fn()} />);
+
+    expect(screen.getByTestId('result-boards')).toHaveClass('gap-11', 'p-[13px]');
+  });
+
   it('준비 버튼을 누르면 onReady', async () => {
     const onReady = vi.fn();
     render(<RoundResultModal view={view} meId={1} nicknameOf={nicknameOf} onReady={onReady} />);

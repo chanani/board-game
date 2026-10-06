@@ -1,7 +1,7 @@
 import { motion, useReducedMotion } from 'motion/react';
 import { useEffect, useRef, useState } from 'react';
 import type { BoardView, PaperSafariSessionView } from '../../api/types';
-import { Felt } from '../../components/Felt';
+import { FELT_GRID, Felt } from '../../components/Felt';
 import { RollingNumber } from '../../components/RollingNumber';
 import { Modal } from '../../components/Modal';
 import { Button } from '../../components/ui';
@@ -74,7 +74,7 @@ export function RoundResultModal({ view, meId, nicknameOf, onReady }: Props) {
           </motion.li>
         ))}
       </ul>
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div data-testid="result-boards" className={`${FELT_GRID} sm:grid-cols-2`}>
         {game.round.boards.map((board, boardIndex) => (
           <Felt key={board.playerId} className="p-3">
             <PlayerBoard board={staged(board, boardIndex)} nickname={nicknameOf(board.playerId)} tokens={game.tokens[String(board.playerId)] ?? 0} active={false} size="sm" />

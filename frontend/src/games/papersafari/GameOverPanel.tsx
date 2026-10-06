@@ -3,7 +3,7 @@ import type { PaperSafariView } from '../../api/types';
 import { Confetti } from '../../components/Confetti';
 import { Modal } from '../../components/Modal';
 import { Button } from '../../components/ui';
-import { Felt } from '../../components/Felt';
+import { FELT_GRID, Felt } from '../../components/Felt';
 import { resultLabel } from '../../lib/format';
 import { PlayerBoard } from './PlayerBoard';
 
@@ -48,7 +48,7 @@ export function GameOverPanel({ game, meId, nicknameOf, onClose }: Props) {
               </li>
             ))}
           </ul>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div data-testid="result-boards" className={`${FELT_GRID} sm:grid-cols-2`}>
             {game.round.boards.map((board) => (
               <Felt key={board.playerId} className="p-3">
                 <PlayerBoard board={board} nickname={nicknameOf(board.playerId)}

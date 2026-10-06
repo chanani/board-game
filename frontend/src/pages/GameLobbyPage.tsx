@@ -127,7 +127,7 @@ export function GameLobbyPage() {
   }
 
   return (
-    <div className="grid gap-4 lg:grid-cols-3">
+    <div className="grid gap-8 lg:grid-cols-3">
       <div className="space-y-4 lg:col-span-2">
         <div className="flex items-center gap-3">
           <div className="h-16 w-12 overflow-hidden rounded shadow-lg"><PaperSafariBoxArt /></div>
@@ -167,7 +167,7 @@ export function GameLobbyPage() {
             </form>
           </div>
         </Panel>
-        <Felt className="mt-8 p-4">
+        <Felt className="mt-10 p-4">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="font-bold text-cream-50">기다리는 방</h2>
             <button type="button" aria-label="새로고침" onClick={refresh} className="rounded-full p-1 text-cream-200 hover:text-cream-50">
@@ -205,7 +205,7 @@ export function GameLobbyPage() {
             })}
           </ul>
         </Felt>
-        <Felt className="p-4">
+        <Felt className="mt-[3.25rem] p-4">
           <h2 className="mb-3 font-bold text-cream-50">게임 중인 방</h2>
           {playing.length === 0 ? <p className="text-sm text-cream-200">지금 진행 중인 게임이 없어요.</p> : null}
           <ul className="grid gap-2 sm:grid-cols-2">

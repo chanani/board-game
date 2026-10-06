@@ -22,5 +22,6 @@ describe('GameOverPanel', () => {
     expect(within(dialog).getByText(/12점/)).toBeInTheDocument();
     expect(within(dialog).getByText(/25점/)).toBeInTheDocument();
     expect(within(dialog).getAllByTestId('slot')).toHaveLength(12);
+    expect(within(dialog).getByTestId('result-boards')).toHaveClass('gap-11', 'p-[13px]');
   });
 });

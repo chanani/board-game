@@ -32,7 +32,7 @@ export function WaitingRoom({ room, meId, receivedAt, now, onStart, onForfeit, o
   };
 
   return (
-    <div className="grid gap-6 lg:grid-cols-3">
+    <div className="grid gap-10 lg:grid-cols-3">
       <Felt className="p-5 lg:col-span-2">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="rounded-full bg-cream-50 px-3 py-1 text-lg font-bold text-wood-800 shadow">참가자 {room.members.length}/{room.maxPlayers}</h2>
