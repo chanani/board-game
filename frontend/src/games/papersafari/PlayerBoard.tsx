@@ -5,6 +5,8 @@ import { CardFace, type CardSize } from './CardFace';
 import { ZoneAnchor } from './motion/ZoneAnchor';
 import { slotZone } from './motion/zones';
 import { CrownIcon } from '../../components/icons';
+import { KickBadge } from '../../components/KickBadge';
+import { PC_QUERY, useMediaQuery } from '../../lib/useMediaQuery';
 import { zeroPairColumns } from './score';
 
 /** 결과 화면용: 이름표 글, 합계, 열 점수 배지(없으면 '…'), 승자 강조. */
@@ -41,6 +43,7 @@ const COLUMNS = { mini: 'grid-cols-[repeat(3,auto)]', xs: 'grid-cols-[repeat(3,a
 const GAP = { mini: 'gap-0.5', xs: 'gap-1', sm: 'gap-1.5', md: 'gap-2.5', lg: 'gap-2.5' };
 
 export function PlayerBoard({ result, board, nickname, active, turnRing = false, size = 'md', pulseSlots = false, onSlotClick, canClick, connected, offlineSeconds = 0, onForfeit, zoomLabel, onZoom, timer }: Props) {
+  const pc = useMediaQuery(PC_QUERY);
   const ordered = [...board.slots].sort((a, b) => a.row - b.row || a.column - b.column);
   const zeroColumns = new Set(zeroPairColumns(board));
   const previousZero = useRef<Set<number>>(zeroColumns);
@@ -60,7 +63,8 @@ export function PlayerBoard({ result, board, nickname, active, turnRing = false,
           <span className={`rounded-full py-0.5 font-bold ${size === 'mini' ? 'inline-block max-w-[5.5rem] truncate px-1.5 align-middle text-[10px]' : 'px-2.5 text-xs'} shadow-[0_2px_0_rgb(0_0_0/0.3)] ${active ? 'turn-glow bg-(--turn-tag-bg) text-(--turn-tag-ink)' : 'bg-cream-50 text-wood-800'}`}>{result?.winner ? <CrownIcon className="mr-1 inline h-3.5 w-3.5 align-[-2px]" testId="winner-crown" /> : null}{result ? result.tag : nickname}</span>
           {timer ? <Countdown size="sm" deadline={timer.deadline} serverNow={timer.serverNow} /> : null}
           {connected === false ? <span className="felt-ink text-xs">연결 끊김 {offlineSeconds}초</span> : null}
-          {onForfeit ? (
+          {onForfeit && !pc ? <KickBadge label={`${nickname}님 내보내기`} onClick={onForfeit} className="-my-1.5" /> : null}
+          {onForfeit && pc ? (
             <button type="button" onClick={onForfeit} className="whitespace-nowrap rounded-md bg-red-50 px-1.5 py-0.5 text-xs font-medium text-red-700 hover:bg-red-100">
               내보내기
             </button>

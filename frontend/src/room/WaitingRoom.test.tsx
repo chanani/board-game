@@ -80,6 +80,27 @@ describe('WaitingRoom', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
 
+  it('모바일에서는 방장의 내보내기가 아바타 오른쪽 위 작은 X 버튼이다', async () => {
+    setMediaMatches(false);
+    renderRoom();
+
+    const kick = screen.getByRole('button', { name: '밥님 내보내기' });
+    expect(kick).toHaveClass('absolute', '-right-2', '-top-2', 'h-8', 'w-8');
+    expect(kick.querySelector('svg')).not.toBeNull();
+    expect(screen.queryByRole('button', { name: '내보내기' })).not.toBeInTheDocument();
+    await userEvent.click(kick);
+
+    await waitFor(() => expect(within(screen.getByRole('dialog')).getByText('밥님을 내보낼까요?')).toBeVisible());
+  });
+
+  it('PC에서는 지금처럼 글자 버튼이다', () => {
+    setMediaMatches(true);
+    renderRoom();
+
+    expect(screen.getByRole('button', { name: '내보내기' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '밥님 내보내기' })).not.toBeInTheDocument();
+  });
+
   it('방장이 아니면 연결된 참가자를 내보낼 수 없다', () => {
     renderRoom({ room: { ...room, members: [room.members[0], { ...room.members[1], connected: true, offlineSeconds: 0 }] }, meId: 2 });
 

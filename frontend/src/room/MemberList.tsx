@@ -2,6 +2,8 @@ import { AnimatePresence, motion } from 'motion/react';
 import type { RoomMember } from '../api/types';
 import { canForfeit, offlineSecondsNow } from '../lib/format';
 import { Button } from '../components/ui';
+import { KickBadge } from '../components/KickBadge';
+import { PC_QUERY, useMediaQuery } from '../lib/useMediaQuery';
 import { CheckIcon, CrownIcon } from '../components/icons';
 import { SeatBubble, type SeatBubbles } from './useSeatBubbles';
 
@@ -44,11 +46,13 @@ function positionOf(maxPlayers: number, index: number): Point {
 }
 
 export function MemberList({ members, maxPlayers, meId, receivedAt, now, onForfeit, onKick, bubbles }: Props) {
+  const pc = useMediaQuery(PC_QUERY);
   const seats = Array.from({ length: maxPlayers }, (_, index) => members[index] ?? null);
   return (
     <ul aria-label="자리" className="absolute inset-0">
       {seats.map((member, index) => {
         const { left, top } = positionOf(maxPlayers, index);
+        const remove = member ? removeActionOf({ member, meId, receivedAt, now, onForfeit, onKick }) : null;
         return (
           <li key={member ? member.id : `empty-${index}`} data-testid="chair"
             style={{ left: `${left}%`, top: `${top}%` }}
@@ -61,6 +65,7 @@ export function MemberList({ members, maxPlayers, meId, receivedAt, now, onForfe
                   className="relative flex h-12 w-12 items-center justify-center rounded-full bg-cream-50 text-xl font-black text-wood-800 shadow-[0_4px_0_var(--color-cream-300),0_10px_16px_rgb(0_0_0/0.4)] sm:h-14 sm:w-14 sm:text-2xl">
                   {member.nickname.slice(0, 1)}
                   <span aria-hidden="true" className={`absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full ring-2 ring-cream-50 ${member.connected ? 'bg-green-500' : 'bg-stone-400'}`} />
+                  {remove && !pc ? <KickBadge label={`${member.nickname}님 내보내기`} onClick={remove} className="absolute -right-2 -top-2" /> : null}
                 </motion.div>
               ) : (
                 <motion.div key="empty" aria-label="빈자리" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
@@ -68,7 +73,7 @@ export function MemberList({ members, maxPlayers, meId, receivedAt, now, onForfe
               )}
             </AnimatePresence>
             {member ? (
-              <Seated member={member} meId={meId} receivedAt={receivedAt} now={now} onForfeit={onForfeit} onKick={onKick} />
+              <Seated member={member} meId={meId} receivedAt={receivedAt} now={now} remove={pc ? remove : null} />
             ) : (
               <span aria-hidden="true" className="felt-ink-muted text-xs font-semibold">빈자리</span>
             )}
@@ -95,9 +100,8 @@ function removeActionOf({ member, meId, receivedAt, now, onForfeit, onKick }: Se
   return null;
 }
 
-function Seated(props: SeatedProps) {
-  const { member, meId, receivedAt, now } = props;
-  const remove = removeActionOf(props);
+/** remove는 글자 버튼용이다(PC). 모바일은 아바타 위 X 버튼이라 여기서는 null. */
+function Seated({ member, meId, receivedAt, now, remove }: { member: RoomMember; meId: number; receivedAt: number; now: number; remove: (() => void) | null }) {
   return (
     <>
       <span className="pill-strong flex max-w-full items-center rounded-full px-2 text-sm font-bold">

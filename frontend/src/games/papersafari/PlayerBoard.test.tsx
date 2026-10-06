@@ -1,6 +1,8 @@
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import userEvent from '@testing-library/user-event';
+import { describe, expect, it, vi } from 'vitest';
 import type { BoardView } from '../../api/types';
+import { setMediaMatches } from '../../test/media';
 import { PlayerBoard } from './PlayerBoard';
 
 const board: BoardView = {
@@ -25,5 +27,16 @@ describe('PlayerBoard', () => {
     expect(screen.getAllByLabelText('뒷면 카드')).toHaveLength(2);
     expect(screen.getByText('밥')).toBeInTheDocument();
     expect(screen.queryByLabelText(/토큰/)).not.toBeInTheDocument();
+  });
+
+  it('모바일에서 연결 끊긴 사람의 내보내기는 이름표 옆 작은 X 버튼이다', async () => {
+    setMediaMatches(false);
+    const onForfeit = vi.fn();
+    render(<PlayerBoard board={board} nickname="밥" active={false} connected={false} offlineSeconds={70} onForfeit={onForfeit} />);
+
+    await userEvent.click(screen.getByRole('button', { name: '밥님 내보내기' }));
+
+    expect(onForfeit).toHaveBeenCalled();
+    expect(screen.queryByRole('button', { name: '내보내기' })).not.toBeInTheDocument();
   });
 });
