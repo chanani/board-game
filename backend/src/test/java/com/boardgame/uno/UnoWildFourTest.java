@@ -227,4 +227,65 @@ class UnoWildFourTest {
         assertThat(game.revealFor(B)).isEmpty();
         assertThat(game.revealFor(C)).isEmpty();
     }
+
+    @Test
+    void R22_R25_다음_사람의_우노_외치기는_공개를_지우지_않고_그_사람의_차례_행동이_지운다() {
+        UnoGame game = game(List.of(A, B, C), List.of(
+                List.of(wildFour(0), num(BLUE, 5)), List.of(num(GREEN, 2), num(GREEN, 3)), List.of(num(GREEN, 4), num(BLUE, 9))), FIRST, filler(20));
+        four(game, A, GREEN);
+        game.challenge(B);
+        assertThat(game.actor()).isEqualTo(C);
+
+        game.callUno(C);
+
+        assertThat(game.revealFor(B)).isPresent();
+
+        game.play(C, num(GREEN, 4).id(), ChosenColor.none());
+
+        assertThat(game.revealFor(B)).isEmpty();
+    }
+
+    @Test
+    void R25_도전_직후_공개는_외치기_뒤에도_남는다() {
+        UnoGame game = game(List.of(A, B, C), List.of(
+                List.of(wildFour(0), num(RED, 2)), List.of(num(GREEN, 2), num(GREEN, 3)), List.of(num(GREEN, 4), num(BLUE, 9))), FIRST, filler(20));
+        four(game, A, GREEN);
+        game.challenge(B);
+
+        game.callUno(B);
+
+        assertThat(game.revealFor(B)).isPresent();
+    }
+
+    @Test
+    void R25_잡을_수_있는_와일드_4_뒤_받기와_도전은_각각_잡기_창을_닫는다() {
+        UnoGame accepting = catchableFour();
+        assertThat(accepting.catchTarget()).contains(A);
+        accepting.accept(B);
+        assertThat(accepting.catchTarget()).isEmpty();
+
+        UnoGame challenging = catchableFour();
+        challenging.challenge(B);
+        assertThat(challenging.catchTarget()).isEmpty();
+    }
+
+    @Test
+    void R26_도전_단계에서_차례가_아닌_사람이_잡아도_상태는_그대로다() {
+        UnoGame game = catchableFour();
+        StageSeq before = game.stageSeq();
+
+        game.catchUno(C, A);
+
+        assertThat(game.actor()).isEqualTo(B);
+        assertThat(game.stage()).isEqualTo(UnoStage.CHALLENGE);
+        assertThat(game.stageSeq()).isEqualTo(before);
+        assertThat(game.pendingCharge()).hasValueSatisfying(charge -> assertThat(charge.by()).isEqualTo(A));
+    }
+
+    private static UnoGame catchableFour() {
+        UnoGame game = game(List.of(A, B, C), List.of(
+                List.of(wildFour(0), num(RED, 2)), B_HAND, C_HAND), FIRST, filler(20));
+        four(game, A, GREEN);
+        return game;
+    }
 }

@@ -237,9 +237,9 @@ public class UnoRound {
         return progress.revealFor(viewer);
     }
 
-    // R22: 도전 처리 직후 상태에서만 공개한다.
+    // R22: 도전 처리 직후 상태에서만 공개한다. R25: 외치기·잡기는 차례 행동이 아니므로 공개를 지우지 않는다.
     void forgetRevealUnless(EventBatch batch) {
-        if (batch.has(UnoEventType.CHALLENGE)) {
+        if (batch.has(UnoEventType.CHALLENGE) || batch.has(UnoEventType.UNO_CALL) || batch.has(UnoEventType.UNO_CAUGHT)) {
             return;
         }
         progress.forgetReveal();
