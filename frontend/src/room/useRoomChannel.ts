@@ -13,7 +13,11 @@ const POLL_MS = 5000;
 
 type Options = { poll?: boolean };
 
-const isRoomGone = (error: unknown) => error instanceof ApiError && error.status === 404;
+const LEFT_MESSAGE = '방에서 나왔어요.';
+
+// 방이 사라졌거나(404) 내가 더 이상 그 방에 없으면(403 NOT_IN_ROOM, 예: 오프라인 중 기권 처리) 다시 시도해도 소용없다.
+const isRoomGone = (error: unknown) =>
+  error instanceof ApiError && (error.status === 404 || error.code === 'NOT_IN_ROOM');
 
 export type ViewTransition = { seq: number; from: PaperSafariView | null; to: PaperSafariView; animate: boolean };
 
@@ -62,6 +66,17 @@ export function useRoomChannel(code: string, { poll = false }: Options = {}) {
     [nicknameOf],
   );
 
+  const showFailure = useCallback(
+    (error: unknown) => {
+      if (error instanceof ApiError && error.code === 'NOT_IN_ROOM') {
+        toast.show(LEFT_MESSAGE, 'info');
+        return;
+      }
+      toast.show(messageOf(error));
+    },
+    [toast],
+  );
+
   useEffect(() => {
     viewRef.current = null;
     roomRef.current = null;
@@ -91,7 +106,7 @@ export function useRoomChannel(code: string, { poll = false }: Options = {}) {
         if (cancelled) {
           return;
         }
-        toast.show(messageOf(error));
+        showFailure(error);
         if (!roomRef.current || isRoomGone(error)) {
           setMissing(true);
         }
@@ -99,7 +114,7 @@ export function useRoomChannel(code: string, { poll = false }: Options = {}) {
     return () => {
       cancelled = true;
     };
-  }, [code, connected, acceptRoom, toast]);
+  }, [code, connected, acceptRoom, showFailure]);
 
   useEffect(() => {
     const offs = [
@@ -110,8 +125,13 @@ export function useRoomChannel(code: string, { poll = false }: Options = {}) {
       realtime.subscribe('/user/queue/game', (body) => acceptView(body as PaperSafariSessionView)),
       realtime.subscribe('/user/queue/errors', (body) => {
         const error = body as ApiErrorBody;
-        toast.show(error.message);
         setErrorSeq((current) => current + 1);
+        if (error.code === 'NOT_IN_ROOM') {
+          toast.show(LEFT_MESSAGE, 'info');
+          setMissing(true);
+          return;
+        }
+        toast.show(error.message);
         if (error.code === 'ROOM_NOT_FOUND') {
           setMissing(true);
         }
@@ -157,7 +177,7 @@ export function useRoomChannel(code: string, { poll = false }: Options = {}) {
         })
         .catch((error) => {
           if (!cancelled && isRoomGone(error)) {
-            toast.show(messageOf(error));
+            showFailure(error);
             setMissing(true);
           }
         });
@@ -166,7 +186,7 @@ export function useRoomChannel(code: string, { poll = false }: Options = {}) {
       cancelled = true;
       window.clearInterval(timer);
     };
-  }, [poll, code, acceptRoom, toast]);
+  }, [poll, code, acceptRoom, showFailure]);
 
   const status = room?.status;
   useEffect(() => {

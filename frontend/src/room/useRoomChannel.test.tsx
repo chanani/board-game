@@ -120,6 +120,51 @@ describe('useRoomChannel', () => {
     expect(result.current.missing).toBe(true);
   });
 
+  it('다시 가져오기가 403 NOT_IN_ROOM이면(쫓겨남) 방을 불러온 뒤에도 missing이 되고 한 번만 알린다', async () => {
+    const get = vi.spyOn(roomsApi, 'get').mockResolvedValueOnce(room('방'));
+    const { result, rerender } = renderHook(() => useRoomChannel('ABCDEF'));
+    await act(async () => {});
+    toast.show.mockClear();
+
+    get.mockRejectedValueOnce(new ApiError(403, 'NOT_IN_ROOM', '이 방의 참가자가 아닙니다.'));
+    state.connected = true;
+    rerender();
+    await act(async () => {});
+
+    expect(result.current.missing).toBe(true);
+    expect(toast.show).toHaveBeenCalledTimes(1);
+    expect(toast.show).toHaveBeenCalledWith('방에서 나왔어요.', 'info');
+  });
+
+  it('관전 중 확인(poll)에서 403 NOT_IN_ROOM이면 missing이 된다', async () => {
+    vi.useFakeTimers();
+    try {
+      const get = vi.spyOn(roomsApi, 'get').mockResolvedValue(room('방', 'PLAYING'));
+      const { result } = renderHook(() => useRoomChannel('ABCDEF', { poll: true }));
+      await act(async () => {});
+
+      get.mockRejectedValueOnce(new ApiError(403, 'NOT_IN_ROOM', '이 방의 참가자가 아닙니다.'));
+      await act(async () => { await vi.advanceTimersByTimeAsync(5000); });
+
+      expect(result.current.missing).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('동기화 오류가 NOT_IN_ROOM이어도 missing이 된다', async () => {
+    vi.spyOn(roomsApi, 'get').mockResolvedValue(room('방', 'PLAYING'));
+    const { result } = renderHook(() => useRoomChannel('ABCDEF'));
+    await act(async () => {});
+    toast.show.mockClear();
+
+    act(() => state.handlers.get('/user/queue/errors')?.({ status: 403, code: 'NOT_IN_ROOM', message: '이 방의 참가자가 아닙니다.' }));
+
+    expect(result.current.missing).toBe(true);
+    expect(toast.show).toHaveBeenCalledTimes(1);
+    expect(toast.show).toHaveBeenCalledWith('방에서 나왔어요.', 'info');
+  });
+
   it('떠난 플레이어도 마지막으로 본 닉네임으로 부른다', async () => {
     const withMembers = (ids: number[]): Room => ({
       ...room('방'),

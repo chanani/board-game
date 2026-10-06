@@ -80,11 +80,30 @@ class StompGameFlowTest {
     }
 
     private StompSession connect(String cookie) throws Exception {
+        return connect(cookie, new StompSessionHandlerAdapter() {
+        });
+    }
+
+    private StompSession connect(String cookie, StompSessionHandlerAdapter handler) throws Exception {
         WebSocketHttpHeaders handshake = new WebSocketHttpHeaders();
         handshake.add(HttpHeaders.COOKIE, cookie);
-        return stompClient.connectAsync("ws://localhost:" + port + "/ws", handshake,
-                new StompSessionHandlerAdapter() {
-                }).get(5, TimeUnit.SECONDS);
+        return stompClient.connectAsync("ws://localhost:" + port + "/ws", handshake, handler)
+                .get(5, TimeUnit.SECONDS);
+    }
+
+    // 서버가 보낸 ERROR 프레임이나 연결 끊김을 모아 둔다
+    private static StompSessionHandlerAdapter recordingProblems(BlockingQueue<String> problems) {
+        return new StompSessionHandlerAdapter() {
+            @Override
+            public void handleFrame(StompHeaders headers, Object payload) {
+                problems.add("ERROR " + headers.getFirst("message"));
+            }
+
+            @Override
+            public void handleTransportError(StompSession session, Throwable exception) {
+                problems.add("TRANSPORT " + exception);
+            }
+        };
     }
 
     private BlockingQueue<JsonNode> subscribe(StompSession session, String destination) {
@@ -221,10 +240,13 @@ class StompGameFlowTest {
     void 방에_없는_사람은_방_토픽을_구독할_수_없다() throws Exception {
         Player host = player();
         Player guest = player();
-        Player outsider = player();
+        String[] outsiderCredentials = signUpAndLogin();
+        BlockingQueue<String> problems = new LinkedBlockingQueue<>();
+        StompSession outsiderStomp = connect(outsiderCredentials[1], recordingProblems(problems));
+        BlockingQueue<JsonNode> outsiderErrors = subscribe(outsiderStomp, "/user/queue/errors");
         String code = startedRoom(host, guest);
         BlockingQueue<JsonNode> hostTopic = subscribe(host.stomp(), "/topic/rooms/" + code);
-        BlockingQueue<JsonNode> outsiderTopic = subscribe(outsider.stomp(), "/topic/rooms/" + code);
+        BlockingQueue<JsonNode> outsiderTopic = subscribe(outsiderStomp, "/topic/rooms/" + code);
         Thread.sleep(500);
 
         Player joiner = player();
@@ -232,6 +254,12 @@ class StompGameFlowTest {
 
         assertThat(hostTopic.poll(5, TimeUnit.SECONDS)).isNotNull();
         assertThat(outsiderTopic.poll(1, TimeUnit.SECONDS)).isNull();
+        assertThat(problems).as("거부된 구독 때문에 ERROR 프레임을 받거나 연결 전체가 끊기면 안 된다").isEmpty();
+        assertThat(outsiderStomp.isConnected()).isTrue();
+        outsiderStomp.send("/app/rooms/" + code + "/sync", Map.of());
+        JsonNode error = outsiderErrors.poll(5, TimeUnit.SECONDS);
+        assertThat(error).as("개인 큐 구독은 계속 살아 있어야 한다").isNotNull();
+        assertThat(error.get("code").asText()).isEqualTo("NOT_IN_ROOM");
     }
 
     @Test

@@ -8,13 +8,14 @@ import java.util.regex.Pattern;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
-import org.springframework.messaging.MessageDeliveryException;
 import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.ChannelInterceptor;
 import org.springframework.stereotype.Component;
 
 // 방 토픽은 그 방의 참가자·관전자만 구독한다. 와일드카드 등 다른 /topic 구독은 모두 막는다.
+// 막을 때는 예외 대신 프레임을 조용히 버린다(null). 예외는 ERROR 프레임과 함께 연결 전체를 닫을 수 있어,
+// 쫓겨난 사람이 /user/queue/* 까지 잃고 재연결·재구독을 반복하게 된다.
 @Component
 public class RoomTopicGuard implements ChannelInterceptor {
 
@@ -34,7 +35,7 @@ public class RoomTopicGuard implements ChannelInterceptor {
             return message;
         }
         if (!isAllowed(accessor.getDestination(), accessor.getUser())) {
-            throw new MessageDeliveryException("이 방의 참가자나 관전자만 구독할 수 있습니다: " + accessor.getDestination());
+            return null;
         }
         return message;
     }

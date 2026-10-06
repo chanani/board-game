@@ -1,7 +1,6 @@
 package com.boardgame.common.websocket;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -15,7 +14,6 @@ import java.security.Principal;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.messaging.Message;
-import org.springframework.messaging.MessageDeliveryException;
 import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.MessageBuilder;
@@ -48,11 +46,11 @@ class RoomTopicGuardTest {
     }
 
     @Test
-    void 방에_없는_사람의_방_토픽_구독은_거부한다() {
+    void 방에_없는_사람의_방_토픽_구독은_연결을_끊지_않고_조용히_버린다() {
         when(roomService.isOccupant("ABCDEF", 8L)).thenReturn(false);
         Message<?> message = message(StompCommand.SUBSCRIBE, "/topic/rooms/ABCDEF", new LoginMember(8L, "팔"));
 
-        assertThatThrownBy(() -> guard.preSend(message, null)).isInstanceOf(MessageDeliveryException.class);
+        assertThat(guard.preSend(message, null)).isNull();
     }
 
     @Test
@@ -60,21 +58,17 @@ class RoomTopicGuardTest {
         LoginMember user = new LoginMember(7L, "칠");
         when(roomService.isOccupant(anyString(), anyLong())).thenReturn(true);
 
-        assertThatThrownBy(() -> guard.preSend(message(StompCommand.SUBSCRIBE, "/topic/rooms/*", user), null))
-                .isInstanceOf(MessageDeliveryException.class);
-        assertThatThrownBy(() -> guard.preSend(message(StompCommand.SUBSCRIBE, "/topic/rooms/**", user), null))
-                .isInstanceOf(MessageDeliveryException.class);
-        assertThatThrownBy(() -> guard.preSend(message(StompCommand.SUBSCRIBE, "/topic/**", user), null))
-                .isInstanceOf(MessageDeliveryException.class);
-        assertThatThrownBy(() -> guard.preSend(message(StompCommand.SUBSCRIBE, "/topic/rooms/ABCDEF/x", user), null))
-                .isInstanceOf(MessageDeliveryException.class);
+        assertThat(guard.preSend(message(StompCommand.SUBSCRIBE, "/topic/rooms/*", user), null)).isNull();
+        assertThat(guard.preSend(message(StompCommand.SUBSCRIBE, "/topic/rooms/**", user), null)).isNull();
+        assertThat(guard.preSend(message(StompCommand.SUBSCRIBE, "/topic/**", user), null)).isNull();
+        assertThat(guard.preSend(message(StompCommand.SUBSCRIBE, "/topic/rooms/ABCDEF/x", user), null)).isNull();
     }
 
     @Test
     void 로그인_정보가_없으면_방_토픽_구독을_거부한다() {
         Message<?> message = message(StompCommand.SUBSCRIBE, "/topic/rooms/ABCDEF", null);
 
-        assertThatThrownBy(() -> guard.preSend(message, null)).isInstanceOf(MessageDeliveryException.class);
+        assertThat(guard.preSend(message, null)).isNull();
         verify(roomService, never()).isOccupant(anyString(), anyLong());
     }
 
