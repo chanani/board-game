@@ -14,6 +14,7 @@ public class UnoGame {
 
     private final UnoRound round;
     private final UnoEvents events;
+    private UnoResult result;
 
     private UnoGame(UnoRound round, UnoEvents events) {
         this.round = round;
@@ -79,18 +80,70 @@ public class UnoGame {
         return round.revealFor(viewer);
     }
 
-    // 사람이 한 행동: 남은 참가자인지 본 뒤 상태를 바꾼다. (Task 6이 맨 앞에 게임 끝 검사를 더한다.)
+    public void chooseColor(PlayerId player, ChosenColor color) {
+        run(player, batch -> round.chooseColor(player, color, batch));
+    }
+
+    public void forfeit(PlayerId player) {
+        run(player, batch -> round.forfeit(player, batch));
+    }
+
+    // 시간 초과: 지금 단계의 행동을 그 사람 대신 한다. 대신 행동한 사람을 돌려준다.
+    public PlayerId autoAct() {
+        requireInProgress();
+        PlayerId actor = round.actor();
+        apply(true, round::autoAct);
+        return actor;
+    }
+
+    public boolean isFinished() {
+        return result != null;
+    }
+
+    public Optional<UnoResult> result() {
+        return Optional.ofNullable(result);
+    }
+
+    public UnoPoints pointsOf(PlayerId player) {
+        return round.pointsOf(player);
+    }
+
+    // 사람이 한 행동: 끝난 게임이 아닌지, 남은 참가자인지 본 뒤 상태를 바꾼다.
     private void run(PlayerId player, Consumer<EventBatch> action) {
+        requireInProgress();
         requirePlayer(player);
         apply(false, action);
     }
 
-    // 이벤트를 모아 성공했을 때만 기록을 바꾼다. (Task 6이 게임 끝 정산을 더한다.)
+    // 이벤트를 모아 성공했을 때만 기록을 바꾼다.
     private void apply(boolean auto, Consumer<EventBatch> action) {
         EventBatch batch = events.open(auto);
         action.accept(batch);
+        settle(batch);
         round.forgetRevealUnless(batch);
         events.commit(batch);
+    }
+
+    private void requireInProgress() {
+        if (isFinished()) {
+            throw new BusinessException(ErrorCode.GAME_ALREADY_OVER);
+        }
+    }
+
+    // R29·R33: 손패를 비운 사람이 있거나 남은 사람이 1명이면 끝낸다. 끝나는 행동에서 딱 한 번만 정산된다.
+    private void settle(EventBatch batch) {
+        round.winnerByEmptyHand()
+                .ifPresent(winner -> finish(UnoResult.emptyHand(winner, round.pointsExcept(winner)), batch));
+        if (!isFinished() && round.remainingCount() == 1) {
+            finish(UnoResult.forfeit(round.remaining().get(0)), batch);
+        }
+    }
+
+    // R28: 끝나면 잡기 창도 닫는다.
+    private void finish(UnoResult ended, EventBatch batch) {
+        result = ended;
+        round.closeCatch();
+        batch.add(ended.toEvent());
     }
 
     private void requirePlayer(PlayerId player) {

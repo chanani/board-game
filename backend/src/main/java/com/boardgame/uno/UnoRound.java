@@ -88,6 +88,10 @@ public class UnoRound {
         table.discard(card, color);
         events.add(UnoEvent.play(player, card, chosenColorOf(card, color)));
         players.settleUno(player);
+        if (players.isOut(player)) {
+            applyLastCard(card, events);
+            return;
+        }
         resolve(player, card, legalFour, events);
     }
 
@@ -298,6 +302,104 @@ public class UnoRound {
         players.closeCatch();
         events.add(UnoEvent.pass(player, UnoEventReason.KEEP));
         passTurn(NEXT);
+    }
+
+    // R29·R30: 마지막 카드의 뽑기 효과만 적용하고 끝낸다(SKIP·REVERSE·WILD는 효과 없음). 마지막 +4는 도전 없이 4장.
+    private void applyLastCard(UnoCard card, EventBatch events) {
+        players.endTurn();
+        PlayerId next = players.nextOf(players.current());
+        if (card.kind() == CardKind.DRAW_TWO) {
+            penalize(next, DRAW_TWO_COUNT, UnoEventReason.DRAW_TWO, events);
+        }
+        if (card.kind() == CardKind.WILD_DRAW_FOUR) {
+            penalize(next, FOUR, UnoEventReason.WILD_DRAW_FOUR, events);
+        }
+    }
+
+    // R7: 첫 카드 WILD의 색을 고르면 같은 사람이 이어서 PLAY(새 단계).
+    public void chooseColor(PlayerId player, ChosenColor chosen, EventBatch events) {
+        progress.requireActor(player);
+        progress.requireStage(UnoStage.CHOOSE_COLOR);
+        UnoColor color = chosen.require();
+        players.closeCatch();
+        table.paint(color);
+        events.add(UnoEvent.color(player, color));
+        progress.begin(Turn.play(player));
+    }
+
+    // R35~R39
+    public void forfeit(PlayerId player, EventBatch events) {
+        boolean acting = progress.isActor(player);
+        paintIfChoosing(player, acting, events);
+        Hand hand = players.remove(player);
+        table.bury(hand.cards());
+        afterLeaving(player, acting);
+    }
+
+    // R36: 첫 카드 WILD 색 고르기 중이었다면 기권자의 손패로 자동 색(R40)을 먼저 정한다.
+    private void paintIfChoosing(PlayerId player, boolean acting, EventBatch events) {
+        if (!acting || !progress.is(UnoStage.CHOOSE_COLOR)) {
+            return;
+        }
+        UnoColor color = players.mostHeldColor(player);
+        table.paint(color);
+        events.add(UnoEvent.color(player, color));
+    }
+
+    // R36·R37(D13)·R39
+    private void afterLeaving(PlayerId player, boolean acting) {
+        if (acting) {
+            progress.clearCharge();
+            players.endTurn();
+            progress.begin(Turn.play(players.current()));
+            return;
+        }
+        if (isChargedBy(player)) {
+            progress.clearCharge();
+            progress.begin(Turn.play(players.current()));
+        }
+    }
+
+    // R40: 지금 단계의 행동을 대신 한다. 우노 외치기·잡기는 하지 않는다.
+    public void autoAct(EventBatch events) {
+        PlayerId actor = progress.actor();
+        switch (progress.stage()) {
+            case PLAY -> drawAndKeep(actor, events);
+            case DRAWN -> keep(actor, events);
+            case CHOOSE_COLOR -> chooseColor(actor, ChosenColor.of(players.mostHeldColor(actor)), events);
+            case CHALLENGE -> accept(actor, events);
+        }
+    }
+
+    // D16: 낼 수 있어도 내지 않고 갖고 넘긴다.
+    private void drawAndKeep(PlayerId actor, EventBatch events) {
+        draw(actor, events);
+        if (progress.isActorIn(actor, UnoStage.DRAWN)) {
+            keep(actor, events);
+        }
+    }
+
+    public Optional<PlayerId> winnerByEmptyHand() {
+        return players.seats()
+                .stream()
+                .filter(players::isOut)
+                .findFirst();
+    }
+
+    public UnoPoints pointsExcept(PlayerId winner) {
+        return players.pointsExcept(winner);
+    }
+
+    public UnoPoints pointsOf(PlayerId player) {
+        return players.pointsOf(player);
+    }
+
+    public int remainingCount() {
+        return players.size();
+    }
+
+    void closeCatch() {
+        players.closeCatch();
     }
 
     public PlayerId actor() {
