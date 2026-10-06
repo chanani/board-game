@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -35,14 +35,18 @@ function setChannel(overrides: Record<string, unknown>) {
 }
 
 function renderRoom() {
-  return render(
+  return render(roomTree());
+}
+
+function roomTree() {
+  return (
     <MemoryRouter initialEntries={['/rooms/ABC234']}>
       <Routes>
         <Route path="/rooms/:code" element={<RoomPage />} />
         <Route path="/games/:slug" element={<p>로비 화면</p>} />
         <Route path="/" element={<p>목록 화면</p>} />
       </Routes>
-    </MemoryRouter>,
+    </MemoryRouter>
   );
 }
 
@@ -127,5 +131,44 @@ describe('RoomPage 결과 모달', () => {
     renderRoom();
     await act(async () => {});
     expect(screen.queryByRole('dialog', { name: '게임 종료' })).not.toBeInTheDocument();
+  });
+
+  it('같은 방에서 승자·토큰이 똑같은 다음 게임이 끝나면 결과를 다시 보여준다', async () => {
+    setChannel({ room: waitingWithMe, view: finished });
+    const page = renderRoom();
+    await userEvent.click(await screen.findByRole('button', { name: '대기실로 돌아가기' }));
+    expect(screen.queryByRole('dialog', { name: '게임 종료' })).not.toBeInTheDocument();
+
+    const playingView: PaperSafariSessionView = { ...finished, game: { ...finished.game, status: 'IN_ROUND', winnerId: null } };
+    setChannel({ room: { ...waitingWithMe, status: 'PLAYING' }, view: playingView });
+    page.rerender(roomTree());
+    await act(async () => {});
+
+    setChannel({ room: waitingWithMe, view: finished });
+    page.rerender(roomTree());
+
+    expect(await screen.findByRole('dialog', { name: '게임 종료' })).toBeInTheDocument();
+  });
+
+  it('다른 방에서 닫은 결과 기록은 지우지 않는다', async () => {
+    window.sessionStorage.setItem('bg.dismissedGameOver', JSON.stringify(['XYZ789:1:{}']));
+    setChannel({ room: { ...waitingWithMe, status: 'PLAYING' }, view: null });
+    renderRoom();
+    await act(async () => {});
+
+    expect(JSON.parse(window.sessionStorage.getItem('bg.dismissedGameOver') ?? '[]')).toEqual(['XYZ789:1:{}']);
+  });
+
+  it('관전자도 게임 결과(승자)를 보고 닫을 수 있다', async () => {
+    const spectatorView: PaperSafariSessionView = { ...finished, game: { ...finished.game, tokens: { '1': 3, '2': 1 } } };
+    setChannel({ room: { ...baseRoom, status: 'WAITING' }, view: spectatorView });
+    renderRoom();
+
+    const dialog = await screen.findByRole('dialog', { name: '게임 종료' });
+    expect(within(dialog).getByRole('heading', { name: '앨리스님 승리!' })).toBeInTheDocument();
+    await userEvent.click(within(dialog).getByRole('button', { name: '대기실로 돌아가기' }));
+
+    expect(screen.queryByRole('dialog', { name: '게임 종료' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '자리에 앉기' })).toBeInTheDocument();
   });
 });

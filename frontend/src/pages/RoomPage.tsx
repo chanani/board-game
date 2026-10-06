@@ -27,7 +27,7 @@ export function RoomPage() {
   const { room, receivedAt, view, transition, log, missing, send, nicknameOf, errorSeq } = useRoomChannel(code, { poll: spectating });
   const [now, setNow] = useState(() => Date.now());
   const [confirmLeave, setConfirmLeave] = useState(false);
-  const gameOver = useGameOverDismissal(code, view?.game ?? null);
+  const gameOver = useGameOverDismissal(code, view?.game ?? null, room?.status === 'PLAYING');
 
   useEffect(() => {
     setSpectating(Boolean(room?.spectators.some((spectator) => spectator.id === meId)));
@@ -58,7 +58,8 @@ export function RoomPage() {
 
   const playing = room.status === 'PLAYING';
   const wasPlayer = view !== null && Object.hasOwn(view.game.tokens, String(meId));
-  const showGameOver = !playing && view?.game.status === 'GAME_OVER' && wasPlayer && !gameOver.dismissed;
+  // 관전자도 누가 이겼는지 볼 수 있게 결과 창을 띄운다.
+  const showGameOver = !playing && view?.game.status === 'GAME_OVER' && (wasPlayer || spectating) && !gameOver.dismissed;
   const spectatorCount = room.spectators.length;
   const showGame = view !== null && (playing || showGameOver);
 

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { PaperSafariView } from '../api/types';
-import { gameOverKey, isDismissed, markDismissed } from './dismissals';
+import { clearDismissals, gameOverKey, isDismissed, markDismissed } from './dismissals';
 
 const game = { winnerId: 2, tokens: { '1': 1, '2': 3 } } as unknown as PaperSafariView;
 
@@ -46,5 +46,17 @@ describe('결과 모달 닫음 기록', () => {
     expect(isDismissed('k4')).toBe(false);
     expect(isDismissed('k5')).toBe(true);
     expect(isDismissed('k24')).toBe(true);
+  });
+
+  it('한 방의 기록만 지우고 다른 방 기록은 남긴다', () => {
+    markDismissed('ABC234:1:{}');
+    markDismissed('ABC234:2:{}');
+    markDismissed('XYZ789:1:{}');
+
+    clearDismissals('ABC234');
+
+    expect(isDismissed('ABC234:1:{}')).toBe(false);
+    expect(isDismissed('ABC234:2:{}')).toBe(false);
+    expect(isDismissed('XYZ789:1:{}')).toBe(true);
   });
 });

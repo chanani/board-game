@@ -1,4 +1,5 @@
 import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import type { PaperSafariView } from '../../api/types';
 import { GameOverPanel } from './GameOverPanel';
@@ -23,5 +24,17 @@ describe('GameOverPanel', () => {
     expect(within(dialog).getByText(/25점/)).toBeInTheDocument();
     expect(within(dialog).getAllByTestId('slot')).toHaveLength(12);
     expect(within(dialog).getByTestId('result-boards')).toHaveClass('gap-11', 'p-[13px]');
+  });
+
+  it('자리에 없던 관전자도 승자와 순위를 보고 닫을 수 있다', async () => {
+    const onClose = vi.fn();
+    render(<GameOverPanel game={{ ...game, viewerId: 3 }} meId={3} nicknameOf={(id) => names[id]} onClose={onClose} />);
+
+    const dialog = screen.getByRole('dialog', { name: '게임 종료' });
+    expect(within(dialog).getByRole('heading', { name: '앨리스님 승리!' })).toBeInTheDocument();
+    expect(within(dialog).queryByText('🏆')).not.toBeInTheDocument();
+    expect(within(dialog).queryByRole('button', { name: /준비/ })).not.toBeInTheDocument();
+    await userEvent.click(within(dialog).getByRole('button', { name: '대기실로 돌아가기' }));
+    expect(onClose).toHaveBeenCalled();
   });
 });

@@ -21,11 +21,23 @@ export function isDismissed(key: string): boolean {
   return readKeys().includes(key);
 }
 
-export function markDismissed(key: string): void {
-  const keys = [...readKeys().filter((item) => item !== key), key].slice(-MAX_ENTRIES);
+function writeKeys(keys: string[]): void {
   try {
     window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(keys));
   } catch {
     // 저장소를 쓸 수 없으면 이번 화면에서만 닫힌다.
+  }
+}
+
+export function markDismissed(key: string): void {
+  writeKeys([...readKeys().filter((item) => item !== key), key].slice(-MAX_ENTRIES));
+}
+
+/** 새 게임이 시작되면 그 방에서 닫았던 결과 기록을 지운다. 승자·토큰이 같은 다음 게임 결과가 가려지지 않게 한다. */
+export function clearDismissals(code: string): void {
+  const keys = readKeys();
+  const kept = keys.filter((item) => !item.startsWith(`${code}:`));
+  if (kept.length !== keys.length) {
+    writeKeys(kept);
   }
 }
