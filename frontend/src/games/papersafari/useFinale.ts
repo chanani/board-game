@@ -1,6 +1,6 @@
 import { useReducedMotion } from 'motion/react';
 import { useEffect, useRef, useState } from 'react';
-import type { PaperSafariView } from '../../api/types';
+import type { CardView, PaperSafariView, SlotView } from '../../api/types';
 import type { ViewTransition } from '../../room/useRoomChannel';
 
 export type FinalePhase = 'idle' | 'revealing' | 'banner' | 'done';
@@ -19,13 +19,30 @@ export const slotKey = (playerId: number, column: number, row: number) => `${pla
 
 const isOver = (game: PaperSafariView) => game.status === 'GAME_OVER';
 
+const sameCard = (a: CardView | null, b: CardView | null) => a?.kind === b?.kind && a?.value === b?.value;
+
+/** 마지막 행동이 들고 있던 카드를 내려놓은 것이면, 그 카드가 들어간 칸(직전까지 뒷면)의 열쇠. 이미 앞면으로 놓였으니 다시 뒤집지 않는다. */
+function lastPlaced(prev: PaperSafariView, next: PaperSafariView): string | null {
+  const held = prev.round.held;
+  if (!held) {
+    return null;
+  }
+  const card = held.source === 'DISCARD' ? prev.round.discardTop : held.card;
+  const before = prev.round.boards.find((board) => board.playerId === held.playerId);
+  const after = next.round.boards.find((board) => board.playerId === held.playerId);
+  const wasHidden = (slot: SlotView) => !before?.slots.find((old) => old.column === slot.column && old.row === slot.row)?.faceUp;
+  const target = after?.slots.find((slot) => wasHidden(slot) && sameCard(slot.card, card));
+  return target ? slotKey(held.playerId, target.column, target.row) : null;
+}
+
 function hiddenBefore(prev: PaperSafariView, next: PaperSafariView): string[] {
+  const placed = lastPlaced(prev, next);
   return next.round.boards.flatMap((board) => {
     const before = prev.round.boards.find((item) => item.playerId === board.playerId);
     return board.slots
       .filter((slot) => !before?.slots.find((old) => old.column === slot.column && old.row === slot.row)?.faceUp)
       .map((slot) => slotKey(board.playerId, slot.column, slot.row));
-  });
+  }).filter((key) => key !== placed);
 }
 
 /** 게임 중이던 상태에서 라운드 결과와 함께 끝났을 때만 연출한다. 기권 종료·동작 줄이기는 바로 결과로 간다. */

@@ -155,4 +155,23 @@ describe('게임 종료 연출', () => {
     expect(flips).toBeGreaterThan(0);
     expect(flips).toBeLessThanOrEqual(13);
   });
+
+  it('마지막으로 뒷면 칸에 내려놓은 카드는 다시 뒤집지 않는다', () => {
+    const mine = slots(true).map((slot) => (slot.column === 0 && slot.row === 0 ? { ...slot, faceUp: false, card: null } : slot));
+    const placing: PaperSafariView = {
+      ...playing,
+      round: {
+        ...playing.round, phase: 'PLACE', currentPlayerId: ME, held: { playerId: ME, source: 'DECK', card: { kind: 'NUMBER', value: 9 } },
+        boards: [{ playerId: ME, slots: mine }, { playerId: OPPONENT, slots: slots(true) }],
+      },
+    };
+    const ended = over();
+    const placed = slots(true).map((slot) => (slot.column === 0 && slot.row === 0 ? { ...slot, card: { kind: 'NUMBER' as const, value: 9 } } : slot));
+    const { rerender } = render(ui(placing));
+    rerender(ui({ ...ended, round: { ...ended.round, boards: [{ playerId: ME, slots: placed }, { playerId: OPPONENT, slots: slots(true) }] } }));
+
+    expect(document.querySelectorAll('[data-testid="slot"] [data-side="front"]')).toHaveLength(12);
+    advance(1200);
+    expect(play.mock.calls.filter(([name]) => name === 'flip')).toHaveLength(0);
+  });
 });
