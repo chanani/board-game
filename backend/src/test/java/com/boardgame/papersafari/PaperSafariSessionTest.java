@@ -219,6 +219,23 @@ class PaperSafariSessionTest {
     }
 
     @Test
+    void 기권자가_있는_게임이_무승부로_끝나면_기권자는_패배이고_남은_사람은_무승부다() {
+        PaperSafariSession session = threePlayerSession(List.of(
+                stack(List.of(WINNER_HAND, Fixtures.numbers(1, 0, 0, 0, 0, 0), LOSER_HAND), Card.number(7), zeros(15))));
+        session.forfeit(C);
+
+        List<GameOutcome> outcomes = playRound(session, A, B);
+
+        assertThat(outcomes).containsExactly(
+                new RoundCompleted(1, List.of(new RoundEntry(A, ResultType.DRAW, 1), new RoundEntry(B, ResultType.DRAW, 1))),
+                new GameCompleted(List.of(
+                        new MatchEntry(A, ResultType.DRAW, 0, 0),
+                        new MatchEntry(B, ResultType.DRAW, 0, 1),
+                        new MatchEntry(C, ResultType.LOSE, 0, 2))));
+        assertThat(view(session, A).winnerId()).isNull();
+    }
+
+    @Test
     void 화면_정보에는_토큰과_준비_목록이_없다() throws Exception {
         PaperSafariSession session = session(List.of(roundWonBy(ALICE)));
         playRound(session, A, B);
