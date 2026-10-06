@@ -15,6 +15,13 @@ vi.mock('../room/useRoomChannel', () => ({
 const toast = vi.hoisted(() => ({ show: vi.fn() }));
 vi.mock('../components/Toast', () => ({ useToast: () => toast }));
 vi.mock('../auth/AuthContext', () => ({ useAuth: () => ({ member: { id: 3, loginId: 'carol01', nickname: '캐롤' } }) }));
+const chat = vi.hoisted(() => ({ args: [] as unknown[], send: vi.fn(() => true), markRead: vi.fn() }));
+vi.mock('../room/useRoomChat', () => ({
+  useRoomChat: (...args: unknown[]) => {
+    chat.args = args;
+    return { messages: [{ id: 1, memberId: 1, nickname: '앨리스', text: '잘 부탁해요', sentAt: '2026-10-06T00:00:00Z' }], send: chat.send, unread: 2, markRead: chat.markRead };
+  },
+}));
 vi.mock('../api/rooms', () => ({ roomsApi: { seat: vi.fn(), leave: vi.fn(), start: vi.fn(), forfeit: vi.fn(), ready: vi.fn() } }));
 
 const members = [
@@ -209,5 +216,36 @@ describe('RoomPage 결과 모달', () => {
 
     expect(await screen.findByRole('dialog', { name: '게임 결과' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '다음 게임 준비' })).toBeInTheDocument();
+  });
+});
+
+describe('RoomPage 준비와 채팅', () => {
+  const waiting: Room = {
+    ...baseRoom, status: 'WAITING', spectators: [],
+    members: [members[0], { id: 3, nickname: '캐롤', host: false, connected: true, offlineSeconds: 0, ready: false }],
+  };
+
+  it('대기실에서 준비하기를 누르면 준비 요청을 보내고 옆에 방 채팅이 보인다', async () => {
+    const { roomsApi } = await import('../api/rooms');
+    vi.mocked(roomsApi.ready).mockResolvedValue(waiting);
+    setChannel({ room: waiting });
+    renderRoom();
+
+    await userEvent.click(screen.getByRole('button', { name: '준비하기' }));
+
+    expect(roomsApi.ready).toHaveBeenCalledWith('ABC234', true);
+    expect(screen.getByText('잘 부탁해요')).toBeInTheDocument();
+    expect(chat.args).toEqual(['ABC234', true, { meId: 3 }]);
+    expect(screen.getByText(/대기 중 · 2\/4명/)).toBeInTheDocument();
+  });
+
+  it('게임 중에는 채팅 버튼으로 채팅을 열고 안 읽은 수를 보여 준다', async () => {
+    setChannel({ room: { ...waiting, status: 'PLAYING' }, view: null });
+    renderRoom();
+
+    await userEvent.click(screen.getByRole('button', { name: '채팅 열기 (안 읽은 메시지 2개)' }));
+
+    expect(screen.getByRole('dialog', { name: '채팅' })).toBeInTheDocument();
+    expect(chat.markRead).toHaveBeenCalled();
   });
 });

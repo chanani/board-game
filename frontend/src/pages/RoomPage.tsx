@@ -8,7 +8,9 @@ import { Button, Panel } from '../components/ui';
 import { useToast } from '../components/Toast';
 import { lobbyPath } from '../games/catalog';
 import { PaperSafariTable } from '../games/papersafari/PaperSafariTable';
+import { ChatLauncher } from '../room/ChatLauncher';
 import { useGameOverDismissal } from '../room/useGameOverDismissal';
+import { useRoomChat } from '../room/useRoomChat';
 import { useRoomChannel } from '../room/useRoomChannel';
 import { WaitingRoom } from '../room/WaitingRoom';
 
@@ -30,6 +32,8 @@ export function RoomPage() {
   const [now, setNow] = useState(() => Date.now());
   const [confirmLeave, setConfirmLeave] = useState(false);
   const gameOver = useGameOverDismissal(code, view?.game ?? null, room?.status === 'PLAYING');
+  // 이 화면은 REST 입장(참가·관전) 뒤에만 오므로 채팅도 방 채널과 같은 시점에 시작한다.
+  const chat = useRoomChat(code, room !== null && !missing, { meId });
 
   useEffect(() => {
     const watching = Boolean(room?.spectators.some((spectator) => spectator.id === meId));
@@ -94,12 +98,12 @@ export function RoomPage() {
   };
 
   return (
-    <div className="space-y-4">
+    <div className={`space-y-4 ${playing ? 'pb-20' : ''}`}>
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-black text-cream-50 drop-shadow">{room.name}</h1>
           <p className="text-sm text-cream-200">
-            {room.gameTypeName} · {playing ? '게임 중' : '대기 중'}
+            {room.gameTypeName} · {playing ? '게임 중' : '대기 중'} · {room.members.length}/{room.maxPlayers}명
             {spectatorCount > 0 ? <span> · 👀 관전 {spectatorCount}명</span> : null}
           </p>
         </div>
@@ -135,10 +139,15 @@ export function RoomPage() {
           receivedAt={receivedAt}
           now={now}
           onStart={() => run(() => roomsApi.start(code))}
+          onReady={(ready) => run(() => roomsApi.ready(code, ready))}
           onForfeit={(memberId) => run(() => roomsApi.forfeit(code, memberId))}
           onSeat={() => run(() => roomsApi.seat(code))}
+          chat={{ messages: chat.messages, onSend: chat.send }}
         />
       )}
+      {playing ? (
+        <ChatLauncher messages={chat.messages} meId={meId} onSend={chat.send} unread={chat.unread} onOpen={chat.markRead} />
+      ) : null}
     </div>
   );
 }

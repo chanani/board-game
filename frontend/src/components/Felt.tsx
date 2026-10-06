@@ -6,9 +6,11 @@ import type { ReactNode } from 'react';
  */
 export const FELT_GRID = 'grid gap-11 p-[13px]';
 
-type Props = { children: ReactNode; className?: string; shape?: 'oval' | 'rect' };
+type Props = { children: ReactNode; className?: string; shape?: 'oval' | 'rect' | 'round' };
+
+const RADIUS = { oval: 'rounded-[48%/40%]', rect: 'rounded-[28px]', round: 'rounded-full' };
 
 export function Felt({ children, className = '', shape = 'rect' }: Props) {
-  const radius = shape === 'oval' ? 'rounded-[48%/40%]' : 'rounded-[28px]';
+  const radius = RADIUS[shape];
   return <div className={`felt relative ${radius} ${className}`}>{children}</div>;
 }

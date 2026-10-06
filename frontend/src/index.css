@@ -90,3 +90,8 @@ body {
 html[data-room-bar] .toast-stack {
   bottom: 5rem;
 }
+
+/* 모바일 채팅 시트(60vh)가 열려 있으면 알림을 시트 위로 올린다 (ChatLauncher가 html[data-chat-sheet]를 단다). */
+html[data-chat-sheet] .toast-stack {
+  bottom: calc(60vh + 1rem);
+}

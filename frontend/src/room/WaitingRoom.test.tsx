@@ -13,9 +13,18 @@ const room: Room = {
   ],
 };
 
-function renderRoom() {
-  render(<ToastProvider><WaitingRoom room={room} meId={1} receivedAt={0} now={0} onStart={vi.fn()} onForfeit={vi.fn()} onSeat={vi.fn()} /></ToastProvider>);
+type Overrides = { room?: Room; meId?: number; onSeat?: () => void; onReady?: (ready: boolean) => void; onStart?: () => void };
+
+function renderRoom({ room: shown = room, meId = 1, onSeat = vi.fn(), onReady = vi.fn(), onStart = vi.fn() }: Overrides = {}) {
+  return render(
+    <ToastProvider>
+      <WaitingRoom room={shown} meId={meId} receivedAt={0} now={0} onStart={onStart} onReady={onReady} onForfeit={vi.fn()} onSeat={onSeat}
+        chat={{ messages: [{ id: 1, memberId: 2, nickname: '밥', text: '준비할게요', sentAt: '2026-10-06T00:00:00Z' }], onSend: vi.fn(() => true) }} />
+    </ToastProvider>,
+  );
 }
+
+const readyRoom: Room = { ...room, members: [room.members[0], { ...room.members[1], ready: true }] };
 
 describe('WaitingRoom', () => {
   it('최대 인원만큼 의자를 놓고 빈자리를 보여준다', () => {
@@ -26,49 +35,89 @@ describe('WaitingRoom', () => {
     expect(screen.getByText('앨리스')).toBeInTheDocument();
   });
 
+  it('의자마다 방장·준비 상태 칩을 단다', () => {
+    renderRoom({ room: { ...room, maxPlayers: 3, members: [...room.members, { id: 5, nickname: '에린', host: false, connected: true, offlineSeconds: 0, ready: true }] } });
+
+    expect(screen.getByText('👑 방장')).toBeInTheDocument();
+    expect(screen.getByText('준비 전')).toBeInTheDocument();
+    expect(screen.getByText('✔ 준비 완료')).toBeInTheDocument();
+  });
+
   it('60초 넘게 끊긴 사람은 내보내기 버튼이 있다', () => {
     renderRoom();
 
     expect(screen.getByRole('button', { name: '내보내기' })).toBeInTheDocument();
   });
 
-  it('방장은 시작 버튼을 누를 수 있다', () => {
-    renderRoom();
+  it('방장은 모두 준비하면 시작 버튼을 누를 수 있다', async () => {
+    const onStart = vi.fn();
+    renderRoom({ room: readyRoom, onStart });
 
-    expect(screen.getByRole('button', { name: '게임 시작' })).toBeEnabled();
+    await userEvent.click(screen.getByRole('button', { name: '게임 시작' }));
+
+    expect(onStart).toHaveBeenCalledTimes(1);
+    expect(screen.getByText('코드 ABC234 📋')).toBeInTheDocument();
   });
 
-  it('규칙은 펼치지 않아도 항상 보인다', () => {
-    const { container } = render(<ToastProvider><WaitingRoom room={room} meId={1} receivedAt={0} now={0} onStart={vi.fn()} onForfeit={vi.fn()} onSeat={vi.fn()} /></ToastProvider>);
+  it('준비하지 않은 참가자가 있으면 방장의 시작 버튼이 꺼지고 이유를 알려 준다', () => {
+    renderRoom();
 
+    expect(screen.getByRole('button', { name: '게임 시작' })).toBeDisabled();
+    expect(screen.getByText('모두 준비하면 시작할 수 있어요')).toBeVisible();
+  });
+
+  it('혼자면 2명 이상 모여야 한다고 알려 준다', () => {
+    renderRoom({ room: { ...room, members: [room.members[0]] } });
+
+    expect(screen.getByRole('button', { name: '게임 시작' })).toBeDisabled();
+    expect(screen.getByText('2명 이상 모여야 해요')).toBeVisible();
+  });
+
+  it('참가자는 준비하기로 준비하고 준비 취소로 되돌린다', async () => {
+    const onReady = vi.fn();
+    const view = renderRoom({ meId: 2, onReady });
+
+    await userEvent.click(screen.getByRole('button', { name: '준비하기' }));
+    expect(onReady).toHaveBeenCalledWith(true);
+    expect(screen.queryByRole('button', { name: '게임 시작' })).not.toBeInTheDocument();
+
+    view.unmount();
+    renderRoom({ room: readyRoom, meId: 2, onReady });
+    await userEvent.click(screen.getByRole('button', { name: '준비 취소' }));
+    expect(onReady).toHaveBeenLastCalledWith(false);
+  });
+
+  it('옆에 채팅과 규칙이 항상 보인다', () => {
+    const { container } = renderRoom();
+
+    expect(screen.getByRole('textbox', { name: '채팅 입력' })).toBeInTheDocument();
+    expect(screen.getByText('준비할게요')).toBeInTheDocument();
     expect(container.querySelector('details')).toBeNull();
     expect(screen.getByText(/합이 가장 낮은 사람이 1승/)).toBeVisible();
   });
 
   it('관전자가 있으면 관전 중인 사람을 보여준다', () => {
-    const watched = { ...room, spectators: [{ id: 3, nickname: '캐롤' }, { id: 4, nickname: '데이브' }] };
-    render(<ToastProvider><WaitingRoom room={watched} meId={1} receivedAt={0} now={0} onStart={vi.fn()} onForfeit={vi.fn()} onSeat={vi.fn()} /></ToastProvider>);
+    renderRoom({ room: { ...room, spectators: [{ id: 3, nickname: '캐롤' }, { id: 4, nickname: '데이브' }] } });
 
     expect(screen.getByText('👀 관전 중: 캐롤, 데이브')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '자리에 앉기' })).not.toBeInTheDocument();
   });
 
-  it('내가 관전자면 자리에 앉을 수 있고 시작 버튼은 없다', async () => {
+  it('내가 관전자면 자동 참가 안내와 자리에 앉기가 있고 시작·준비 버튼은 없다', async () => {
     const onSeat = vi.fn();
-    const watched = { ...room, spectators: [{ id: 3, nickname: '캐롤' }] };
-    render(<ToastProvider><WaitingRoom room={watched} meId={3} receivedAt={0} now={0} onStart={vi.fn()} onForfeit={vi.fn()} onSeat={onSeat} /></ToastProvider>);
+    renderRoom({ room: { ...room, spectators: [{ id: 3, nickname: '캐롤' }] }, meId: 3, onSeat });
 
     await userEvent.click(screen.getByRole('button', { name: '자리에 앉기' }));
 
     expect(onSeat).toHaveBeenCalledTimes(1);
-    expect(screen.queryByRole('button', { name: /게임 시작|2명 이상/ })).not.toBeInTheDocument();
-    expect(screen.queryByText(/방장이 게임을 시작하길/)).not.toBeInTheDocument();
+    expect(screen.getByText(/게임이 끝나면 자동으로 참가해요/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /게임 시작|준비하기/ })).not.toBeInTheDocument();
   });
 
   it('정원이 찼으면 관전자도 자리에 앉기 버튼이 없다', () => {
-    const full = { ...room, maxPlayers: 2, spectators: [{ id: 3, nickname: '캐롤' }] };
-    render(<ToastProvider><WaitingRoom room={full} meId={3} receivedAt={0} now={0} onStart={vi.fn()} onForfeit={vi.fn()} onSeat={vi.fn()} /></ToastProvider>);
+    renderRoom({ room: { ...room, maxPlayers: 2, spectators: [{ id: 3, nickname: '캐롤' }] }, meId: 3 });
 
     expect(screen.queryByRole('button', { name: '자리에 앉기' })).not.toBeInTheDocument();
+    expect(screen.getByText(/게임이 끝나면 자동으로 참가해요/)).toBeInTheDocument();
   });
 });
