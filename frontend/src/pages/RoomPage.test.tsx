@@ -69,9 +69,32 @@ describe('RoomPage 관전자', () => {
     await act(async () => {});
 
     expect(screen.getByRole('heading', { name: '앨리스의 방' })).toBeInTheDocument();
-    expect(screen.getByText(/👀 관전 1명/)).toBeInTheDocument();
+    expect(screen.getByLabelText('관전 1명')).toBeInTheDocument();
     expect(toast.show).not.toHaveBeenCalledWith('방에서 나왔어요.', 'info');
     expect(channel.options).toEqual({ poll: true });
+  });
+
+  it('방 제목 아래에 게임·상태·인원·관전·비공개 칩을 보여준다', async () => {
+    setChannel({ room: { ...baseRoom, locked: true } });
+    renderRoom();
+    await act(async () => {});
+
+    const chips = screen.getByTestId('room-chips');
+    expect(chips).toHaveTextContent('페이퍼 사파리');
+    expect(chips).toHaveTextContent('● 게임 중');
+    expect(chips).toHaveTextContent('2/4명');
+    expect(chips).toHaveTextContent('비공개');
+    expect(chips.textContent).not.toContain('👀');
+    expect(within(chips).getByLabelText('관전 1명').querySelector('svg')).not.toBeNull();
+  });
+
+  it('관전자가 없으면 관전 칩을 숨기고 대기 중이면 대기 중 칩을 보여준다', async () => {
+    setChannel({ room: { ...baseRoom, status: 'WAITING', spectators: [], members: [...members, { ...members[1], id: 3, nickname: '캐롤' }] } });
+    renderRoom();
+    await act(async () => {});
+
+    expect(screen.queryByLabelText(/^관전 \d+명$/)).not.toBeInTheDocument();
+    expect(screen.getByTestId('room-chips')).toHaveTextContent('대기 중');
   });
 
   it('참가자도 관전자도 아니면 방에서 나왔다고 알리고 로비로 간다', async () => {
@@ -294,7 +317,8 @@ describe('RoomPage 준비와 채팅', () => {
     expect(roomsApi.ready).toHaveBeenCalledWith('ABC234', true);
     expect(screen.getByText('잘 부탁해요')).toBeInTheDocument();
     expect(chat.args).toEqual(['ABC234', true, { meId: 3 }]);
-    expect(screen.getByText(/대기 중 · 2\/4명/)).toBeInTheDocument();
+    expect(screen.getByTestId('room-chips')).toHaveTextContent('대기 중');
+    expect(screen.getByTestId('room-chips')).toHaveTextContent('2/4명');
   });
 
   it('대기실에서 본 채팅은 읽음 처리해 게임이 시작돼도 안 읽은 배지가 없다', async () => {

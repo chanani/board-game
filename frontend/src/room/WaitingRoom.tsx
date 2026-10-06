@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { ChatMessage } from '../api/chat';
 import type { Room, RoomMember } from '../api/types';
+import { BinocularsIcon } from '../components/icons';
 import { Button, Panel } from '../components/ui';
 import { Felt } from '../components/Felt';
 import { useToast } from '../components/Toast';
@@ -54,7 +55,7 @@ export function WaitingRoom({ room, meId, receivedAt, now, onStart, onReady, onF
           </div>
         </Felt>
         {room.spectators.length > 0 ? (
-          <p className="w-fit rounded-full bg-black/35 px-3 py-1 text-sm text-cream-50">👀 관전 중: {room.spectators.map((spectator) => spectator.nickname).join(', ')}</p>
+          <p className="flex w-fit items-center gap-1.5 rounded-full bg-black/35 px-3 py-1 text-sm text-cream-50"><BinocularsIcon /> 관전 중: {room.spectators.map((spectator) => spectator.nickname).join(', ')}</p>
         ) : null}
       </section>
       <div className="flex flex-col gap-6">
@@ -118,7 +119,7 @@ function CenterAction({ room, meId, spectating, onStart, onReady, onSeat }: Cent
     const canSeat = room.status === 'WAITING' && room.members.length < room.maxPlayers;
     return (
       <>
-        <p className={NOTE}>👀 관전 중 · {room.status === 'WAITING' ? '자리가 나면 앉을 수 있어요' : '게임이 끝나면 자동으로 참가해요'}</p>
+        <p className={`${NOTE} flex items-center justify-center gap-1.5`}><BinocularsIcon /> 관전 중 · {room.status === 'WAITING' ? '자리가 나면 앉을 수 있어요' : '게임이 끝나면 자동으로 참가해요'}</p>
         {canSeat ? <Button onClick={onSeat}>자리에 앉기</Button> : null}
       </>
     );

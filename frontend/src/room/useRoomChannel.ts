@@ -3,7 +3,7 @@ import { ApiError, messageOf } from '../api/http';
 import { roomsApi } from '../api/rooms';
 import type { ApiErrorBody, GameAction, PaperSafariSessionView, PaperSafariView, Room } from '../api/types';
 import { useToast } from '../components/Toast';
-import { describeChanges } from '../lib/eventLog';
+import { describeChanges, type LogEntry } from '../lib/eventLog';
 import { useRealtime } from '../realtime/RealtimeContext';
 
 const CHAT_ERROR_CODES = new Set(['INVALID_CHAT_MESSAGE', 'CHAT_TOO_FAST']);
@@ -29,13 +29,14 @@ export function useRoomChannel(code: string, { poll = false }: Options = {}) {
   const [room, setRoom] = useState<Room | null>(null);
   const [receivedAt, setReceivedAt] = useState(0);
   const [view, setView] = useState<PaperSafariSessionView | null>(null);
-  const [log, setLog] = useState<string[]>([]);
+  const [log, setLog] = useState<LogEntry[]>([]);
   const [missing, setMissing] = useState(false);
   const [errorSeq, setErrorSeq] = useState(0);
   const [transition, setTransition] = useState<ViewTransition | null>(null);
   const viewRef = useRef<PaperSafariSessionView | null>(null);
   const syncPendingRef = useRef(false);
   const seqRef = useRef(0);
+  const logIdRef = useRef(0);
   const roomRef = useRef<Room | null>(null);
   const topicSeenRef = useRef(0);
   const namesRef = useRef(new Map<number, string>());
@@ -62,7 +63,9 @@ export function useRoomChannel(code: string, { poll = false }: Options = {}) {
       viewRef.current = next;
       setView(next);
       if (lines.length > 0) {
-        setLog((current) => [...lines.reverse(), ...current].slice(0, MAX_LOG));
+        const at = Date.now();
+        const entries = lines.map((line) => ({ ...line, id: ++logIdRef.current, at })).reverse();
+        setLog((current) => [...entries, ...current].slice(0, MAX_LOG));
       }
     },
     [nicknameOf],

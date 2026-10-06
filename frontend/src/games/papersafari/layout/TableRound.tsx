@@ -28,7 +28,7 @@ export function TableRound(props: TableProps) {
   };
   return (
     <div className="space-y-3">
-      <Hud instruction={instructionText} myTurn={myTurn} log={log} />
+      <Hud instruction={instructionText} myTurn={myTurn} log={log} nicknameOf={nicknameOf} />
       <Felt shape="oval" className="mx-auto flex min-h-[min(70vh,640px)] w-full max-w-6xl flex-col justify-between gap-2 px-[6%] pb-4 pt-6">
         {rows.top.length > 0 ? (
           <div className="flex items-start justify-center gap-12">{rows.top.map(opponentSeat)}</div>

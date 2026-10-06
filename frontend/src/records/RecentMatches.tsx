@@ -10,7 +10,7 @@ export function RecentMatches({ matches, ownerId }: { matches: RecentMatch[]; ow
     <ul className="divide-y divide-stone-100 text-sm">
       {matches.map((match) => (
         <li key={match.matchId} className="flex flex-wrap items-center justify-between gap-2 py-2">
-          <span className="w-24 text-stone-500">{dateTime(match.endedAt)}</span>
+          <span className="w-28 text-stone-500">{dateTime(match.endedAt)}</span>
           <span className="flex-1">
             {match.players
               .filter((player) => player.memberId !== ownerId)

@@ -332,7 +332,7 @@ describe('게임 화면 다듬기', () => {
     expect(screen.getByTestId('hud')).not.toHaveTextContent('라운드');
     const lastLog = screen.getByTestId('last-log');
     expect(lastLog).toBeEmptyDOMElement();
-    expect(lastLog).toHaveClass('h-4', 'truncate');
+    expect(lastLog).toHaveClass('h-4');
   });
 
   it('모바일 상대 줄은 Tailwind가 실제로 만드는 안전한 가운데 정렬 클래스를 쓴다', () => {

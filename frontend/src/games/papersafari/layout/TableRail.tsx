@@ -18,7 +18,7 @@ export function TableRail(props: TableProps) {
   const roomy = useMediaQuery(ROOMY_QUERY);
   return (
     <div className="space-y-3">
-      <Hud instruction={instructionText} myTurn={myTurn} log={log} compact />
+      <Hud instruction={instructionText} myTurn={myTurn} log={log} nicknameOf={nicknameOf} compact />
       <WoodRail className="flex justify-center-safe gap-[3px] overflow-x-auto px-1 py-2">
         {opponents.map((board) => (
           <div key={board.playerId} className="shrink-0">

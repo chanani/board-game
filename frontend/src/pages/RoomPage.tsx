@@ -4,6 +4,7 @@ import { messageOf } from '../api/http';
 import { roomsApi } from '../api/rooms';
 import type { Room } from '../api/types';
 import { useAuth } from '../auth/AuthContext';
+import { BinocularsIcon } from '../components/icons';
 import { Button, Panel } from '../components/ui';
 import { useToast } from '../components/Toast';
 import { lobbyPath } from '../games/catalog';
@@ -14,6 +15,14 @@ import { useRoomChat } from '../room/useRoomChat';
 import { useRoomChannel } from '../room/useRoomChannel';
 import { LeaveConfirmModal } from '../room/LeaveConfirmModal';
 import { WaitingRoom } from '../room/WaitingRoom';
+
+const CHIP_TONES = { plain: 'bg-black/35 text-cream-50', green: 'bg-[#1c5a37] text-cream-50' } as const;
+
+function RoomChip({ tone = 'plain', label, children }: { tone?: keyof typeof CHIP_TONES; label?: string; children: React.ReactNode }) {
+  return (
+    <span aria-label={label} className={`inline-flex items-center gap-1 rounded-full border border-cream-50/20 px-2.5 py-0.5 text-xs font-bold ${CHIP_TONES[tone]}`}>{children}</span>
+  );
+}
 
 function isPresent(room: Room, meId: number): boolean {
   return room.members.some((member) => member.id === meId) || room.spectators.some((spectator) => spectator.id === meId);
@@ -112,10 +121,13 @@ export function RoomPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-black text-cream-50 drop-shadow">{room.name}</h1>
-          <p className="text-sm text-cream-200">
-            {room.gameTypeName} · {playing ? '게임 중' : '대기 중'} · {room.members.length}/{room.maxPlayers}명
-            {spectatorCount > 0 ? <span> · 👀 관전 {spectatorCount}명</span> : null}
-          </p>
+          <div className="mt-1 flex flex-wrap items-center gap-1.5" data-testid="room-chips">
+            <RoomChip>🃏 {room.gameTypeName}</RoomChip>
+            <RoomChip tone={playing ? 'green' : 'plain'}>{playing ? '● 게임 중' : '대기 중'}</RoomChip>
+            <RoomChip>👥 {room.members.length}/{room.maxPlayers}명</RoomChip>
+            {spectatorCount > 0 ? <RoomChip label={`관전 ${spectatorCount}명`}><BinocularsIcon /> 관전 {spectatorCount}</RoomChip> : null}
+            {room.locked ? <RoomChip>🔒 비공개</RoomChip> : null}
+          </div>
         </div>
         <Button variant="danger" onClick={requestLeave}>나가기</Button>
       </div>

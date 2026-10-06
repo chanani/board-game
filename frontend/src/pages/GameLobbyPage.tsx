@@ -6,7 +6,7 @@ import { recordsApi } from '../api/records';
 import { roomsApi } from '../api/rooms';
 import type { GameStat, Ranking, RoomSummary } from '../api/types';
 import { useAuth } from '../auth/AuthContext';
-import { LockIcon, RefreshIcon } from '../components/icons';
+import { BinocularsIcon, LockIcon, RefreshIcon } from '../components/icons';
 import { Felt } from '../components/Felt';
 import { Button, Panel, TextInput } from '../components/ui';
 import { useToast } from '../components/Toast';
@@ -191,7 +191,7 @@ export function GameLobbyPage() {
                 <div>
                   <p className="font-medium">{room.name}</p>
                   <p className="text-xs text-stone-500">
-                    <span>게임 진행 중</span> · <span>{room.playerCount}명</span> · <span aria-label={`관전 ${room.spectatorCount}명`}>👀 {room.spectatorCount}</span>
+                    <span>게임 진행 중</span> · <span>{room.playerCount}명</span> · <span aria-label={`관전 ${room.spectatorCount}명`}><BinocularsIcon className="mr-0.5 inline h-3 w-3 align-[-1px]" />{room.spectatorCount}</span>
                   </p>
                 </div>
                 {room.locked ? (

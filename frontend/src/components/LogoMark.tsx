@@ -1,0 +1,17 @@
+/** 파비콘(public/favicon.svg)과 같은 그림: 나무 테두리, 초록 펠트, 기울어진 사자 카드. */
+export function LogoMark({ className = 'h-[26px] w-[26px]' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 64 64" className={`shrink-0 ${className}`} aria-hidden="true">
+      <circle cx="32" cy="32" r="30" fill="#8a5a32" />
+      <circle cx="32" cy="32" r="26" fill="#2f8a57" />
+      <g transform="rotate(-12 32 32)">
+        <rect x="17" y="12" width="30" height="40" rx="4" fill="#fbf3dc" stroke="#e8d9b0" strokeWidth="2" />
+        <circle cx="32" cy="32" r="11" fill="#c2611a" />
+        <circle cx="32" cy="32" r="7" fill="#f2b45a" />
+        <circle cx="29.5" cy="31" r="1" fill="#4a2c14" />
+        <circle cx="34.5" cy="31" r="1" fill="#4a2c14" />
+        <path d="M30 34.5q2 1.8 4 0" fill="none" stroke="#4a2c14" strokeWidth="1" strokeLinecap="round" />
+      </g>
+    </svg>
+  );
+}

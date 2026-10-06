@@ -130,7 +130,7 @@ describe('WaitingRoom', () => {
   it('관전자가 있으면 관전 중인 사람을 보여준다', () => {
     renderRoom({ room: { ...room, spectators: [{ id: 3, nickname: '캐롤' }, { id: 4, nickname: '데이브' }] } });
 
-    expect(screen.getByText('👀 관전 중: 캐롤, 데이브')).toBeInTheDocument();
+    expect(screen.getByText('관전 중: 캐롤, 데이브')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '자리에 앉기' })).not.toBeInTheDocument();
   });
 

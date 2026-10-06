@@ -6,6 +6,7 @@ import { messageOf } from '../api/http';
 import { useSound } from '../lib/sound';
 import { useRealtime } from '../realtime/RealtimeContext';
 import { ActiveRoomBar } from '../room/ActiveRoomBar';
+import { LogoMark } from './LogoMark';
 import { SpeakerIcon, SpeakerMutedIcon } from './icons';
 import { useToast } from './Toast';
 
@@ -64,8 +65,8 @@ export function Layout() {
       <header className="wood-rail">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-4 py-2.5">
           <div className="flex min-w-0 items-center gap-2 sm:gap-4">
-            <NavLink to="/" aria-label="보드게임 라운지" className="whitespace-nowrap text-lg font-black text-cream-50 drop-shadow">
-              🌿<span className="hidden sm:inline"> 보드게임 라운지</span>
+            <NavLink to="/" aria-label="보드게임 라운지" className="flex items-center gap-2 whitespace-nowrap text-lg font-black text-cream-50 drop-shadow">
+              <LogoMark /><span className="hidden sm:inline">보드게임 라운지</span>
             </NavLink>
             <nav className="flex gap-1">
               <NavLink to="/" end className={linkClass}>게임 목록</NavLink>

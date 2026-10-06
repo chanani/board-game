@@ -50,3 +50,7 @@ export const DoorIcon = ({ className }: IconProps) => (
 export const ChatIcon = ({ className }: IconProps) => (
   <Svg className={className}><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z" /><path d="M8.5 12h.01" /><path d="M12 12h.01" /><path d="M15.5 12h.01" /></Svg>
 );
+
+export const BinocularsIcon = ({ className }: IconProps) => (
+  <Svg className={className ?? 'h-3.5 w-3.5'}><circle cx="7" cy="15" r="4" /><circle cx="17" cy="15" r="4" /><path d="M7 11V6h4M17 11V6h-4M11 15h2" /></Svg>
+);

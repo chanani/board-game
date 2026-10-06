@@ -12,6 +12,7 @@ import { canForfeit, offlineSecondsNow } from '../../lib/format';
 import { estimateBoard } from './score';
 import { useSound } from '../../lib/sound';
 import type { ViewTransition } from '../../room/useRoomChannel';
+import type { LogEntry } from '../../lib/eventLog';
 import { GhostLayer } from './motion/GhostLayer';
 import { HiddenZonesContext, LiftedZonesContext } from './motion/ZoneAnchor';
 import { useCardMotion } from './motion/useCardMotion';
@@ -34,7 +35,7 @@ export type TableProps = {
   myTurn: boolean;
   estimate: { score: number; hidden: number } | null;
   instructionText: string;
-  log: string[];
+  log: LogEntry[];
   footer: ReactNode;
 };
 
@@ -42,7 +43,7 @@ type Props = {
   view: PaperSafariSessionView;
   room: Room;
   meId: number;
-  log: string[];
+  log: LogEntry[];
   receivedAt: number;
   now: number;
   errorSeq: number;

@@ -16,8 +16,13 @@ export function decimal(value: number | null): string {
   return value.toFixed(1);
 }
 
+/** 최근 경기 시각. 현지 시각 24시간제 `M/D HH:mm`, 읽을 수 없는 값은 빈 문자열. */
 export function dateTime(iso: string): string {
-  return new Date(iso).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+  return `${date.getMonth() + 1}/${date.getDate()} ${chatTime(iso)}`;
 }
 
 /** 채팅 말풍선 옆 시간. 현지 시각 24시간제 HH:mm, 읽을 수 없는 값은 빈 문자열. */
