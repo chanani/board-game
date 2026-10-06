@@ -377,3 +377,50 @@ describe('RoomPage 준비와 채팅', () => {
     expect(chat.markRead).toHaveBeenCalled();
   });
 });
+
+describe('RoomPage 상태 바', () => {
+  const waiting: Room = {
+    ...baseRoom, status: 'WAITING', spectators: [],
+    members: [members[0], { id: 3, nickname: '캐롤', host: false, connected: true, offlineSeconds: 0, ready: false }],
+  };
+  const playingView: PaperSafariSessionView = {
+    game: {
+      viewerId: 3, status: 'IN_ROUND', roundNumber: 1, winnerId: null, lastRoundResult: null,
+      round: { phase: 'DRAW', currentPlayerId: 1, deckSize: 30, discardTop: null, held: null, boards: [{ playerId: 1, slots: [] }, { playerId: 3, slots: [] }] },
+    },
+  };
+
+  it('대기 중에는 상태 바에 코드 복사 칩이 있고 진행 기록 버튼은 없다', async () => {
+    setChannel({ room: waiting });
+    renderRoom();
+    await act(async () => {});
+
+    const bar = screen.getByTestId('room-status-bar');
+    const code = within(bar).getByRole('button', { name: '방 코드 ABC234 복사' });
+    expect(code).toHaveTextContent('ABC234');
+    expect(code.querySelector('svg')).not.toBeNull();
+    expect(within(bar).queryByRole('button', { name: /진행 기록/ })).not.toBeInTheDocument();
+    expect(within(bar).getByRole('button', { name: '나가기' })).toBeInTheDocument();
+  });
+
+  it('게임 중에는 코드 칩 대신 진행 기록 버튼이 상태 바에 있다', async () => {
+    setChannel({ room: { ...waiting, status: 'PLAYING' }, view: playingView });
+    renderRoom();
+    await act(async () => {});
+
+    const bar = screen.getByTestId('room-status-bar');
+    expect(within(bar).getByRole('button', { name: /진행 기록/ })).toBeInTheDocument();
+    expect(within(bar).queryByRole('button', { name: /방 코드/ })).not.toBeInTheDocument();
+    expect(screen.getByTestId('turn-bar')).toBeInTheDocument();
+  });
+
+  it('상태 칩은 이모지 대신 아이콘을 쓴다', async () => {
+    setChannel({ room: { ...waiting, locked: true } });
+    renderRoom();
+    await act(async () => {});
+
+    const chips = screen.getByTestId('room-chips');
+    expect(chips.textContent).not.toMatch(/[\u{1F300}-\u{1FAFF}]/u);
+    expect(chips.querySelectorAll('svg').length).toBeGreaterThanOrEqual(3);
+  });
+});

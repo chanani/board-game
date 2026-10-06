@@ -3,6 +3,7 @@ import type { BoardView, GameAction, PaperSafariSessionView, Room, SlotView } fr
 import { GameOverPanel } from './GameOverPanel';
 import { TableRail } from './layout/TableRail';
 import { TableRound } from './layout/TableRound';
+import { TurnBar } from './layout/TurnBar';
 import { seatOrder } from './layout/seats';
 import type { Presence } from './layout/Seat';
 import { PC_QUERY, useMediaQuery } from '../../lib/useMediaQuery';
@@ -32,8 +33,6 @@ export type TableProps = {
   canUndo: boolean;
   myTurn: boolean;
   estimate: { score: number; hidden: number } | null;
-  instructionText: string;
-  log: LogEntry[];
 };
 
 type Props = {
@@ -168,14 +167,18 @@ export function PaperSafariTable({ view, room, meId, log, receivedAt, now, error
 
   const tableProps: TableProps = {
     view, meId, opponents, myBoard, nicknameOf, presenceOf, canClickSlot, clickSlot, drawable, send,
-    canDiscard, canUndo, myTurn, estimate, instructionText, log,
+    canDiscard, canUndo, myTurn, estimate,
   };
+  // 시간이 내 행동을 기다릴 때(내 차례, 또는 아직 안 뒤집은 시작 뒤집기)만 5초 경고음을 낸다.
+  const waitingOnMe = needsFlip || (myTurn && round.phase !== 'SETUP_FLIP' && round.phase !== 'ROUND_OVER');
   const Layout = wide ? TableRound : TableRail;
 
   return (
     <HiddenZonesContext.Provider value={hidden}>
       <LiftedZonesContext.Provider value={lifted}>
-      <div ref={containerRef} className="space-y-4">
+      <div ref={containerRef}>
+        <TurnBar instruction={instructionText} myTurn={myTurn} log={log} nicknameOf={nicknameOf} compact={!wide}
+          deadline={game.deadline} serverNow={game.serverNow} onWarn={waitingOnMe ? () => play('tick') : undefined} />
         <Layout {...tableProps} />
       </div>
       <GhostLayer ghosts={ghosts} />

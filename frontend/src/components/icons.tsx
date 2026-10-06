@@ -72,3 +72,51 @@ export const DrawIcon = ({ className }: IconProps) => (
     <path d="M8.5 12.5h7M8.5 15.5h7" stroke="#57534e" strokeWidth="1.6" strokeLinecap="round" />
   </svg>
 );
+
+export const CardsIcon = ({ className }: IconProps) => (
+  <Svg className={className ?? 'h-3.5 w-3.5'}><rect x="3" y="6" width="11" height="15" rx="2" /><path d="M8 3h11a2 2 0 0 1 2 2v13" /></Svg>
+);
+
+export const PeopleIcon = ({ className }: IconProps) => (
+  <Svg className={className ?? 'h-3.5 w-3.5'}><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20a6.5 6.5 0 0 1 13 0" /><path d="M16 4.5a3.5 3.5 0 0 1 0 7" /><path d="M18 14a6.5 6.5 0 0 1 3.5 6" /></Svg>
+);
+
+export const CopyIcon = ({ className }: IconProps) => (
+  <Svg className={className ?? 'h-3.5 w-3.5'}><rect x="8" y="8" width="12" height="12" rx="2" /><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3" /></Svg>
+);
+
+export const ScrollIcon = ({ className }: IconProps) => (
+  <Svg className={className ?? 'h-4 w-4'}><path d="M6 4h11a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H8" /><path d="M6 4a2 2 0 0 0-2 2v2h4V6a2 2 0 0 0-2-2z" /><path d="M8 20a2 2 0 0 1-2-2V8" /><path d="M10 9h6M10 13h6M10 17h3" /></Svg>
+);
+
+export const LogoutIcon = ({ className }: IconProps) => (
+  <Svg className={className ?? 'h-4 w-4'}><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3" /><path d="M10 16l-4-4 4-4" /><path d="M6 12h10" /></Svg>
+);
+
+export const GridIcon = ({ className }: IconProps) => (
+  <Svg className={className ?? 'h-4 w-4'}><rect x="4" y="4" width="7" height="7" rx="1.5" /><rect x="13" y="4" width="7" height="7" rx="1.5" /><rect x="4" y="13" width="7" height="7" rx="1.5" /><rect x="13" y="13" width="7" height="7" rx="1.5" /></Svg>
+);
+
+export const TrophyIcon = ({ className }: IconProps) => (
+  <Svg className={className ?? 'h-4 w-4'}><path d="M8 4h8v5a4 4 0 0 1-8 0V4z" /><path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4" /><path d="M12 13v4M8 20h8M10 17h4" /></Svg>
+);
+
+export const RecycleIcon = ({ className }: IconProps) => (
+  <Svg className={className}><path d="M4 12a8 8 0 0 1 13.5-5.8L20 8.5" /><path d="M20 4v4.5h-4.5" /><path d="M20 12a8 8 0 0 1-13.5 5.8L4 15.5" /><path d="M4 20v-4.5h4.5" /></Svg>
+);
+
+export const SwapIcon = ({ className }: IconProps) => (
+  <Svg className={className}><path d="M4 8h14l-4-4" /><path d="M20 16H6l4 4" /></Svg>
+);
+
+export const PlayIcon = ({ className }: IconProps) => (
+  <Svg className={className}><path d="M7 4.5v15l12-7.5z" /></Svg>
+);
+
+export const ClockIcon = ({ className }: IconProps) => (
+  <Svg className={className}><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" /></Svg>
+);
+
+export const DotIcon = ({ className }: IconProps) => (
+  <Svg className={className}><circle cx="12" cy="12" r="3" fill="currentColor" /></Svg>
+);

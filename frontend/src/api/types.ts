@@ -62,6 +62,14 @@ export type PaperSafariView = {
   round: RoundView;
   lastRoundResult: { players: PlayerResultView[] } | null;
   winnerId: number | null;
+  /** 행동을 기다리는 단계의 마감 시각(epoch ms). 기다리지 않으면 null. */
+  deadline?: number | null;
+  /** 서버가 이 화면을 만든 시각(epoch ms). deadline과 빼서 시계 차이를 없앤다. */
+  serverNow?: number;
+  /** 마지막 시간 초과 자동 행동의 대상(시작 뒤집기면 여러 명). */
+  lastAutoActorIds?: number[];
+  /** 시간 초과 자동 행동이 일어날 때만 1씩 는다. */
+  autoActSeq?: number;
 };
 export type PaperSafariSessionView = { game: PaperSafariView };
 

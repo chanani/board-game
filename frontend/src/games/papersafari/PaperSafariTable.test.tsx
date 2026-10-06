@@ -299,12 +299,51 @@ describe('게임 화면 다듬기', () => {
     expect(screen.getByTestId('instruction')).toHaveTextContent('덱 또는 버린 카드 더미에서 카드를 가져오세요.');
   });
 
-  it.each([true, false])('안내 문구 영역은 두 줄 높이로 고정된다 (PC 배치 %s)', (wide) => {
+  it.each([true, false])('차례 안내 바는 한 줄 높이로 고정되고 문구는 말줄임한다 (PC 배치 %s)', (wide) => {
     setMediaMatches(wide);
     render(<PaperSafariTable {...baseProps(build({ phase: 'DRAW', current: OPPONENT }))} />);
-    const box = screen.getByTestId('instruction');
-    expect(box).toHaveClass('min-h-[3.25rem]');
-    expect(box.querySelector('.line-clamp-2')).not.toBeNull();
+    const bar = screen.getByTestId('turn-bar');
+    expect(bar).toHaveClass('flex-nowrap');
+    expect(bar.className).toMatch(/(^|\s)h-\d/);
+    expect(screen.getByTestId('instruction').querySelector('.truncate')).not.toBeNull();
+  });
+
+  it('모바일 차례 안내 바는 작은 글씨(text-xs)와 줄인 패딩으로 한 줄에 둔다', () => {
+    setMediaMatches(false);
+    render(<PaperSafariTable {...baseProps(build({ phase: 'DRAW', current: OPPONENT }))} />);
+    const bar = screen.getByTestId('turn-bar');
+    expect(bar).toHaveClass('text-xs', 'px-2', 'whitespace-nowrap');
+    expect(bar).not.toHaveClass('text-sm');
+  });
+
+  it('PC 차례 안내 바는 테이블과 16px 넘게(나무 테두리 13px 포함 mb-8) 띄우고, 덱 묶음과 내 판 사이는 32px 이상 띄운다', () => {
+    setMediaMatches(true);
+    render(<PaperSafariTable {...baseProps(build({ phase: 'DRAW', current: ME }))} />);
+    expect(screen.getByTestId('turn-bar')).toHaveClass('mb-8');
+    expect(screen.getByTestId('my-row')).toHaveClass('mt-8');
+  });
+
+  it('차례 안내 바는 마감 5초 전부터 카운트다운을 보이고 내 차례면 경고음을 한 번 낸다', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(1_000_000);
+    const play = vi.fn();
+    const view = build({ phase: 'DRAW', current: ME });
+    const timed = { game: { ...view.game, deadline: 1_000_000 + 7000, serverNow: 1_000_000 } };
+    render(
+      <SoundContext.Provider value={{ play, muted: false, toggleMuted: () => undefined }}>
+        <PaperSafariTable {...baseProps(timed)} />
+      </SoundContext.Provider>,
+    );
+    try {
+      const bar = screen.getByTestId('turn-bar');
+      expect(within(bar).queryByTestId('countdown')).not.toBeInTheDocument();
+      act(() => { vi.advanceTimersByTime(2500); });
+      expect(within(bar).getByTestId('countdown')).toHaveTextContent('5');
+      act(() => { vi.advanceTimersByTime(2000); });
+      expect(play.mock.calls.filter(([name]) => name === 'tick')).toHaveLength(1);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('모바일 배치에서는 내 판 옆 세로 칸에 버리기와 예상 점수를 둔다', () => {
@@ -325,14 +364,13 @@ describe('게임 화면 다듬기', () => {
     expect(side.querySelector('strong')).toHaveClass('text-lg', '@max-[110px]:text-base');
   });
 
-  it('모바일 배치의 상단 안내는 한 줄 격자에 고정되고, 기록이 없어도 마지막 기록 줄 높이를 잡아 둔다', () => {
+  it('모바일 배치의 차례 안내 바는 기록이 없어도 마지막 기록 칸을 말줄임 칸으로 잡아 둔다', () => {
     setMediaMatches(false);
     render(<PaperSafariTable {...baseProps(build({ phase: 'DRAW', current: ME }))} />);
-    expect(screen.getByTestId('hud')).toHaveClass('grid', 'grid-cols-[minmax(0,1fr)_auto]');
-    expect(screen.getByTestId('hud')).not.toHaveTextContent('라운드');
+    expect(screen.getByTestId('turn-bar')).not.toHaveTextContent('라운드');
     const lastLog = screen.getByTestId('last-log');
     expect(lastLog).toBeEmptyDOMElement();
-    expect(lastLog).toHaveClass('h-4');
+    expect(lastLog).toHaveClass('min-w-0', 'truncate');
   });
 
   it('모바일 상대 줄은 Tailwind가 실제로 만드는 안전한 가운데 정렬 클래스를 쓴다', () => {

@@ -79,4 +79,20 @@ describe('describeChanges', () => {
     const fresh = view({ roundNumber: 1, round: { phase: 'SETUP_FLIP' } });
     expect(describeChanges(over, fresh, nick).map((entry) => entry.text)).toEqual(['새 게임을 시작해요']);
   });
+
+  it('시간 초과 자동 행동은 autoActSeq가 늘 때 한 번만 시간 초과로 기록한다', () => {
+    const before = view({ round: { phase: 'PLACE', currentPlayerId: 2, held: { playerId: 2, source: 'DECK', card: null } }, autoActSeq: 0, lastAutoActorIds: [] });
+    const after = view({ round: { phase: 'DRAW', currentPlayerId: 1 }, autoActSeq: 1, lastAutoActorIds: [2] });
+    const timeouts = describeChanges(before, after, nick).filter((entry) => entry.kind === 'timeout');
+    expect(timeouts).toEqual([{ kind: 'timeout', actorId: 2, text: '시간이 지나 밥님 대신 카드를 내려놓았어요' }]);
+    const again = view({ round: { phase: 'DRAW', currentPlayerId: 1 }, autoActSeq: 1, lastAutoActorIds: [2] });
+    expect(describeChanges(after, again, nick).filter((entry) => entry.kind === 'timeout')).toEqual([]);
+  });
+
+  it('시작 뒤집기 시간 초과는 안 뒤집은 사람마다 기록한다', () => {
+    const before = view({ round: { phase: 'SETUP_FLIP' }, autoActSeq: 2 });
+    const after = view({ round: { phase: 'DRAW' }, autoActSeq: 3, lastAutoActorIds: [1, 2] });
+    expect(describeChanges(before, after, nick).filter((entry) => entry.kind === 'timeout').map((entry) => entry.text))
+      .toEqual(['시간이 지나 앨리스님 대신 카드를 뒤집었어요', '시간이 지나 밥님 대신 카드를 뒤집었어요']);
+  });
 });

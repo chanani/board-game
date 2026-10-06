@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
-export type SoundName = 'draw' | 'place' | 'flip' | 'myTurn' | 'roundWin' | 'roundLose' | 'click';
+export type SoundName = 'draw' | 'place' | 'flip' | 'myTurn' | 'roundWin' | 'roundLose' | 'click' | 'tick';
 export type SoundApi = { play: (name: SoundName) => void; muted: boolean; toggleMuted: () => void };
 
 const STORAGE_KEY = 'bg.muted';
@@ -68,6 +68,7 @@ const RECIPES: Record<SoundName, (ctx: AudioContext) => void> = {
   roundWin: (ctx) => { tone(ctx, 523, 0, 0.15); tone(ctx, 659, 0.12, 0.15); tone(ctx, 784, 0.24, 0.3); },
   roundLose: (ctx) => { tone(ctx, 392, 0, 0.2, 'triangle'); tone(ctx, 330, 0.18, 0.3, 'triangle'); },
   click: (ctx) => tone(ctx, 1200, 0, 0.03, 'square', 0.04),
+  tick: (ctx) => { tone(ctx, 660, 0, 0.09, 'square', 0.06); tone(ctx, 660, 0.16, 0.09, 'square', 0.06); },
 };
 
 function resumeIfSuspended(ctx: AudioContext): void {

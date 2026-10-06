@@ -4,11 +4,12 @@ import { messageOf } from '../api/http';
 import { roomsApi } from '../api/rooms';
 import type { Room } from '../api/types';
 import { useAuth } from '../auth/AuthContext';
-import { BinocularsIcon } from '../components/icons';
-import { Button, Panel } from '../components/ui';
+import { RoomStatusBar } from '../components/RoomStatusBar';
+import { Panel } from '../components/ui';
 import { useToast } from '../components/Toast';
 import { lobbyPath } from '../games/catalog';
 import { PaperSafariTable } from '../games/papersafari/PaperSafariTable';
+import { LogPopover } from '../games/papersafari/layout/Hud';
 import { ChatLauncher } from '../room/ChatLauncher';
 import { useGameOverDismissal } from '../room/useGameOverDismissal';
 import { useRoomChat } from '../room/useRoomChat';
@@ -16,15 +17,6 @@ import { useRoomChannel } from '../room/useRoomChannel';
 import { LeaveConfirmModal } from '../room/LeaveConfirmModal';
 import { WaitingRoom } from '../room/WaitingRoom';
 import { RoomBackdrop, RoomThemeProvider } from '../room/roomTheme';
-
-// 게임 중 칩은 테마의 상태 표시 색(원목은 초록)을 쓴다.
-const CHIP_TONES = { plain: 'bg-black/35 text-cream-50', green: 'bg-(--plate-bg) text-(--plate-text)' } as const;
-
-function RoomChip({ tone = 'plain', label, children }: { tone?: keyof typeof CHIP_TONES; label?: string; children: React.ReactNode }) {
-  return (
-    <span aria-label={label} className={`inline-flex items-center gap-1 rounded-full border border-cream-50/20 px-2.5 py-0.5 text-xs font-bold ${CHIP_TONES[tone]}`}>{children}</span>
-  );
-}
 
 function isPresent(room: Room, meId: number): boolean {
   return room.members.some((member) => member.id === meId) || room.spectators.some((spectator) => spectator.id === meId);
@@ -91,7 +83,6 @@ export function RoomPage() {
   const wasPlayer = view !== null && view.game.round.boards.some((board) => board.playerId === meId);
   // 관전자(게임이 끝나 자동으로 앉은 사람 포함)도 누가 이겼는지 볼 수 있게 결과 창을 띄운다.
   const showGameOver = !playing && view?.game.status === 'GAME_OVER' && (wasPlayer || spectating || watched) && !gameOver.dismissed;
-  const spectatorCount = room.spectators.length;
   const showGame = view !== null && (playing || showGameOver);
 
   const run = async (action: () => Promise<unknown>) => {
@@ -122,19 +113,8 @@ export function RoomPage() {
     <RoomThemeProvider value={room.theme}>
     <div data-theme={room.theme} className={`space-y-4 ${playing ? 'pb-20' : ''}`}>
       <RoomBackdrop theme={room.theme} />
-      <div data-testid="room-status-bar" className="flex items-center justify-between gap-3 rounded-2xl border border-(--status-border) bg-(--status-bg) px-3 py-2 backdrop-blur-[2px]">
-        <div className="min-w-0">
-          <h1 className="text-xl font-black text-cream-50 drop-shadow">{room.name}</h1>
-          <div className="mt-1 flex flex-wrap items-center gap-1.5" data-testid="room-chips">
-            <RoomChip>🃏 {room.gameTypeName}</RoomChip>
-            <RoomChip tone={playing ? 'green' : 'plain'}>{playing ? '● 게임 중' : '대기 중'}</RoomChip>
-            <RoomChip>👥 {room.members.length}/{room.maxPlayers}명</RoomChip>
-            {spectatorCount > 0 ? <RoomChip label={`관전 ${spectatorCount}명`}><BinocularsIcon /> 관전 {spectatorCount}</RoomChip> : null}
-            {room.locked ? <RoomChip>🔒 비공개</RoomChip> : null}
-          </div>
-        </div>
-        <Button variant="danger" className="shrink-0" onClick={requestLeave}>나가기</Button>
-      </div>
+      <RoomStatusBar room={room} playing={playing} onLeave={requestLeave}
+        log={showGame ? <LogPopover log={log} nicknameOf={nicknameOf} /> : null} />
       {showGame && view ? (
         <PaperSafariTable
           view={view}

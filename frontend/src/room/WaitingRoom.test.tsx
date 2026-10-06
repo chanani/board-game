@@ -90,7 +90,30 @@ describe('WaitingRoom', () => {
     await userEvent.click(screen.getByRole('button', { name: '게임 시작' }));
 
     expect(onStart).toHaveBeenCalledTimes(1);
-    expect(screen.getByText('코드 ABC234 📋')).toBeInTheDocument();
+  });
+
+  it('테이블 위에는 자리만 두고 시작·준비 버튼과 준비 현황은 테이블 아래 행동 바에 둔다', () => {
+    const { container } = renderRoom();
+    const felt = container.querySelector('.felt') as HTMLElement;
+    const bar = screen.getByTestId('waiting-action-bar');
+
+    expect(within(felt).queryByRole('button', { name: '게임 시작' })).not.toBeInTheDocument();
+    expect(within(bar).getByRole('button', { name: '게임 시작' })).toBeInTheDocument();
+    expect(bar).toHaveTextContent('준비 0/1');
+    expect(felt.contains(bar)).toBe(false);
+    expect(within(felt).queryByText(/코드/)).not.toBeInTheDocument();
+    // 행동 바는 펠트 다음(아래)에 온다.
+    expect(felt.compareDocumentPosition(bar) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('참가자와 관전자의 주 버튼도 행동 바에 있다', () => {
+    const view = renderRoom({ meId: 2 });
+    expect(within(screen.getByTestId('waiting-action-bar')).getByRole('button', { name: '준비하기' })).toBeInTheDocument();
+    view.unmount();
+    renderRoom({ room: { ...room, spectators: [{ id: 3, nickname: '캐롤' }] }, meId: 3 });
+    const bar = screen.getByTestId('waiting-action-bar');
+    expect(within(bar).getByRole('button', { name: '자리에 앉기' })).toBeInTheDocument();
+    expect(bar).toHaveTextContent('관전 중');
   });
 
   it('준비하지 않은 참가자가 있으면 방장의 시작 버튼이 꺼지고 이유를 알려 준다', () => {

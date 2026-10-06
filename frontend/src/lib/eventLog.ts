@@ -2,7 +2,7 @@ import type { PaperSafariView } from '../api/types';
 
 type Nickname = (memberId: number) => string;
 
-export type LogKind = 'draw-deck' | 'draw-discard' | 'place' | 'undo' | 'peek' | 'start' | 'result' | 'other';
+export type LogKind = 'draw-deck' | 'draw-discard' | 'place' | 'undo' | 'peek' | 'start' | 'result' | 'timeout' | 'other';
 export type LogDraft = { kind: LogKind; actorId?: number; text: string };
 export type LogEntry = LogDraft & { id: number; at: number };
 
@@ -49,6 +49,22 @@ function gameResult(prev: PaperSafariView, next: PaperSafariView, nicknameOf: Ni
   return [{ kind: 'result', actorId: next.winnerId, text: `${nicknameOf(next.winnerId)}님이 게임에서 승리했어요! 🎉` }];
 }
 
+const AUTO_ACTIONS: Record<string, string> = {
+  SETUP_FLIP: '카드를 뒤집었어요',
+  DRAW: '카드를 가져와 내려놓았어요',
+  PLACE: '카드를 내려놓았어요',
+  PEEK: '카드를 엿보았어요',
+};
+
+/** 서버가 시간 초과로 대신 행동하면 autoActSeq가 는다. 늘어난 그 한 번만 기록한다. */
+function timeouts(prev: PaperSafariView, next: PaperSafariView, nicknameOf: Nickname): LogDraft[] {
+  if ((next.autoActSeq ?? 0) <= (prev.autoActSeq ?? 0)) {
+    return [];
+  }
+  const action = AUTO_ACTIONS[prev.round.phase] ?? '행동했어요';
+  return (next.lastAutoActorIds ?? []).map((actorId) => ({ kind: 'timeout', actorId, text: `시간이 지나 ${nicknameOf(actorId)}님 대신 ${action}` }));
+}
+
 export function describeChanges(prev: PaperSafariView | null, next: PaperSafariView, nicknameOf: Nickname): LogDraft[] {
   if (!prev) {
     return [];
@@ -59,6 +75,8 @@ export function describeChanges(prev: PaperSafariView | null, next: PaperSafariV
   return [
     ...heldChanges(prev, next, nicknameOf),
     ...phaseChanges(prev, next, nicknameOf),
+    // 같은 화면 변화의 기록 중 가장 마지막(최신)에 두어 차례 안내 바의 마지막 기록 줄에 보이게 한다.
+    ...timeouts(prev, next, nicknameOf),
     ...gameResult(prev, next, nicknameOf),
   ];
 }

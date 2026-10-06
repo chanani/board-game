@@ -60,6 +60,26 @@ describe('Layout 상단바', () => {
   });
 });
 
+describe('Layout 모바일 상단바', () => {
+  it('좁은 화면에서는 로고 그림, 아이콘 메뉴와 짧은 글자, 아이콘 로그아웃만 남겨 넘치지 않는다', () => {
+    render(ui());
+
+    const home = screen.getByRole('link', { name: '보드게임 라운지' });
+    expect(home.querySelector('span.hidden.sm\\:inline')).toHaveTextContent('보드게임 라운지');
+    for (const [name, short] of [['게임 목록', '목록'], ['내 전적', '전적']]) {
+      const link = screen.getByRole('link', { name });
+      expect(link.querySelector('svg')).not.toBeNull();
+      expect(link.querySelector('.sm\\:hidden')).toHaveTextContent(short);
+      expect(link.querySelector('.hidden.sm\\:inline')).toHaveTextContent(name);
+    }
+    const logout = screen.getByRole('button', { name: '로그아웃' });
+    expect(logout.querySelector('svg')).not.toBeNull();
+    expect(logout.querySelector('.hidden.sm\\:inline')).toHaveTextContent('로그아웃');
+    expect(screen.getByText('앨리스')).toHaveClass('truncate', 'min-w-0');
+    expect(screen.getByRole('banner').firstElementChild).toHaveClass('min-w-0');
+  });
+});
+
 describe('Layout 테마 범위', () => {
   it('방 밖 화면에는 방 테마가 없다(원목 배경 그대로)', () => {
     const { container } = render(ui());

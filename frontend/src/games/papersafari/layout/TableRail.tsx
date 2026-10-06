@@ -2,7 +2,6 @@ import { Felt } from '../../../components/Felt';
 import { useMediaQuery } from '../../../lib/useMediaQuery';
 import { WoodRail } from '../../../components/WoodRail';
 import { CenterPiles } from './CenterPiles';
-import { Hud } from './Hud';
 import { MySide } from './MySide';
 import { OpponentSeat } from './OpponentSeat';
 import { HandAnchor, Seat } from './Seat';
@@ -13,12 +12,11 @@ import type { TableProps } from '../PaperSafariTable';
 const ROOMY_QUERY = '(min-width: 440px)';
 
 export function TableRail(props: TableProps) {
-  const { view, meId, opponents, myBoard, nicknameOf, presenceOf, canClickSlot, clickSlot, drawable, send, canDiscard, canUndo, estimate, myTurn, instructionText, log } = props;
+  const { view, meId, opponents, myBoard, nicknameOf, presenceOf, canClickSlot, clickSlot, drawable, send, canDiscard, canUndo, estimate, myTurn } = props;
   const round = view.game.round;
   const roomy = useMediaQuery(ROOMY_QUERY);
   return (
     <div className="space-y-3">
-      <Hud instruction={instructionText} myTurn={myTurn} log={log} nicknameOf={nicknameOf} compact />
       <WoodRail className="mb-5 flex scroll-thin justify-center-safe gap-[3px] overflow-x-auto px-1 py-2">
         {opponents.map((board) => (
           <div key={board.playerId} className="shrink-0">
