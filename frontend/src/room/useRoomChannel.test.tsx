@@ -262,4 +262,26 @@ describe('useRoomChannel', () => {
 
     expect(result.current.missing).toBe(true);
   });
+
+  it('게임 중 다른 참가자가 빠진 방 방송이 오면 알림과 진행 기록을 남긴다', () => {
+    const member = (id: number, nickname: string) => ({ id, nickname, host: id === 1, connected: true, offlineSeconds: 0, ready: false });
+    const withMembers = (ids: number[]): Room => ({
+      ...room('방', 'PLAYING'),
+      members: [member(1, '앨리스'), member(2, '밥'), member(3, '캐롤')].filter((m) => ids.includes(m.id)),
+    });
+    toast.show.mockClear();
+    vi.spyOn(roomsApi, 'get').mockReturnValue(new Promise(() => {}));
+    const { result } = renderHook(() => useRoomChannel('ABCDEF', { meId: 1 }));
+
+    act(() => state.handlers.get('/topic/rooms/ABCDEF')?.(withMembers([1, 2, 3])));
+    act(() => state.handlers.get('/topic/rooms/ABCDEF')?.(withMembers([1, 3])));
+
+    expect(toast.show).toHaveBeenCalledWith('밥님이 기권하고 나갔어요', 'info');
+    expect(result.current.log[0]).toMatchObject({ kind: 'leave', text: '밥님이 기권하고 나갔어요', actorId: 2 });
+
+    toast.show.mockClear();
+    act(() => state.handlers.get('/topic/rooms/ABCDEF')?.(withMembers([3])));
+
+    expect(toast.show).not.toHaveBeenCalled();
+  });
 });

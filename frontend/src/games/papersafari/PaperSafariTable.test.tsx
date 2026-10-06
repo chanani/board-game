@@ -50,15 +50,15 @@ function withOpponents(count: number): PaperSafariSessionView {
 
 const nicknameOf = (memberId: number) => room.members.find((member) => member.id === memberId)?.nickname ?? '떠난 플레이어';
 
-function baseProps(view: PaperSafariSessionView, send: () => void = vi.fn(), targetRoom: Room = room, onForfeit: (id: number) => void = vi.fn(), now = 0, errorSeq = 0) {
+function baseProps(view: PaperSafariSessionView, send: () => void = vi.fn(), targetRoom: Room = room, now = 0, errorSeq = 0) {
   return {
     view, room: targetRoom, meId: ME, log: [], send, nicknameOf,
-    receivedAt: 0, now, errorSeq, onForfeit, onCloseGameOver: vi.fn(), onReadyNext: vi.fn(),
+    receivedAt: 0, now, errorSeq, onCloseGameOver: vi.fn(), onReadyNext: vi.fn(),
   };
 }
 
-function tableFor(view: PaperSafariSessionView, send: () => void, targetRoom: Room = room, onForfeit: (id: number) => void = vi.fn(), now = 0, errorSeq = 0) {
-  return <PaperSafariTable {...baseProps(view, send, targetRoom, onForfeit, now, errorSeq)} />;
+function tableFor(view: PaperSafariSessionView, send: () => void, targetRoom: Room = room, now = 0, errorSeq = 0) {
+  return <PaperSafariTable {...baseProps(view, send, targetRoom, now, errorSeq)} />;
 }
 
 function renderTable(setup: Setup) {
@@ -141,31 +141,17 @@ describe('PaperSafariTable 단계별 행동 제한', () => {
   });
 });
 
-describe('PaperSafariTable 접속 상태와 내보내기', () => {
+describe('PaperSafariTable 접속 상태', () => {
   const offlineRoom = (seconds: number): Room => ({
     ...room,
     members: [room.members[0], { ...room.members[1], connected: false, offlineSeconds: seconds }],
   });
 
-  it('60초 이상 끊긴 상대는 내보내기 버튼이 보이고 누르면 onForfeit을 부른다', async () => {
-    const onForfeit = vi.fn();
-    render(tableFor(build({ phase: 'DRAW', current: ME }), vi.fn(), offlineRoom(60), onForfeit));
+  it('60초 넘게 끊긴 상대가 있어도 게임 화면에는 내보내기 버튼이 없다', () => {
+    render(tableFor(build({ phase: 'DRAW', current: ME }), vi.fn(), offlineRoom(70)));
 
-    await userEvent.click(screen.getByRole('button', { name: '내보내기' }));
-
-    expect(onForfeit).toHaveBeenCalledWith(OPPONENT);
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-  });
-
-  it('내보내기 버튼은 확대 덮개 밖에 있고, 확대 창에는 내보내기가 없다', async () => {
-    render(tableFor(build({ phase: 'DRAW', current: ME }), vi.fn(), offlineRoom(60)));
-    const zoom = screen.getByRole('button', { name: '밥님의 판 크게 보기' });
-
-    expect(zoom).not.toContainElement(screen.getByRole('button', { name: '내보내기' }));
-    expect(zoom.parentElement).not.toContainElement(screen.getByRole('button', { name: '내보내기' }));
-    await userEvent.click(zoom);
-
-    expect(within(screen.getByRole('dialog')).queryByRole('button', { name: '내보내기' })).not.toBeInTheDocument();
+    expect(screen.getByText('연결 끊김 70초')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /내보내기/ })).not.toBeInTheDocument();
   });
 
   it('60초 미만이면 끊긴 시간만 보이고 버튼은 없다', () => {
@@ -203,7 +189,7 @@ describe('PaperSafariTable 중복 행동 방지', () => {
     const { rerender } = render(tableFor(view, send));
     await userEvent.click(screen.getByRole('button', { name: '덱에서 뽑기' }));
 
-    rerender(tableFor(view, send, room, vi.fn(), 0, 1));
+    rerender(tableFor(view, send, room, 0, 1));
     await userEvent.click(screen.getByRole('button', { name: '덱에서 뽑기' }));
 
     expect(send).toHaveBeenCalledTimes(2);

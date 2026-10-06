@@ -1,6 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import type { BoardView } from '../../api/types';
 import { setMediaMatches } from '../../test/media';
 import { PlayerBoard } from './PlayerBoard';
@@ -29,14 +28,14 @@ describe('PlayerBoard', () => {
     expect(screen.queryByLabelText(/토큰/)).not.toBeInTheDocument();
   });
 
-  it('모바일에서 연결 끊긴 사람의 내보내기는 이름표 옆 작은 X 버튼이다', async () => {
-    setMediaMatches(false);
-    const onForfeit = vi.fn();
-    render(<PlayerBoard board={board} nickname="밥" active={false} connected={false} offlineSeconds={70} onForfeit={onForfeit} />);
+  it('연결이 끊겨도 게임 화면에는 내보내기 버튼이 없다(서버가 자동 기권 처리한다)', () => {
+    for (const pc of [true, false]) {
+      setMediaMatches(pc);
+      const { unmount } = render(<PlayerBoard board={board} nickname="밥" active={false} connected={false} offlineSeconds={70} />);
 
-    await userEvent.click(screen.getByRole('button', { name: '밥님 내보내기' }));
-
-    expect(onForfeit).toHaveBeenCalled();
-    expect(screen.queryByRole('button', { name: '내보내기' })).not.toBeInTheDocument();
+      expect(screen.getByText('연결 끊김 70초')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /내보내기/ })).not.toBeInTheDocument();
+      unmount();
+    }
   });
 });

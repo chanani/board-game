@@ -3,7 +3,8 @@ import { ApiError, messageOf } from '../api/http';
 import { roomsApi } from '../api/rooms';
 import type { ApiErrorBody, GameAction, PaperSafariSessionView, PaperSafariView, Room } from '../api/types';
 import { useToast } from '../components/Toast';
-import { describeChanges, type LogEntry } from '../lib/eventLog';
+import { departures } from '../lib/departures';
+import { describeChanges, type LogDraft, type LogEntry } from '../lib/eventLog';
 import { useRealtime } from '../realtime/RealtimeContext';
 
 const CHAT_ERROR_CODES = new Set(['INVALID_CHAT_MESSAGE', 'CHAT_TOO_FAST']);
@@ -13,7 +14,7 @@ const SYNC_RETRY_MS = 1000;
 const SYNC_MAX_TRIES = 5;
 const POLL_MS = 5000;
 
-type Options = { poll?: boolean };
+type Options = { poll?: boolean; meId?: number };
 
 const LEFT_MESSAGE = '방에서 나왔어요.';
 
@@ -23,7 +24,7 @@ const isRoomGone = (error: unknown) =>
 
 export type ViewTransition = { seq: number; from: PaperSafariView | null; to: PaperSafariView; animate: boolean };
 
-export function useRoomChannel(code: string, { poll = false }: Options = {}) {
+export function useRoomChannel(code: string, { poll = false, meId = 0 }: Options = {}) {
   const { realtime, connected } = useRealtime();
   const toast = useToast();
   const [room, setRoom] = useState<Room | null>(null);
@@ -41,12 +42,38 @@ export function useRoomChannel(code: string, { poll = false }: Options = {}) {
   const topicSeenRef = useRef(0);
   const namesRef = useRef(new Map<number, string>());
 
-  const acceptRoom = useCallback((next: Room) => {
-    roomRef.current = next;
-    next.members.forEach((member) => namesRef.current.set(member.id, member.nickname));
-    setRoom(next);
-    setReceivedAt(Date.now());
+  const appendLog = useCallback((lines: LogDraft[]) => {
+    if (lines.length === 0) {
+      return;
+    }
+    const at = Date.now();
+    const entries = lines.map((line) => ({ ...line, id: ++logIdRef.current, at })).reverse();
+    setLog((current) => [...entries, ...current].slice(0, MAX_LOG));
   }, []);
+
+  const announceDepartures = useCallback(
+    (prev: Room | null, next: Room) => {
+      if (!prev || prev.code !== next.code || meId === 0) {
+        return;
+      }
+      const left = departures(prev, next, meId);
+      left.forEach(({ text }) => toast.show(text, 'info'));
+      appendLog(left.map(({ memberId, text }) => ({ kind: 'leave', actorId: memberId, text })));
+    },
+    [meId, toast, appendLog],
+  );
+
+  const acceptRoom = useCallback(
+    (next: Room) => {
+      const prev = roomRef.current;
+      roomRef.current = next;
+      next.members.forEach((member) => namesRef.current.set(member.id, member.nickname));
+      setRoom(next);
+      setReceivedAt(Date.now());
+      announceDepartures(prev, next);
+    },
+    [announceDepartures],
+  );
 
   const nicknameOf = useCallback(
     (memberId: number) => namesRef.current.get(memberId) ?? '떠난 플레이어',
@@ -62,13 +89,9 @@ export function useRoomChannel(code: string, { poll = false }: Options = {}) {
       setTransition({ seq: seqRef.current, from: viewRef.current?.game ?? null, to: next.game, animate });
       viewRef.current = next;
       setView(next);
-      if (lines.length > 0) {
-        const at = Date.now();
-        const entries = lines.map((line) => ({ ...line, id: ++logIdRef.current, at })).reverse();
-        setLog((current) => [...entries, ...current].slice(0, MAX_LOG));
-      }
+      appendLog(lines);
     },
-    [nicknameOf],
+    [nicknameOf, appendLog],
   );
 
   const showFailure = useCallback(

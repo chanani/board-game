@@ -2,7 +2,7 @@ import type { PaperSafariView } from '../api/types';
 
 type Nickname = (memberId: number) => string;
 
-export type LogKind = 'draw-deck' | 'draw-discard' | 'place' | 'undo' | 'peek' | 'start' | 'result' | 'timeout' | 'other';
+export type LogKind = 'draw-deck' | 'draw-discard' | 'place' | 'undo' | 'peek' | 'start' | 'result' | 'timeout' | 'leave' | 'other';
 export type LogDraft = { kind: LogKind; actorId?: number; text: string };
 export type LogEntry = LogDraft & { id: number; at: number };
 

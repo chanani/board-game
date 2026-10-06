@@ -7,7 +7,7 @@ import { TurnBar } from './layout/TurnBar';
 import { seatOrder } from './layout/seats';
 import type { Presence } from './layout/Seat';
 import { useTableLayout, type TableLayout } from '../../lib/useTableLayout';
-import { canForfeit, offlineSecondsNow } from '../../lib/format';
+import { offlineSecondsNow } from '../../lib/format';
 import { estimateBoard } from './score';
 import { useSound } from '../../lib/sound';
 import type { ViewTransition } from '../../room/useRoomChannel';
@@ -48,7 +48,6 @@ type Props = {
   now: number;
   errorSeq: number;
   nicknameOf: (memberId: number) => string;
-  onForfeit: (memberId: number) => void;
   send: (action: GameAction) => void;
   onCloseGameOver: () => void;
   onReadyNext: () => void;
@@ -99,7 +98,7 @@ function maskPending(view: PaperSafariSessionView, pending: Set<string>): PaperS
   return { game: { ...view.game, round: { ...view.game.round, boards } } };
 }
 
-export function PaperSafariTable({ view: rawView, room, meId, log, receivedAt, now, errorSeq, nicknameOf, onForfeit, send: rawSend, onCloseGameOver, onReadyNext, transition, aside, asideFooter }: Props) {
+export function PaperSafariTable({ view: rawView, room, meId, log, receivedAt, now, errorSeq, nicknameOf, send: rawSend, onCloseGameOver, onReadyNext, transition, aside, asideFooter }: Props) {
   const { play } = useSound();
   const finale = useFinale(rawView.game, transition ?? null, () => play('flip'));
   const view = maskPending(rawView, finale.pending);
@@ -150,7 +149,6 @@ export function PaperSafariTable({ view: rawView, room, meId, log, receivedAt, n
   const canUndo = myTurn && round.phase === 'PLACE' && held?.source === 'DISCARD';
   const estimate = myBoard ? estimateBoard(myBoard) : null;
   const memberOf = (memberId: number) => room.members.find((member) => member.id === memberId);
-  const seated = memberOf(meId) !== undefined;
   const presenceOf = (memberId: number): Presence => {
     const member = memberOf(memberId);
     if (!member) {
@@ -159,7 +157,6 @@ export function PaperSafariTable({ view: rawView, room, meId, log, receivedAt, n
     return {
       connected: member.connected,
       offlineSeconds: offlineSecondsNow(member, receivedAt, now),
-      onForfeit: seated && canForfeit(member, meId, receivedAt, now) ? () => onForfeit(memberId) : undefined,
     };
   };
   const canClickSlot = (slot: SlotView): boolean => {

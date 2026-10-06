@@ -75,7 +75,7 @@ describe('RoomPage 관전자', () => {
     expect(screen.getByRole('heading', { name: '앨리스의 방' })).toBeInTheDocument();
     expect(screen.getByLabelText('관전 1명')).toBeInTheDocument();
     expect(toast.show).not.toHaveBeenCalledWith('방에서 나왔어요.', 'info');
-    expect(channel.options).toEqual({ poll: true });
+    expect(channel.options).toEqual({ poll: true, meId: 3 });
   });
 
   it('방 제목 아래에 게임·상태·인원·관전·비공개 칩을 보여준다', async () => {

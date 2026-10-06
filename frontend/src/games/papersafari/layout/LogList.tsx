@@ -1,7 +1,7 @@
 import type { ComponentType } from 'react';
 import { chatTime } from '../../../lib/format';
 import type { LogEntry, LogKind } from '../../../lib/eventLog';
-import { CardsIcon, ClockIcon, DotIcon, EyeIcon, PlayIcon, RecycleIcon, SwapIcon, TrophyIcon, UndoIcon } from '../../../components/icons';
+import { CardsIcon, ClockIcon, DotIcon, EyeIcon, LogoutIcon, PlayIcon, RecycleIcon, SwapIcon, TrophyIcon, UndoIcon } from '../../../components/icons';
 
 export type Nickname = (memberId: number) => string;
 
@@ -14,6 +14,7 @@ const KIND_STYLE: Record<LogKind, { Icon: ComponentType<{ className?: string }>;
   start: { Icon: PlayIcon, bg: 'bg-lime-100' },
   result: { Icon: TrophyIcon, bg: 'bg-yellow-100' },
   timeout: { Icon: ClockIcon, bg: 'bg-rose-100' },
+  leave: { Icon: LogoutIcon, bg: 'bg-red-100' },
   other: { Icon: DotIcon, bg: 'bg-stone-200' },
 };
 
