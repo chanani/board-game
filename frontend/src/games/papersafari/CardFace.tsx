@@ -1,5 +1,4 @@
 import type { CardView } from '../../api/types';
-import { PeekIcon } from '../../components/icons';
 import { cardLabel } from './cards';
 import { CardArt } from './cards/CardArt';
 import { CardBack } from './cards/CardBack';
@@ -26,19 +25,27 @@ function labelOf(card: CardView | null, faceUp: boolean, known: boolean): string
   return `${cardLabel(card)} 카드${known && !faceUp ? ' (엿봄)' : ''}`;
 }
 
+function sideOf(showFront: boolean, peeked: boolean): 'front' | 'peeked' | 'back' {
+  if (peeked) {
+    return 'peeked';
+  }
+  return showFront ? 'front' : 'back';
+}
+
 export function CardFace({ card, faceUp, known, size = 'md', highlight = false, pulse = false, sparkle = false, onClick }: Props) {
-  const showFront = card !== null && faceUp;
   const peeked = card !== null && known && !faceUp;
+  const showFront = card !== null && (faceUp || peeked);
+  const peekRing = peeked ? 'outline-[3px] outline-dashed outline-violet-400 outline-offset-2 peek-lift' : '';
   const ring = highlight ? 'ring-[3px] ring-mustard-400 shadow-[0_0_14px_rgb(242_179_61/0.8)]' : '';
   const clickable = onClick ? 'cursor-pointer hover:-translate-y-1.5 hover:rotate-[-1.5deg] focus-visible:-translate-y-1.5' : 'cursor-default';
   return (
     <button
       type="button"
       aria-label={labelOf(card, faceUp, known)}
-      data-side={showFront ? 'front' : 'back'}
+      data-side={sideOf(showFront, peeked)}
       disabled={!onClick}
       onClick={onClick}
-      className={`card-3d relative block select-none rounded-[10%/7%] transition-transform duration-150 outline-none focus-visible:ring-4 focus-visible:ring-mustard-300 ${SIZES[size]} ${clickable} ${pulse ? 'float-hint' : ''}`}
+      className={`card-3d relative block select-none rounded-[10%/7%] transition-transform duration-150 outline-none focus-visible:ring-4 focus-visible:ring-mustard-300 ${SIZES[size]} ${clickable} ${pulse ? 'float-hint' : ''} ${peekRing}`}
     >
       <span className={`card-inner card-thick block rounded-[10%/7%] ${ring} ${sparkle ? 'gold-sparkle' : ''}`}
         style={{ transform: showFront ? 'rotateY(0deg)' : 'rotateY(180deg)' }}>
@@ -46,12 +53,7 @@ export function CardFace({ card, faceUp, known, size = 'md', highlight = false, 
         <span className="card-side is-back"><CardBack /></span>
       </span>
       {peeked ? (
-        <span className="pointer-events-none absolute inset-0 opacity-45"><CardArt card={card} /></span>
-      ) : null}
-      {peeked ? (
-        <span className="absolute -right-1.5 -top-1.5 grid h-5 w-5 place-items-center rounded-full bg-cream-50 text-wood-800 shadow">
-          <PeekIcon className="h-3.5 w-3.5" testId="peek-icon" />
-        </span>
+        <span data-testid="peek-tag" aria-hidden="true" className="pointer-events-none absolute -bottom-2 left-1/2 z-[2] -translate-x-1/2 whitespace-nowrap rounded-full bg-violet-600 px-1.5 text-[9px] font-black leading-4 text-white shadow">엿봄</span>
       ) : null}
     </button>
   );

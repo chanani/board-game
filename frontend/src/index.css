@@ -350,6 +350,15 @@ body {
 /* 내 차례 링은 판 안쪽(inset)에만 그려 판 밖의 이름표·안내를 덮지 않는다. */
 @keyframes turn-ring { 0%, 100% { box-shadow: 0 0 0 1px var(--turn-ring-edge), inset 0 0 0 3px var(--turn-ring), inset 0 0 4px 3px color-mix(in srgb, var(--turn-ring) 35%, transparent); } 50% { box-shadow: 0 0 0 1px var(--turn-ring-edge), inset 0 0 0 3px var(--turn-ring), inset 0 0 14px 4px color-mix(in srgb, var(--turn-ring) 55%, transparent); } }
 .turn-ring { animation: turn-ring 1.4s ease-in-out infinite; }
+/* 코끼리로 엿본 카드가 처음 엿봄 상태가 될 때 한 번 살짝 들렸다 내려온다. */
+@media (prefers-reduced-motion: no-preference) {
+  .peek-lift { animation: peek-lift 0.35s ease-out; }
+}
+@keyframes peek-lift {
+  0% { transform: translateY(0); }
+  45% { transform: translateY(-8px); }
+  100% { transform: translateY(0); }
+}
 @keyframes float-hint { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
 .float-hint { animation: float-hint 1.6s ease-in-out infinite; }
 @keyframes gold-sparkle { 0% { box-shadow: 0 0 0 0 rgb(251 191 36 / .9); } 100% { box-shadow: 0 0 0 12px rgb(251 191 36 / 0); } }

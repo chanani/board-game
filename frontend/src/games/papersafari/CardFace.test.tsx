@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { CardFace } from './CardFace';
 
@@ -24,13 +24,26 @@ describe('CardFace', () => {
     expect(screen.getByLabelText('타잔 10 카드')).toHaveTextContent('타잔');
   });
 
-  it('엿본 카드는 엿봄 표시를 한다', () => {
+  it('엿본 카드는 앞면을 또렷하게 그리고 보라 점선 테두리와 "엿봄" 꼬리표를 단다', () => {
     render(<CardFace card={{ kind: 'FOX', value: -2 }} faceUp={false} known />);
 
     const card = screen.getByLabelText('여우 -2 카드 (엿봄)');
-    expect(card.querySelector('svg[data-testid="peek-icon"]')).not.toBeNull();
+    expect(card).toHaveAttribute('data-side', 'peeked');
+    expect(card).toHaveClass('outline-dashed', 'outline-violet-400', 'peek-lift');
+    expect(card.querySelector('.card-inner')).toHaveStyle({ transform: 'rotateY(0deg)' });
+    expect(within(card).getByTestId('peek-tag')).toHaveTextContent('엿봄');
+    expect(card.querySelector('[data-testid="peek-icon"]')).toBeNull();
+    expect(card.querySelector('.opacity-45')).toBeNull();
     expect(card.textContent).not.toMatch(/\p{Extended_Pictographic}/u);
-    expect(card).toHaveAttribute('data-side', 'back');
+  });
+
+  it('공개된 카드에는 엿봄 표시가 없다', () => {
+    render(<CardFace card={{ kind: 'FOX', value: -2 }} faceUp known />);
+
+    const card = screen.getByLabelText('여우 -2 카드');
+    expect(card).toHaveAttribute('data-side', 'front');
+    expect(card).not.toHaveClass('outline-dashed');
+    expect(screen.queryByTestId('peek-tag')).not.toBeInTheDocument();
   });
 
   it('누를 수 없는 카드는 비활성이다', () => {
