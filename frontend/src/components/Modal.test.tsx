@@ -11,6 +11,15 @@ describe('Modal', () => {
     expect(screen.getByRole('button', { name: '확인' })).toHaveFocus();
   });
 
+  it('initialFocus="dialog"이면 버튼이 아니라 대화상자 자체에 포커스가 간다', async () => {
+    const onClose = vi.fn();
+    render(<Modal open title="결과" onClose={onClose} initialFocus="dialog"><button type="button">확인</button></Modal>);
+
+    expect(screen.getByRole('dialog', { name: '결과' })).toHaveFocus();
+    await userEvent.keyboard('{Escape}');
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+
   it('닫을 수 있는 모달은 Esc로 닫힌다', async () => {
     const onClose = vi.fn();
     render(<Modal open title="결과" onClose={onClose}><button type="button">확인</button></Modal>);

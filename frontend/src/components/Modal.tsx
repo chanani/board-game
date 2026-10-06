@@ -2,7 +2,10 @@ import { AnimatePresence, motion } from 'motion/react';
 import { CloseIcon } from './icons';
 import { useEffect, useRef, type KeyboardEvent, type ReactNode } from 'react';
 
-type Props = { open: boolean; title: string; onClose?: () => void; children: ReactNode; wide?: boolean; padding?: 'normal' | 'roomy' };
+/** first: 첫 버튼(기본), dialog: 대화상자 자체. 갑자기 뜨는 창은 dialog로 두어 치던 Enter·Space가 버튼을 누르지 않게 한다. */
+type InitialFocus = 'first' | 'dialog';
+
+type Props = { open: boolean; title: string; onClose?: () => void; children: ReactNode; wide?: boolean; padding?: 'normal' | 'roomy'; initialFocus?: InitialFocus };
 
 const PADDING = { normal: 'p-6', roomy: 'p-5 sm:p-8' };
 
@@ -17,7 +20,16 @@ function focusIsFree(box: HTMLElement | null): boolean {
   return !active || active === document.body || Boolean(box?.contains(active));
 }
 
-export function Modal({ open, title, onClose, children, wide = false, padding = 'normal' }: Props) {
+function focusInitial(box: HTMLElement | null, initialFocus: InitialFocus) {
+  if (initialFocus === 'dialog') {
+    box?.focus({ preventScroll: true });
+    return;
+  }
+  const items = focusables(box);
+  (items.find((item) => item.dataset.close === undefined) ?? items[0])?.focus();
+}
+
+export function Modal({ open, title, onClose, children, wide = false, padding = 'normal', initialFocus = 'first' }: Props) {
   const boxRef = useRef<HTMLDivElement>(null);
   const downOnBackdrop = useRef(false);
   const onCloseRef = useRef(onClose);
@@ -40,10 +52,9 @@ export function Modal({ open, title, onClose, children, wide = false, padding = 
 
   useEffect(() => {
     if (open) {
-      const items = focusables(boxRef.current);
-      (items.find((item) => item.dataset.close === undefined) ?? items[0])?.focus();
+      focusInitial(boxRef.current, initialFocus);
     }
-  }, [open]);
+  }, [open, initialFocus]);
 
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key !== 'Tab') {

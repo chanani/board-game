@@ -133,7 +133,7 @@ export function GameOverPanel({ game, room, meId, nicknameOf, onReady, onClose }
   return (
     <>
       <Confetti active={done && game.winnerId !== null} />
-      <Modal open title="게임 결과" onClose={onClose} wide padding="roomy">
+      <Modal open title="게임 결과" onClose={onClose} wide padding="roomy" initialFocus="dialog">
         <div className="space-y-6">
           <h2 className="text-center text-2xl font-black">{done ? headline : '카드를 공개하는 중…'}</h2>
           {players.length > 0 ? <ScoreRows players={players} done={done} nicknameOf={nicknameOf} /> : null}

@@ -92,6 +92,18 @@ describe('GameOverPanel 단판 결과', () => {
     expect(screen.queryByRole('button', { name: '대기실로' })).not.toBeInTheDocument();
   });
 
+  it('결과 창이 떠도 다음 게임 준비에 포커스를 옮기지 않아, 채팅을 치던 Enter·Space로 준비되지 않는다', async () => {
+    const onReady = vi.fn();
+    renderPanel({ meId: 2, onReady });
+
+    expect(screen.getByRole('button', { name: '다음 게임 준비' })).not.toHaveFocus();
+    expect(screen.getByRole('dialog', { name: '게임 결과' })).toHaveFocus();
+    await userEvent.keyboard('{Enter}');
+    await userEvent.keyboard(' ');
+
+    expect(onReady).not.toHaveBeenCalled();
+  });
+
   it('방장은 다음 게임 준비 대신 대기실로를 누른다', async () => {
     const onClose = vi.fn();
     renderPanel({ meId: 1, onClose });
