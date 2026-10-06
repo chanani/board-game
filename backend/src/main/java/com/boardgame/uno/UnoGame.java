@@ -4,6 +4,7 @@ import com.boardgame.common.error.BusinessException;
 import com.boardgame.common.error.ErrorCode;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 // 한 게임(= 한 판). 행동은 Task 3~6이 더한다.
 public class UnoGame {
@@ -31,6 +32,37 @@ public class UnoGame {
     private static void requirePlayerCount(List<PlayerId> players) {
         if (players.size() < MIN_PLAYERS || players.size() > MAX_PLAYERS) {
             throw new BusinessException(ErrorCode.UNO_INVALID_PLAYER_COUNT);
+        }
+    }
+
+    public void play(PlayerId player, CardId card, ChosenColor color) {
+        run(player, batch -> round.play(player, card, color, batch));
+    }
+
+    public void draw(PlayerId player) {
+        run(player, batch -> round.draw(player, batch));
+    }
+
+    public void keep(PlayerId player) {
+        run(player, batch -> round.keep(player, batch));
+    }
+
+    // 사람이 한 행동: 남은 참가자인지 본 뒤 상태를 바꾼다. (Task 6이 맨 앞에 게임 끝 검사를 더한다.)
+    private void run(PlayerId player, Consumer<EventBatch> action) {
+        requirePlayer(player);
+        apply(false, action);
+    }
+
+    // 이벤트를 모아 성공했을 때만 기록을 바꾼다. (Task 4가 도전 공개 지우기, Task 6이 게임 끝 정산을 더한다.)
+    private void apply(boolean auto, Consumer<EventBatch> action) {
+        EventBatch batch = events.open(auto);
+        action.accept(batch);
+        events.commit(batch);
+    }
+
+    private void requirePlayer(PlayerId player) {
+        if (!round.isRemaining(player)) {
+            throw new BusinessException(ErrorCode.NOT_A_PLAYER);
         }
     }
 

@@ -1,5 +1,7 @@
 package com.boardgame.uno;
 
+import com.boardgame.common.error.BusinessException;
+import com.boardgame.common.error.ErrorCode;
 import java.util.List;
 import java.util.Optional;
 
@@ -28,7 +30,8 @@ public class UnoRound {
             case REVERSE -> reverseAtStart(events);
             case DRAW_TWO -> drawTwoAtStart(events);
             case WILD -> progress.begin(Turn.chooseColor(players.current()));
-            default -> progress.begin(Turn.play(players.current()));
+            case NUMBER -> progress.begin(Turn.play(players.current()));
+            case WILD_DRAW_FOUR -> throw new IllegalStateException("WILD_DRAW_FOUR는 첫 카드가 될 수 없다");
         }
         events.add(UnoEvent.start(players.current(), first));
     }
@@ -66,6 +69,108 @@ public class UnoRound {
         players.endTurn();
         players.advance(steps);
         progress.begin(Turn.play(players.current()));
+    }
+
+    // R8~R10
+    public void play(PlayerId player, CardId cardId, ChosenColor chosen, EventBatch events) {
+        progress.requireActor(player);
+        progress.requireStage(UnoStage.PLAY, UnoStage.DRAWN);
+        UnoCard card = players.cardOf(player, cardId);
+        progress.requireDrawnOrAny(cardId);
+        requirePlayable(card);
+        UnoColor color = colorFor(card, chosen);
+        players.closeCatch();
+        players.discardFrom(player, cardId);
+        table.discard(card, color);
+        events.add(UnoEvent.play(player, card, chosenColorOf(card, color)));
+        players.settleUno(player);
+        resolve(player, card, events);
+    }
+
+    private void requirePlayable(UnoCard card) {
+        if (!table.accepts(card)) {
+            throw new BusinessException(ErrorCode.UNO_CARD_NOT_PLAYABLE);
+        }
+    }
+
+    // R10: 와일드는 같은 행동에 실린 색이 필수, 그 밖에는 카드 색.
+    private UnoColor colorFor(UnoCard card, ChosenColor chosen) {
+        if (card.isWild()) {
+            return chosen.require();
+        }
+        return card.color();
+    }
+
+    private UnoColor chosenColorOf(UnoCard card, UnoColor color) {
+        if (card.isWild()) {
+            return color;
+        }
+        return null;
+    }
+
+    // R15~R17. (Task 4가 WILD_DRAW_FOUR 갈래를 더한다.)
+    void resolve(PlayerId player, UnoCard card, EventBatch events) {
+        switch (card.kind()) {
+            case SKIP -> skipNext(events);
+            case REVERSE -> reverse(player, events);
+            case DRAW_TWO -> drawTwoNext(events);
+            case NUMBER, WILD, WILD_DRAW_FOUR -> passTurn(NEXT);
+        }
+    }
+
+    private void skipNext(EventBatch events) {
+        events.add(UnoEvent.skip(players.nextOf(players.current())));
+        passTurn(SKIP_ONE);
+    }
+
+    // R16: 2명이면 건너뛰기와 같다(방향 값은 그대로).
+    private void reverse(PlayerId player, EventBatch events) {
+        if (players.size() == TWO_PLAYERS) {
+            skipNext(events);
+            return;
+        }
+        players.reverse();
+        events.add(UnoEvent.reverse(player));
+        passTurn(NEXT);
+    }
+
+    private void drawTwoNext(EventBatch events) {
+        penalize(players.nextOf(players.current()), DRAW_TWO_COUNT, UnoEventReason.DRAW_TWO, events);
+        passTurn(SKIP_ONE);
+    }
+
+    // R12·R14
+    public void draw(PlayerId player, EventBatch events) {
+        progress.requireActor(player);
+        progress.requireStage(UnoStage.PLAY);
+        players.closeCatch();
+        List<UnoCard> drawn = table.draw(1, events);
+        if (drawn.isEmpty()) {
+            events.add(UnoEvent.pass(player, UnoEventReason.EMPTY_PILE));
+            passTurn(NEXT);
+            return;
+        }
+        players.give(player, drawn);
+        events.add(UnoEvent.draw(player));
+        offerDrawn(player, drawn.get(0), events);
+    }
+
+    private void offerDrawn(PlayerId player, UnoCard card, EventBatch events) {
+        if (table.accepts(card)) {
+            progress.begin(Turn.drawn(player, card.id()));
+            return;
+        }
+        events.add(UnoEvent.pass(player, UnoEventReason.NO_PLAYABLE));
+        passTurn(NEXT);
+    }
+
+    // R12: 뽑은 카드를 갖고 넘긴다.
+    public void keep(PlayerId player, EventBatch events) {
+        progress.requireActor(player);
+        progress.requireStage(UnoStage.DRAWN);
+        players.closeCatch();
+        events.add(UnoEvent.pass(player, UnoEventReason.KEEP));
+        passTurn(NEXT);
     }
 
     public PlayerId actor() {
