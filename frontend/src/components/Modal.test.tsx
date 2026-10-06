@@ -85,4 +85,13 @@ describe('Modal', () => {
 
     expect(screen.getByRole('dialog')).toBeInTheDocument();
   });
+
+  it('안쪽에서 누르고 배경에서 놓아도 닫히지 않는다', async () => {
+    const onClose = vi.fn();
+    render(<Modal open title="결과" onClose={onClose}><p>내용</p></Modal>);
+
+    await userEvent.pointer([{ keys: '[MouseLeft>]', target: screen.getByText('내용') }, { keys: '[/MouseLeft]', target: screen.getByTestId('modal-backdrop') }]);
+
+    expect(onClose).not.toHaveBeenCalled();
+  });
 });

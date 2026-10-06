@@ -19,6 +19,7 @@ function focusIsFree(box: HTMLElement | null): boolean {
 
 export function Modal({ open, title, onClose, children, wide = false, padding = 'normal' }: Props) {
   const boxRef = useRef<HTMLDivElement>(null);
+  const downOnBackdrop = useRef(false);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
 
@@ -39,7 +40,8 @@ export function Modal({ open, title, onClose, children, wide = false, padding = 
 
   useEffect(() => {
     if (open) {
-      focusables(boxRef.current)[0]?.focus();
+      const items = focusables(boxRef.current);
+      (items.find((item) => item.dataset.close === undefined) ?? items[0])?.focus();
     }
   }, [open]);
 
@@ -72,8 +74,11 @@ export function Modal({ open, title, onClose, children, wide = false, padding = 
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
           onKeyDown={handleKeyDown}
           data-testid="modal-backdrop"
+          onMouseDown={(event) => { downOnBackdrop.current = event.target === event.currentTarget; }}
           onClick={(event) => {
-            if (event.target === event.currentTarget) {
+            const closing = downOnBackdrop.current && event.target === event.currentTarget;
+            downOnBackdrop.current = false;
+            if (closing) {
               onClose?.();
             }
           }}
@@ -90,13 +95,15 @@ export function Modal({ open, title, onClose, children, wide = false, padding = 
             exit={{ y: 40, scale: 0.95, opacity: 0 }}
             transition={{ type: 'spring', bounce: 0.3, duration: 0.45 }}
           >
-            {children}
             {onClose ? (
-              <button type="button" aria-label="닫기" onClick={onClose}
-                className="absolute right-3 top-3 rounded-full p-1.5 text-stone-500 hover:bg-cream-200 hover:text-wood-800">
-                <CloseIcon className="h-5 w-5" />
-              </button>
+              <div className="pointer-events-none sticky top-0 z-10 flex h-0 justify-end">
+                <button type="button" aria-label="닫기" data-close onClick={onClose}
+                  className="pointer-events-auto -mr-3 -mt-3 rounded-full bg-cream-50/80 p-1.5 text-stone-500 hover:bg-cream-200 hover:text-wood-800">
+                  <CloseIcon className="h-5 w-5" />
+                </button>
+              </div>
             ) : null}
+            {children}
           </motion.div>
         </motion.div>
       ) : null}

@@ -30,13 +30,17 @@ export function CreateRoomModal({ open, defaultName, onClose, onCreate }: Props)
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
-    onCreate(name, maxPlayers, priv ? password : undefined);
+    const trimmed = name.trim();
+    if (trimmed === '' || (priv && password.length < 4)) {
+      return;
+    }
+    onCreate(trimmed, maxPlayers, priv ? password : undefined);
   };
 
   return (
     <Modal open={open} title="방 만들기" onClose={onClose}>
       <form className="space-y-4" onSubmit={handleSubmit}>
-        <h2 className="text-lg font-black">방 만들기</h2>
+        <h2 className="pr-8 text-lg font-black">방 만들기</h2>
         <TextInput id="roomName" label="방 이름" value={name} onChange={(e) => setName(e.target.value)} maxLength={20} required />
         <div>
           <span id="seatLabel" className="text-sm font-semibold text-wood-700">최대 인원</span>

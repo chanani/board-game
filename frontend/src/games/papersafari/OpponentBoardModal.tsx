@@ -13,7 +13,7 @@ export function OpponentBoardModal({ board, nickname, presence, open, onClose }:
   return (
     <Modal open={open} title={`${nickname}님의 판`} onClose={onClose}>
       <div className="text-center">
-        <h2 className="mb-4 text-xl font-black">{nickname}님의 판</h2>
+        <h2 className="mb-4 px-8 text-xl font-black">{nickname}님의 판</h2>
         <Felt className="flex justify-center p-3">
           <PlayerBoard board={board} nickname={nickname} active={false} size="lg" {...presence} />
         </Felt>

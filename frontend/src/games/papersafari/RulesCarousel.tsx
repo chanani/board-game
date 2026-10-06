@@ -65,7 +65,7 @@ export function RulesCarousel({ open, onClose }: Props) {
 
   return (
     <Modal open={open} title="페이퍼 사파리 규칙" onClose={onClose} wide>
-      <div className="mb-3 flex items-center justify-between">
+      <div className="mb-3 flex items-center justify-between pr-8">
         <h2 className="text-lg font-black text-wood-800">페이퍼 사파리 규칙</h2>
         <span className="text-sm font-bold text-stone-600">{index + 1} / {RULE_SLIDES.length}</span>
       </div>
