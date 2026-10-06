@@ -188,6 +188,12 @@ public class RoomService {
         outcomePublisher.publish(room, outcomes, clock.instant());
     }
 
+    /** 로그아웃한 회원이 들어가 있던 방이 있으면 나가게 한다(게임 중이면 기권). */
+    public synchronized void leaveCurrentRoom(long memberId) {
+        registry.findByMember(memberId)
+                .ifPresent(room -> leave(room.codeValue(), memberId));
+    }
+
     // 게임이 끝나 자동으로 참가한 관전자도 기권 유예 시간을 잴 수 있게 기준 시각을 둔다.
     private void baselineNewcomers(Room room, List<Long> before) {
         List<Long> newcomers = room.memberIds().stream()
