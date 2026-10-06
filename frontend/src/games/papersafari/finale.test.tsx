@@ -54,7 +54,7 @@ const play = vi.fn();
 function ui(game: PaperSafariView, transition: ViewTransition | null = null, log: LogEntry[] = []) {
   const view: PaperSafariSessionView = { game };
   return (
-    <SoundContext.Provider value={{ play, muted: false, toggleMuted: () => undefined }}>
+    <SoundContext.Provider value={{ play, muted: false, toggleMuted: () => undefined, volume: 70, setVolume: () => undefined }}>
       <PaperSafariTable view={view} room={room} meId={ME} log={log} receivedAt={0} now={0} errorSeq={0} nicknameOf={nicknameOf}
         onForfeit={vi.fn()} send={vi.fn()} onCloseGameOver={vi.fn()} onReadyNext={vi.fn()} transition={transition} />
     </SoundContext.Provider>

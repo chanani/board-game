@@ -47,34 +47,32 @@ describe('Layout 상단바', () => {
     const home = screen.getByRole('link', { name: '보드게임 라운지' });
     expect(home).toHaveClass('whitespace-nowrap');
     expect(screen.getByText('앨리스')).toHaveClass('truncate');
-    expect(screen.getByRole('button', { name: '로그아웃' })).toHaveClass('whitespace-nowrap');
   });
 
-  it('메뉴 이름은 게임 목록이고 음소거 버튼은 이모지 대신 아이콘이다', () => {
+  it('헤더에는 소리·로그아웃 버튼이 없고 설정 탭이 있다', () => {
     render(ui());
 
+    expect(screen.queryByRole('button', { name: /소리/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '로그아웃' })).not.toBeInTheDocument();
+    const settings = screen.getByRole('link', { name: '설정' });
+    expect(settings).toHaveAttribute('href', '/settings');
+    expect(settings.querySelector('svg')).not.toBeNull();
     expect(screen.getByRole('link', { name: '게임 목록' })).toBeInTheDocument();
-    const mute = screen.getByRole('button', { name: '소리 끄기' });
-    expect(mute.querySelector('svg')).not.toBeNull();
-    expect(mute).not.toHaveTextContent('🔊');
   });
 });
 
 describe('Layout 모바일 상단바', () => {
-  it('좁은 화면에서는 로고 그림, 아이콘 메뉴와 짧은 글자, 아이콘 로그아웃만 남겨 넘치지 않는다', () => {
+  it('좁은 화면에서는 로고 그림, 아이콘 메뉴와 짧은 글자만 남겨 넘치지 않는다', () => {
     render(ui());
 
     const home = screen.getByRole('link', { name: '보드게임 라운지' });
     expect(home.querySelector('span.hidden.sm\\:inline')).toHaveTextContent('보드게임 라운지');
-    for (const [name, short] of [['게임 목록', '목록'], ['내 전적', '전적']]) {
+    for (const [name, short] of [['게임 목록', '목록'], ['내 전적', '전적'], ['설정', '설정']]) {
       const link = screen.getByRole('link', { name });
       expect(link.querySelector('svg')).not.toBeNull();
       expect(link.querySelector('.sm\\:hidden')).toHaveTextContent(short);
       expect(link.querySelector('.hidden.sm\\:inline')).toHaveTextContent(name);
     }
-    const logout = screen.getByRole('button', { name: '로그아웃' });
-    expect(logout.querySelector('svg')).not.toBeNull();
-    expect(logout.querySelector('.hidden.sm\\:inline')).toHaveTextContent('로그아웃');
     expect(screen.getByText('앨리스')).toHaveClass('truncate', 'min-w-0');
     expect(screen.getByRole('banner').firstElementChild).toHaveClass('min-w-0');
   });

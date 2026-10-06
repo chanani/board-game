@@ -1,10 +1,12 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
 export type SoundName = 'draw' | 'place' | 'flip' | 'myTurn' | 'roundWin' | 'roundLose' | 'click' | 'tick';
-export type SoundApi = { play: (name: SoundName) => void; muted: boolean; toggleMuted: () => void };
+export type SoundApi = { play: (name: SoundName) => void; muted: boolean; toggleMuted: () => void; volume: number; setVolume: (value: number) => void };
 
 const STORAGE_KEY = 'bg.muted';
-const SILENT: SoundApi = { play: () => undefined, muted: false, toggleMuted: () => undefined };
+const VOLUME_KEY = 'bg.volume';
+const DEFAULT_VOLUME = 70;
+const SILENT: SoundApi = { play: () => undefined, muted: false, toggleMuted: () => undefined, volume: DEFAULT_VOLUME, setVolume: () => undefined };
 export const SoundContext = createContext<SoundApi | null>(null);
 
 export function readMuted(): boolean {
@@ -23,6 +25,30 @@ export function writeMuted(muted: boolean): void {
   }
 }
 
+export function clampVolume(value: number): number {
+  if (!Number.isFinite(value)) {
+    return DEFAULT_VOLUME;
+  }
+  return Math.min(100, Math.max(0, Math.round(value)));
+}
+
+export function readVolume(): number {
+  try {
+    const raw = window.localStorage.getItem(VOLUME_KEY);
+    return raw === null ? DEFAULT_VOLUME : clampVolume(Number(raw));
+  } catch {
+    return DEFAULT_VOLUME;
+  }
+}
+
+export function writeVolume(value: number): void {
+  try {
+    window.localStorage.setItem(VOLUME_KEY, String(clampVolume(value)));
+  } catch {
+    // 저장할 수 없는 환경이면 이번 방문 동안만 기억한다.
+  }
+}
+
 type AudioCtor = typeof AudioContext;
 
 function audioCtor(): AudioCtor | null {
@@ -30,19 +56,19 @@ function audioCtor(): AudioCtor | null {
   return holder.AudioContext ?? holder.webkitAudioContext ?? null;
 }
 
-function tone(ctx: AudioContext, frequency: number, start: number, duration: number, type: OscillatorType = 'sine', gain = 0.18) {
+function tone(ctx: AudioContext, out: AudioNode, frequency: number, start: number, duration: number, type: OscillatorType = 'sine', gain = 0.18) {
   const osc = ctx.createOscillator();
   const amp = ctx.createGain();
   osc.type = type;
   osc.frequency.setValueAtTime(frequency, ctx.currentTime + start);
   amp.gain.setValueAtTime(gain, ctx.currentTime + start);
   amp.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + duration);
-  osc.connect(amp).connect(ctx.destination);
+  osc.connect(amp).connect(out);
   osc.start(ctx.currentTime + start);
   osc.stop(ctx.currentTime + start + duration + 0.02);
 }
 
-function noise(ctx: AudioContext, duration: number, frequency: number, gain = 0.25) {
+function noise(ctx: AudioContext, out: AudioNode, duration: number, frequency: number, gain = 0.25) {
   const length = Math.floor(ctx.sampleRate * duration);
   const buffer = ctx.createBuffer(1, length, ctx.sampleRate);
   const data = buffer.getChannelData(0);
@@ -56,19 +82,19 @@ function noise(ctx: AudioContext, duration: number, frequency: number, gain = 0.
   filter.type = 'bandpass';
   filter.frequency.value = frequency;
   amp.gain.value = gain;
-  source.connect(filter).connect(amp).connect(ctx.destination);
+  source.connect(filter).connect(amp).connect(out);
   source.start();
 }
 
-const RECIPES: Record<SoundName, (ctx: AudioContext) => void> = {
-  draw: (ctx) => noise(ctx, 0.12, 2500),
-  place: (ctx) => tone(ctx, 180, 0, 0.08, 'triangle', 0.25),
-  flip: (ctx) => { noise(ctx, 0.06, 4000, 0.2); tone(ctx, 900, 0.03, 0.04, 'square', 0.05); },
-  myTurn: (ctx) => { tone(ctx, 784, 0, 0.18); tone(ctx, 1047, 0.15, 0.25); },
-  roundWin: (ctx) => { tone(ctx, 523, 0, 0.15); tone(ctx, 659, 0.12, 0.15); tone(ctx, 784, 0.24, 0.3); },
-  roundLose: (ctx) => { tone(ctx, 392, 0, 0.2, 'triangle'); tone(ctx, 330, 0.18, 0.3, 'triangle'); },
-  click: (ctx) => tone(ctx, 1200, 0, 0.03, 'square', 0.04),
-  tick: (ctx) => { tone(ctx, 660, 0, 0.09, 'square', 0.06); tone(ctx, 660, 0.16, 0.09, 'square', 0.06); },
+const RECIPES: Record<SoundName, (ctx: AudioContext, out: AudioNode) => void> = {
+  draw: (ctx, out) => noise(ctx, out, 0.12, 2500),
+  place: (ctx, out) => tone(ctx, out, 180, 0, 0.08, 'triangle', 0.25),
+  flip: (ctx, out) => { noise(ctx, out, 0.06, 4000, 0.2); tone(ctx, out, 900, 0.03, 0.04, 'square', 0.05); },
+  myTurn: (ctx, out) => { tone(ctx, out, 784, 0, 0.18); tone(ctx, out, 1047, 0.15, 0.25); },
+  roundWin: (ctx, out) => { tone(ctx, out, 523, 0, 0.15); tone(ctx, out, 659, 0.12, 0.15); tone(ctx, out, 784, 0.24, 0.3); },
+  roundLose: (ctx, out) => { tone(ctx, out, 392, 0, 0.2, 'triangle'); tone(ctx, out, 330, 0.18, 0.3, 'triangle'); },
+  click: (ctx, out) => tone(ctx, out, 1200, 0, 0.03, 'square', 0.04),
+  tick: (ctx, out) => { tone(ctx, out, 660, 0, 0.09, 'square', 0.06); tone(ctx, out, 660, 0.16, 0.09, 'square', 0.06); },
 };
 
 function resumeIfSuspended(ctx: AudioContext): void {
@@ -84,6 +110,7 @@ function resumeIfSuspended(ctx: AudioContext): void {
 
 export function SoundProvider({ children }: { children: ReactNode }) {
   const [muted, setMuted] = useState(readMuted);
+  const [volume, setVolumeState] = useState(readVolume);
   const ctxRef = useRef<AudioContext | null>(null);
 
   useEffect(() => {
@@ -110,15 +137,18 @@ export function SoundProvider({ children }: { children: ReactNode }) {
 
   const play = useCallback((name: SoundName) => {
     const ctx = ctxRef.current;
-    if (muted || !ctx) {
+    if (muted || !ctx || volume === 0) {
       return;
     }
     try {
-      RECIPES[name](ctx);
+      const out = ctx.createGain();
+      out.gain.value = volume / 100;
+      out.connect(ctx.destination);
+      RECIPES[name](ctx, out);
     } catch {
       // 오디오 오류는 게임 진행에 영향을 주지 않는다.
     }
-  }, [muted]);
+  }, [muted, volume]);
 
   const toggleMuted = useCallback(() => {
     setMuted((current) => {
@@ -127,7 +157,13 @@ export function SoundProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const api = useMemo(() => ({ play, muted, toggleMuted }), [play, muted, toggleMuted]);
+  const setVolume = useCallback((value: number) => {
+    const next = clampVolume(value);
+    writeVolume(next);
+    setVolumeState(next);
+  }, []);
+
+  const api = useMemo(() => ({ play, muted, toggleMuted, volume, setVolume }), [play, muted, toggleMuted, volume, setVolume]);
   return <SoundContext.Provider value={api}>{children}</SoundContext.Provider>;
 }
 

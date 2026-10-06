@@ -256,7 +256,7 @@ describe('GameOverPanel 단판 결과', () => {
   it('효과음은 모든 카드가 공개된 뒤에 한 번만 울리고, play가 바뀌어도 다시 울리지 않는다', () => {
     vi.useFakeTimers();
     const ui = (fn: SoundApi['play']) => (
-      <SoundContext.Provider value={{ play: fn, muted: false, toggleMuted: () => undefined }}>
+      <SoundContext.Provider value={{ play: fn, muted: false, toggleMuted: () => undefined, volume: 70, setVolume: () => undefined }}>
         <GameOverPanel game={game} room={room} meId={1} nicknameOf={nicknameOf} onReady={vi.fn()} onClose={vi.fn()} />
       </SoundContext.Provider>
     );
@@ -279,7 +279,7 @@ describe('GameOverPanel 단판 결과', () => {
   it('무승부면 효과음을 울리지 않고, 진 사람에게는 진 소리를 울린다', () => {
     vi.useFakeTimers();
     const ui = (view: PaperSafariView, meId: number, fn: SoundApi['play']) => (
-      <SoundContext.Provider value={{ play: fn, muted: false, toggleMuted: () => undefined }}>
+      <SoundContext.Provider value={{ play: fn, muted: false, toggleMuted: () => undefined, volume: 70, setVolume: () => undefined }}>
         <GameOverPanel game={view} room={room} meId={meId} nicknameOf={nicknameOf} onReady={vi.fn()} onClose={vi.fn()} />
       </SoundContext.Provider>
     );

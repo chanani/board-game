@@ -10,6 +10,7 @@ import { GameShelfPage } from './pages/GameShelfPage';
 import { LoginPage } from './pages/LoginPage';
 import { RecordsPage } from './pages/RecordsPage';
 import { RoomPage } from './pages/RoomPage';
+import { SettingsPage } from './pages/SettingsPage';
 import { SignupPage } from './pages/SignupPage';
 
 export default function App() {
@@ -28,6 +29,7 @@ export default function App() {
                   <Route path="/rooms/:code" element={<RoomPage />} />
                   <Route path="/records" element={<RecordsPage />} />
                   <Route path="/records/:memberId" element={<RecordsPage />} />
+                  <Route path="/settings" element={<SettingsPage />} />
                 </Route>
               </Route>
             </Routes>

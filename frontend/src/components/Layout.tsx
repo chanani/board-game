@@ -1,14 +1,11 @@
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { NavLink, useLocation, useNavigate, useOutlet } from 'react-router-dom';
+import { NavLink, useLocation, useOutlet } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
-import { messageOf } from '../api/http';
-import { useSound } from '../lib/sound';
 import { useRealtime } from '../realtime/RealtimeContext';
 import { ActiveRoomBar } from '../room/ActiveRoomBar';
 import { LogoMark } from './LogoMark';
-import { GridIcon, LogoutIcon, SpeakerIcon, SpeakerMutedIcon, TrophyIcon } from './icons';
-import { useToast } from './Toast';
+import { GearIcon, GridIcon, TrophyIcon } from './icons';
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
   `flex shrink-0 items-center gap-1 whitespace-nowrap rounded-lg px-2 py-1.5 text-sm sm:px-3 ${isActive ? 'bg-black/30 font-bold text-cream-50' : 'text-cream-200 hover:bg-black/15'}`;
@@ -40,22 +37,10 @@ function useShowDisconnected(): boolean {
 }
 
 export function Layout() {
-  const { member, logout } = useAuth();
-  const navigate = useNavigate();
-  const toast = useToast();
+  const { member } = useAuth();
   const disconnected = useShowDisconnected();
   const location = useLocation();
   const outlet = useOutlet();
-  const { muted, toggleMuted } = useSound();
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-      navigate('/login', { replace: true });
-    } catch (error) {
-      toast.show(messageOf(error));
-    }
-  };
 
   return (
     <div className="min-h-screen">
@@ -76,16 +61,11 @@ export function Layout() {
             <nav className="flex shrink-0 gap-0.5 sm:gap-1">
               <NavLink to="/" end aria-label="게임 목록" className={linkClass}><GridIcon /><NavLabel full="게임 목록" short="목록" /></NavLink>
               <NavLink to="/records" aria-label="내 전적" className={linkClass}><TrophyIcon /><NavLabel full="내 전적" short="전적" /></NavLink>
+              <NavLink to="/settings" aria-label="설정" className={linkClass}><GearIcon /><NavLabel full="설정" short="설정" /></NavLink>
             </nav>
           </div>
           <div className="flex min-w-0 items-center gap-1.5 text-sm sm:gap-3">
-            <button type="button" onClick={toggleMuted} aria-label={muted ? '소리 켜기' : '소리 끄기'}
-              className="press-3d shrink-0 rounded-lg bg-black/25 px-2 py-1 text-cream-50">{muted ? <SpeakerMutedIcon /> : <SpeakerIcon />}</button>
             <span className="min-w-0 max-w-[4.5rem] truncate font-bold text-cream-50 sm:max-w-none">{member?.nickname}</span>
-            <button type="button" onClick={handleLogout} aria-label="로그아웃"
-              className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-lg px-1.5 py-1 text-cream-200 hover:text-cream-50">
-              <LogoutIcon /><span className="hidden sm:inline">로그아웃</span>
-            </button>
           </div>
         </div>
       </header>

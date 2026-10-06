@@ -336,7 +336,7 @@ describe('게임 화면 다듬기', () => {
     const view = build({ phase: 'DRAW', current: ME });
     const timed = { game: { ...view.game, deadline: 1_000_000 + 7000, serverNow: 1_000_000 } };
     render(
-      <SoundContext.Provider value={{ play, muted: false, toggleMuted: () => undefined }}>
+      <SoundContext.Provider value={{ play, muted: false, toggleMuted: () => undefined, volume: 70, setVolume: () => undefined }}>
         <PaperSafariTable {...baseProps(timed)} />
       </SoundContext.Provider>,
     );
@@ -379,7 +379,7 @@ describe('게임 화면 다듬기', () => {
     const timed = { game: { ...view.game, deadline: 1_000_000 + 4000, serverNow: 1_000_000 } };
     try {
       render(
-        <SoundContext.Provider value={{ play, muted: false, toggleMuted: () => undefined }}>
+        <SoundContext.Provider value={{ play, muted: false, toggleMuted: () => undefined, volume: 70, setVolume: () => undefined }}>
           <PaperSafariTable {...baseProps(timed)} />
         </SoundContext.Provider>,
       );
@@ -644,7 +644,7 @@ describe('모바일 게임 화면 (상대 판·내 차례·손 카드)', () => {
     const held: HeldView = { playerId: ME, source: 'DISCARD', card: { kind: 'NUMBER', value: 4 } };
     const myTurnPlays = () => play.mock.calls.filter(([name]) => name === 'myTurn');
     const ui = (view: PaperSafariSessionView) => (
-      <SoundContext.Provider value={{ play, muted: false, toggleMuted: () => undefined }}>
+      <SoundContext.Provider value={{ play, muted: false, toggleMuted: () => undefined, volume: 70, setVolume: () => undefined }}>
         <PaperSafariTable {...baseProps(view)} />
       </SoundContext.Provider>
     );
