@@ -284,4 +284,52 @@ describe('useRoomChannel', () => {
 
     expect(toast.show).not.toHaveBeenCalled();
   });
+
+  describe('다시 가져온 방(REST)으로는 나간 사람을 알리지 않는다', () => {
+    const member = (id: number, nickname: string) => ({ id, nickname, host: id === 1, connected: true, offlineSeconds: 0, ready: false });
+    const withMembers = (ids: number[]): Room => ({
+      ...room('방', 'PLAYING'),
+      members: [member(1, '앨리스'), member(2, '밥'), member(3, '캐롤')].filter((m) => ids.includes(m.id)),
+    });
+
+    it('다시 연결돼 다시 가져온 방에서 참가자가 빠져 있어도 알림·진행 기록이 없다', async () => {
+      state.connected = true;
+      const get = vi.spyOn(roomsApi, 'get').mockResolvedValue(withMembers([1, 2, 3]));
+      const { result, rerender } = renderHook(() => useRoomChannel('ABCDEF', { meId: 1 }));
+      await act(async () => {});
+      expect(result.current.room?.members).toHaveLength(3);
+      toast.show.mockClear();
+
+      state.connected = false;
+      rerender();
+      get.mockResolvedValue(withMembers([1, 3]));
+      state.connected = true;
+      rerender();
+      await act(async () => {});
+
+      expect(get).toHaveBeenCalledTimes(2);
+      expect(result.current.room?.members).toHaveLength(2);
+      expect(toast.show).not.toHaveBeenCalled();
+      expect(result.current.log.filter((entry) => entry.kind === 'leave')).toHaveLength(0);
+    });
+
+    it('관전 중 확인(poll)으로 받은 방에서 참가자가 빠져 있어도 알림·진행 기록이 없다', async () => {
+      vi.useFakeTimers();
+      try {
+        const get = vi.spyOn(roomsApi, 'get').mockResolvedValue(withMembers([1, 2, 3]));
+        const { result } = renderHook(() => useRoomChannel('ABCDEF', { meId: 1, poll: true }));
+        await act(async () => {});
+        toast.show.mockClear();
+
+        get.mockResolvedValue(withMembers([1, 3]));
+        await act(async () => { await vi.advanceTimersByTimeAsync(5000); });
+
+        expect(result.current.room?.members).toHaveLength(2);
+        expect(toast.show).not.toHaveBeenCalled();
+        expect(result.current.log.filter((entry) => entry.kind === 'leave')).toHaveLength(0);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+  });
 });

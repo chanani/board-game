@@ -63,14 +63,20 @@ export function useRoomChannel(code: string, { poll = false, meId = 0 }: Options
     [meId, toast, appendLog],
   );
 
+  /**
+   * live: 방 방송으로 지금 받은 방. 다시 연결·관전 확인으로 REST에서 다시 가져온 방은 그사이 무슨 일이 있었는지 모르므로
+   * (오래전에 나간 사람일 수 있다) 나간 사람 알림·진행 기록을 남기지 않는다.
+   */
   const acceptRoom = useCallback(
-    (next: Room) => {
+    (next: Room, { live }: { live: boolean }) => {
       const prev = roomRef.current;
       roomRef.current = next;
       next.members.forEach((member) => namesRef.current.set(member.id, member.nickname));
       setRoom(next);
       setReceivedAt(Date.now());
-      announceDepartures(prev, next);
+      if (live) {
+        announceDepartures(prev, next);
+      }
     },
     [announceDepartures],
   );
@@ -127,7 +133,7 @@ export function useRoomChannel(code: string, { poll = false, meId = 0 }: Options
       .get(code)
       .then((next) => {
         if (!cancelled && topicSeenRef.current === seenBefore) {
-          acceptRoom(next);
+          acceptRoom(next, { live: false });
         }
       })
       .catch((error) => {
@@ -148,7 +154,7 @@ export function useRoomChannel(code: string, { poll = false, meId = 0 }: Options
     const offs = [
       realtime.subscribe(`/topic/rooms/${code}`, (body) => {
         topicSeenRef.current += 1;
-        acceptRoom(body as Room);
+        acceptRoom(body as Room, { live: true });
       }),
       realtime.subscribe('/user/queue/game', (body) => acceptView(body as PaperSafariSessionView)),
       realtime.subscribe('/user/queue/errors', (body) => {
@@ -203,7 +209,7 @@ export function useRoomChannel(code: string, { poll = false, meId = 0 }: Options
         .get(code)
         .then((next) => {
           if (!cancelled && topicSeenRef.current === seenBefore) {
-            acceptRoom(next);
+            acceptRoom(next, { live: false });
           }
         })
         .catch((error) => {
