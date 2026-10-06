@@ -1,3 +1,4 @@
+import { useReducedMotion } from 'motion/react';
 import { useLayoutEffect, useRef, useState, type RefObject } from 'react';
 import type { CardView } from '../../../api/types';
 import { useSound, type SoundName } from '../../../lib/sound';
@@ -8,12 +9,13 @@ import { slotZone, zoneKey, DECK, type Zone } from './zones';
 export const TRAVEL_MS = 420;
 export const DEAL_STEP_MS = 50;
 export const MAX_DEAL_MS = 1500;
+export const LIFT_MS = 800;
 
 export type Rect = { x: number; y: number; width: number; height: number };
 export type Ghost = { id: number; card: CardView | null; from: Rect; to: Rect; delay: number };
 
 type Flight = { card: CardView | null; from: Zone; to: Zone; delay: number };
-type Plan = { flights: Flight[]; sounds: { name: SoundName; delay: number }[] };
+type Plan = { flights: Flight[]; sounds: { name: SoundName; delay: number }[]; lifts: string[] };
 
 const EMPTY: ReadonlySet<string> = new Set();
 
@@ -62,7 +64,7 @@ function dealTargets(playerIds: number[]): Zone[] {
 }
 
 function planOf(moves: Move[]): Plan {
-  const plan: Plan = { flights: [], sounds: [] };
+  const plan: Plan = { flights: [], sounds: [], lifts: [] };
   let clock = 0;
   moves.forEach((move) => {
     if (move.kind === 'travel') {
@@ -83,20 +85,26 @@ function planOf(moves: Move[]): Plan {
       clock += targets.length * step + TRAVEL_MS;
       return;
     }
+    if (move.kind === 'peek') {
+      plan.lifts.push(zoneKey(move.at));
+    }
     plan.sounds.push({ name: 'flip', delay: clock });
   });
   return plan;
 }
 
-function movesFor(transition: ViewTransition): Move[] {
+function movesFor(transition: ViewTransition, reduced: boolean): Move[] {
   const moves = inferMoves(transition.from, transition.to);
-  return transition.animate ? moves : moves.filter((move) => move.kind === 'deal');
+  const kept = transition.animate ? moves : moves.filter((move) => move.kind === 'deal');
+  return reduced ? kept.filter((move) => move.kind !== 'deal') : kept;
 }
 
-export function useCardMotion(containerRef: RefObject<HTMLElement | null>, transition: ViewTransition | null) {
+export function useCardMotion(containerRef: RefObject<HTMLElement | null>, transition: ViewTransition | null, resetKey = 0) {
   const { play } = useSound();
   const [ghosts, setGhosts] = useState<Ghost[]>([]);
   const [hidden, setHidden] = useState<ReadonlySet<string>>(EMPTY);
+  const [lifted, setLifted] = useState<ReadonlySet<string>>(EMPTY);
+  const reduced = useReducedMotion() ?? false;
   const timers = useRef<number[]>([]);
   const nextId = useRef(1);
   const playRef = useRef(play);
@@ -110,10 +118,11 @@ export function useCardMotion(containerRef: RefObject<HTMLElement | null>, trans
     clearAll();
     setGhosts([]);
     setHidden(EMPTY);
+    setLifted(EMPTY);
     if (!transition) {
       return undefined;
     }
-    const plan = planOf(movesFor(transition));
+    const plan = planOf(movesFor(transition, reduced));
     const root = containerRef.current;
     const flights = plan.flights.flatMap((flight) => {
       const ends = normalizeEnds(rectOf(root, flight.from), rectOf(root, flight.to));
@@ -138,11 +147,29 @@ export function useCardMotion(containerRef: RefObject<HTMLElement | null>, trans
         });
       }, flight.delay + TRAVEL_MS));
     });
+    if (plan.lifts.length > 0) {
+      setLifted(new Set(plan.lifts));
+      timers.current.push(window.setTimeout(() => setLifted(EMPTY), LIFT_MS));
+    }
     plan.sounds.forEach((sound) => {
       timers.current.push(window.setTimeout(() => playRef.current(sound.name), sound.delay));
     });
     return clearAll;
-  }, [transition, containerRef]);
+  }, [transition, containerRef, reduced]);
 
-  return { ghosts, hidden };
+  // 서버 오류가 오면 진행 중인 연출을 바로 끝낸다.
+  const lastReset = useRef(resetKey);
+  useLayoutEffect(() => {
+    if (lastReset.current === resetKey) {
+      return;
+    }
+    lastReset.current = resetKey;
+    timers.current.forEach((timer) => window.clearTimeout(timer));
+    timers.current = [];
+    setGhosts([]);
+    setHidden(EMPTY);
+    setLifted(EMPTY);
+  }, [resetKey]);
+
+  return { ghosts, hidden, lifted };
 }

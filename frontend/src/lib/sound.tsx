@@ -1,11 +1,11 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
 export type SoundName = 'draw' | 'place' | 'flip' | 'myTurn' | 'roundWin' | 'roundLose' | 'click';
-type SoundApi = { play: (name: SoundName) => void; muted: boolean; toggleMuted: () => void };
+export type SoundApi = { play: (name: SoundName) => void; muted: boolean; toggleMuted: () => void };
 
 const STORAGE_KEY = 'bg.muted';
 const SILENT: SoundApi = { play: () => undefined, muted: false, toggleMuted: () => undefined };
-const SoundContext = createContext<SoundApi | null>(null);
+export const SoundContext = createContext<SoundApi | null>(null);
 
 export function readMuted(): boolean {
   try {
@@ -70,17 +70,34 @@ const RECIPES: Record<SoundName, (ctx: AudioContext) => void> = {
   click: (ctx) => tone(ctx, 1200, 0, 0.03, 'square', 0.04),
 };
 
+function resumeIfSuspended(ctx: AudioContext): void {
+  if (ctx.state !== 'suspended') {
+    return;
+  }
+  try {
+    ctx.resume().catch(() => undefined);
+  } catch {
+    // 재개할 수 없어도 게임 진행에는 영향이 없다.
+  }
+}
+
 export function SoundProvider({ children }: { children: ReactNode }) {
   const [muted, setMuted] = useState(readMuted);
   const ctxRef = useRef<AudioContext | null>(null);
 
   useEffect(() => {
     const unlock = () => {
+      const existing = ctxRef.current;
+      if (existing) {
+        resumeIfSuspended(existing);
+        return;
+      }
       const Ctor = audioCtor();
-      if (!Ctor || ctxRef.current) {
+      if (!Ctor) {
         return;
       }
       ctxRef.current = new Ctor();
+      resumeIfSuspended(ctxRef.current);
     };
     window.addEventListener('pointerdown', unlock);
     window.addEventListener('keydown', unlock);

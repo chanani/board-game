@@ -1,10 +1,11 @@
 import { motion, useReducedMotion } from 'motion/react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { BoardView, PaperSafariSessionView } from '../../api/types';
 import { Felt } from '../../components/Felt';
 import { RollingNumber } from '../../components/RollingNumber';
 import { Modal } from '../../components/Modal';
 import { Button } from '../../components/ui';
+import { useSound } from '../../lib/sound';
 import { resultLabel } from '../../lib/format';
 import { PlayerBoard } from './PlayerBoard';
 import { cardAt, columnScore } from './score';
@@ -37,6 +38,19 @@ export function RoundResultModal({ view, meId, nicknameOf, onReady }: Props) {
   }, [revealed, total]);
 
   const done = revealed >= total;
+  const { play } = useSound();
+  const playRef = useRef(play);
+  playRef.current = play;
+  const soundedRound = useRef<number | null>(null);
+  const myOutcome = players.find((player) => player.playerId === meId)?.outcome;
+  const roundNumber = game.roundNumber;
+  useEffect(() => {
+    if (!done || !myOutcome || soundedRound.current === roundNumber) {
+      return;
+    }
+    soundedRound.current = roundNumber;
+    playRef.current(myOutcome === 'WIN' ? 'roundWin' : 'roundLose');
+  }, [done, myOutcome, roundNumber]);
   // 카드가 모두 뒤집히기 전에는 자리 순서로 두고 승패·리본을 숨겨, 점수를 센 뒤에 승자를 보여 준다.
   const results = done ? [...players].sort((a, b) => a.score - b.score) : players;
   const won = (outcome: string) => done && outcome === 'WIN';

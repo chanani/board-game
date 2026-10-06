@@ -37,4 +37,10 @@ describe('CardFace', () => {
 
     expect(screen.getByLabelText('1 카드')).toBeDisabled();
   });
+
+  it('값을 모르는 카드는 그림을 DOM에 두지 않는다', () => {
+    const { container } = render(<CardFace card={null} faceUp={false} known={false} />);
+
+    expect(container.querySelector('[data-art]')).toBeNull();
+  });
 });

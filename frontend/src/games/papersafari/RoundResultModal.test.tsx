@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { PaperSafariSessionView } from '../../api/types';
 import { RoundResultModal } from './RoundResultModal';
+import { SoundContext, type SoundApi } from '../../lib/sound';
 
 const slots = [0, 1, 2].flatMap((column) => [0, 1].map((row) => ({ column, row, faceUp: true, known: false, card: { kind: 'NUMBER' as const, value: column + 1 } })));
 const view: PaperSafariSessionView = {
@@ -64,6 +65,41 @@ describe('RoundResultModal', () => {
       expect(dialog).toHaveTextContent('패');
       expect(dialog).toHaveTextContent('열 점수');
       expect(dialog).toHaveTextContent('+');
+    });
+  });
+
+  describe('결과 효과음', () => {
+    afterEach(() => vi.useRealTimers());
+
+    const renderWith = (play: SoundApi['play']) => {
+      const ui = (fn: SoundApi['play']) => (
+        <SoundContext.Provider value={{ play: fn, muted: false, toggleMuted: () => undefined }}>
+          <RoundResultModal view={view} meId={1} nicknameOf={nicknameOf} onReady={vi.fn()} />
+        </SoundContext.Provider>
+      );
+      const utils = render(ui(play));
+      return { ...utils, again: (fn: SoundApi['play']) => utils.rerender(ui(fn)) };
+    };
+
+    it('모든 카드가 공개된 뒤에 한 번만 울리고, play가 바뀌어도 다시 울리지 않는다', () => {
+      vi.useFakeTimers();
+      const play = vi.fn();
+      const { again } = renderWith(play);
+
+      for (let step = 0; step < 11; step += 1) {
+        act(() => { vi.advanceTimersByTime(120); });
+      }
+      expect(play).not.toHaveBeenCalled();
+
+      act(() => { vi.advanceTimersByTime(120); });
+      expect(play).toHaveBeenCalledOnce();
+      expect(play).toHaveBeenCalledWith('roundWin');
+
+      const next = vi.fn();
+      again(next);
+      act(() => { vi.advanceTimersByTime(1000); });
+      expect(next).not.toHaveBeenCalled();
+      expect(play).toHaveBeenCalledOnce();
     });
   });
 });

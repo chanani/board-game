@@ -55,4 +55,17 @@ describe('sound', () => {
     expect(() => result.current.play('click')).not.toThrow();
     expect(result.current.muted).toBe(false);
   });
+
+  it('멈춘 AudioContext는 다음 입력 때 다시 깨운다', async () => {
+    const resume = vi.fn(() => Promise.reject(new Error('blocked')));
+    class FakeCtx { state = 'suspended'; resume = resume; }
+    (window as unknown as { AudioContext: unknown }).AudioContext = FakeCtx;
+    render(<SoundProvider><span>x</span></SoundProvider>);
+
+    await userEvent.keyboard('a');
+    await userEvent.keyboard('b');
+
+    expect(resume).toHaveBeenCalledTimes(2);
+    delete (window as unknown as { AudioContext?: unknown }).AudioContext;
+  });
 });

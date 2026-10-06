@@ -13,7 +13,7 @@ import { estimateBoard } from './score';
 import { useSound } from '../../lib/sound';
 import type { ViewTransition } from '../../room/useRoomChannel';
 import { GhostLayer } from './motion/GhostLayer';
-import { HiddenZonesContext } from './motion/ZoneAnchor';
+import { HiddenZonesContext, LiftedZonesContext } from './motion/ZoneAnchor';
 import { useCardMotion } from './motion/useCardMotion';
 
 const PENDING_MS = 3000;
@@ -79,7 +79,7 @@ export function PaperSafariTable({ view, room, meId, log, receivedAt, now, error
   const wide = useMediaQuery(PC_QUERY);
   const myTurn = round.currentPlayerId === meId;
   const containerRef = useRef<HTMLDivElement>(null);
-  const { ghosts, hidden } = useCardMotion(containerRef, transition ?? null);
+  const { ghosts, hidden, lifted } = useCardMotion(containerRef, transition ?? null, errorSeq);
   const { play } = useSound();
   const wasMyTurn = useRef(false);
 
@@ -90,15 +90,6 @@ export function PaperSafariTable({ view, room, meId, log, receivedAt, now, error
     }
     wasMyTurn.current = now;
   }, [myTurn, round.phase, play]);
-
-  const phase = round.phase;
-  const myOutcome = game.lastRoundResult?.players.find((player) => player.playerId === meId)?.outcome;
-  useEffect(() => {
-    if (phase !== 'ROUND_OVER' || !myOutcome) {
-      return;
-    }
-    play(myOutcome === 'WIN' ? 'roundWin' : 'roundLose');
-  }, [phase, myOutcome, play]);
 
   useEffect(() => {
     pendingUntil.current = 0;
@@ -190,6 +181,7 @@ export function PaperSafariTable({ view, room, meId, log, receivedAt, now, error
 
   return (
     <HiddenZonesContext.Provider value={hidden}>
+      <LiftedZonesContext.Provider value={lifted}>
       <div ref={containerRef} className="space-y-4">
         <Layout {...tableProps} />
       </div>
@@ -197,6 +189,7 @@ export function PaperSafariTable({ view, room, meId, log, receivedAt, now, error
       {round.phase === 'ROUND_OVER' ? (
         <RoundResultModal view={view} meId={meId} nicknameOf={nicknameOf} onReady={() => send({ type: 'READY' })} />
       ) : null}
+      </LiftedZonesContext.Provider>
     </HiddenZonesContext.Provider>
   );
 }

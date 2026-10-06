@@ -131,7 +131,7 @@ export function GameLobbyPage() {
                     <p className="text-xs text-stone-500">
                       👑 {room.hostNickname}{' '}
                       <span aria-label={`${room.playerCount}/${room.maxPlayers}명`}>
-                        {'●'.repeat(room.playerCount) + '○'.repeat(room.maxPlayers - room.playerCount)}
+                        {'●'.repeat(Math.min(room.playerCount, room.maxPlayers)) + '○'.repeat(Math.max(0, room.maxPlayers - room.playerCount))}
                       </span>
                     </p>
                   </div>
