@@ -1,8 +1,9 @@
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import type { ChatMessage } from '../api/chat';
 import { setMediaMatches } from '../test/media';
+import { Modal } from '../components/Modal';
 import { ChatLauncher } from './ChatLauncher';
 
 const messages: ChatMessage[] = [{ id: 1, memberId: 2, nickname: '밥', text: '안녕하세요', sentAt: '2026-10-06T00:00:00Z' }];
@@ -47,5 +48,42 @@ describe('ChatLauncher', () => {
     expect(button).toHaveClass('z-30');
     await userEvent.click(button);
     expect(screen.getByRole('dialog', { name: '채팅' })).toHaveClass('z-30');
+  });
+  it('Esc로 닫힌다', async () => {
+    render(<ChatLauncher messages={messages} meId={1} onSend={vi.fn()} unread={0} onOpen={vi.fn()} />);
+    await userEvent.click(screen.getByRole('button', { name: '채팅 열기' }));
+
+    await userEvent.keyboard('{Escape}');
+
+    expect(screen.queryByRole('dialog', { name: '채팅' })).not.toBeInTheDocument();
+  });
+
+  it('위에 모달이 떠 있으면 Esc는 모달만 닫고 채팅은 그대로 둔다', async () => {
+    const onCloseModal = vi.fn();
+    const ui = (modalOpen: boolean) => (
+      <>
+        <ChatLauncher messages={messages} meId={1} onSend={vi.fn()} unread={0} onOpen={vi.fn()} />
+        <Modal open={modalOpen} title="상대 판" onClose={onCloseModal}><button type="button">확인</button></Modal>
+      </>
+    );
+    const { rerender } = render(ui(false));
+    await userEvent.click(screen.getByRole('button', { name: '채팅 열기' }));
+    rerender(ui(true));
+
+    await userEvent.keyboard('{Escape}');
+
+    expect(onCloseModal).toHaveBeenCalledOnce();
+    expect(screen.getByRole('dialog', { name: '채팅' })).toBeInTheDocument();
+  });
+
+  it('다른 곳에서 이미 처리한(defaultPrevented) Esc는 무시한다', async () => {
+    render(<ChatLauncher messages={messages} meId={1} onSend={vi.fn()} unread={0} onOpen={vi.fn()} />);
+    await userEvent.click(screen.getByRole('button', { name: '채팅 열기' }));
+
+    const event = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+    event.preventDefault();
+    act(() => { document.dispatchEvent(event); });
+
+    expect(screen.getByRole('dialog', { name: '채팅' })).toBeInTheDocument();
   });
 });

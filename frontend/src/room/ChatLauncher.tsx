@@ -16,6 +16,11 @@ type Props = {
 
 const badgeOf = (unread: number) => (unread > 9 ? '9+' : String(unread));
 
+/** 위에 모달(aria-modal)이 떠 있거나 이미 누가 처리한 Esc는 그쪽 몫이라 채팅을 닫지 않는다. */
+function escapeIsMine(event: KeyboardEvent): boolean {
+  return event.key === 'Escape' && !event.defaultPrevented && document.querySelector('[aria-modal="true"]') === null;
+}
+
 /**
  * 게임 중 채팅. 오른쪽 아래 💬 버튼으로 연다. PC는 오른쪽 서랍, 모바일은 아래 시트.
  * 모달(z-40) 아래 층(z-30)에 두어 상대 보드·규칙 모달을 가리거나 클릭을 가로채지 않는다.
@@ -37,7 +42,7 @@ export function ChatLauncher({ messages, meId, onSend, unread, onOpen }: Props) 
       return undefined;
     }
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
+      if (escapeIsMine(event)) {
         setOpen(false);
       }
     };
