@@ -55,6 +55,22 @@ public class UnoGame {
         run(player, batch -> round.accept(player, batch));
     }
 
+    public void callUno(PlayerId player) {
+        run(player, batch -> round.callUno(player, batch));
+    }
+
+    public void catchUno(PlayerId catcher, PlayerId target) {
+        run(catcher, batch -> round.catchUno(catcher, target, batch));
+    }
+
+    public boolean canCallUno(PlayerId viewer) {
+        return round.canCallUno(viewer);
+    }
+
+    public boolean canCatch(PlayerId viewer) {
+        return round.canCatch(viewer);
+    }
+
     public Optional<FourCharge> pendingCharge() {
         return round.pendingCharge();
     }

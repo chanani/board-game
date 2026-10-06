@@ -172,7 +172,7 @@ class UnoWildFourTest {
     }
 
     @Test
-    void R9_와일드_4_위에_와일드_4를_겹쳐_낼_수_없다() {
+    void CHALLENGE_단계에서는_와일드_4를_겹쳐_내는_행동이_단계_오류로_거절된다() {
         UnoGame game = withAHand(List.of(wildFour(0), num(RED, 2), num(GREEN, 1), num(BLUE, 1)));
         four(game, A, GREEN);
 
@@ -198,5 +198,33 @@ class UnoWildFourTest {
         assertThat(game.actor()).isEqualTo(A);
         assertThat(game.stage()).isEqualTo(UnoStage.PLAY);
         assertThat(game.stageSeq()).isNotEqualTo(before);
+    }
+
+    @Test
+    void R22_도전이_실패해도_도전자에게는_공개가_남고_결백으로_표시된다() {
+        UnoGame game = withAHand(List.of(wildFour(0), num(BLUE, 5), wild(0), num(GREEN, 1)));
+        four(game, A, GREEN);
+
+        game.challenge(B);
+
+        assertThat(game.revealFor(B)).hasValueSatisfying(reveal -> {
+            assertThat(reveal.charged()).isEqualTo(A);
+            assertThat(reveal.guilty()).isFalse();
+            assertThat(reveal.cards()).containsExactly(num(BLUE, 5), wild(0), num(GREEN, 1));
+        });
+        assertThat(game.revealFor(A)).isEmpty();
+        assertThat(game.revealFor(C)).isEmpty();
+    }
+
+    @Test
+    void R22_받기를_고르면_누구에게도_공개가_없다() {
+        UnoGame game = withAHand(List.of(wildFour(0), num(RED, 2), num(GREEN, 1), num(BLUE, 1)));
+        four(game, A, GREEN);
+
+        game.accept(B);
+
+        assertThat(game.revealFor(A)).isEmpty();
+        assertThat(game.revealFor(B)).isEmpty();
+        assertThat(game.revealFor(C)).isEmpty();
     }
 }

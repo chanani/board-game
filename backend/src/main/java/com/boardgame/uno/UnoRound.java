@@ -14,6 +14,7 @@ public class UnoRound {
     private static final int TWO_PLAYERS = 2;
     private static final int FOUR = 4;
     private static final int CHALLENGE_PENALTY = 2;
+    private static final int UNO_PENALTY = 2;
 
     private final UnoTable table;
     private final UnoPlayers players;
@@ -173,6 +174,49 @@ public class UnoRound {
         progress.takeCharge();
         penalize(player, FOUR, UnoEventReason.WILD_DRAW_FOUR, events);
         passTurn(NEXT);
+    }
+
+    // R23·R27: 내 차례(PLAY/DRAWN)에 2장이면 외친다. 잡기 창의 대상 본인이면 언제든 늦게 외쳐 선언된다.
+    public void callUno(PlayerId player, EventBatch events) {
+        if (players.isCatchable(player)) {
+            players.declareLate(player);
+            events.add(UnoEvent.unoCall(player));
+            return;
+        }
+        progress.requireActor(player);
+        progress.requireStage(UnoStage.PLAY, UnoStage.DRAWN);
+        requireCallable(player);
+        players.call(player);
+        events.add(UnoEvent.unoCall(player));
+    }
+
+    private void requireCallable(PlayerId player) {
+        if (!players.canCall(player)) {
+            throw new BusinessException(ErrorCode.UNO_CALL_NOT_ALLOWED);
+        }
+    }
+
+    // R26: 창이 열려 있고 대상이 맞고 본인이 아니면, 먼저 도착한 한 명만 성공한다. 차례·마감에는 영향이 없다.
+    public void catchUno(PlayerId catcher, PlayerId target, EventBatch events) {
+        if (!players.isCatchable(target) || catcher.equals(target)) {
+            throw new BusinessException(ErrorCode.UNO_CATCH_CLOSED);
+        }
+        players.closeCatch();
+        events.add(UnoEvent.unoCaught(catcher, target));
+        penalize(target, UNO_PENALTY, UnoEventReason.UNO_CAUGHT, events);
+    }
+
+    public boolean canCallUno(PlayerId viewer) {
+        if (players.isCatchable(viewer)) {
+            return true;
+        }
+        return progress.isActorIn(viewer, UnoStage.PLAY, UnoStage.DRAWN) && players.canCall(viewer);
+    }
+
+    public boolean canCatch(PlayerId viewer) {
+        return players.contains(viewer) && players.catchTarget()
+                .filter(target -> !target.equals(viewer))
+                .isPresent();
     }
 
     public Optional<FourCharge> pendingCharge() {
