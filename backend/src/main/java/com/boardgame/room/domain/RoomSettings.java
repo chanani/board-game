@@ -8,6 +8,10 @@ public record RoomSettings(GameType gameType, Capacity capacity, RoomTraits trai
         this(gameType, capacity, new RoomTraits(lock, RoomTheme.WOOD));
     }
 
+    public RoomSettings reconfigured(Capacity newCapacity, RoomTheme newTheme) {
+        return new RoomSettings(gameType, newCapacity, new RoomTraits(lock(), newTheme));
+    }
+
     public RoomLock lock() {
         return traits.lock();
     }

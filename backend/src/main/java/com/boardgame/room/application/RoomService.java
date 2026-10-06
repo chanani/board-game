@@ -15,6 +15,7 @@ import com.boardgame.room.domain.RoomTraits;
 import com.boardgame.room.api.GameSummaryResponse;
 import com.boardgame.room.api.RoomResponse;
 import com.boardgame.room.api.RoomSummaryResponse;
+import com.boardgame.room.api.UpdateRoomSettingsRequest;
 import com.boardgame.room.domain.Capacity;
 import com.boardgame.room.domain.GameOccupancies;
 import com.boardgame.room.domain.Participant;
@@ -331,6 +332,28 @@ public class RoomService {
         room.kick(requesterId, targetId);
         saveAndNotifyClosed(room);
         broadcast(room);
+    }
+
+    public synchronized RoomResponse reconfigure(String rawCode, long memberId, UpdateRoomSettingsRequest request) {
+        Room room = find(rawCode);
+        Capacity capacity = Capacity.of(room.gameType(), requireMaxPlayers(request));
+        room.reconfigure(memberId, capacity, RoomTheme.parse(requireTheme(request)));
+        saveAndNotifyClosed(room);
+        return broadcast(room);
+    }
+
+    private int requireMaxPlayers(UpdateRoomSettingsRequest request) {
+        if (request == null || request.maxPlayers() == null) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT);
+        }
+        return request.maxPlayers();
+    }
+
+    private String requireTheme(UpdateRoomSettingsRequest request) {
+        if (request == null || request.theme() == null) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT);
+        }
+        return request.theme();
     }
 
     public synchronized void presenceChanged(long memberId) {

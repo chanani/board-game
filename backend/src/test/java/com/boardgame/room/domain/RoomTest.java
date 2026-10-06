@@ -510,4 +510,44 @@ class RoomTest {
         assertError(() -> room.kick(1L, 1L), ErrorCode.INVALID_INPUT);
         assertError(() -> room.kick(9L, 2L), ErrorCode.NOT_IN_ROOM);
     }
+
+    @Test
+    void 방장은_대기_중에_최대_인원과_테마를_바꿀_수_있다() {
+        Room room = openRoom();
+        room.join(bob, null, new FakeRoomPasswordHasher());
+
+        room.reconfigure(1L, Capacity.of(GameType.PAPER_SAFARI, 3), RoomTheme.BEACH);
+
+        assertThat(room.capacity()).isEqualTo(3);
+        assertThat(room.theme()).isEqualTo(RoomTheme.BEACH);
+        assertThat(room.memberIds()).containsExactly(1L, 2L);
+    }
+
+    @Test
+    void 방장이_아니면_설정을_바꿀_수_없다() {
+        Room room = openRoom();
+        room.join(bob, null, new FakeRoomPasswordHasher());
+
+        assertError(() -> room.reconfigure(2L, Capacity.of(GameType.PAPER_SAFARI, 3), RoomTheme.WOOD), ErrorCode.NOT_ROOM_HOST);
+    }
+
+    @Test
+    void 게임_중에는_설정을_바꿀_수_없다() {
+        Room room = openRoom();
+        room.join(bob, null, new FakeRoomPasswordHasher());
+        start(room, 1L);
+
+        assertError(() -> room.reconfigure(1L, Capacity.of(GameType.PAPER_SAFARI, 4), RoomTheme.WOOD), ErrorCode.ROOM_ALREADY_PLAYING);
+    }
+
+    @Test
+    void 지금_참가자보다_적게는_줄일_수_없다() {
+        Room room = openRoom();
+        room.join(bob, null, new FakeRoomPasswordHasher());
+        room.join(carol, null, new FakeRoomPasswordHasher());
+
+        assertError(() -> room.reconfigure(1L, Capacity.of(GameType.PAPER_SAFARI, 2), RoomTheme.WOOD), ErrorCode.CAPACITY_BELOW_PLAYERS);
+        room.reconfigure(1L, Capacity.of(GameType.PAPER_SAFARI, 3), RoomTheme.WOOD);
+        assertThat(room.capacity()).isEqualTo(3);
+    }
 }

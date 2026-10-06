@@ -23,4 +23,12 @@ class CapacityTest {
         assertThat(capacity.isFull(2)).isFalse();
         assertThat(capacity.isFull(3)).isTrue();
     }
+
+    @Test
+    void 인원보다_작은지_안다() {
+        Capacity three = Capacity.of(GameType.PAPER_SAFARI, 3);
+
+        assertThat(three.isBelow(4)).isTrue();
+        assertThat(three.isBelow(3)).isFalse();
+    }
 }

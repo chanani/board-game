@@ -31,6 +31,7 @@ public enum ErrorCode {
     FORFEIT_NOT_ALLOWED_YET(HttpStatus.CONFLICT, "연결이 끊긴 지 60초가 지나야 기권 처리할 수 있습니다."),
     INVALID_CAPACITY(HttpStatus.BAD_REQUEST, "최대 인원은 2~5명 중에서 골라 주세요."),
     INVALID_ROOM_PASSWORD(HttpStatus.BAD_REQUEST, "방 비밀번호는 4~20자로 입력해 주세요."),
+    CAPACITY_BELOW_PLAYERS(HttpStatus.CONFLICT, "지금 있는 인원보다 적게 줄일 수 없어요."),
     ROOM_PASSWORD_MISMATCH(HttpStatus.FORBIDDEN, "비밀번호가 맞지 않아요."),
     ROOM_PRIVATE(HttpStatus.FORBIDDEN, "비공개방은 관전할 수 없어요."),
     ROOM_NOT_PLAYING(HttpStatus.CONFLICT, "게임 중인 방만 관전할 수 있어요. 참가하기를 눌러 주세요."),

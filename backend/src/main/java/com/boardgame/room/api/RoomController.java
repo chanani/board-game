@@ -8,6 +8,7 @@ import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -101,5 +102,11 @@ public class RoomController {
                                      @AuthenticationPrincipal LoginMember member) {
         roomService.kick(code, member.id(), memberId);
         return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{code}/settings")
+    public RoomResponse settings(@PathVariable String code, @AuthenticationPrincipal LoginMember member,
+                                 @RequestBody UpdateRoomSettingsRequest request) {
+        return roomService.reconfigure(code, member.id(), request);
     }
 }

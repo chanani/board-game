@@ -17,6 +17,10 @@ public record Capacity(int value) {
         return new Capacity(type.maxPlayers());
     }
 
+    public boolean isBelow(int size) {
+        return value < size;
+    }
+
     public boolean isFull(int size) {
         return size >= value;
     }

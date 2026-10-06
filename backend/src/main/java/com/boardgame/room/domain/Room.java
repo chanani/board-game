@@ -14,7 +14,7 @@ import java.util.function.Function;
 
 public class Room {
 
-    private final RoomProfile profile;
+    private RoomProfile profile;
     private final RoomOccupants occupants;
     private RoomGame game;
 
@@ -104,6 +104,17 @@ public class Room {
             throw new BusinessException(ErrorCode.INVALID_INPUT);
         }
         occupants.removePlayer(targetId);
+    }
+
+    /** 대기 중에 방장이 최대 인원과 테마를 바꾼다. 비밀번호와 이름, 준비 상태는 그대로 둔다. */
+    public void reconfigure(long requesterId, Capacity capacity, RoomTheme theme) {
+        requireHost(requesterId);
+        requireWaiting();
+        if (capacity.isBelow(occupants.playerCount())) {
+            throw new BusinessException(ErrorCode.CAPACITY_BELOW_PLAYERS);
+        }
+        profile = profile.reconfigured(capacity, theme);
+        occupants.seatWaitingSpectators(capacity);
     }
 
     public RoomGame start(long requesterId, Function<List<Long>, GameSession> sessionCreator,
