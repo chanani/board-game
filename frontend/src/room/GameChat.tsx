@@ -21,7 +21,7 @@ export function GameChat({ variant, messages, meId, onSend }: Props) {
 
   if (variant === 'panel') {
     return (
-      <aside data-testid="game-chat-panel" className="paper flex w-[260px] shrink-0 flex-col p-3 lg:sticky lg:top-4 lg:h-[calc(100vh-8rem)]">
+      <aside data-testid="game-chat-panel" className="paper flex w-[260px] shrink-0 flex-col p-3 lg:sticky lg:top-4 lg:h-[min(35rem,calc(100vh-8rem))]">
         <h2 className="mb-2 text-sm font-bold text-wood-800">채팅</h2>
         <ChatPanel messages={messages} meId={meId} onSend={onSend} className="min-h-0 flex-1" />
       </aside>

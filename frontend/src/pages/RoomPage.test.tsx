@@ -388,6 +388,15 @@ describe('RoomPage 준비와 채팅', () => {
     expect(screen.getByTestId('game-chat-panel')).toBeInTheDocument();
   });
 
+  it('PC 채팅 칸은 화면 높이를 따라 늘어나지 않고 최대 560px이다', async () => {
+    setMediaMatches(true);
+    setChannel({ room: { ...waiting, status: 'PLAYING' }, view: playingView });
+    renderRoom();
+    await act(async () => {});
+
+    expect(screen.getByTestId('game-chat-panel')).toHaveClass('lg:h-[min(35rem,calc(100vh-8rem))]');
+  });
+
   it('PC 게임 화면에는 오른쪽 채팅 칸이 늘 보이고 떠 있는 채팅 버튼은 없다', async () => {
     setMediaMatches(true);
     setChannel({ room: { ...waiting, status: 'PLAYING' }, view: playingView });

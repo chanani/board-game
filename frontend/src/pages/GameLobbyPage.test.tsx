@@ -44,6 +44,15 @@ beforeEach(() => {
 afterEach(() => vi.useRealTimers());
 
 describe('GameLobbyPage', () => {
+  it('내 전적·순위표 칸은 PC(lg)에서만 보이고 모바일에서는 숨긴다', async () => {
+    renderLobby();
+    const records = await screen.findByRole('heading', { name: '내 전적' });
+    const sidebar = records.closest('[data-testid="lobby-sidebar"]');
+    expect(sidebar).toHaveClass('hidden', 'lg:block');
+    expect(sidebar).toContainElement(screen.getByRole('heading', { name: /순위표/ }));
+  });
+
+
   it('방 만들기 모달에서 최대 인원과 비밀번호를 정해 방을 만든다', async () => {
     renderLobby();
     await screen.findByText('열린방');

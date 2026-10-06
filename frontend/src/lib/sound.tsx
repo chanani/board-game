@@ -1,12 +1,36 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
 export type SoundName = 'draw' | 'place' | 'flip' | 'myTurn' | 'roundWin' | 'roundLose' | 'click' | 'tick';
-export type SoundApi = { play: (name: SoundName) => void; muted: boolean; toggleMuted: () => void; volume: number; setVolume: (value: number) => void };
+/** 덱·버린 카드에서 카드를 가져올 때 나는 소리. 닉네임 메뉴에서 고른다. */
+export type DrawSound = 'swish' | 'pop' | 'tock' | 'chime';
+export type SoundApi = {
+  play: (name: SoundName) => void;
+  muted: boolean;
+  toggleMuted: () => void;
+  volume: number;
+  setVolume: (value: number) => void;
+  drawSound: DrawSound;
+  /** 고른 소리를 저장하고 바로 한 번 들려준다. */
+  setDrawSound: (sound: DrawSound) => void;
+};
+
+export const DRAW_SOUNDS: { id: DrawSound; label: string }[] = [
+  { id: 'swish', label: '슥' },
+  { id: 'pop', label: '뽁' },
+  { id: 'tock', label: '톡' },
+  { id: 'chime', label: '띵' },
+];
 
 const STORAGE_KEY = 'bg.muted';
 const VOLUME_KEY = 'bg.volume';
+const DRAW_SOUND_KEY = 'bg.drawSound';
 const DEFAULT_VOLUME = 70;
-const SILENT: SoundApi = { play: () => undefined, muted: false, toggleMuted: () => undefined, volume: DEFAULT_VOLUME, setVolume: () => undefined };
+const DEFAULT_DRAW_SOUND: DrawSound = 'swish';
+/** Provider 밖(또는 테스트)에서 쓰는 소리 없는 기본값. */
+export const SILENT_SOUND: SoundApi = {
+  play: () => undefined, muted: false, toggleMuted: () => undefined, volume: DEFAULT_VOLUME, setVolume: () => undefined,
+  drawSound: DEFAULT_DRAW_SOUND, setDrawSound: () => undefined,
+};
 export const SoundContext = createContext<SoundApi | null>(null);
 
 export function readMuted(): boolean {
@@ -49,6 +73,23 @@ export function writeVolume(value: number): void {
   }
 }
 
+export function readDrawSound(): DrawSound {
+  try {
+    const raw = window.localStorage.getItem(DRAW_SOUND_KEY);
+    return DRAW_SOUNDS.find((sound) => sound.id === raw)?.id ?? DEFAULT_DRAW_SOUND;
+  } catch {
+    return DEFAULT_DRAW_SOUND;
+  }
+}
+
+export function writeDrawSound(sound: DrawSound): void {
+  try {
+    window.localStorage.setItem(DRAW_SOUND_KEY, sound);
+  } catch {
+    // 저장할 수 없는 환경이면 이번 방문 동안만 기억한다.
+  }
+}
+
 type AudioCtor = typeof AudioContext;
 
 function audioCtor(): AudioCtor | null {
@@ -86,8 +127,54 @@ function noise(ctx: AudioContext, out: AudioNode, duration: number, frequency: n
   source.start();
 }
 
-const RECIPES: Record<SoundName, (ctx: AudioContext, out: AudioNode) => void> = {
-  draw: (ctx, out) => noise(ctx, out, 0.12, 2500),
+type Recipe = (ctx: AudioContext, out: AudioNode) => void;
+
+/** 짧게 커졌다 작아지는 음. 끝 주파수를 주면 그쪽으로 미끄러진다. */
+function glide(ctx: AudioContext, out: AudioNode, from: number, to: number, start: number, duration: number, gain: number) {
+  const osc = ctx.createOscillator();
+  const amp = ctx.createGain();
+  const at = ctx.currentTime + start;
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(from, at);
+  osc.frequency.exponentialRampToValueAtTime(to, at + duration);
+  amp.gain.setValueAtTime(0.0001, at);
+  amp.gain.exponentialRampToValueAtTime(gain, at + 0.008);
+  amp.gain.exponentialRampToValueAtTime(0.001, at + duration);
+  osc.connect(amp).connect(out);
+  osc.start(at);
+  osc.stop(at + duration + 0.02);
+}
+
+/** 낮은 소리만 남긴 바람 소리. 천천히 커졌다 사라져 종이가 미끄러지는 느낌을 낸다. */
+function swish(ctx: AudioContext, out: AudioNode) {
+  const duration = 0.22;
+  const length = Math.floor(ctx.sampleRate * duration);
+  const buffer = ctx.createBuffer(1, length, ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < length; i += 1) {
+    data[i] = Math.random() * 2 - 1;
+  }
+  const source = ctx.createBufferSource();
+  const filter = ctx.createBiquadFilter();
+  const amp = ctx.createGain();
+  source.buffer = buffer;
+  filter.type = 'lowpass';
+  filter.frequency.value = 1400;
+  amp.gain.setValueAtTime(0.0001, ctx.currentTime);
+  amp.gain.exponentialRampToValueAtTime(0.12, ctx.currentTime + 0.06);
+  amp.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+  source.connect(filter).connect(amp).connect(out);
+  source.start();
+}
+
+const DRAW_RECIPES: Record<DrawSound, Recipe> = {
+  swish,
+  pop: (ctx, out) => glide(ctx, out, 380, 820, 0, 0.09, 0.22),
+  tock: (ctx, out) => { glide(ctx, out, 640, 640, 0, 0.07, 0.22); tone(ctx, out, 1280, 0, 0.04, 'triangle', 0.05); },
+  chime: (ctx, out) => { glide(ctx, out, 1046, 1046, 0, 0.16, 0.13); glide(ctx, out, 1568, 1568, 0.07, 0.2, 0.11); },
+};
+
+const RECIPES: Record<Exclude<SoundName, 'draw'>, Recipe> = {
   place: (ctx, out) => tone(ctx, out, 180, 0, 0.08, 'triangle', 0.25),
   flip: (ctx, out) => { noise(ctx, out, 0.06, 4000, 0.2); tone(ctx, out, 900, 0.03, 0.04, 'square', 0.05); },
   myTurn: (ctx, out) => { tone(ctx, out, 784, 0, 0.18); tone(ctx, out, 1047, 0.15, 0.25); },
@@ -96,6 +183,25 @@ const RECIPES: Record<SoundName, (ctx: AudioContext, out: AudioNode) => void> = 
   click: (ctx, out) => tone(ctx, out, 1200, 0, 0.03, 'square', 0.04),
   tick: (ctx, out) => { tone(ctx, out, 660, 0, 0.09, 'square', 0.06); tone(ctx, out, 660, 0.16, 0.09, 'square', 0.06); },
 };
+
+function recipeOf(name: SoundName, drawSound: DrawSound): Recipe {
+  return name === 'draw' ? DRAW_RECIPES[drawSound] : RECIPES[name];
+}
+
+/** 재생마다 음량(0~100) 노드를 하나 거쳐 내보낸다. 소리가 꺼졌거나 음량이 0이면 아무것도 하지 않는다. */
+function emit(ctx: AudioContext | null, volume: number, recipe: Recipe): void {
+  if (!ctx || volume === 0) {
+    return;
+  }
+  try {
+    const out = ctx.createGain();
+    out.gain.value = volume / 100;
+    out.connect(ctx.destination);
+    recipe(ctx, out);
+  } catch {
+    // 오디오 오류는 게임 진행에 영향을 주지 않는다.
+  }
+}
 
 function resumeIfSuspended(ctx: AudioContext): void {
   if (ctx.state !== 'suspended') {
@@ -111,6 +217,7 @@ function resumeIfSuspended(ctx: AudioContext): void {
 export function SoundProvider({ children }: { children: ReactNode }) {
   const [muted, setMuted] = useState(readMuted);
   const [volume, setVolumeState] = useState(readVolume);
+  const [drawSound, setDrawSoundState] = useState(readDrawSound);
   const ctxRef = useRef<AudioContext | null>(null);
 
   useEffect(() => {
@@ -136,19 +243,8 @@ export function SoundProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const play = useCallback((name: SoundName) => {
-    const ctx = ctxRef.current;
-    if (muted || !ctx || volume === 0) {
-      return;
-    }
-    try {
-      const out = ctx.createGain();
-      out.gain.value = volume / 100;
-      out.connect(ctx.destination);
-      RECIPES[name](ctx, out);
-    } catch {
-      // 오디오 오류는 게임 진행에 영향을 주지 않는다.
-    }
-  }, [muted, volume]);
+    emit(ctxRef.current, muted ? 0 : volume, recipeOf(name, drawSound));
+  }, [muted, volume, drawSound]);
 
   const toggleMuted = useCallback(() => {
     setMuted((current) => {
@@ -163,10 +259,18 @@ export function SoundProvider({ children }: { children: ReactNode }) {
     setVolumeState(next);
   }, []);
 
-  const api = useMemo(() => ({ play, muted, toggleMuted, volume, setVolume }), [play, muted, toggleMuted, volume, setVolume]);
+  // 고르는 순간 바로 들려주려고, 상태가 바뀌기를 기다리지 않고 고른 소리로 직접 재생한다.
+  const setDrawSound = useCallback((sound: DrawSound) => {
+    writeDrawSound(sound);
+    setDrawSoundState(sound);
+    emit(ctxRef.current, muted ? 0 : volume, DRAW_RECIPES[sound]);
+  }, [muted, volume]);
+
+  const api = useMemo(() => ({ play, muted, toggleMuted, volume, setVolume, drawSound, setDrawSound }),
+    [play, muted, toggleMuted, volume, setVolume, drawSound, setDrawSound]);
   return <SoundContext.Provider value={api}>{children}</SoundContext.Provider>;
 }
 
 export function useSound(): SoundApi {
-  return useContext(SoundContext) ?? SILENT;
+  return useContext(SoundContext) ?? SILENT_SOUND;
 }

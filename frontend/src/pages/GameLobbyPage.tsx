@@ -270,7 +270,8 @@ export function GameLobbyPage() {
           </section>
         </div>
       </div>
-      <div className="space-y-4">
+      {/* 모바일에서는 방 목록에 집중하도록 숨긴다(전적은 상단 "전적" 메뉴에서 본다). */}
+      <div data-testid="lobby-sidebar" className="hidden space-y-4 lg:block">
         <Panel>
           <h2 className="mb-2 font-bold">내 전적</h2>
           {stat ? <StatSummary stat={stat} /> : <p className="text-sm text-stone-500">{statFailed ? '전적을 불러오지 못했어요.' : '불러오는 중…'}</p>}

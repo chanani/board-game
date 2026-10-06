@@ -56,4 +56,13 @@ describe('ChatStrip', () => {
     const live = screen.getByTestId('chat-strip-line').closest('[aria-live]');
     expect(live).toHaveAttribute('aria-live', 'polite');
   });
+
+  it('메시지 칸은 메시지 수와 상관없이 늘 3줄 높이다', () => {
+    const { rerender } = render(<ChatStrip messages={[]} meId={1} onSend={() => true} onExpand={vi.fn()} />);
+    const box = () => screen.getByTestId('chat-strip-lines');
+    expect(box()).toHaveClass('h-[54px]', 'justify-end');
+    rerender(<ChatStrip messages={[msg(1, 2, '밥', '하나')]} meId={1} onSend={() => true} onExpand={vi.fn()} />);
+    expect(box()).toHaveClass('h-[54px]');
+    screen.getAllByTestId('chat-strip-line').forEach((line) => expect(line).toHaveClass('h-[18px]', 'leading-[18px]'));
+  });
 });

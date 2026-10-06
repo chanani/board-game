@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import userEvent from '@testing-library/user-event';
 import { Link, MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { SoundContext } from '../lib/sound';
+import { SILENT_SOUND, SoundContext } from '../lib/sound';
 import { ChatSheet } from '../room/ChatSheet';
 import { UserMenu } from './UserMenu';
 
@@ -12,7 +12,7 @@ vi.mock('../auth/AuthContext', () => ({ useAuth: () => ({ member: { id: 1, login
 vi.mock('../api/rooms', () => ({ roomsApi: { mine: rooms.mine } }));
 vi.mock('./Toast', () => ({ useToast: () => ({ show: vi.fn() }) }));
 
-const sound = { play: vi.fn(), muted: false, toggleMuted: vi.fn(), volume: 70, setVolume: vi.fn() };
+const sound = { ...SILENT_SOUND, play: vi.fn(), toggleMuted: vi.fn(), setVolume: vi.fn(), setDrawSound: vi.fn() };
 
 function ui(overrides: Partial<typeof sound> = {}) {
   return (

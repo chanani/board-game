@@ -2,7 +2,7 @@ import { act, render, renderHook, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { clampVolume, readMuted, readVolume, SoundProvider, useSound, writeMuted, writeVolume } from './sound';
+import { clampVolume, readDrawSound, readMuted, readVolume, SoundProvider, useSound, writeDrawSound, writeMuted, writeVolume } from './sound';
 
 const wrapper = ({ children }: { children: ReactNode }) => <SoundProvider>{children}</SoundProvider>;
 
@@ -122,5 +122,30 @@ describe('sound', () => {
     // 재생마다 만든 첫 GainNode가 출력 노드다(그 뒤 tone이 만드는 노드는 소리별 envelope).
     expect(outputs[0].gain.value).toBe(0.25);
     delete (window as unknown as { AudioContext?: unknown }).AudioContext;
+  });
+
+  it('카드 가져오는 소리는 기본이 슥(swish)이고, 저장한 값을 읽으며 모르는 값이면 기본으로 돌아간다', () => {
+    expect(readDrawSound()).toBe('swish');
+    writeDrawSound('tock');
+    expect(readDrawSound()).toBe('tock');
+    window.localStorage.setItem('bg.drawSound', 'gostop');
+    expect(readDrawSound()).toBe('swish');
+  });
+
+  it('저장소가 막혀도 카드 가져오는 소리는 기본값으로 동작한다', () => {
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('blocked'); });
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('blocked'); });
+    expect(readDrawSound()).toBe('swish');
+    expect(() => writeDrawSound('pop')).not.toThrow();
+  });
+
+  it('setDrawSound는 고른 소리를 저장하고 drawSound에 반영한다', () => {
+    const { result } = renderHook(() => useSound(), { wrapper });
+    expect(result.current.drawSound).toBe('swish');
+
+    act(() => result.current.setDrawSound('chime'));
+
+    expect(result.current.drawSound).toBe('chime');
+    expect(readDrawSound()).toBe('chime');
   });
 });

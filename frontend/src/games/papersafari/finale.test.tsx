@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { LogEntry } from '../../lib/eventLog';
 import type { BoardView, PaperSafariSessionView, PaperSafariView, Room, SlotView } from '../../api/types';
-import { SoundContext } from '../../lib/sound';
+import { SILENT_SOUND, SoundContext } from '../../lib/sound';
 import type { ViewTransition } from '../../room/useRoomChannel';
 import { PaperSafariTable } from './PaperSafariTable';
 
@@ -54,7 +54,7 @@ const play = vi.fn();
 function ui(game: PaperSafariView, transition: ViewTransition | null = null, log: LogEntry[] = []) {
   const view: PaperSafariSessionView = { game };
   return (
-    <SoundContext.Provider value={{ play, muted: false, toggleMuted: () => undefined, volume: 70, setVolume: () => undefined }}>
+    <SoundContext.Provider value={{ ...SILENT_SOUND, play }}>
       <PaperSafariTable view={view} room={room} meId={ME} log={log} receivedAt={0} now={0} errorSeq={0} nicknameOf={nicknameOf}
         send={vi.fn()} onCloseGameOver={vi.fn()} onReadyNext={vi.fn()} transition={transition} />
     </SoundContext.Provider>
