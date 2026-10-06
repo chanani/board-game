@@ -35,6 +35,37 @@ function RoomListTitle({ title, count }: { title: string; count: number }) {
   );
 }
 
+/** 내가 들어가 있는 방이면 참가·관전 대신 돌아가기. */
+function ReturnAction({ code }: { code: string }) {
+  const navigate = useNavigate();
+  return (
+    <div className="flex shrink-0 items-center gap-2">
+      <span className="text-xs font-bold text-green-700">참여 중</span>
+      <Button onClick={() => navigate(`/rooms/${code}`)}>돌아가기</Button>
+    </div>
+  );
+}
+
+/** 게임 중인 방 카드의 버튼: 내 방은 돌아가기, 비공개는 막힌 버튼, 그 밖에는 관전하기. */
+function PlayingRoomAction({ room, mine, onWatch }: { room: RoomSummary; mine: boolean; onWatch: () => void }) {
+  if (mine) {
+    return <ReturnAction code={room.code} />;
+  }
+  if (room.locked) {
+    return <Button variant="secondary" disabled className="inline-flex items-center gap-1"><LockIcon className="h-4 w-4" />비공개</Button>;
+  }
+  return <Button variant="secondary" onClick={onWatch}>관전하기</Button>;
+}
+
+/** 기다리는 방 카드의 버튼: 내 방은 돌아가기, 그 밖에는 참가(가득 차면 막힘). */
+function WaitingRoomAction({ room, mine, onJoin }: { room: RoomSummary; mine: boolean; onJoin: () => void }) {
+  if (mine) {
+    return <ReturnAction code={room.code} />;
+  }
+  const full = room.playerCount >= room.maxPlayers;
+  return <Button variant="secondary" disabled={full} onClick={onJoin}>{full ? '가득 참' : '참가'}</Button>;
+}
+
 function EmptyRooms({ children }: { children: string }) {
   return <p className="rounded-xl bg-cream px-3 py-4 text-center text-sm text-stone-500">{children}</p>;
 }
@@ -63,10 +94,23 @@ export function GameLobbyPage() {
   }, [gameType]);
 
   const failedRef = useRef(false);
+  const minePendingRef = useRef(false);
+
+  // 내 방은 목록과 따로 불러온다(실패해도 목록·알림에 영향 없음). 앞 요청이 끝나지 않았으면 이번 차례는 건너뛴다.
+  const loadMine = useCallback(() => {
+    if (minePendingRef.current) {
+      return;
+    }
+    minePendingRef.current = true;
+    roomsApi
+      .mine()
+      .then((mine) => setMyCode(mine?.code ?? null))
+      .catch(() => undefined)
+      .finally(() => { minePendingRef.current = false; });
+  }, []);
 
   const loadRooms = useCallback((manual = false) => {
-    // 내 방은 목록과 따로 불러온다(실패해도 목록·알림에 영향 없음).
-    roomsApi.mine().then((mine) => setMyCode(mine?.code ?? null)).catch(() => undefined);
+    loadMine();
     return roomsApi
       .list(gameType)
       .then((next) => {
@@ -79,7 +123,7 @@ export function GameLobbyPage() {
         }
         failedRef.current = true;
       });
-  }, [toast, gameType]);
+  }, [toast, gameType, loadMine]);
 
   usePolling(() => loadRooms(), POLL_MS);
 
@@ -139,14 +183,6 @@ export function GameLobbyPage() {
     join(room.code, room.name);
   };
 
-  /** 내가 들어가 있는 방이면 참가·관전 대신 돌아가기. */
-  const returnAction = (room: RoomSummary) => (
-    <div className="flex shrink-0 items-center gap-2">
-      <span className="text-xs font-bold text-green-700">참여 중</span>
-      <Button onClick={() => navigate(`/rooms/${room.code}`)}>돌아가기</Button>
-    </div>
-  );
-
   const waiting = rooms.filter((room) => room.status === 'WAITING');
   const playing = rooms.filter((room) => room.status === 'PLAYING');
 
@@ -187,34 +223,27 @@ export function GameLobbyPage() {
             </div>
             {waiting.length === 0 ? <EmptyRooms>지금은 열린 방이 없어요. 방을 만들어 친구를 불러보세요!</EmptyRooms> : (
               <ul className={ROOM_GRID}>
-                {waiting.map((room, index) => {
-                  const full = room.playerCount >= room.maxPlayers;
-                  return (
-                    <motion.li
-                      key={room.code}
-                      className={ROOM_CARD}
-                      initial={{ y: -16, opacity: 0 }}
-                      animate={{ y: 0, opacity: 1 }}
-                      transition={{ delay: index * 0.05 }}
-                    >
-                      <div className="min-w-0">
-                        <p className="flex items-center gap-1 font-medium">
-                          {room.name}
-                          {room.locked ? <span role="img" aria-label="비공개"><LockIcon className="h-4 w-4 text-stone-500" /></span> : null}
-                        </p>
-                        <p className="flex items-center gap-1 text-xs text-stone-500">
-                          <CrownIcon className="h-3.5 w-3.5" />{room.hostNickname} · {room.playerCount}/{room.maxPlayers}
-                        </p>
-                        <p className="mt-0.5 text-xs text-stone-500"><ThemeBadge theme={room.theme} /></p>
-                      </div>
-                      {room.code === myCode ? returnAction(room) : (
-                        <Button variant="secondary" disabled={full} onClick={() => joinFromList(room)}>
-                          {full ? '가득 참' : '참가'}
-                        </Button>
-                      )}
-                    </motion.li>
-                  );
-                })}
+                {waiting.map((room, index) => (
+                  <motion.li
+                    key={room.code}
+                    className={ROOM_CARD}
+                    initial={{ y: -16, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: index * 0.05 }}
+                  >
+                    <div className="min-w-0">
+                      <p className="flex items-center gap-1 font-medium">
+                        {room.name}
+                        {room.locked ? <span role="img" aria-label="비공개"><LockIcon className="h-4 w-4 text-stone-500" /></span> : null}
+                      </p>
+                      <p className="flex items-center gap-1 text-xs text-stone-500">
+                        <CrownIcon className="h-3.5 w-3.5" />{room.hostNickname} · {room.playerCount}/{room.maxPlayers}
+                      </p>
+                      <p className="mt-0.5 text-xs text-stone-500"><ThemeBadge theme={room.theme} /></p>
+                    </div>
+                    <WaitingRoomAction room={room} mine={room.code === myCode} onJoin={() => joinFromList(room)} />
+                  </motion.li>
+                ))}
               </ul>
             )}
           </section>
@@ -233,11 +262,7 @@ export function GameLobbyPage() {
                       </p>
                       <p className="mt-0.5 text-xs text-stone-500"><ThemeBadge theme={room.theme} /></p>
                     </div>
-                    {room.code === myCode ? returnAction(room) : room.locked ? (
-                      <Button variant="secondary" disabled className="inline-flex items-center gap-1"><LockIcon className="h-4 w-4" />비공개</Button>
-                    ) : (
-                      <Button variant="secondary" onClick={() => enter(() => roomsApi.watch(room.code))}>관전하기</Button>
-                    )}
+                    <PlayingRoomAction room={room} mine={room.code === myCode} onWatch={() => enter(() => roomsApi.watch(room.code))} />
                   </li>
                 ))}
               </ul>

@@ -248,4 +248,21 @@ describe('GameLobbyPage', () => {
 
     expect(api.list.mock.calls.length).toBeGreaterThanOrEqual(before + 2);
   });
+
+  it('내 방 확인이 끝나지 않았으면 다음 차례에 다시 묻지 않고, 끝나면 다시 묻는다', async () => {
+    vi.useFakeTimers();
+    let finish: (value: undefined) => void = () => {};
+    api.mine.mockReturnValue(new Promise((resolve) => { finish = resolve; }));
+    renderLobby();
+    await act(async () => { await vi.advanceTimersByTimeAsync(3000); });
+
+    expect(api.list.mock.calls.length).toBeGreaterThanOrEqual(3);
+    expect(api.mine).toHaveBeenCalledTimes(1);
+
+    api.mine.mockResolvedValue(undefined);
+    await act(async () => { finish(undefined); });
+    await act(async () => { await vi.advanceTimersByTimeAsync(1000); });
+
+    expect(api.mine).toHaveBeenCalledTimes(2);
+  });
 });
