@@ -37,6 +37,7 @@ class OutcomePublisherTest {
         Room room = Room.open(new RoomProfile(new RoomCode("ABCDEF"), new RoomName("방"), new RoomSettings(GameType.PAPER_SAFARI, Capacity.max(GameType.PAPER_SAFARI), RoomLock.open())),
                 new Participant(1L, "앨리스"));
         room.join(new Participant(2L, "밥"), null, new FakeRoomPasswordHasher());
+        room.setReady(2L, true);
         room.start(1L, FakeGameSession::new, "match-1", STARTED);
         return room;
     }

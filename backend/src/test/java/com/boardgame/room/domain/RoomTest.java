@@ -25,6 +25,21 @@ class RoomTest {
     }
 
     private RoomGame start(Room room, long requester) {
+        readyGuests(room);
+        return startRaw(room, requester);
+    }
+
+    private void readyGuests(Room room) {
+        if (room.status() == RoomStatus.PLAYING) {
+            return;
+        }
+        room.participants().stream()
+                .map(Participant::memberId)
+                .filter(id -> id != room.hostId())
+                .forEach(id -> room.setReady(id, true));
+    }
+
+    private RoomGame startRaw(Room room, long requester) {
         return room.start(requester, ids -> {
             FakeGameSession session = new FakeGameSession(ids);
             created.set(session);
@@ -275,15 +290,17 @@ class RoomTest {
     }
 
     @Test
-    void 참가자가_모두_나가면_관전자가_있어도_빈_방이다() {
+    void 참가자가_모두_나가면_자동_참가한_관전자도_나간_뒤_빈_방이다() {
         Room room = playingRoom();
         room.watch(carol);
 
         room.leave(2L);
         room.leave(1L);
 
+        assertThat(room.isEmpty()).isFalse();
+        room.leave(3L);
         assertThat(room.isEmpty()).isTrue();
-        assertThat(room.occupantIds()).containsExactly(3L);
+        assertThat(room.occupantIds()).isEmpty();
     }
 
     @Test
@@ -310,5 +327,115 @@ class RoomTest {
 
         assertError(() -> room.lockToPass(carol.memberId()), ErrorCode.ROOM_ALREADY_PLAYING);
         assertError(() -> room.admit(carol, RoomLock.open()), ErrorCode.ROOM_ALREADY_PLAYING);
+    }
+
+    @Test
+    void 준비하지_않은_참가자가_있으면_시작할_수_없고_준비하면_시작되며_준비가_초기화된다() {
+        Room room = openRoom();
+        room.join(bob, null, new FakeRoomPasswordHasher());
+
+        assertError(() -> startRaw(room, 1L), ErrorCode.PLAYERS_NOT_READY);
+        room.setReady(2L, true);
+        startRaw(room, 1L);
+
+        assertThat(room.readyIds()).isEmpty();
+    }
+
+    @Test
+    void 준비를_해제하면_다시_시작할_수_없다() {
+        Room room = openRoom();
+        room.join(bob, null, new FakeRoomPasswordHasher());
+        room.setReady(2L, true);
+        room.setReady(2L, false);
+
+        assertThat(room.readyIds()).isEmpty();
+        assertError(() -> startRaw(room, 1L), ErrorCode.PLAYERS_NOT_READY);
+    }
+
+    @Test
+    void 방장의_준비는_INVALID_INPUT_관전자와_외부인은_NOT_IN_ROOM() {
+        Room room = playingRoom();
+        room.watch(carol);
+        created.get().finish();
+        Room waiting = openRoom();
+
+        assertError(() -> waiting.setReady(1L, true), ErrorCode.INVALID_INPUT);
+        assertError(() -> room.setReady(3L, true), ErrorCode.NOT_IN_ROOM);
+        assertError(() -> room.setReady(9L, true), ErrorCode.NOT_IN_ROOM);
+    }
+
+    @Test
+    void 게임_중에는_준비할_수_없다() {
+        Room room = playingRoom();
+
+        assertError(() -> room.setReady(2L, true), ErrorCode.ROOM_ALREADY_PLAYING);
+    }
+
+    @Test
+    void 나간_참가자는_준비_목록에서_빠진다() {
+        Room room = openRoom();
+        room.join(bob, null, new FakeRoomPasswordHasher());
+        room.join(carol, null, new FakeRoomPasswordHasher());
+        room.setReady(2L, true);
+        room.setReady(3L, true);
+
+        room.leave(2L);
+
+        assertThat(room.readyIds()).containsExactly(3L);
+    }
+
+    @Test
+    void 방장이_나가면_준비가_모두_해제된다() {
+        Room room = openRoom();
+        room.join(bob, null, new FakeRoomPasswordHasher());
+        room.join(carol, null, new FakeRoomPasswordHasher());
+        room.setReady(2L, true);
+        room.setReady(3L, true);
+
+        room.leave(1L);
+
+        assertThat(room.hostId()).isEqualTo(2L);
+        assertThat(room.readyIds()).isEmpty();
+    }
+
+    @Test
+    void 게임이_끝나면_관전자가_들어온_순서대로_정원까지_참가하고_준비는_해제된다() {
+        Room room = Room.open(new RoomProfile(new RoomCode("ABCDEF"), new RoomName("방"), new RoomSettings(
+                GameType.PAPER_SAFARI, Capacity.of(GameType.PAPER_SAFARI, 2), RoomLock.open())), alice);
+        room.join(bob, null, new FakeRoomPasswordHasher());
+        start(room, 1L);
+        room.watch(carol);
+        room.watch(new Participant(4L, "넷"));
+
+        room.leave(2L);
+
+        assertThat(room.status()).isEqualTo(RoomStatus.WAITING);
+        assertThat(room.memberIds()).containsExactly(1L, 3L);
+        assertThat(room.spectators()).containsExactly(new Participant(4L, "넷"));
+        assertThat(room.readyIds()).isEmpty();
+    }
+
+    @Test
+    void 마지막_행동으로_게임이_끝나도_관전자가_참가한다() {
+        Room room = playingRoom();
+        room.watch(carol);
+        created.get().finishOnAct();
+
+        room.act(1L, new GameAction("DRAW_DECK", null, null));
+
+        assertThat(room.memberIds()).containsExactly(1L, 2L, 3L);
+        assertThat(room.spectators()).isEmpty();
+        assertThat(room.readyIds()).isEmpty();
+    }
+
+    @Test
+    void 대기_중에_나가도_관전자를_자동으로_앉히지_않는다() {
+        Room room = playingRoom();
+        room.watch(carol);
+        created.get().finish();
+
+        room.leave(2L);
+
+        assertThat(room.spectators()).containsExactly(carol);
     }
 }

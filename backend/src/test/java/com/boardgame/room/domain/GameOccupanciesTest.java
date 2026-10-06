@@ -20,6 +20,9 @@ class GameOccupanciesTest {
 
     private Room playing(String code, long... memberIds) {
         Room room = room(code, memberIds);
+        for (int i = 1; i < memberIds.length; i++) {
+            room.setReady(memberIds[i], true);
+        }
         room.start(memberIds[0], FakeGameSession::new, "match-" + code, Instant.parse("2026-10-06T10:00:00Z"));
         return room;
     }

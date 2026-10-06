@@ -31,6 +31,13 @@ public class Spectators {
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_SPECTATOR));
     }
 
+    /** 들어온 순서대로 최대 count명을 꺼내 관전자 목록에서 뺀다. */
+    public List<Participant> takeFirst(int count) {
+        List<Participant> taken = spectators.stream().limit(count).toList();
+        spectators.removeAll(taken);
+        return taken;
+    }
+
     public int size() {
         return spectators.size();
     }

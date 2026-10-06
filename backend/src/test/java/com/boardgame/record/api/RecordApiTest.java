@@ -205,6 +205,8 @@ class RecordApiTest {
                 .andReturn().getResponse().getContentAsString();
         String code = JsonPath.read(created, "$.code");
         mockMvc.perform(post("/api/rooms/{code}/join", code).session(guest.session()));
+        mockMvc.perform(post("/api/rooms/{code}/ready", code).session(guest.session())
+                .contentType(MediaType.APPLICATION_JSON).content("{\"ready\": true}"));
         mockMvc.perform(post("/api/rooms/{code}/start", code).session(host.session()));
 
         mockMvc.perform(post("/api/rooms/{code}/leave", code).session(guest.session()))

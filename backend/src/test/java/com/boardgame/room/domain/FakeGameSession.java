@@ -16,6 +16,7 @@ public class FakeGameSession implements GameSession {
     private final List<GameAction> actions = new ArrayList<>();
     private final List<Long> forfeitCalls = new ArrayList<>();
     private boolean finished;
+    private boolean finishOnAct;
 
     public FakeGameSession(List<Long> players) {
         this.players = List.copyOf(players);
@@ -24,6 +25,10 @@ public class FakeGameSession implements GameSession {
     @Override
     public List<GameOutcome> act(long memberId, GameAction action) {
         actions.add(action);
+        if (finishOnAct) {
+            finished = true;
+            return List.of(new GameCompleted(List.of()));
+        }
         return List.of();
     }
 
@@ -56,6 +61,10 @@ public class FakeGameSession implements GameSession {
     @Override
     public int roundNumber() {
         return 1;
+    }
+
+    public void finishOnAct() {
+        finishOnAct = true;
     }
 
     public void finish() {

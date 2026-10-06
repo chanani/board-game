@@ -71,6 +71,13 @@ class RoomApiTest {
         return mockMvc.perform(post("/api/rooms/{code}/start", code).session(user.session()));
     }
 
+    private void ready(User guest, String code) throws Exception {
+        mockMvc.perform(post("/api/rooms/{code}/ready", code).session(guest.session())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"ready\": true}"))
+                .andExpect(status().isOk());
+    }
+
     private ResultActions leave(User user, String code) throws Exception {
         return mockMvc.perform(post("/api/rooms/{code}/leave", code).session(user.session()));
     }
@@ -129,6 +136,7 @@ class RoomApiTest {
         User host2 = ApiUsers.create(mockMvc);
         String playing = createdCode(host2);
         join(guest, playing).andExpect(status().isOk());
+        ready(guest, playing);
         start(host2, playing).andExpect(status().isOk());
 
         mockMvc.perform(get("/api/rooms").param("gameType", "PAPER_SAFARI").session(viewer.session()))
@@ -186,6 +194,7 @@ class RoomApiTest {
         User guest = ApiUsers.create(mockMvc);
         String code = createdCode(host);
         join(guest, code);
+        ready(guest, code);
 
         start(host, code).andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("PLAYING"));
@@ -209,6 +218,7 @@ class RoomApiTest {
         User late = ApiUsers.create(mockMvc);
         String code = createdCode(host);
         join(guest, code);
+        ready(guest, code);
         start(host, code);
 
         join(late, code).andExpect(status().isConflict())
@@ -221,6 +231,7 @@ class RoomApiTest {
         User guest = ApiUsers.create(mockMvc);
         String code = createdCode(host);
         join(guest, code);
+        ready(guest, code);
         start(host, code);
 
         leave(host, code).andExpect(status().isNoContent());
@@ -245,10 +256,12 @@ class RoomApiTest {
         User third = ApiUsers.create(mockMvc);
         String code = createdCode(host);
         join(guest, code);
+        ready(guest, code);
         start(host, code);
         leave(guest, code).andExpect(status().isNoContent());
 
         join(third, code);
+        ready(third, code);
         start(host, code);
 
         String firstStartKey = events.stream(GameStartedEvent.class)

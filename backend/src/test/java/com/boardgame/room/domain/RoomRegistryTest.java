@@ -54,13 +54,16 @@ class RoomRegistryTest {
     void 관전자도_색인되고_참가자가_모두_나가면_관전자_색인과_방이_사라진다() {
         Room room = room("ABCDEF", 1L);
         room.join(new Participant(2L, "밥"), null, new FakeRoomPasswordHasher());
+        room.setReady(2L, true);
         room.start(1L, FakeGameSession::new, "match-1", java.time.Instant.EPOCH);
         room.watch(new Participant(9L, "구경꾼"));
         registry.save(room);
         assertThat(registry.findByMember(9L)).containsSame(room);
 
         room.leave(2L);
+        assertThat(room.contains(9L)).isTrue();
         room.leave(1L);
+        room.leave(9L);
         registry.save(room);
 
         assertThat(registry.findByMember(9L)).isEmpty();
@@ -71,6 +74,7 @@ class RoomRegistryTest {
     void 나간_관전자는_색인에서_빠진다() {
         Room room = room("ABCDEF", 1L);
         room.join(new Participant(2L, "밥"), null, new FakeRoomPasswordHasher());
+        room.setReady(2L, true);
         room.start(1L, FakeGameSession::new, "match-1", java.time.Instant.EPOCH);
         room.watch(new Participant(9L, "구경꾼"));
         registry.save(room);

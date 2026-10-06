@@ -37,6 +37,7 @@ class RoomServiceListTest {
 
     private void play(Room room, long guestId) {
         room.join(new Participant(guestId, "guest" + guestId), null, null);
+        room.setReady(guestId, true);
         room.start(room.hostId(), FakeGameSession::new, "m-" + guestId, Instant.now());
     }
 

@@ -78,6 +78,12 @@ public class RoomController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/{code}/ready")
+    public RoomResponse ready(@PathVariable String code, @AuthenticationPrincipal LoginMember member,
+                              @RequestBody ReadyRequest request) {
+        return roomService.setReady(code, member.id(), request.ready());
+    }
+
     @PostMapping("/{code}/start")
     public RoomResponse start(@PathVariable String code, @AuthenticationPrincipal LoginMember member) {
         return roomService.start(code, member.id());

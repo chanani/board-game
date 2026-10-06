@@ -144,10 +144,20 @@ public class RoomService {
 
     public synchronized void leave(String rawCode, long memberId) {
         Room room = find(rawCode);
+        List<Long> before = room.memberIds();
         List<GameOutcome> outcomes = room.leave(memberId);
+        baselineNewcomers(room, before);
         registry.save(room);
         broadcastUnlessEmpty(room);
         outcomePublisher.publish(room, outcomes, clock.instant());
+    }
+
+    // 게임이 끝나 자동으로 참가한 관전자도 기권 유예 시간을 잴 수 있게 기준 시각을 둔다.
+    private void baselineNewcomers(Room room, List<Long> before) {
+        List<Long> newcomers = room.memberIds().stream()
+                .filter(id -> !before.contains(id))
+                .toList();
+        presence.baseline(newcomers, clock.instant());
     }
 
     private void broadcastUnlessEmpty(Room room) {
@@ -155,6 +165,16 @@ public class RoomService {
             return;
         }
         broadcast(room);
+    }
+
+    public synchronized RoomResponse setReady(String rawCode, long memberId, Boolean ready) {
+        if (ready == null) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT);
+        }
+        Room room = find(rawCode);
+        room.setReady(memberId, ready);
+        registry.save(room);
+        return broadcast(room);
     }
 
     public synchronized RoomResponse start(String rawCode, long memberId) {
@@ -181,7 +201,10 @@ public class RoomService {
 
     public synchronized void act(String rawCode, long memberId, GameAction action) {
         Room room = find(rawCode);
+        List<Long> before = room.memberIds();
         List<GameOutcome> outcomes = room.act(memberId, action);
+        baselineNewcomers(room, before);
+        registry.save(room);
         broadcast(room);
         outcomePublisher.publish(room, outcomes, clock.instant());
     }
@@ -204,7 +227,9 @@ public class RoomService {
         if (!presence.isOfflineAtLeast(targetId, clock.instant(), FORFEIT_GRACE)) {
             throw new BusinessException(ErrorCode.FORFEIT_NOT_ALLOWED_YET);
         }
+        List<Long> before = room.memberIds();
         List<GameOutcome> outcomes = room.leave(targetId);
+        baselineNewcomers(room, before);
         registry.save(room);
         broadcastUnlessEmpty(room);
         outcomePublisher.publish(room, outcomes, clock.instant());

@@ -77,6 +77,8 @@ class GameLobbyApiTest {
         mockMvc.perform(post("/api/rooms/{code}/join", code).session(guest.session())).andExpect(status().isOk());
         assertThat(count(viewer, "waitingPlayers")).isEqualTo(waitingBefore + 2);
 
+        mockMvc.perform(post("/api/rooms/{code}/ready", code).session(guest.session())
+                .contentType(MediaType.APPLICATION_JSON).content("{\"ready\": true}")).andExpect(status().isOk());
         mockMvc.perform(post("/api/rooms/{code}/start", code).session(host.session())).andExpect(status().isOk());
         assertThat(count(viewer, "waitingPlayers")).isEqualTo(waitingBefore);
         assertThat(count(viewer, "playingPlayers")).isEqualTo(playingBefore + 2);

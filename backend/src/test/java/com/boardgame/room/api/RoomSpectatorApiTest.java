@@ -87,6 +87,13 @@ class RoomSpectatorApiTest {
         return mockMvc.perform(post("/api/rooms/{code}/watch", code).session(user.session()));
     }
 
+    private void ready(User guest, String code) throws Exception {
+        mockMvc.perform(post("/api/rooms/{code}/ready", code).session(guest.session())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"ready\": true}"))
+                .andExpect(status().isOk());
+    }
+
     private ResultActions leave(User user, String code) throws Exception {
         return mockMvc.perform(post("/api/rooms/{code}/leave", code).session(user.session()));
     }
@@ -100,6 +107,7 @@ class RoomSpectatorApiTest {
                 {"name": "관전 방", "gameType": "PAPER_SAFARI"}
                 """);
         join(guest, code, "{}").andExpect(status().isOk());
+        ready(guest, code);
         start(host, code).andExpect(status().isOk());
         return code;
     }
@@ -133,6 +141,7 @@ class RoomSpectatorApiTest {
         join(guest, locked, """
                 {"password": "1234"}
                 """).andExpect(status().isOk());
+        ready(guest, locked);
         start(host, locked).andExpect(status().isOk());
 
         watch(watcher, locked)
@@ -226,7 +235,7 @@ class RoomSpectatorApiTest {
     }
 
     @Test
-    void 게임이_끝나면_관전자가_자리에_앉는다() throws Exception {
+    void 게임이_끝나면_관전자가_자동으로_참가한다() throws Exception {
         User host = user();
         User guest = user();
         User third = user();
@@ -236,15 +245,18 @@ class RoomSpectatorApiTest {
                 """);
         join(guest, code, "{}").andExpect(status().isOk());
         join(third, code, "{}").andExpect(status().isOk());
+        ready(guest, code);
+        ready(third, code);
         start(host, code).andExpect(status().isOk());
         watch(watcher, code).andExpect(status().isOk());
         leave(third, code).andExpect(status().isNoContent());
         leave(guest, code).andExpect(status().isNoContent());
 
-        mockMvc.perform(post("/api/rooms/{code}/seat", code).session(watcher.session()))
+        getRoom(host, code)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("WAITING"))
                 .andExpect(jsonPath("$.members.length()").value(2))
+                .andExpect(jsonPath("$.members[0].ready").value(false))
                 .andExpect(jsonPath("$.members[1].id").value(watcher.id()))
                 .andExpect(jsonPath("$.spectators.length()").value(0));
     }

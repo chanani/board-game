@@ -160,6 +160,7 @@ class StompGameFlowTest {
         String code = post("/api/rooms", Map.of("name", "실시간 방", "gameType", "PAPER_SAFARI"), host.cookie())
                 .getBody().get("code").asText();
         post("/api/rooms/" + code + "/join", Map.of(), guest.cookie());
+        post("/api/rooms/" + code + "/ready", Map.of("ready", true), guest.cookie());
         post("/api/rooms/" + code + "/start", Map.of(), host.cookie());
         return code;
     }

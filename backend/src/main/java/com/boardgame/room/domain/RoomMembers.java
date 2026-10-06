@@ -8,6 +8,7 @@ import java.util.List;
 public class RoomMembers {
 
     private final List<Participant> members = new ArrayList<>();
+    private final ReadyMembers ready = new ReadyMembers();
 
     public void add(Participant participant, Capacity capacity) {
         if (contains(participant.memberId())) {
@@ -20,7 +21,39 @@ public class RoomMembers {
     }
 
     public void remove(long memberId) {
+        boolean wasHost = isHost(memberId);
         members.removeIf(member -> member.memberId() == memberId);
+        ready.unmark(memberId);
+        if (wasHost) {
+            ready.clear();
+        }
+    }
+
+    public void setReady(long memberId, boolean value) {
+        if (!value) {
+            ready.unmark(memberId);
+            return;
+        }
+        ready.mark(memberId);
+    }
+
+    public boolean everyGuestReady() {
+        return ready.containsAll(guestIds());
+    }
+
+    public void clearReady() {
+        ready.clear();
+    }
+
+    public List<Long> readyIds() {
+        return ready.asList();
+    }
+
+    private List<Long> guestIds() {
+        return members.stream()
+                .map(Participant::memberId)
+                .filter(id -> id != hostId())
+                .toList();
     }
 
     public boolean contains(long memberId) {

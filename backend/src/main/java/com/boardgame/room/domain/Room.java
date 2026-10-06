@@ -72,14 +72,25 @@ public class Room {
         occupants.seat(memberId, profile.capacity());
     }
 
+    public void setReady(long memberId, boolean ready) {
+        occupants.requirePlayer(memberId);
+        requireWaiting();
+        if (occupants.isHost(memberId)) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT);
+        }
+        occupants.setReady(memberId, ready);
+    }
+
     public List<GameOutcome> leave(long memberId) {
         if (occupants.isSpectator(memberId)) {
             occupants.removeSpectator(memberId);
             return List.of();
         }
         occupants.requirePlayer(memberId);
+        boolean wasPlaying = status() == RoomStatus.PLAYING;
         List<GameOutcome> outcomes = forfeitIfPlaying(memberId);
         occupants.removePlayer(memberId);
+        settleIfJustFinished(wasPlaying);
         return outcomes;
     }
 
@@ -93,6 +104,10 @@ public class Room {
         if (occupants.playerCount() < gameType().minPlayers()) {
             throw new BusinessException(ErrorCode.NOT_ENOUGH_PLAYERS);
         }
+        if (!occupants.everyGuestReady()) {
+            throw new BusinessException(ErrorCode.PLAYERS_NOT_READY);
+        }
+        occupants.clearReady();
         game = new RoomGame(sessionCreator.apply(occupants.playerIds()), matchKey, startedAt);
         return game;
     }
@@ -102,7 +117,9 @@ public class Room {
         if (status() != RoomStatus.PLAYING) {
             throw new BusinessException(ErrorCode.GAME_NOT_STARTED);
         }
-        return game.act(memberId, action);
+        List<GameOutcome> outcomes = game.act(memberId, action);
+        settleIfJustFinished(true);
+        return outcomes;
     }
 
     public Optional<Object> viewFor(long memberId) {
@@ -204,6 +221,10 @@ public class Room {
         return occupants.spectators();
     }
 
+    public List<Long> readyIds() {
+        return occupants.readyIds();
+    }
+
     public List<Long> memberIds() {
         return occupants.playerIds();
     }
@@ -217,6 +238,15 @@ public class Room {
             return List.of();
         }
         return game.forfeit(memberId);
+    }
+
+    /** 게임이 방금 끝났으면 준비를 풀고, 기다리던 관전자를 정원까지 참가자로 옮긴다. */
+    private void settleIfJustFinished(boolean wasPlaying) {
+        if (!wasPlaying || status() == RoomStatus.PLAYING) {
+            return;
+        }
+        occupants.clearReady();
+        occupants.seatWaitingSpectators(profile.capacity());
     }
 
     private void requireWaiting() {

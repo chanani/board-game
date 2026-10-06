@@ -33,6 +33,30 @@ public class RoomOccupants {
         addPlayer(spectator, capacity);
     }
 
+    public void setReady(long memberId, boolean ready) {
+        players.requireMember(memberId);
+        players.setReady(memberId, ready);
+    }
+
+    public boolean everyGuestReady() {
+        return players.everyGuestReady();
+    }
+
+    public void clearReady() {
+        players.clearReady();
+    }
+
+    public List<Long> readyIds() {
+        return players.readyIds();
+    }
+
+    /** 비어 있는 자리만큼 관전자를 들어온 순서대로 참가자로 옮긴다. */
+    public void seatWaitingSpectators(Capacity capacity) {
+        int vacancies = capacity.value() - players.size();
+        spectators.takeFirst(Math.max(vacancies, 0))
+                .forEach(spectator -> players.add(spectator, capacity));
+    }
+
     public void requireSpectator(long memberId) {
         spectators.require(memberId);
     }

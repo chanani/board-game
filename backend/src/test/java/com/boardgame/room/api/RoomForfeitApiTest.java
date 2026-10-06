@@ -71,6 +71,8 @@ class RoomForfeitApiTest {
                 .andReturn().getResponse().getContentAsString();
         String code = JsonPath.read(body, "$.code");
         mockMvc.perform(post("/api/rooms/{code}/join", code).session(guest.session())).andExpect(status().isOk());
+        mockMvc.perform(post("/api/rooms/{code}/ready", code).session(guest.session())
+                .contentType(MediaType.APPLICATION_JSON).content("{\"ready\": true}")).andExpect(status().isOk());
         mockMvc.perform(post("/api/rooms/{code}/start", code).session(host.session())).andExpect(status().isOk());
         return code;
     }

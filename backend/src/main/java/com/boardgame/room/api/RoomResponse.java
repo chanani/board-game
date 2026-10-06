@@ -15,7 +15,7 @@ public record RoomResponse(String code, String name, GameType gameType, String g
     public static RoomResponse from(Room room, PresenceTracker presence, Instant now) {
         long hostId = room.hostId();
         List<RoomMemberResponse> members = room.participants().stream()
-                .map(participant -> member(participant, hostId, presence, now))
+                .map(participant -> member(participant, hostId, room.readyIds(), presence, now))
                 .toList();
         List<RoomSpectatorResponse> spectators = room.spectators().stream()
                 .map(RoomSpectatorResponse::from)
@@ -25,11 +25,12 @@ public record RoomResponse(String code, String name, GameType gameType, String g
                 room.status(), hostId, room.capacity(), room.isLocked(), members, spectators);
     }
 
-    private static RoomMemberResponse member(Participant participant, long hostId, PresenceTracker presence,
-                                             Instant now) {
+    private static RoomMemberResponse member(Participant participant, long hostId, List<Long> readyIds,
+                                             PresenceTracker presence, Instant now) {
         long memberId = participant.memberId();
         long offlineSeconds = presence.offlineFor(memberId, now).toSeconds();
         return new RoomMemberResponse(memberId, participant.nickname(), memberId == hostId,
-                presence.isConnected(memberId), offlineSeconds);
+                presence.isConnected(memberId), offlineSeconds,
+                readyIds.contains(memberId));
     }
 }
