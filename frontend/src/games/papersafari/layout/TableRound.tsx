@@ -9,11 +9,11 @@ import { seatRows } from './seats';
 import type { TableProps } from '../PaperSafariTable';
 
 /**
- * pc: 큰 둥근 테이블. compact: 태블릿용으로 카드와 여백을 줄인 테이블.
+ * pc: 큰 둥근 테이블(PC·태블릿).
  * landscape: 휴대폰을 눕힌 낮은 화면. 상대는 모두 맞은편 한 줄(양 끝은 조금 아래), 덱·내 판·내 옆 칸은 아래 한 줄.
  * mini: 세로 휴대폰용 가장 작은 테이블. landscape·mini는 상대 카드 폭 28px, 예상 점수는 크게 보기에서만.
  */
-export type TableDensity = 'pc' | 'compact' | 'landscape' | 'mini';
+export type TableDensity = 'pc' | 'landscape' | 'mini';
 
 type DensityStyle = {
   opponent: SeatSize;
@@ -30,11 +30,6 @@ const DENSITY: Record<TableDensity, DensityStyle> = {
     opponent: 'sm', piles: 'md', me: 'lg',
     felt: 'min-h-[min(70vh,640px)] max-w-6xl justify-between gap-4 px-[6%] pb-4 pt-6',
     top: 'gap-12', middle: 'gap-4', myRow: 'mt-8',
-  },
-  compact: {
-    opponent: 'xs', piles: 'sm', me: 'sm',
-    felt: 'gap-2 px-[5%] pb-3 pt-4',
-    top: 'gap-6', middle: 'gap-3', myRow: 'mt-2',
   },
   landscape: {
     opponent: 'mini', piles: 'sm', me: 'sm',

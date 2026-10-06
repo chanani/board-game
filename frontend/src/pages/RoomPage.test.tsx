@@ -85,9 +85,8 @@ describe('RoomPage 관전자', () => {
 
     const chips = screen.getByTestId('room-chips');
     expect(chips).toHaveTextContent('페이퍼 사파리');
-    expect(chips).toHaveTextContent('게임 중');
+    expect(chips).not.toHaveTextContent('게임 중');
     expect(chips.textContent).not.toContain('●');
-    expect(within(chips).getByText('게임 중').closest('span')?.querySelector('svg')).not.toBeNull();
     expect(chips).toHaveTextContent('2/4명');
     expect(chips).toHaveTextContent('비공개');
     expect(chips.textContent).not.toContain('👀');

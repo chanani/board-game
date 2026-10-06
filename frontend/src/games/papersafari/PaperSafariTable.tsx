@@ -57,7 +57,7 @@ type Props = {
   aside?: ReactNode;
 };
 
-const DENSITY_OF: Record<TableLayout, TableDensity> = { pc: 'pc', landscape: 'landscape', tablet: 'compact', portrait: 'mini' };
+const DENSITY_OF: Record<TableLayout, TableDensity> = { pc: 'pc', landscape: 'landscape', portrait: 'mini' };
 
 function placeText(canDiscard: boolean, compact: boolean): string {
   if (compact) {

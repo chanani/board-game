@@ -462,12 +462,12 @@ describe('게임 화면 다듬기', () => {
     expect(screen.getByTestId('board-1')).not.toHaveClass('w-min');
   });
 
-  it('세로라도 폭이 넉넉한 태블릿은 왼쪽 칸 없이 줄인 둥근 테이블을 쓴다', () => {
-    setMediaMatches((query) => query === '(min-width: 640px)');
+  it('태블릿(폭 768 이상)은 PC와 같은 큰 둥근 테이블을 쓴다', () => {
+    setMediaMatches((query) => query === '(min-width: 768px) and (min-height: 541px)');
     render(<PaperSafariTable {...baseProps(build({ phase: 'DRAW', current: ME }))} aside={<div data-testid="aside-slot" />} />);
     expect(screen.queryByTestId('table-aside')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('aside-slot')).not.toBeInTheDocument();
-    expect(screen.getByTestId('table-round')).toHaveAttribute('data-density', 'compact');
+    expect(screen.getByTestId('table-round')).toHaveAttribute('data-density', 'pc');
+    expect(screen.getByTestId('turn-bar')).toHaveClass('h-10');
   });
 
   it('좁은 휴대폰에서는 내 판 카드를 한 단계 작게 그려 버리기 칸과 한 줄에 들어가게 한다', () => {
