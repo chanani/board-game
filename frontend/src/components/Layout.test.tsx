@@ -44,7 +44,7 @@ describe('Layout 상단바', () => {
   it('좁은 화면에서도 줄바꿈 없이 홈 링크 이름과 닉네임을 유지한다', () => {
     render(ui());
 
-    const home = screen.getByRole('link', { name: '보드게임 라운지' });
+    const home = screen.getByRole('link', { name: '오, 유니버스' });
     expect(home).toHaveClass('whitespace-nowrap');
     expect(screen.getByText('앨리스')).toHaveClass('truncate');
     expect(screen.getByRole('button', { name: /앨리스/ })).toBeInTheDocument();
@@ -65,8 +65,8 @@ describe('Layout 모바일 상단바', () => {
   it('좁은 화면에서는 로고 그림, 아이콘 메뉴와 짧은 글자만 남겨 넘치지 않는다', () => {
     render(ui());
 
-    const home = screen.getByRole('link', { name: '보드게임 라운지' });
-    expect(home.querySelector('span.hidden.sm\\:inline')).toHaveTextContent('보드게임 라운지');
+    const home = screen.getByRole('link', { name: '오, 유니버스' });
+    expect(home.querySelector('span.hidden.sm\\:inline')).toHaveTextContent('오, 유니버스');
     for (const [name, short] of [['게임 목록', '목록'], ['내 전적', '전적']]) {
       const link = screen.getByRole('link', { name });
       expect(link.querySelector('svg')).not.toBeNull();

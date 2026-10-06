@@ -54,8 +54,8 @@ export function Layout() {
       <header className="wood-rail">
         <div className="mx-auto flex min-w-0 max-w-6xl items-center justify-between gap-2 px-3 py-2.5 sm:px-4">
           <div className="flex min-w-0 items-center gap-1.5 sm:gap-4">
-            <NavLink to="/" aria-label="보드게임 라운지" className="flex shrink-0 items-center gap-2 whitespace-nowrap text-lg font-black text-cream-50 drop-shadow">
-              <LogoMark /><span className="hidden sm:inline">보드게임 라운지</span>
+            <NavLink to="/" aria-label="오, 유니버스" className="flex shrink-0 items-center gap-2 whitespace-nowrap text-lg font-black text-cream-50 drop-shadow">
+              <LogoMark /><span className="hidden sm:inline">오, 유니버스</span>
             </NavLink>
             <nav className="flex shrink-0 gap-0.5 sm:gap-1">
               <NavLink to="/" end aria-label="게임 목록" className={linkClass}><GridIcon /><NavLabel full="게임 목록" short="목록" /></NavLink>
