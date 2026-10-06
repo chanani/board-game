@@ -18,6 +18,8 @@ type Props = {
 
 const FRESH_MS = 1200;
 const TOP = 40;
+// PC 부채꼴 가장자리 카드가 기울고 내려앉는 만큼 줄 안에 남겨 두는 아래 여백.
+const FAN_DROP_ROOM = 32;
 const SELECT_LIFT = 24;
 const PLAYABLE_LIFT = 10;
 const EDGE_FADE = 'linear-gradient(to right, transparent, black 16px, black calc(100% - 16px), transparent)';
@@ -111,7 +113,7 @@ export function UnoHand({ cards, playableIds, myTurn, layout, zoneId, onPlay }: 
     <div ref={boxRef} role="group" aria-label={`내 카드 ${cards.length}장`} data-testid="uno-hand" data-uno-zone={`hand:${zoneId}`}
       className={scroll ? 'overflow-x-auto' : 'overflow-x-clip'}
       style={scroll ? { maskImage: EDGE_FADE, WebkitMaskImage: EDGE_FADE } : undefined}>
-      <div className="relative" style={{ width: innerWidth, height: sizes.hand * 1.5 + 44, margin: scroll ? undefined : '0 auto' }}>
+      <div className="relative" style={{ width: innerWidth, height: sizes.hand * 1.5 + 44 + (layout === 'pc' ? FAN_DROP_ROOM : 0), margin: scroll ? undefined : '0 auto' }}>
         {sorted.map((card, index) => {
           const playable = myTurn && playableIds.includes(card.id);
           const blocked = myTurn && !playable;

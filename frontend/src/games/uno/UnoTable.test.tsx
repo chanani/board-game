@@ -94,6 +94,15 @@ describe('UnoTable 배치', () => {
     expect(send).toHaveBeenCalledWith({ type: 'PLAY', cardId: 3 });
   });
 
+  it('행동 줄은 좁은 화면에서 줄바꿈된다', () => {
+    renderTable();
+
+    const bar = screen.getByTestId('uno-action-bar');
+    expect(bar.className).toContain('flex-wrap');
+    expect(bar.className).toContain('min-h-12');
+    expect(bar.className).not.toMatch(/(^|\s)h-12(\s|$)/);
+  });
+
   it('DRAWN이면 뽑은 카드 내기와 갖고 넘기기를 보여 준다', async () => {
     const send = renderTable({ stage: 'DRAWN', drawnCardId: 13, playableCardIds: [13], hand: [num('RED', 2, 3), num('RED', 7, 13)] });
     const bar = screen.getByTestId('uno-action-bar');

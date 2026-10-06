@@ -75,6 +75,13 @@ describe('UnoGameOverPanel', () => {
     expect(screen.queryByTestId('won-points')).not.toBeInTheDocument();
   });
 
+  it('기권해서 나간 내가 보는 결과에는 상대가 모두 나갔다고 쓰지 않는다', () => {
+    renderPanel({ ...ended, result: { reason: 'FORFEIT', winnerId: 1, points: 0, players: [] } }, 2);
+
+    expect(screen.queryByText('상대가 모두 나가서 게임이 끝났어요')).not.toBeInTheDocument();
+    expect(screen.getByText('앨리스님이 이겼어요!')).toBeInTheDocument();
+  });
+
   it('준비 칩과 다음 게임 준비·대기실로 버튼을 쓴다', async () => {
     const guest = renderPanel(ended, 2);
     expect(screen.getAllByTestId('ready-chip')).toHaveLength(2);

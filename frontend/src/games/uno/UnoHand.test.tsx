@@ -26,6 +26,17 @@ describe('UnoHand', () => {
     expect(labels()).toEqual(['빨강 2, 낼 수 있어요', '빨강 건너뛰기, 낼 수 있어요', '파랑 7', '와일드, 낼 수 있어요']);
   });
 
+  it('PC 부채꼴의 가장자리 카드가 줄 아래로 넘치지 않는다', () => {
+    renderHand();
+
+    const inner = screen.getByTestId('uno-hand').firstElementChild as HTMLElement;
+    const bottoms = screen.getAllByTestId('hand-card').map((card) => {
+      const drop = Number(/translateY\((-?[\d.]+)px\)/.exec(card.style.transform)?.[1] ?? 0);
+      return parseFloat(card.style.top) + parseFloat(card.style.height) + drop;
+    });
+    expect(parseFloat(inner.style.height)).toBeGreaterThanOrEqual(Math.max(...bottoms) + 8);
+  });
+
   it('내 차례에는 낼 수 있는 카드를 들고 나머지는 흐리게 한다', () => {
     renderHand();
 

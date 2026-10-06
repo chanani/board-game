@@ -29,25 +29,33 @@ export function RecordsPage() {
 
   useEffect(() => {
     setStats(null);
+    if (!validId) {
+      return;
+    }
+    let cancelled = false;
+    const load = isMe ? recordsApi.me() : recordsApi.member(memberId);
+    load.then((result) => { if (!cancelled) setStats(result); }).catch((error) => { if (!cancelled) toast.show(messageOf(error)); });
+    return () => {
+      cancelled = true;
+    };
+  }, [memberId, isMe, validId, toast]);
+
+  useEffect(() => {
     setMatches([]);
     if (!validId) {
       return;
     }
     let cancelled = false;
-    const fail = (error: unknown) => {
-      if (!cancelled) {
-        toast.show(messageOf(error));
-      }
-    };
-    const load = isMe ? recordsApi.me() : recordsApi.member(memberId);
-    load.then((result) => { if (!cancelled) setStats(result); }).catch(fail);
-    recordsApi.matches(memberId, game, 10).then((result) => { if (!cancelled) setMatches(result); }).catch(fail);
+    recordsApi.matches(memberId, game, 10)
+      .then((result) => { if (!cancelled) setMatches(result); })
+      .catch((error) => { if (!cancelled) toast.show(messageOf(error)); });
     return () => {
       cancelled = true;
     };
-  }, [memberId, isMe, validId, game, toast]);
+  }, [memberId, validId, game, toast]);
 
   useEffect(() => {
+    setRankings([]);
     let cancelled = false;
     recordsApi.rankings(game)
       .then((result) => { if (!cancelled) setRankings(result); })

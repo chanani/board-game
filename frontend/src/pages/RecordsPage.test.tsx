@@ -171,6 +171,27 @@ describe('RecordsPage', () => {
     expect(screen.getByRole('heading', { name: '우노 순위표 (5판 이상)' })).toBeInTheDocument();
   });
 
+  it('게임 탭을 바꿔도 내 통계는 다시 불러오지 않고 비우지 않는다', async () => {
+    renderPage();
+    await screen.findByText('2승 0무 1패');
+
+    await userEvent.click(screen.getByRole('tab', { name: '우노' }));
+
+    expect(screen.getByText('2승 0무 1패')).toBeInTheDocument();
+    expect(recordsApi.me).toHaveBeenCalledTimes(1);
+  });
+
+  it('게임 탭을 바꾸면 이전 게임의 순위표를 바로 지운다', async () => {
+    renderPage();
+    await userEvent.click(screen.getByRole('button', { name: '순위표' }));
+    expect(await screen.findByText('83.3%')).toBeInTheDocument();
+    vi.mocked(recordsApi.rankings).mockReturnValue(new Promise(() => {}));
+
+    await userEvent.click(screen.getByRole('tab', { name: '우노' }));
+
+    expect(screen.queryByText('83.3%')).not.toBeInTheDocument();
+  });
+
   it('우노 통계는 평균 획득 점수로 보여 준다', async () => {
     vi.mocked(recordsApi.me).mockResolvedValue({
       memberId: 1, nickname: '앨리스', stats: [{

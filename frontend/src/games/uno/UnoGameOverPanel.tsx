@@ -57,7 +57,7 @@ export function UnoGameOverPanel({ game, room, meId, nicknameOf, onReady, onClos
             <HeadlineIcon won={won} />
             <h2 className="text-center text-2xl font-black">{headline}</h2>
             {emptied ? <p data-testid="won-points" className="text-4xl font-black text-safari-700">+<RollingNumber value={shown} />점</p> : null}
-            {result?.reason === 'FORFEIT' ? <p className="text-center text-sm font-bold text-wood-700">상대가 모두 나가서 게임이 끝났어요</p> : null}
+            {result?.reason === 'FORFEIT' && won ? <p className="text-center text-sm font-bold text-wood-700">상대가 모두 나가서 게임이 끝났어요</p> : null}
           </div>
           {emptied ? (
             <ul className="space-y-2">

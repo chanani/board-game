@@ -32,13 +32,14 @@ function playText(event: UnoEvent, name: string): string {
   return `${name}님이 ${card ? cardName(card) : ''} 카드를 냈어요`;
 }
 
-function penaltyLines(event: UnoEvent, nicknameOf: Nickname): LogDraft[] {
+function penaltyLines(event: UnoEvent, nicknameOf: Nickname, ending: boolean): LogDraft[] {
   const target = event.targetId ?? 0;
+  const name = nicknameOf(target);
   if (event.reason === 'DRAW_TWO') {
-    return [{ kind: 'draw-deck', actorId: target, text: `${nicknameOf(target)}님이 2장을 뽑고 차례를 건너뛰어요` }];
+    return [{ kind: 'draw-deck', actorId: target, text: ending ? `${name}님이 2장을 뽑아요` : `${name}님이 2장을 뽑고 차례를 건너뛰어요` }];
   }
   if (event.reason === 'WILD_DRAW_FOUR') {
-    return [{ kind: 'draw-deck', actorId: target, text: `${nicknameOf(target)}님이 4장을 받고 차례를 건너뛰어요` }];
+    return [{ kind: 'draw-deck', actorId: target, text: ending ? `${name}님이 4장을 받아요` : `${name}님이 4장을 받고 차례를 건너뛰어요` }];
   }
   return [];
 }
@@ -57,7 +58,7 @@ function gameEndLine(event: UnoEvent, nicknameOf: Nickname): LogDraft {
   return { kind: 'result', actorId: winner, text: `${nicknameOf(winner)}님이 게임에서 승리했어요!${points}` };
 }
 
-export function describeUnoEvent(event: UnoEvent, nicknameOf: Nickname): LogDraft[] {
+export function describeUnoEvent(event: UnoEvent, nicknameOf: Nickname, ending = false): LogDraft[] {
   const actor = event.actorId ?? 0;
   const name = nicknameOf(actor);
   const target = event.targetId ?? 0;
@@ -79,7 +80,7 @@ export function describeUnoEvent(event: UnoEvent, nicknameOf: Nickname): LogDraf
     case 'REVERSE':
       return [{ kind: 'reverse', text: '진행 방향이 바뀌었어요' }];
     case 'PENALTY':
-      return penaltyLines(event, nicknameOf);
+      return penaltyLines(event, nicknameOf, ending);
     case 'CHALLENGE':
       return [challengeLine(event, nicknameOf)];
     case 'UNO_CALL':
@@ -96,7 +97,11 @@ export function describeUnoEvent(event: UnoEvent, nicknameOf: Nickname): LogDraf
 }
 
 function linesOf(events: UnoEvent[], nicknameOf: Nickname): LogDraft[] {
-  return events.filter((event) => !hiddenWhenAuto(event)).flatMap((event) => describeUnoEvent(event, nicknameOf));
+  // 마지막 카드로 +2·+4를 내면 게임이 끝나므로 "차례를 건너뛰어요"는 쓰지 않는다.
+  const ending = events.some((event) => event.type === 'GAME_END');
+  return events
+    .filter((event) => !hiddenWhenAuto(event) && !(ending && event.type === 'SKIP'))
+    .flatMap((event) => describeUnoEvent(event, nicknameOf, ending));
 }
 
 function autoColorName(view: UnoView): string {
@@ -122,7 +127,8 @@ function timeouts(prev: UnoView, next: UnoView, nicknameOf: Nickname): LogDraft[
 
 export function describeUno(prev: UnoSessionView | null, next: UnoSessionView, nicknameOf: Nickname): LogDraft[] {
   if (!prev) {
-    return [];
+    // 방에서 처음 받은 화면: 막 시작한 게임(START 있음)만 쓰고, 다시 연결로 받은 중간 화면은 반복하지 않는다.
+    return next.game.events.some((event) => event.type === 'START') ? linesOf(next.game.events, nicknameOf) : [];
   }
   const before = prev.game;
   const after = next.game;

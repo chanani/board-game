@@ -205,7 +205,7 @@ describe('UnoTable 우노와 잡기', () => {
     const send = vi.fn();
     render(table({ currentPlayerId: 3, playableCardIds: [], unoCatch: { playerId: 2 }, canCatch: true }, send));
 
-    await userEvent.click(screen.getByRole('button', { name: '밥님 우노 안 외친 것 잡기' }));
+    await userEvent.click(screen.getByRole('button', { name: '우노 안 외쳤어요! (밥님 잡기)' }));
 
     expect(send).toHaveBeenCalledWith({ type: 'CATCH_UNO', targetId: 2 });
   });
@@ -213,7 +213,7 @@ describe('UnoTable 우노와 잡기', () => {
   it('잡을 수 없으면 잡기 버튼이 없다', () => {
     render(table({ unoCatch: { playerId: 1 }, canCatch: false }, vi.fn()));
 
-    expect(screen.queryByRole('button', { name: /우노 안 외친 것 잡기/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /우노 안 외쳤어요!/ })).not.toBeInTheDocument();
   });
 });
 

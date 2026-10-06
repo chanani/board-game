@@ -20,7 +20,7 @@ type Props = {
 export function UnoActionBar({ stage, myTurn, canCallUno, called, catchTarget, onDraw, onPlayDrawn, onKeep, onCallUno, onCatch }: Props) {
   const reduced = useReducedMotion();
   return (
-    <div data-testid="uno-action-bar" className="flex h-12 items-center justify-center gap-2">
+    <div data-testid="uno-action-bar" className="flex min-h-12 flex-wrap items-center justify-center gap-2">
       {myTurn && stage === 'PLAY' ? <Button variant="secondary" onClick={onDraw}>카드 뽑기</Button> : null}
       {myTurn && stage === 'DRAWN' ? (
         <>
@@ -42,7 +42,7 @@ export function UnoActionBar({ stage, myTurn, canCallUno, called, catchTarget, o
         </button>
       ) : null}
       {catchTarget ? (
-        <button type="button" onClick={onCatch} aria-label={`${catchTarget.name}님 우노 안 외친 것 잡기`}
+        <button type="button" onClick={onCatch} aria-label={`우노 안 외쳤어요! (${catchTarget.name}님 잡기)`}
           className="press-3d rounded-full bg-red-600 px-5 py-2 text-base font-black text-white shadow-[0_4px_0_#7f1d1d]">
           우노 안 외쳤어요!
         </button>

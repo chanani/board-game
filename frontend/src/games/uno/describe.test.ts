@@ -13,6 +13,31 @@ describe('describeUno', () => {
     expect(describeUno(null, before, nick)).toEqual([]);
   });
 
+  it('첫 화면이 막 시작한 게임이면 START와 첫 카드 효과를 쓴다', () => {
+    const first = unoSession({ events: [
+      unoEvent(1, 'START', { actorId: 1, card: num('RED', 7, 13) }),
+      unoEvent(2, 'SKIP', { targetId: 2 }),
+    ] });
+
+    expect(describeUno(null, first, nick).map((line) => line.text)).toEqual(['앨리스님부터 시작해요 · 첫 카드: 빨강 7', '밥님의 차례를 건너뛰어요']);
+  });
+
+  it('START 없는 첫 화면(다시 연결)은 기록하지 않는다', () => {
+    expect(describeUno(null, unoSession({ events: [unoEvent(9, 'PLAY', { actorId: 1, card: num('RED', 7, 13) })] }), nick)).toEqual([]);
+  });
+
+  it('마지막 카드로 +2나 +4를 내면 차례를 건너뛴다고 쓰지 않는다', () => {
+    const lines = texts([
+      unoEvent(5, 'PLAY', { actorId: 1, card: num('RED', 7, 13) }),
+      unoEvent(6, 'SKIP', { targetId: 2 }),
+      unoEvent(7, 'PENALTY', { targetId: 2, reason: 'DRAW_TWO', count: 2 }),
+      unoEvent(8, 'GAME_END', { actorId: 1, count: 30, reason: 'EMPTY_HAND' }),
+    ]);
+
+    expect(lines.some((text) => text.includes('건너뛰어요'))).toBe(false);
+    expect(lines).toContain('밥님이 2장을 뽑아요');
+  });
+
   it('같은 이벤트가 다시 와도(동기화) 다시 쓰지 않는다', () => {
     expect(describeUno(before, before, nick)).toEqual([]);
   });
