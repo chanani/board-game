@@ -49,7 +49,7 @@ export function RoomSettingsModal({ open, room, onClose, onSave }: Props) {
       <div className="space-y-4">
         <h2 className="pr-10 text-lg font-black leading-7 text-wood-800">방 설정</h2>
         <SeatPicker value={capacity} onChange={setCapacity} min={min} options={seatOptions(minPlayers, maxPlayers)} />
-        {min > 2 ? <p className="text-xs text-stone-500">지금 {min}명이 있어서 {min - 1}명 이하로는 줄일 수 없어요.</p> : null}
+        {min > minPlayers ? <p className="text-xs text-stone-500">지금 {min}명이 있어서 {min - 1}명 이하로는 줄일 수 없어요.</p> : null}
         <ThemePicker value={theme} onChange={setTheme} />
         <div className="flex justify-end gap-2 pt-1">
           <Button variant="secondary" onClick={onClose}>취소</Button>

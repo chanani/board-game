@@ -37,7 +37,8 @@ export function GameShelfPage() {
   const navigate = useNavigate();
   const toast = useToast();
   const [summaries, setSummaries] = useState<GameSummary[] | null>(null);
-  const [rulesFor, setRulesFor] = useState<GameType | null>(null);
+  // 닫기 애니메이션이 보이도록 캐러셀은 계속 마운트하고, 어느 게임인지와 열림 여부를 따로 둔다.
+  const [rules, setRules] = useState<{ type: GameType; open: boolean } | null>(null);
   const failedRef = useRef(false);
 
   usePolling(() => gamesApi
@@ -56,6 +57,8 @@ export function GameShelfPage() {
 
   const summaryOf = (gameType: GameType) => summaries?.find((item) => item.gameType === gameType);
 
+  const rulesGame = rules ? gameOf(rules.type) : null;
+
   return (
     <div className="mx-auto max-w-4xl pt-6">
       <h1 className="mb-1 text-center text-2xl font-black text-cream-50 drop-shadow">오늘은 뭘 할까요?</h1>
@@ -69,7 +72,7 @@ export function GameShelfPage() {
               <GameBox entry={entry} name={name} onOpen={() => navigate(lobbyPath(entry.gameType))} />
               <p className="mt-3 text-sm font-bold text-cream-50">{name}</p>
               <p className="text-xs text-cream-200/70">{entry.tagline}</p>
-              <button type="button" onClick={() => setRulesFor(entry.gameType)}
+              <button type="button" onClick={() => setRules({ type: entry.gameType, open: true })}
                 className="press-3d mt-3 inline-flex items-center gap-1.5 rounded-full bg-cream-50 px-3 py-1 text-xs font-bold text-wood-800 shadow">
                 <BookIcon className="h-4 w-4" />규칙 보기
               </button>
@@ -85,9 +88,9 @@ export function GameShelfPage() {
         ))}
       </div>
       <WoodRail className="mx-2 mt-4 h-4" />
-      {rulesFor ? (
-        <RulesCarousel open onClose={() => setRulesFor(null)} title={gameOf(rulesFor).rules.title}
-          slides={gameOf(rulesFor).rules.slides} renderArt={gameOf(rulesFor).rules.renderArt} />
+      {rulesGame ? (
+        <RulesCarousel open={rules?.open ?? false} onClose={() => setRules((current) => (current ? { ...current, open: false } : null))}
+          title={rulesGame.rules.title} slides={rulesGame.rules.slides} renderArt={rulesGame.rules.renderArt} />
       ) : null}
     </div>
   );

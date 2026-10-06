@@ -6,7 +6,7 @@ import { OpponentSeat } from './OpponentSeat';
 import { HandAnchor, Seat, type SeatSize } from './Seat';
 import { SpectatorNotice } from '../../../table/SpectatorNotice';
 import { seatRows } from '../../../table/seats';
-import type { TableProps } from '../PaperSafariTable';
+import type { PaperSafariTableProps } from '../PaperSafariTable';
 
 /**
  * pc: 큰 둥근 테이블(PC·태블릿).
@@ -43,7 +43,7 @@ const DENSITY: Record<TableDensity, DensityStyle> = {
   },
 };
 
-type Props = TableProps & { density?: TableDensity };
+type Props = PaperSafariTableProps & { density?: TableDensity };
 
 // 자리를 절대 위치로 겹쳐 놓지 않고 위 줄 · 가운데 줄 · 내 줄로 흘려 놓아, 인원과 화면 높이와 상관없이 서로 겹치지 않게 한다.
 // 펠트는 내용만큼 자라고, 위 줄은 가운데로 모아 타원의 둥근 모서리 밖으로 나가지 않게 한다.

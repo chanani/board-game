@@ -5,7 +5,7 @@ import { roomsApi } from '../api/rooms';
 import type { Room } from '../api/types';
 import { useAuth } from '../auth/AuthContext';
 import { RoomStatusBar } from '../components/RoomStatusBar';
-import { Panel } from '../components/ui';
+import { Button, Panel } from '../components/ui';
 import { useToast } from '../components/Toast';
 import { lobbyPath } from '../games/catalog';
 import { findGame, sessionGameType } from '../games/registry';
@@ -80,7 +80,15 @@ export function RoomPage() {
     return <Panel>방 정보를 불러오는 중…</Panel>;
   }
   if (!game) {
-    return <Panel>준비 중인 게임이에요.</Panel>;
+    const leaveUnknown = () => {
+      roomsApi.leave(code).catch(() => undefined).finally(() => navigate('/', { replace: true }));
+    };
+    return (
+      <Panel>
+        <p>준비 중인 게임이에요.</p>
+        <Button variant="secondary" className="mt-3" onClick={leaveUnknown}>나가기</Button>
+      </Panel>
+    );
   }
 
   const playing = room.status === 'PLAYING';

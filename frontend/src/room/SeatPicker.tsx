@@ -18,7 +18,7 @@ type Props = {
   options?: number[];
 };
 
-/** 최대 인원 2~5 버튼 묶음. 라디오 그룹 관례대로 선택된 칸만 Tab으로 들어가고 화살표로 옮기면 바로 고른다. 비활성 칸은 건너뛴다. */
+/** 게임의 인원 칸 버튼 묶음. 라디오 그룹 관례대로 선택된 칸만 Tab으로 들어가고 화살표로 옮기면 바로 고른다. 비활성 칸은 건너뛴다. */
 export function SeatPicker({ value, onChange, min = 2, options = SEAT_OPTIONS }: Props) {
   const labelId = useId();
   const seats = useRef<(HTMLButtonElement | null)[]>([]);
@@ -38,7 +38,7 @@ export function SeatPicker({ value, onChange, min = 2, options = SEAT_OPTIONS }:
   return (
     <div className="space-y-1.5">
       <span id={labelId} className={`block ${SECTION_TITLE}`}>최대 인원</span>
-      <div role="radiogroup" aria-labelledby={labelId} onKeyDown={handleKey} className="grid grid-cols-4 gap-1.5">
+      <div role="radiogroup" aria-labelledby={labelId} onKeyDown={handleKey} className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}>
         {options.map((count, index) => {
           const selected = value === count;
           return (

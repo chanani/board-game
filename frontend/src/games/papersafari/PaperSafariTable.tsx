@@ -20,7 +20,7 @@ import { slotKey, useFinale } from './useFinale';
 
 const PENDING_MS = 3000;
 
-export type TableProps = {
+export type PaperSafariTableProps = {
   view: PaperSafariSessionView;
   meId: number;
   opponents: BoardView[];
@@ -197,7 +197,7 @@ export function PaperSafariTable({ view: rawView, room, meId, log, receivedAt, n
   const timerFor = (playerId: number) => (game.deadline != null && awaited(playerId) ? seatTimer : undefined);
   const instructionText = instruction(round.phase, myTurn, needsFlip, nicknameOf(round.currentPlayerId), canDiscard, !wide);
 
-  const tableProps: TableProps = {
+  const tableProps: PaperSafariTableProps = {
     view, meId, opponents, myBoard, nicknameOf, presenceOf, canClickSlot, clickSlot, drawable, send,
     canDiscard, canUndo, myTurn, estimate, timerFor,
   };
