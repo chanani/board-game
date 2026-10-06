@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import type { ChatMessage } from '../api/chat';
 import { ChatPanel } from './ChatPanel';
+import { ChatColorProvider, chatOrderOf } from './chatColors';
 
 const messages: ChatMessage[] = [
   { id: 1, memberId: 1, nickname: '앨리스', text: '안녕하세요', sentAt: '2026-10-06T00:00:00Z' },
@@ -23,7 +24,7 @@ describe('ChatPanel', () => {
     expect(badge).toHaveClass('h-[18px]');
   });
 
-  it('관전자가 보낸 글은 이름 앞에 망원경 아이콘이 든 관전 배지를 달고 이름 색을 달리한다', () => {
+  it('관전자가 보낸 글은 이름 앞에 망원경 아이콘이 든 관전 배지를 단다', () => {
     const mixed: ChatMessage[] = [
       { id: 1, memberId: 2, nickname: '밥', text: '안녕', sentAt: '2026-10-06T00:00:00Z', spectator: false },
       { id: 2, memberId: 3, nickname: '캐롤', text: '구경 왔어요', sentAt: '2026-10-06T00:00:01Z', spectator: true },
@@ -34,10 +35,24 @@ describe('ChatPanel', () => {
     const badge = spectatorLine.querySelector('[data-testid="spectator-badge"]') as HTMLElement;
     expect(badge).toHaveTextContent('관전');
     expect(badge.querySelector('svg')).not.toBeNull();
-    expect(screen.getByText('캐롤')).toHaveClass('text-sky-700');
     const playerLine = screen.getByText('안녕').closest('li') as HTMLElement;
     expect(playerLine.querySelector('[data-testid="spectator-badge"]')).toBeNull();
-    expect(screen.getByText('밥')).toHaveClass('text-wood-700');
+  });
+
+  it('다른 사람 이름과 말풍선은 방에 들어온 순서로 정한 그 사람 색을 쓴다', () => {
+    const mixed: ChatMessage[] = [
+      { id: 1, memberId: 2, nickname: '밥', text: '안녕', sentAt: '2026-10-06T00:00:00Z' },
+      { id: 2, memberId: 3, nickname: '캐롤', text: '구경 왔어요', sentAt: '2026-10-06T00:00:01Z', spectator: true },
+    ];
+    render(
+      <ChatColorProvider order={chatOrderOf({ members: [{ id: 1 }, { id: 2 }], spectators: [{ id: 3 }] })}>
+        <ChatPanel messages={mixed} meId={1} onSend={vi.fn()} />
+      </ChatColorProvider>,
+    );
+    expect(screen.getByText('밥')).toHaveClass('text-teal-700');
+    expect(screen.getByText('안녕')).toHaveClass('bg-teal-100');
+    expect(screen.getByText('캐롤')).toHaveClass('text-violet-700');
+    expect(screen.getByText('구경 왔어요')).toHaveClass('bg-violet-100');
   });
 
   it('내 메시지와 남의 메시지를 구분해 보여 주고 글은 그대로 글자로 보여 준다', () => {

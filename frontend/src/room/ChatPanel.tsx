@@ -2,6 +2,7 @@ import { useLayoutEffect, useRef } from 'react';
 import type { ChatMessage } from '../api/chat';
 import { BinocularsIcon } from '../components/icons';
 import { chatTime } from '../lib/format';
+import { useChatTone } from './chatColors';
 import { ChatInput } from './ChatInput';
 
 const NEAR_BOTTOM_PX = 48;
@@ -62,6 +63,7 @@ export function ChatPanel({ messages, meId, onSend, className = '', autoFocus = 
 }
 
 function ChatLine({ message, mine, showTime }: { message: ChatMessage; mine: boolean; showTime: boolean }) {
+  const toneOf = useChatTone();
   const time = showTime ? (
     <time dateTime={message.sentAt} className="shrink-0 pb-0.5 text-[10px] leading-none text-stone-500">{chatTime(message.sentAt)}</time>
   ) : null;
@@ -75,14 +77,15 @@ function ChatLine({ message, mine, showTime }: { message: ChatMessage; mine: boo
       </li>
     );
   }
+  const tone = toneOf(message.memberId);
   return (
     <li data-mine="false" className="flex flex-col items-start gap-0.5">
       <span className="flex h-[18px] items-center gap-1 px-1">
-        <span className={`text-xs font-bold ${message.spectator ? 'text-sky-700' : 'text-wood-700'}`}>{message.nickname}</span>
+        <span className={`text-xs font-bold ${tone.name}`}>{message.nickname}</span>
         {message.spectator ? <SpectatorBadge /> : null}
       </span>
       <div className="flex w-full items-end gap-1.5">
-        <p className="max-w-[80%] whitespace-pre-wrap break-words rounded-2xl rounded-bl-md bg-cream-50 px-3 py-1.5 text-sm text-wood-800 shadow-sm ring-1 ring-cream-300">
+        <p className={`max-w-[80%] whitespace-pre-wrap break-words rounded-2xl rounded-bl-md px-3 py-1.5 text-sm text-wood-800 shadow-sm ring-1 ring-black/5 ${tone.bubble}`}>
           {message.text}
         </p>
         {time}

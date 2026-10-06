@@ -4,12 +4,11 @@ import { roomsApi } from '../api/rooms';
 import type { ApiErrorBody, GameAction, PaperSafariSessionView, PaperSafariView, Room } from '../api/types';
 import { useToast } from '../components/Toast';
 import { departures } from '../lib/departures';
-import { describeChanges, type LogDraft, type LogEntry } from '../lib/eventLog';
+import { describeChanges, prependLog, type LogDraft, type LogEntry } from '../lib/eventLog';
 import { useRealtime } from '../realtime/RealtimeContext';
 
 const CHAT_ERROR_CODES = new Set(['INVALID_CHAT_MESSAGE', 'CHAT_TOO_FAST']);
 
-const MAX_LOG = 5;
 const SYNC_RETRY_MS = 1000;
 const SYNC_MAX_TRIES = 5;
 const POLL_MS = 5000;
@@ -48,7 +47,7 @@ export function useRoomChannel(code: string, { poll = false, meId = 0 }: Options
     }
     const at = Date.now();
     const entries = lines.map((line) => ({ ...line, id: ++logIdRef.current, at })).reverse();
-    setLog((current) => [...entries, ...current].slice(0, MAX_LOG));
+    setLog((current) => prependLog(current, entries));
   }, []);
 
   const announceDepartures = useCallback(

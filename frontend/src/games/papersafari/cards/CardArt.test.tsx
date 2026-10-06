@@ -49,4 +49,12 @@ describe('CardArt', () => {
       expect(refs).toContain(`url(#${own})`);
     });
   });
+
+  it('왼쪽 위 숫자 동그라미와 글자를 크게 그린다(한 자리 22, 두 자리 17)', () => {
+    const { container, rerender } = render(<CardArt card={{ kind: 'NUMBER', value: 7 }} />);
+    expect(container.querySelector('[data-part="value-badge"]')).toHaveAttribute('r', '17');
+    expect(container.querySelector('[data-part="value"]')).toHaveAttribute('font-size', '22');
+    rerender(<CardArt card={{ kind: 'NUMBER', value: 12 }} />);
+    expect(container.querySelector('[data-part="value"]')).toHaveAttribute('font-size', '17');
+  });
 });

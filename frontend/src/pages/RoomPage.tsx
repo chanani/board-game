@@ -19,6 +19,7 @@ import { WaitingRoom } from '../room/WaitingRoom';
 import { RoomBackdrop, RoomThemeProvider } from '../room/roomTheme';
 import { PC_QUERY, useMediaQuery } from '../lib/useMediaQuery';
 import { useTableLayout } from '../lib/useTableLayout';
+import { ChatColorProvider, chatOrderOf } from '../room/chatColors';
 
 function isPresent(room: Room, meId: number): boolean {
   return room.members.some((member) => member.id === meId) || room.spectators.some((spectator) => spectator.id === meId);
@@ -118,8 +119,12 @@ export function RoomPage() {
   const chatBeside = chatShown && !landscapeGame && chatVariant === 'panel';
   const chatBelow = chatShown && !landscapeGame && chatVariant === 'strip';
 
+  // 채팅 이름·말풍선 색은 방에 들어온 순서로 정한다(대기실·게임 채팅 모두).
+  const chatOrder = chatOrderOf(room);
+
   return (
     <RoomThemeProvider value={room.theme}>
+    <ChatColorProvider order={chatOrder}>
     <div data-theme={room.theme} className="space-y-4">
       <RoomBackdrop theme={room.theme} />
       {landscapeGame ? null : statusBar}
@@ -180,6 +185,7 @@ export function RoomPage() {
       />
       <LeaveConfirmModal open={confirmLeave} onCancel={() => setConfirmLeave(false)} onConfirm={leave} />
     </div>
+    </ChatColorProvider>
     </RoomThemeProvider>
   );
 }
