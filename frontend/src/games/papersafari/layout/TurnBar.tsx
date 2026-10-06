@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import type { LogEntry } from '../../../lib/eventLog';
 import { Countdown } from '../../../components/Countdown';
 import { KindDot, Sentence } from './Hud';
+import { LogModal } from './LogModal';
 
 type Props = {
   instruction: string;
@@ -22,7 +24,16 @@ export function TurnBar({ instruction, myTurn, log, nicknameOf, deadline, server
   const size = compact ? 'mb-4 h-8 gap-1.5 px-2 text-xs' : 'mb-8 h-10 gap-2 px-4 text-sm';
   const tone = myTurn ? 'turn-glow border-transparent bg-(--accent) text-(--accent-text)' : 'border-(--status-border) bg-(--status-bg) text-cream-50';
   const latest = log[0];
+  const [open, setOpen] = useState(false);
+  const line = latest ? (
+    <>
+      <span aria-hidden="true" className="mr-1">·</span>
+      <span className="mr-1 inline-flex align-[-3px]"><KindDot kind={latest.kind} small /></span>
+      <Sentence entry={latest} nicknameOf={nicknameOf} />
+    </>
+  ) : null;
   return (
+    <>
     <div data-testid="turn-bar"
       className={`flex flex-nowrap items-center justify-center overflow-hidden whitespace-nowrap rounded-xl border backdrop-blur-[2px] ${tone} ${size}`}>
       <p role="status" data-testid="instruction" className="flex min-w-0 shrink items-center font-bold">
@@ -30,14 +41,12 @@ export function TurnBar({ instruction, myTurn, log, nicknameOf, deadline, server
       </p>
       <Countdown deadline={deadline} serverNow={serverNow} onWarn={onWarn} />
       <p data-testid="last-log" className="min-w-0 shrink-[3] truncate opacity-85">
-        {latest ? (
-          <>
-            <span aria-hidden="true" className="mr-1">·</span>
-            <span className="mr-1 inline-flex align-[-3px]"><KindDot kind={latest.kind} small /></span>
-            <Sentence entry={latest} nicknameOf={nicknameOf} />
-          </>
+        {line ? (
+          <button type="button" aria-label="진행 기록 보기" onClick={() => setOpen(true)} className="max-w-full cursor-pointer truncate">{line}</button>
         ) : null}
       </p>
     </div>
+    <LogModal open={open} onClose={() => setOpen(false)} log={log} nicknameOf={nicknameOf} />
+    </>
   );
 }

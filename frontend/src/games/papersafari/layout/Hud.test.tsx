@@ -2,6 +2,7 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import type { LogEntry } from '../../../lib/eventLog';
+import { setMediaMatches } from '../../../test/media';
 import { LogPopover } from './Hud';
 import { TurnBar } from './TurnBar';
 
@@ -57,5 +58,39 @@ describe('진행 기록 팝오버', () => {
 
     await userEvent.click(button);
     await waitFor(() => expect(screen.queryByTestId('log-popover')).not.toBeInTheDocument());
+  });
+});
+
+describe('진행 기록 창', () => {
+  it('모바일에서는 화면 안 대화상자로 열리고 팝오버는 쓰지 않는다', async () => {
+    setMediaMatches(false);
+    render(<LogPopover log={log} nicknameOf={nick} />);
+    await userEvent.click(screen.getByRole('button', { name: /진행 기록/ }));
+    const dialog = await screen.findByRole('dialog');
+    await waitFor(() => expect(dialog).toBeVisible());
+    expect(within(dialog).getAllByRole('listitem')).toHaveLength(2);
+    expect(screen.queryByTestId('log-popover')).not.toBeInTheDocument();
+    expect(within(dialog).getAllByRole('list')[0]).toHaveClass('max-h-[70vh]', 'overflow-y-auto');
+  });
+
+  it('PC에서는 팝오버가 열린다', async () => {
+    setMediaMatches(true);
+    render(<LogPopover log={log} nicknameOf={nick} />);
+    await userEvent.click(screen.getByRole('button', { name: /진행 기록/ }));
+    expect(screen.getByTestId('log-popover')).toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it.each([true, false])('최근 진행 한 줄을 누르면 전체 기록 대화상자가 열린다 (PC=%s)', async (pc) => {
+    setMediaMatches(pc);
+    render(<TurnBar instruction="안내" myTurn={false} log={log} nicknameOf={nick} deadline={null} serverNow={0} />);
+    await userEvent.click(screen.getByRole('button', { name: '진행 기록 보기' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getAllByRole('listitem')).toHaveLength(2);
+  });
+
+  it('기록이 없으면 최근 진행 줄은 버튼이 아니다', () => {
+    render(<TurnBar instruction="안내" myTurn={false} log={[]} deadline={null} serverNow={0} />);
+    expect(screen.queryByRole('button', { name: '진행 기록 보기' })).not.toBeInTheDocument();
   });
 });

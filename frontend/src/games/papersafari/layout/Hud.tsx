@@ -1,5 +1,7 @@
 import { useState, type ComponentType } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
+import { PC_QUERY, useMediaQuery } from '../../../lib/useMediaQuery';
+import { LogModal } from './LogModal';
 import { chatTime } from '../../../lib/format';
 import type { LogEntry, LogKind } from '../../../lib/eventLog';
 import { CardsIcon, ClockIcon, DotIcon, EyeIcon, PlayIcon, RecycleIcon, ScrollIcon, SwapIcon, TrophyIcon, UndoIcon } from '../../../components/icons';
@@ -43,10 +45,27 @@ function iso(at: number): string {
   return new Date(at).toISOString();
 }
 
+/** 진행 기록 목록. 팝오버와 대화상자가 함께 쓴다. */
+export function LogList({ log, nicknameOf, className }: { log: LogEntry[]; nicknameOf?: Nickname; className: string }) {
+  return (
+    <ul className={`scroll-thin overflow-y-auto pr-1 text-sm text-stone-600 ${className}`}>
+      {log.length === 0 ? <li className="text-stone-400">아직 기록이 없어요.</li> : null}
+      {log.map((entry) => (
+        <li key={entry.id} className="flex items-center gap-2 border-b border-dashed border-cream-300 py-1.5 text-xs last:border-b-0">
+          <KindDot kind={entry.kind} />
+          <span className="min-w-0 flex-1"><Sentence entry={entry} nicknameOf={nicknameOf} /></span>
+          <time dateTime={iso(entry.at)} className="shrink-0 text-[10px] text-stone-500">{chatTime(iso(entry.at))}</time>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 /** 상태 바의 진행 기록 버튼. 기록 창은 위에서 살짝 내려오며 열리고 올라가며 닫힌다(동작 줄이기면 투명도만). */
 export function LogPopover({ log, nicknameOf }: { log: LogEntry[]; nicknameOf?: Nickname }) {
   const [open, setOpen] = useState(false);
   const reduced = useReducedMotion();
+  const pc = useMediaQuery(PC_QUERY);
   const offset = reduced ? 0 : -8;
   return (
     <div className="relative shrink-0">
@@ -54,23 +73,15 @@ export function LogPopover({ log, nicknameOf }: { log: LogEntry[]; nicknameOf?: 
         className="pill press-3d flex items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-bold">
         <ScrollIcon className="h-3.5 w-3.5" /><span className="hidden sm:inline">진행 기록</span>
       </button>
+      {pc ? null : <LogModal open={open} onClose={() => setOpen(false)} log={log} nicknameOf={nicknameOf} />}
       <AnimatePresence>
-        {open ? (
+        {open && pc ? (
           <motion.div key="log" data-testid="log-popover" style={{ transformOrigin: 'top right' }}
             initial={{ opacity: 0, y: offset, scale: reduced ? 1 : 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: offset, scale: reduced ? 1 : 0.97 }} transition={{ duration: 0.18, ease: 'easeOut' }}
             className="paper absolute right-0 top-9 z-30 w-72 max-w-[calc(100vw-2rem)] p-3">
             <h3 className="mb-1 text-sm font-bold">진행 기록</h3>
-            <ul className="scroll-thin max-h-56 overflow-y-auto pr-1 text-sm text-stone-600">
-              {log.length === 0 ? <li className="text-stone-400">아직 기록이 없어요.</li> : null}
-              {log.map((entry) => (
-                <li key={entry.id} className="flex items-center gap-2 border-b border-dashed border-cream-300 py-1.5 text-xs last:border-b-0">
-                  <KindDot kind={entry.kind} />
-                  <span className="min-w-0 flex-1"><Sentence entry={entry} nicknameOf={nicknameOf} /></span>
-                  <time dateTime={iso(entry.at)} className="shrink-0 text-[10px] text-stone-500">{chatTime(iso(entry.at))}</time>
-                </li>
-              ))}
-            </ul>
+            <LogList log={log} nicknameOf={nicknameOf} className="max-h-56" />
           </motion.div>
         ) : null}
       </AnimatePresence>
