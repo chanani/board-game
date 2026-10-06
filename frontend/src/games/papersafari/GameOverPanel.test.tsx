@@ -9,6 +9,10 @@ const names: Record<number, string> = { 1: '앨리스', 2: '밥', 3: '캐롤' };
 const nicknameOf = (id: number) => names[id];
 const slots = [0, 1, 2].flatMap((column) => [0, 1].map((row) => ({ column, row, faceUp: true, known: false, card: { kind: 'NUMBER' as const, value: column + 1 } })));
 
+const pairs = (rows: [number, number][]) => rows.flatMap(([top, bottom], column) => [top, bottom].map((value, row) => ({ column, row, faceUp: true, known: false, card: { kind: 'NUMBER' as const, value } })));
+// 앨리스: 5 + 0 + 9 = 14, 밥: 3 + 5 + 7 = 15
+const knownBoards = [{ playerId: 1, slots: pairs([[2, 3], [4, 4], [4, 5]]) }, { playerId: 2, slots: pairs([[1, 2], [2, 3], [3, 4]]) }];
+
 const game: PaperSafariView = {
   viewerId: 1, status: 'GAME_OVER', roundNumber: 1, winnerId: 1,
   lastRoundResult: { players: [{ playerId: 2, score: 25, outcome: 'LOSE' }, { playerId: 1, score: 12, outcome: 'WIN' }] },
@@ -89,6 +93,7 @@ describe('GameOverPanel 단판 결과', () => {
     renderPanel();
     const before = within(screen.getByTestId('board-1')).getAllByTestId('column-badge');
     expect(before.map((badge) => badge.textContent)).toEqual(['…', '…', '…']);
+    expect(within(screen.getByTestId('board-1')).getByTestId('board-total')).toHaveTextContent('합계 …');
     expect(screen.getByTestId('board-1')).toHaveAttribute('data-winner', 'false');
 
     revealAll();
@@ -100,6 +105,39 @@ describe('GameOverPanel 단판 결과', () => {
     const badges = within(screen.getByTestId('board-1')).getAllByTestId('column-badge');
     expect(badges).toHaveLength(3);
     expect(within(screen.getByTestId('board-1')).getByTestId('board-total')).toHaveTextContent(/^합계 \d+점$/);
+  });
+
+  it('열 점수 배지는 정확한 값이고 0점 열만 초록이며 합계는 열 점수의 합이다', () => {
+    vi.useFakeTimers();
+    const view: PaperSafariView = { ...game, round: { ...game.round, boards: knownBoards } };
+    renderPanel({ view });
+    revealAll();
+
+    const mine = within(screen.getByTestId('board-1'));
+    const badges = mine.getAllByTestId('column-badge');
+    expect(badges.map((badge) => badge.textContent)).toEqual(['5', '0', '9']);
+    expect(badges[1]).toHaveClass('bg-green-200', 'text-green-800');
+    expect(badges[0]).not.toHaveClass('bg-green-200');
+    expect(badges[2]).not.toHaveClass('bg-green-200');
+    expect(mine.getByTestId('board-total')).toHaveTextContent('합계 14점');
+    const others = within(screen.getByTestId('board-2'));
+    expect(others.getAllByTestId('column-badge').map((badge) => badge.textContent)).toEqual(['3', '5', '7']);
+    expect(others.getByTestId('board-total')).toHaveTextContent('합계 15점');
+  });
+
+  it('승리면 메달 아이콘을, 무승부면 무승부 아이콘만 보여 준다', () => {
+    vi.useFakeTimers();
+    const won = renderPanel();
+    expect(screen.queryByTestId('result-medal')).not.toBeInTheDocument();
+    revealAll();
+    expect(screen.getByTestId('result-medal')).toBeInTheDocument();
+    expect(screen.queryByTestId('result-draw')).not.toBeInTheDocument();
+    won.unmount();
+
+    renderPanel({ view: tie });
+    revealAll();
+    expect(screen.getByTestId('result-draw')).toBeInTheDocument();
+    expect(screen.queryByTestId('result-medal')).not.toBeInTheDocument();
   });
 
   it('무승부면 어느 판도 승자 강조가 없다', () => {

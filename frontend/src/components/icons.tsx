@@ -57,7 +57,7 @@ export const BinocularsIcon = ({ className }: IconProps) => (
 
 /** 승자 위에 띄우는 리본 메달. 색을 직접 지정해 테마와 무관하게 금메달로 보인다. */
 export const MedalIcon = ({ className }: IconProps) => (
-  <svg viewBox="0 0 24 24" className={className ?? 'h-[34px] w-[34px]'} aria-hidden="true">
+  <svg data-testid="result-medal" viewBox="0 0 24 24" className={className ?? 'h-[34px] w-[34px]'} aria-hidden="true">
     <path d="M8 2h8l-2 6h-4z" fill="#b4461a" />
     <circle cx="12" cy="14" r="7" fill="#f2b33d" stroke="#b77b14" strokeWidth="1.5" />
     <path d="M12 10.5l1.1 2.2 2.4.3-1.8 1.7.5 2.4-2.2-1.2-2.2 1.2.5-2.4-1.8-1.7 2.4-.3z" fill="#fffaf0" />
@@ -66,7 +66,7 @@ export const MedalIcon = ({ className }: IconProps) => (
 
 /** 무승부용 회색 메달(리본·별 없이 담백하게). */
 export const DrawIcon = ({ className }: IconProps) => (
-  <svg viewBox="0 0 24 24" className={className ?? 'h-[34px] w-[34px]'} aria-hidden="true">
+  <svg data-testid="result-draw" viewBox="0 0 24 24" className={className ?? 'h-[34px] w-[34px]'} aria-hidden="true">
     <path d="M8 2h8l-2 6h-4z" fill="#a8a29e" />
     <circle cx="12" cy="14" r="7" fill="#d6d3d1" stroke="#78716c" strokeWidth="1.5" />
     <path d="M8.5 12.5h7M8.5 15.5h7" stroke="#57534e" strokeWidth="1.6" strokeLinecap="round" />

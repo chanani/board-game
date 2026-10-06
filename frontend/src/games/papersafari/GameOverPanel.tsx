@@ -94,6 +94,10 @@ function ScoreRows({ players, done, nicknameOf }: { players: PlayerResultView[];
   );
 }
 
+function HeadlineIcon({ won }: { won: boolean }) {
+  return won ? <MedalIcon /> : <DrawIcon />;
+}
+
 function ReadyChips({ members }: { members: RoomMember[] }) {
   const guests = members.filter((member) => !member.host);
   if (guests.length === 0) {
@@ -153,7 +157,7 @@ export function GameOverPanel({ game, room, meId, nicknameOf, onReady, onClose }
       <Modal open title="게임 결과" onClose={onClose} wide padding="roomy" initialFocus="dialog">
         <div className="space-y-6">
           <div className="flex flex-col items-center gap-1">
-            {done ? (game.winnerId !== null ? <MedalIcon /> : <DrawIcon />) : null}
+            {done ? <HeadlineIcon won={game.winnerId !== null} /> : null}
             <h2 className="text-center text-2xl font-black">{done ? headline : '카드를 공개하는 중…'}</h2>
           </div>
           {players.length > 0 ? <ScoreRows players={players} done={done} nicknameOf={labelOf} /> : null}
