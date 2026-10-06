@@ -10,6 +10,19 @@ const messages: ChatMessage[] = [
 ];
 
 describe('ChatPanel', () => {
+  it('관전자 메시지 머리줄은 닉네임 다음에 관전 배지가 오고, 둘의 줄 높이가 같다', () => {
+    const spectator: ChatMessage[] = [
+      { id: 2, memberId: 3, nickname: '캐롤', text: '구경 왔어요', sentAt: '2026-10-06T00:00:01Z', spectator: true },
+    ];
+    render(<ChatPanel messages={spectator} meId={1} onSend={vi.fn()} />);
+    const badge = screen.getByTestId('spectator-badge');
+    const header = badge.parentElement as HTMLElement;
+    expect(header.firstElementChild).toHaveTextContent('캐롤');
+    expect(header.lastElementChild).toBe(badge);
+    expect(header).toHaveClass('h-[18px]', 'items-center');
+    expect(badge).toHaveClass('h-[18px]');
+  });
+
   it('관전자가 보낸 글은 이름 앞에 망원경 아이콘이 든 관전 배지를 달고 이름 색을 달리한다', () => {
     const mixed: ChatMessage[] = [
       { id: 1, memberId: 2, nickname: '밥', text: '안녕', sentAt: '2026-10-06T00:00:00Z', spectator: false },

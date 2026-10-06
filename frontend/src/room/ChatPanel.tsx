@@ -1,9 +1,9 @@
-import { useEffect, useLayoutEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
+import { useLayoutEffect, useRef } from 'react';
 import type { ChatMessage } from '../api/chat';
 import { BinocularsIcon } from '../components/icons';
 import { chatTime } from '../lib/format';
+import { ChatInput } from './ChatInput';
 
-export const CHAT_MAX_LENGTH = 200;
 const NEAR_BOTTOM_PX = 48;
 
 type Props = {
@@ -21,10 +21,8 @@ const endsRun = (message: ChatMessage, next: ChatMessage | undefined) =>
   next === undefined || next.memberId !== message.memberId || chatTime(next.sentAt) !== chatTime(message.sentAt);
 
 export function ChatPanel({ messages, meId, onSend, className = '', autoFocus = false }: Props) {
-  const [text, setText] = useState('');
   const listRef = useRef<HTMLOListElement>(null);
   const nearBottomRef = useRef(true);
-  const trimmed = text.trim();
 
   const onScroll = () => {
     const list = listRef.current;
@@ -46,40 +44,6 @@ export function ChatPanel({ messages, meId, onSend, className = '', autoFocus = 
     }
   }, [last, meId]);
 
-  const inputRef = useRef<HTMLInputElement>(null);
-  useEffect(() => {
-    if (autoFocus) {
-      inputRef.current?.focus();
-    }
-  }, [autoFocus]);
-
-  const submit = () => {
-    if (!trimmed) {
-      return;
-    }
-    if (onSend(trimmed)) {
-      setText('');
-    }
-  };
-
-  const onSubmit = (event: FormEvent) => {
-    event.preventDefault();
-    submit();
-  };
-
-  // 한글 조합 중 Enter는 글자를 확정하는 키라서 보내지 않는다.
-  // Safari(WebKit)는 조합을 끝내는 Enter를 isComposing=false, keyCode 229로 보내므로 함께 거른다.
-  const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-    if (event.key !== 'Enter') {
-      return;
-    }
-    event.preventDefault();
-    if (event.nativeEvent.isComposing || event.keyCode === 229) {
-      return;
-    }
-    submit();
-  };
-
   return (
     <div className={`flex min-h-0 flex-col gap-3 ${className}`}>
       <ol ref={listRef} onScroll={onScroll} aria-label="채팅 메시지" aria-live="polite"
@@ -92,15 +56,7 @@ export function ChatPanel({ messages, meId, onSend, className = '', autoFocus = 
             showTime={endsRun(message, messages[index + 1])} />
         ))}
       </ol>
-      <form onSubmit={onSubmit} className="flex gap-2">
-        <input ref={inputRef} value={text} onChange={(event) => setText(event.target.value)} onKeyDown={onKeyDown}
-          aria-label="채팅 입력" maxLength={CHAT_MAX_LENGTH} placeholder="메시지를 입력해요" autoComplete="off"
-          className="min-w-0 flex-1 rounded-xl border border-cream-300 bg-cream px-3 py-2 text-sm shadow-[inset_0_2px_4px_rgb(0_0_0/0.12)] outline-none focus:border-mustard-400 focus:ring-2 focus:ring-mustard-300/50" />
-        <button type="submit" disabled={!trimmed}
-          className="press-3d shrink-0 rounded-xl bg-mustard-400 px-3 py-2 text-sm font-bold text-wood-800 shadow-[0_3px_0_var(--color-mustard-600)] hover:bg-mustard-300 disabled:cursor-not-allowed disabled:opacity-45 disabled:shadow-none">
-          보내기
-        </button>
-      </form>
+      <ChatInput onSend={onSend} autoFocus={autoFocus} />
     </div>
   );
 }
@@ -121,13 +77,9 @@ function ChatLine({ message, mine, showTime }: { message: ChatMessage; mine: boo
   }
   return (
     <li data-mine="false" className="flex flex-col items-start gap-0.5">
-      <span className="flex items-center gap-1 px-1">
-        {message.spectator ? (
-          <span data-testid="spectator-badge" className="inline-flex items-center gap-0.5 rounded-full bg-sky-100 px-1.5 py-px text-[10px] font-bold text-sky-800 ring-1 ring-sky-200">
-            <BinocularsIcon className="h-3 w-3" />관전
-          </span>
-        ) : null}
+      <span className="flex h-[18px] items-center gap-1 px-1">
         <span className={`text-xs font-bold ${message.spectator ? 'text-sky-700' : 'text-wood-700'}`}>{message.nickname}</span>
+        {message.spectator ? <SpectatorBadge /> : null}
       </span>
       <div className="flex w-full items-end gap-1.5">
         <p className="max-w-[80%] whitespace-pre-wrap break-words rounded-2xl rounded-bl-md bg-cream-50 px-3 py-1.5 text-sm text-wood-800 shadow-sm ring-1 ring-cream-300">
@@ -136,5 +88,13 @@ function ChatLine({ message, mine, showTime }: { message: ChatMessage; mine: boo
         {time}
       </div>
     </li>
+  );
+}
+
+export function SpectatorBadge() {
+  return (
+    <span data-testid="spectator-badge" className="inline-flex h-[18px] items-center gap-0.5 rounded-full bg-sky-100 px-1.5 text-[10px] font-bold leading-none text-sky-800 ring-1 ring-sky-200">
+      <BinocularsIcon className="h-3 w-3" />관전
+    </span>
   );
 }

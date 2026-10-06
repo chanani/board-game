@@ -9,7 +9,7 @@ import { Panel } from '../components/ui';
 import { useToast } from '../components/Toast';
 import { lobbyPath } from '../games/catalog';
 import { PaperSafariTable } from '../games/papersafari/PaperSafariTable';
-import { ChatLauncher } from '../room/ChatLauncher';
+import { GameChat } from '../room/GameChat';
 import { useGameOverDismissal } from '../room/useGameOverDismissal';
 import { useRoomChat } from '../room/useRoomChat';
 import { useRoomChannel } from '../room/useRoomChannel';
@@ -17,6 +17,7 @@ import { LeaveConfirmModal } from '../room/LeaveConfirmModal';
 import { RoomSettingsModal } from '../room/RoomSettingsModal';
 import { WaitingRoom } from '../room/WaitingRoom';
 import { RoomBackdrop, RoomThemeProvider } from '../room/roomTheme';
+import { PC_QUERY, useMediaQuery } from '../lib/useMediaQuery';
 import { useTableLayout } from '../lib/useTableLayout';
 
 function isPresent(room: Room, meId: number): boolean {
@@ -38,6 +39,7 @@ export function RoomPage() {
   const [confirmLeave, setConfirmLeave] = useState(false);
   const [editingSettings, setEditingSettings] = useState(false);
   const layout = useTableLayout();
+  const pcChat = useMediaQuery(PC_QUERY);
   const gameOver = useGameOverDismissal(code, view?.game ?? null, room?.status === 'PLAYING');
   // 이 화면은 REST 입장(참가·관전) 뒤에만 오므로 채팅도 방 채널과 같은 시점에 시작한다.
   const chat = useRoomChat(code, room !== null && !missing, { meId });
@@ -59,7 +61,7 @@ export function RoomPage() {
     setConfirmLeave(false);
   }, [room?.status]);
 
-  // 대기실에서는 채팅이 늘 펼쳐져 있으니 본 것으로 보고, 게임이 시작돼도 채팅 버튼 배지에 남지 않게 한다.
+  // 대기실에서는 채팅이 늘 펼쳐져 있으니 본 것으로 보고, 게임이 시작돼도 안 읽은 수에 남지 않게 한다.
   const waitingChatShown = room !== null && room.status !== 'PLAYING';
   const { messages: chatMessages, markRead } = chat;
   useEffect(() => {
@@ -117,50 +119,60 @@ export function RoomPage() {
   const landscapeGame = showGame && layout === 'landscape';
   const statusBar = <RoomStatusBar room={room} playing={playing} onLeave={requestLeave} onSettings={canEditSettings ? () => setEditingSettings(true) : undefined} stacked={landscapeGame} />;
 
+  // 게임 중 채팅: 눕힌 화면은 왼쪽 칸 맨 아래, PC는 테이블 오른쪽 칸, 그 밖에는 테이블 아래.
+  const chatShown = playing || showGame;
+  const gameChat = chatShown ? <GameChat messages={chat.messages} meId={meId} onSend={chat.send} onRead={chat.markRead} /> : null;
+  const chatBeside = chatShown && !landscapeGame && pcChat;
+  const chatBelow = chatShown && !landscapeGame && !pcChat;
+
   return (
     <RoomThemeProvider value={room.theme}>
-    <div data-theme={room.theme} className={`space-y-4 ${playing ? 'lg:pb-20' : ''}`}>
+    <div data-theme={room.theme} className="space-y-4">
       <RoomBackdrop theme={room.theme} />
       {landscapeGame ? null : statusBar}
-      {showGame && view ? (
-        <PaperSafariTable
-          aside={landscapeGame ? statusBar : undefined}
-          view={view}
-          room={room}
-          meId={meId}
-          log={log}
-          receivedAt={receivedAt}
-          now={now}
-          errorSeq={errorSeq}
-          nicknameOf={nicknameOf}
-          onForfeit={(memberId) => run(() => roomsApi.forfeit(code, memberId))}
-          send={send}
-          onCloseGameOver={gameOver.dismiss}
-          onReadyNext={() => run(async () => {
-            await roomsApi.ready(code, true);
-            gameOver.dismiss();
-          })}
-          transition={transition}
-        />
-      ) : playing ? (
-        <Panel>게임 화면을 불러오는 중…</Panel>
-      ) : (
-        <WaitingRoom
-          room={room}
-          meId={meId}
-          receivedAt={receivedAt}
-          now={now}
-          onStart={() => run(() => roomsApi.start(code))}
-          onReady={(ready) => run(() => roomsApi.ready(code, ready))}
-          onForfeit={(memberId) => run(() => roomsApi.forfeit(code, memberId))}
-          onKick={(memberId) => run(() => roomsApi.kick(code, memberId))}
-          onSeat={() => run(() => roomsApi.seat(code))}
-          chat={{ messages: chat.messages, onSend: chat.send, latest: chat.latest }}
-        />
-      )}
-      {playing ? (
-        <ChatLauncher messages={chat.messages} meId={meId} onSend={chat.send} unread={chat.unread} onOpen={chat.markRead} />
-      ) : null}
+      <div className={chatBeside ? 'flex items-start gap-4' : undefined}>
+        <div className={chatBeside ? 'min-w-0 flex-1' : undefined}>
+          {showGame && view ? (
+            <PaperSafariTable
+              aside={landscapeGame ? statusBar : undefined}
+              asideFooter={landscapeGame ? gameChat : undefined}
+              view={view}
+              room={room}
+              meId={meId}
+              log={log}
+              receivedAt={receivedAt}
+              now={now}
+              errorSeq={errorSeq}
+              nicknameOf={nicknameOf}
+              onForfeit={(memberId) => run(() => roomsApi.forfeit(code, memberId))}
+              send={send}
+              onCloseGameOver={gameOver.dismiss}
+              onReadyNext={() => run(async () => {
+                await roomsApi.ready(code, true);
+                gameOver.dismiss();
+              })}
+              transition={transition}
+            />
+          ) : playing ? (
+            <Panel>게임 화면을 불러오는 중…</Panel>
+          ) : (
+            <WaitingRoom
+              room={room}
+              meId={meId}
+              receivedAt={receivedAt}
+              now={now}
+              onStart={() => run(() => roomsApi.start(code))}
+              onReady={(ready) => run(() => roomsApi.ready(code, ready))}
+              onForfeit={(memberId) => run(() => roomsApi.forfeit(code, memberId))}
+              onKick={(memberId) => run(() => roomsApi.kick(code, memberId))}
+              onSeat={() => run(() => roomsApi.seat(code))}
+              chat={{ messages: chat.messages, onSend: chat.send, latest: chat.latest }}
+            />
+          )}
+        </div>
+        {chatBeside ? gameChat : null}
+      </div>
+      {chatBelow ? gameChat : null}
       <RoomSettingsModal
         open={editingSettings && canEditSettings}
         room={room}

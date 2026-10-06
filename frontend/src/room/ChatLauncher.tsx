@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'motion/react';
-import { type ReactNode, useEffect, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useState } from 'react';
 import type { ChatMessage } from '../api/chat';
 import { ChatIcon, CloseIcon } from '../components/icons';
 import { PC_QUERY, useMediaQuery } from '../lib/useMediaQuery';
@@ -29,14 +29,17 @@ function LauncherDock({ pc, children }: { pc: boolean; children: ReactNode }) {
   return <div data-testid="chat-launcher-dock" className="flex justify-end px-1">{children}</div>;
 }
 
+type SheetProps = Pick<Props, 'messages' | 'meId' | 'onSend' | 'onOpen'> & {
+  open: boolean;
+  onClose: () => void;
+};
+
 /**
- * 게임 중 채팅. 말풍선 버튼으로 연다(PC는 오른쪽 아래에 떠 있고, 모바일은 화면 맨 아래 줄). PC는 오른쪽 서랍, 모바일은 아래 시트.
+ * 채팅 서랍(PC)·아래 시트(모바일). 열려 있는 동안 읽음 처리하고 Esc로 닫는다.
  * 모달(z-40) 아래 층(z-30)에 두어 상대 보드·규칙 모달을 가리거나 클릭을 가로채지 않는다.
- * 게임 화면은 방 화면이라 "돌아가기" 바가 뜨지 않는다. 알림(토스트)은 z-50으로 이 위에 뜨고,
- * 모바일 시트가 열려 있는 동안에는 html[data-chat-sheet]로 시트 위로 올린다.
+ * 알림(토스트)은 z-50으로 이 위에 뜨고, 모바일 시트가 열려 있는 동안에는 html[data-chat-sheet]로 시트 위로 올린다.
  */
-export function ChatLauncher({ messages, meId, onSend, unread, onOpen }: Props) {
-  const [open, setOpen] = useState(false);
+export function ChatSheet({ messages, meId, onSend, onOpen, open, onClose }: SheetProps) {
   const pc = useMediaQuery(PC_QUERY);
 
   useEffect(() => {
@@ -51,12 +54,12 @@ export function ChatLauncher({ messages, meId, onSend, unread, onOpen }: Props) 
     }
     const onKey = (event: KeyboardEvent) => {
       if (escapeIsMine(event)) {
-        setOpen(false);
+        onClose();
       }
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [open]);
+  }, [open, onClose]);
 
   const sheetOpen = open && !pc;
   useEffect(() => {
@@ -67,12 +70,38 @@ export function ChatLauncher({ messages, meId, onSend, unread, onOpen }: Props) 
     return () => { delete document.documentElement.dataset.chatSheet; };
   }, [sheetOpen]);
 
-  const label = unread > 0 ? `채팅 열기 (안 읽은 메시지 ${unread}개)` : '채팅 열기';
   const frame = pc
     ? 'fixed bottom-20 right-4 z-30 h-[60vh] w-80 origin-bottom-right rounded-2xl'
     : 'fixed inset-x-0 bottom-0 z-30 h-[60vh] rounded-t-3xl pb-[max(1rem,env(safe-area-inset-bottom))]';
   const hidden = pc ? { opacity: 0, scale: 0.95, y: 16 } : { y: '100%' };
   const shown = pc ? { opacity: 1, scale: 1, y: 0 } : { y: 0 };
+
+  return (
+    <AnimatePresence>
+      {open ? (
+        <motion.aside key="chat" role="dialog" aria-label="채팅" data-variant={pc ? 'drawer' : 'sheet'}
+          initial={hidden} animate={shown} exit={hidden} transition={{ type: 'spring', bounce: 0.15, duration: 0.35 }}
+          className={`${frame} flex flex-col gap-3 bg-cream-50 p-4 shadow-[0_-4px_0_var(--color-cream-200),0_18px_40px_rgb(0_0_0/0.45)]`}>
+          <header className="flex items-center justify-between">
+            <h2 className="flex items-center gap-2 font-bold text-wood-800"><ChatIcon /> 채팅</h2>
+            <button type="button" aria-label="채팅 닫기" onClick={onClose}
+              className="rounded-full p-1.5 text-wood-700 hover:bg-cream-200">
+              <CloseIcon />
+            </button>
+          </header>
+          <ChatPanel messages={messages} meId={meId} onSend={onSend} autoFocus={pc} className={pc ? 'flex-1' : 'flex-1 pt-1'} />
+        </motion.aside>
+      ) : null}
+    </AnimatePresence>
+  );
+}
+
+/** 말풍선 버튼으로 채팅 시트를 여는 런처(PC는 오른쪽 아래에 떠 있고, 모바일은 화면 맨 아래 줄). */
+export function ChatLauncher({ messages, meId, onSend, unread, onOpen }: Props) {
+  const [open, setOpen] = useState(false);
+  const closeSheet = useCallback(() => setOpen(false), []);
+  const pc = useMediaQuery(PC_QUERY);
+  const label = unread > 0 ? `채팅 열기 (안 읽은 메시지 ${unread}개)` : '채팅 열기';
 
   return (
     <>
@@ -91,22 +120,7 @@ export function ChatLauncher({ messages, meId, onSend, unread, onOpen }: Props) 
         </motion.button>
         </LauncherDock>
       )}
-      <AnimatePresence>
-        {open ? (
-          <motion.aside key="chat" role="dialog" aria-label="채팅" data-variant={pc ? 'drawer' : 'sheet'}
-            initial={hidden} animate={shown} exit={hidden} transition={{ type: 'spring', bounce: 0.15, duration: 0.35 }}
-            className={`${frame} flex flex-col gap-3 bg-cream-50 p-4 shadow-[0_-4px_0_var(--color-cream-200),0_18px_40px_rgb(0_0_0/0.45)]`}>
-            <header className="flex items-center justify-between">
-              <h2 className="flex items-center gap-2 font-bold text-wood-800"><ChatIcon /> 채팅</h2>
-              <button type="button" aria-label="채팅 닫기" onClick={() => setOpen(false)}
-                className="rounded-full p-1.5 text-wood-700 hover:bg-cream-200">
-                <CloseIcon />
-              </button>
-            </header>
-            <ChatPanel messages={messages} meId={meId} onSend={onSend} autoFocus={pc} className={pc ? 'flex-1' : 'flex-1 pt-1'} />
-          </motion.aside>
-        ) : null}
-      </AnimatePresence>
+      <ChatSheet messages={messages} meId={meId} onSend={onSend} onOpen={onOpen} open={open} onClose={closeSheet} />
     </>
   );
 }

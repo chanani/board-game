@@ -350,6 +350,12 @@ describe('RoomPage 결과 모달', () => {
 });
 
 describe('RoomPage 준비와 채팅', () => {
+  const playingView: PaperSafariSessionView = {
+    game: {
+      viewerId: 3, status: 'IN_ROUND', roundNumber: 1, winnerId: null, lastRoundResult: null,
+      round: { phase: 'DRAW', currentPlayerId: 1, deckSize: 30, discardTop: null, held: null, boards: [{ playerId: 1, slots: [] }, { playerId: 3, slots: [] }] },
+    },
+  };
   const waiting: Room = {
     ...baseRoom, status: 'WAITING', spectators: [],
     members: [members[0], { id: 3, nickname: '캐롤', host: false, connected: true, offlineSeconds: 0, ready: false }],
@@ -378,22 +384,52 @@ describe('RoomPage 준비와 채팅', () => {
     await act(async () => {});
 
     expect(chat.markRead).toHaveBeenCalled();
-    setChannel({ room: { ...waiting, status: 'PLAYING' }, view: null });
+    setChannel({ room: { ...waiting, status: 'PLAYING' }, view: playingView });
     page.rerender(roomTree());
 
-    expect(screen.getByRole('button', { name: '채팅 열기' })).toBeInTheDocument();
+    expect(screen.getByTestId('game-chat-panel')).toBeInTheDocument();
   });
 
-  it('게임 중에는 채팅 버튼으로 채팅을 열고 안 읽은 수를 보여 준다', async () => {
-    chat.unread = 2;
+  it('게임 중 PC 채팅 칸은 보이는 동안 읽음 처리한다', async () => {
     chat.markRead.mockReset();
-    setChannel({ room: { ...waiting, status: 'PLAYING' }, view: null });
+    setChannel({ room: { ...waiting, status: 'PLAYING' }, view: playingView });
     renderRoom();
+    await act(async () => {});
 
-    await userEvent.click(screen.getByRole('button', { name: '채팅 열기 (안 읽은 메시지 2개)' }));
-
-    expect(screen.getByRole('dialog', { name: '채팅' })).toBeInTheDocument();
     expect(chat.markRead).toHaveBeenCalled();
+  });
+
+  it('PC 게임 화면에는 오른쪽 채팅 칸이 늘 보이고 떠 있는 채팅 버튼은 없다', async () => {
+    setMediaMatches(true);
+    setChannel({ room: { ...waiting, status: 'PLAYING' }, view: playingView });
+    renderRoom();
+    await act(async () => {});
+
+    expect(screen.getByTestId('game-chat-panel')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /채팅 열기/ })).not.toBeInTheDocument();
+  });
+
+  it('모바일 게임 화면에는 테이블 아래 채팅 줄이 있고, 줄을 누르면 시트가 열려 읽음 처리한다', async () => {
+    setMediaMatches(false);
+    chat.markRead.mockReset();
+    setChannel({ room: { ...waiting, status: 'PLAYING' }, view: playingView });
+    renderRoom();
+    await act(async () => {});
+
+    expect(screen.getByTestId('chat-strip')).toBeInTheDocument();
+    expect(screen.queryByTestId('game-chat-panel')).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: '채팅 전체 보기' }));
+    expect(screen.getByRole('dialog', { name: '채팅' })).toHaveAttribute('data-variant', 'sheet');
+    expect(chat.markRead).toHaveBeenCalled();
+  });
+
+  it('휴대폰을 눕히면 채팅 줄이 왼쪽 정보 칸 안에 있다', async () => {
+    setMediaMatches((query) => query.includes('orientation: landscape'));
+    setChannel({ room: { ...waiting, status: 'PLAYING' }, view: playingView });
+    renderRoom();
+    await act(async () => {});
+
+    expect(within(screen.getByTestId('table-aside')).getByTestId('chat-strip')).toBeInTheDocument();
   });
 });
 

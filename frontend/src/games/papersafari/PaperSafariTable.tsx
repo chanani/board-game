@@ -55,6 +55,8 @@ type Props = {
   transition?: ViewTransition | null;
   /** 휴대폰을 눕힌 화면에서 차례 안내 위, 왼쪽 칸에 함께 쌓을 방 정보(상태 바). */
   aside?: ReactNode;
+  /** 왼쪽 칸 맨 아래(차례 안내 다음)에 놓을 것(채팅 줄). */
+  asideFooter?: ReactNode;
 };
 
 const DENSITY_OF: Record<TableLayout, TableDensity> = { pc: 'pc', landscape: 'landscape', portrait: 'mini' };
@@ -97,7 +99,7 @@ function maskPending(view: PaperSafariSessionView, pending: Set<string>): PaperS
   return { game: { ...view.game, round: { ...view.game.round, boards } } };
 }
 
-export function PaperSafariTable({ view: rawView, room, meId, log, receivedAt, now, errorSeq, nicknameOf, onForfeit, send: rawSend, onCloseGameOver, onReadyNext, transition, aside }: Props) {
+export function PaperSafariTable({ view: rawView, room, meId, log, receivedAt, now, errorSeq, nicknameOf, onForfeit, send: rawSend, onCloseGameOver, onReadyNext, transition, aside, asideFooter }: Props) {
   const { play } = useSound();
   const finale = useFinale(rawView.game, transition ?? null, () => play('flip'));
   const view = maskPending(rawView, finale.pending);
@@ -220,6 +222,7 @@ export function PaperSafariTable({ view: rawView, room, meId, log, receivedAt, n
             <div data-testid="table-aside" className="sticky top-2 space-y-2">
               {aside}
               {turnBar}
+              {asideFooter}
             </div>
             <TableRound {...tableProps} density="landscape" />
           </div>
