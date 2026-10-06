@@ -11,7 +11,7 @@
 - 그 밖의 화면 다듬기 항목을 반영한다.
 
 **Spec:** `docs/superpowers/specs/2026-10-06-themes-timer-scoring-design.md`
-시안 HTML: `.superpowers/brainstorm/38783-1791266346/content/themes-and-rooms.html`, `themes-extra.html`
+시안 HTML: `.superpowers/brainstorm/38783-1791266346/content/themes-and-rooms.html`, `themes-extra.html`(오로라), `theme5-options.html`(B 열대 해변)
 
 ## Global Constraints
 
@@ -86,7 +86,7 @@
 
 ### Task 3: 방 테마·채팅 관전자 표시 (백엔드)
 - **Files:**
-  - Create `room/domain/RoomTheme.java`, an enum with WOOD, SUNSET, MOONLIT, AURORA, BLOSSOM.
+  - Create `room/domain/RoomTheme.java`, an enum with WOOD, SUNSET, MOONLIT, AURORA, BEACH.
   - Room settings must stay at 3 fields or fewer: either regroup `RoomSettings`, or add the theme to `RoomProfile` through a new grouping. Record which one you chose in the report.
   - `CreateRoomRequest.theme`: null → WOOD; an unknown value → `INVALID_THEME` 400.
   - `RoomResponse.theme` and `RoomSummaryResponse.theme`.
@@ -114,7 +114,7 @@
   - The lobby shows the theme.
   - The toggle's open content is animated (use AnimatePresence, and assert its presence/absence with `waitFor`).
   - The theme variables don't leak outside the room (Layout has no `data-theme`).
-- **Commit:** `feat: 방 테마 5종(원목·노을·달빛·오로라·벚꽃)과 테마 선택, 비공개 칸 펼침 애니메이션`
+- **Commit:** `feat: 방 테마 5종(원목·노을·달빛·오로라·해변)과 테마 선택, 비공개 칸 펼침 애니메이션`
 
 ### Task 5: 방 화면 재구성과 타이머 표시 (#2, #4, #8, #11, #13, #14, #15, #6 프론트)
 - **Files:** `RoomPage`, `WaitingRoom`, `MemberList`, `Hud`, `TableRound`, `TableRail`, `CenterPiles`, `Layout` (mobile header), and a new `components/RoomStatusBar.tsx`, `room/WaitingActionBar.tsx`, `games/papersafari/layout/TurnBar.tsx`, `components/Countdown.tsx`.
