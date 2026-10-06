@@ -97,4 +97,20 @@ describe('설정 페이지', () => {
     await userEvent.click(screen.getByRole('button', { name: '로그아웃' }));
     expect(await screen.findByRole('dialog', { name: '로그아웃할까요?' })).toBeInTheDocument();
   });
+
+  it('계속 게임하기를 눌러도 닫히는 동안 일반 확인 문구로 바뀌지 않는다', async () => {
+    rooms.mine.mockResolvedValue(playingRoom);
+    render(ui());
+    await userEvent.click(screen.getByRole('button', { name: '로그아웃' }));
+    const dialog = await screen.findByRole('dialog', { name: '게임 중이에요' });
+    await userEvent.click(within(dialog).getByRole('button', { name: '계속 게임하기' }));
+    expect(screen.queryByText('로그아웃할까요?')).not.toBeInTheDocument();
+  });
+
+  it('내 방을 확인하지 못하면 보수적으로 기권 안내 창을 띄운다', async () => {
+    rooms.mine.mockRejectedValue(new Error('network'));
+    render(ui());
+    await userEvent.click(screen.getByRole('button', { name: '로그아웃' }));
+    expect(await screen.findByRole('dialog', { name: '게임 중이에요' })).toBeInTheDocument();
+  });
 });

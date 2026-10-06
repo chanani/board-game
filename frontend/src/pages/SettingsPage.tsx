@@ -14,13 +14,20 @@ export function SettingsPage() {
   const { play, muted, toggleMuted, volume, setVolume } = useSound();
   const navigate = useNavigate();
   const toast = useToast();
-  const [confirm, setConfirm] = useState<{ inGame: boolean } | null>(null);
+  // 닫히는 동안 문구가 바뀌지 않도록 open과 inGame을 따로 둔다.
+  const [open, setOpen] = useState(false);
+  const [inGame, setInGame] = useState(false);
   const [pending, setPending] = useState(false);
 
   const askLogout = async () => {
-    const room = await roomsApi.mine().catch(() => null);
-    const inGame = room !== null && room.status === 'PLAYING' && room.members.some((m) => m.id === member?.id);
-    setConfirm({ inGame });
+    // 방을 확인하지 못하면 보수적으로 기권 안내를 보인다(실제로 게임 중이면 서버가 기권 처리한다).
+    try {
+      const room = await roomsApi.mine();
+      setInGame(room !== null && room.status === 'PLAYING' && room.members.some((m) => m.id === member?.id));
+    } catch {
+      setInGame(true);
+    }
+    setOpen(true);
   };
 
   const doLogout = async () => {
@@ -60,7 +67,7 @@ export function SettingsPage() {
           <Button variant="danger" className="w-full" onClick={askLogout}>로그아웃</Button>
         </section>
       </Panel>
-      <LogoutConfirmModal open={confirm !== null} inGame={confirm?.inGame ?? false} pending={pending} onCancel={() => setConfirm(null)} onConfirm={doLogout} />
+      <LogoutConfirmModal open={open} inGame={inGame} pending={pending} onCancel={() => setOpen(false)} onConfirm={doLogout} />
     </div>
   );
 }

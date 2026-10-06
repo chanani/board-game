@@ -30,6 +30,7 @@ describe('CardFace', () => {
     const card = screen.getByLabelText('여우 -2 카드 (엿봄)');
     expect(card).toHaveAttribute('data-side', 'peeked');
     expect(card).toHaveClass('outline-dashed', 'outline-violet-400', 'peek-lift');
+    expect(card).not.toHaveClass('outline-none');
     expect(card.querySelector('.card-inner')).toHaveStyle({ transform: 'rotateY(0deg)' });
     expect(within(card).getByTestId('peek-tag')).toHaveTextContent('엿봄');
     expect(card.querySelector('[data-testid="peek-icon"]')).toBeNull();
@@ -43,6 +44,7 @@ describe('CardFace', () => {
     const card = screen.getByLabelText('여우 -2 카드');
     expect(card).toHaveAttribute('data-side', 'front');
     expect(card).not.toHaveClass('outline-dashed');
+    expect(card).toHaveClass('outline-none');
     expect(screen.queryByTestId('peek-tag')).not.toBeInTheDocument();
   });
 

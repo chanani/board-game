@@ -35,7 +35,7 @@ function sideOf(showFront: boolean, peeked: boolean): 'front' | 'peeked' | 'back
 export function CardFace({ card, faceUp, known, size = 'md', highlight = false, pulse = false, sparkle = false, onClick }: Props) {
   const peeked = card !== null && known && !faceUp;
   const showFront = card !== null && (faceUp || peeked);
-  const peekRing = peeked ? 'outline-[3px] outline-dashed outline-violet-400 outline-offset-2 peek-lift' : '';
+  const peekRing = peeked ? 'outline-[3px] outline-dashed outline-violet-400 outline-offset-2 peek-lift' : 'outline-none';
   const ring = highlight ? 'ring-[3px] ring-mustard-400 shadow-[0_0_14px_rgb(242_179_61/0.8)]' : '';
   const clickable = onClick ? 'cursor-pointer hover:-translate-y-1.5 hover:rotate-[-1.5deg] focus-visible:-translate-y-1.5' : 'cursor-default';
   return (
@@ -45,7 +45,7 @@ export function CardFace({ card, faceUp, known, size = 'md', highlight = false, 
       data-side={sideOf(showFront, peeked)}
       disabled={!onClick}
       onClick={onClick}
-      className={`card-3d relative block select-none rounded-[10%/7%] transition-transform duration-150 outline-none focus-visible:ring-4 focus-visible:ring-mustard-300 ${SIZES[size]} ${clickable} ${pulse ? 'float-hint' : ''} ${peekRing}`}
+      className={`card-3d relative block select-none rounded-[10%/7%] transition-transform duration-150 focus-visible:ring-4 focus-visible:ring-mustard-300 ${SIZES[size]} ${clickable} ${pulse ? 'float-hint' : ''} ${peekRing}`}
     >
       <span className={`card-inner card-thick block rounded-[10%/7%] ${ring} ${sparkle ? 'gold-sparkle' : ''}`}
         style={{ transform: showFront ? 'rotateY(0deg)' : 'rotateY(180deg)' }}>

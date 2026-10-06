@@ -343,7 +343,9 @@ public class RoomService {
     public synchronized RoomResponse reconfigure(String rawCode, long memberId, UpdateRoomSettingsRequest request) {
         Room room = find(rawCode);
         Capacity capacity = Capacity.of(room.gameType(), requireMaxPlayers(request));
+        List<Long> before = room.memberIds();
         room.reconfigure(memberId, capacity, RoomTheme.parse(requireTheme(request)));
+        baselineNewcomers(room, before);
         saveAndNotifyClosed(room);
         return broadcast(room);
     }
