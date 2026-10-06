@@ -1,4 +1,5 @@
-import { useState, type ReactNode } from 'react';
+import { motion, useAnimate, useReducedMotion } from 'motion/react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { Room, RoomMember } from '../api/types';
 import { BinocularsIcon } from '../components/icons';
 import { Button } from '../components/ui';
@@ -79,9 +80,39 @@ function ReadyButton({ ready, onReady }: { ready: boolean; onReady: (ready: bool
       setPending(false);
     }
   };
+  // Button이 ref를 받지 않아 감싼 div에서 누르는 튕김을 준다. 첫 렌더에는 튕기지 않는다.
+  const [scope, animate] = useAnimate<HTMLDivElement>();
+  const reduceMotion = useReducedMotion();
+  const previous = useRef(ready);
+  useEffect(() => {
+    const changed = previous.current !== ready;
+    previous.current = ready;
+    if (!changed || reduceMotion) {
+      return;
+    }
+    animate(scope.current, { scale: [1, 0.92, 1.06, 1] }, { duration: 0.4, ease: 'easeOut' });
+  }, [ready, reduceMotion, animate, scope]);
   return (
-    <Button variant={ready ? 'muted' : 'primary'} onClick={toggle} disabled={pending} className={MAIN_BUTTON}>
-      {ready ? '준비 취소' : '준비하기'}
-    </Button>
+    <div ref={scope} className="inline-flex">
+      <Button variant={ready ? 'muted' : 'primary'} onClick={toggle} disabled={pending}
+        className={`${MAIN_BUTTON} transition-colors duration-300`}>
+        <span className="inline-flex items-center gap-1.5">
+          {ready ? <ReadyCheck /> : null}
+          <motion.span key={ready ? 'cancel' : 'ready'} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }}>
+            {ready ? '준비 취소' : '준비하기'}
+          </motion.span>
+        </span>
+      </Button>
+    </div>
+  );
+}
+
+/** 획을 긋듯 그려지는 초록 체크. */
+function ReadyCheck() {
+  return (
+    <svg data-testid="ready-check" aria-hidden="true" viewBox="0 0 16 16" className="h-4 w-4" fill="none">
+      <motion.path d="M3 8.5l3 3 7-7" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"
+        className="text-green-700" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.35 }} />
+    </svg>
   );
 }

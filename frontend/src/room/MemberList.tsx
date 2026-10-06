@@ -120,7 +120,10 @@ function StatusChip({ member }: { member: RoomMember }) {
     return <span className={`${CHIP} inline-flex items-center gap-1 bg-cream-50 text-wood-800`}><CrownIcon className="h-3 w-3" />방장</span>;
   }
   if (member.ready) {
-    return <span className={`${CHIP} inline-flex items-center gap-1 bg-green-600 text-white`}><CheckIcon className="h-3 w-3" />준비 완료</span>;
+    return (
+      <motion.span key="ready" initial={{ scale: 0.6 }} animate={{ scale: 1 }} transition={{ type: 'spring', bounce: 0.6, duration: 0.35 }}
+        className={`${CHIP} inline-flex items-center gap-1 bg-green-600 text-white`}><CheckIcon className="h-3 w-3" />준비 완료</motion.span>
+    );
   }
   return <span className={`${CHIP} bg-mustard-300 text-wood-800`}>준비 전</span>;
 }

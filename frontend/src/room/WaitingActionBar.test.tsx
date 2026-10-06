@@ -11,6 +11,8 @@ const room: Room = {
   ],
 };
 
+const notReadyRoom: Room = { ...room, members: [room.members[0], { ...room.members[1], ready: false }] };
+
 function renderBar(meId: number, shown: Room = room) {
   return render(<WaitingActionBar room={shown} meId={meId} spectating={false} onStart={vi.fn()} onReady={vi.fn()} onSeat={vi.fn()} />);
 }
@@ -21,13 +23,35 @@ describe('WaitingActionBar', () => {
 
     expect(screen.queryByText(/준비 \d\/\d/)).not.toBeInTheDocument();
     expect(screen.queryByText(/방장이/)).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '준비 취소' }).parentElement).toHaveClass('justify-center');
+    expect(screen.getByRole('button', { name: '준비 취소' }).closest('[data-testid="waiting-action-bar"]')).toHaveClass('justify-center');
   });
 
   it('준비 취소는 회색 버튼이다', () => {
     renderBar(2);
 
     expect(screen.getByRole('button', { name: '준비 취소' })).toHaveClass('bg-stone-200');
+  });
+
+  it('준비 취소 상태에는 체크 아이콘이 있고, 준비하기에는 없다', () => {
+    const view = renderBar(2);
+    const cancel = screen.getByRole('button', { name: '준비 취소' });
+    expect(cancel.querySelector('[data-testid="ready-check"]')).not.toBeNull();
+    expect(cancel).toHaveClass('transition-colors');
+
+    view.rerender(<WaitingActionBar room={notReadyRoom} meId={2} spectating={false} onStart={vi.fn()} onReady={vi.fn()} onSeat={vi.fn()} />);
+    expect(screen.getByRole('button', { name: '준비하기' }).querySelector('[data-testid="ready-check"]')).toBeNull();
+  });
+
+  it('준비 상태가 바뀌어도 같은 버튼 요소라 키보드 포커스를 잃지 않는다', () => {
+    const view = renderBar(2, notReadyRoom);
+    const button = screen.getByRole('button', { name: '준비하기' });
+    button.focus();
+
+    view.rerender(<WaitingActionBar room={room} meId={2} spectating={false} onStart={vi.fn()} onReady={vi.fn()} onSeat={vi.fn()} />);
+
+    const after = screen.getByRole('button', { name: '준비 취소' });
+    expect(after).toBe(button);
+    expect(document.activeElement).toBe(after);
   });
 
   it('시작할 수 없으면 버튼이 꺼지고 이유는 title과 숨김 문구에 담긴다', () => {
