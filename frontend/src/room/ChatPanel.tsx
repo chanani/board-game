@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import type { ChatMessage } from '../api/chat';
+import { chatTime } from '../lib/format';
 
 export const CHAT_MAX_LENGTH = 200;
 const NEAR_BOTTOM_PX = 48;
@@ -14,10 +15,9 @@ type Props = {
   autoFocus?: boolean;
 };
 
-const timeOf = (sentAt: string) => {
-  const date = new Date(sentAt);
-  return Number.isNaN(date.getTime()) ? '' : date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
-};
+/** 같은 사람이 같은 분에 이어 보낸 글이면 시간은 그 묶음의 마지막 글에만 붙인다. */
+const endsRun = (message: ChatMessage, next: ChatMessage | undefined) =>
+  next === undefined || next.memberId !== message.memberId || chatTime(next.sentAt) !== chatTime(message.sentAt);
 
 export function ChatPanel({ messages, meId, onSend, className = '', autoFocus = false }: Props) {
   const [text, setText] = useState('');
@@ -82,12 +82,13 @@ export function ChatPanel({ messages, meId, onSend, className = '', autoFocus = 
   return (
     <div className={`flex min-h-0 flex-col gap-3 ${className}`}>
       <ol ref={listRef} onScroll={onScroll} aria-label="채팅 메시지" aria-live="polite"
-        className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain rounded-xl bg-cream-200/40 p-3 shadow-[inset_0_2px_4px_rgb(0_0_0/0.08)]">
+        className="min-h-0 flex-1 space-y-2 scroll-thin overflow-y-auto overscroll-contain rounded-xl bg-cream-200/40 p-3 shadow-[inset_0_2px_4px_rgb(0_0_0/0.08)]">
         {messages.length === 0 ? (
           <li className="py-6 text-center text-sm text-stone-500">아직 대화가 없어요. 먼저 인사해 보세요!</li>
         ) : null}
-        {messages.map((message) => (
-          <ChatLine key={message.id} message={message} mine={message.memberId === meId} />
+        {messages.map((message, index) => (
+          <ChatLine key={message.id} message={message} mine={message.memberId === meId}
+            showTime={endsRun(message, messages[index + 1])} />
         ))}
       </ol>
       <form onSubmit={onSubmit} className="flex gap-2">
@@ -103,12 +104,15 @@ export function ChatPanel({ messages, meId, onSend, className = '', autoFocus = 
   );
 }
 
-function ChatLine({ message, mine }: { message: ChatMessage; mine: boolean }) {
-  const time = timeOf(message.sentAt);
+function ChatLine({ message, mine, showTime }: { message: ChatMessage; mine: boolean; showTime: boolean }) {
+  const time = showTime ? (
+    <time dateTime={message.sentAt} className="shrink-0 pb-0.5 text-[10px] leading-none text-stone-500">{chatTime(message.sentAt)}</time>
+  ) : null;
   if (mine) {
     return (
-      <li data-mine="true" className="flex flex-col items-end">
-        <p title={time} className="max-w-[85%] whitespace-pre-wrap break-words rounded-2xl rounded-br-md bg-mustard-300 px-3 py-1.5 text-sm text-wood-800 shadow-sm">
+      <li data-mine="true" className="flex items-end justify-end gap-1.5">
+        {time}
+        <p className="max-w-[80%] whitespace-pre-wrap break-words rounded-2xl rounded-br-md bg-mustard-300 px-3 py-1.5 text-sm text-wood-800 shadow-sm">
           {message.text}
         </p>
       </li>
@@ -117,9 +121,12 @@ function ChatLine({ message, mine }: { message: ChatMessage; mine: boolean }) {
   return (
     <li data-mine="false" className="flex flex-col items-start gap-0.5">
       <span className="px-1 text-xs font-bold text-wood-700">{message.nickname}</span>
-      <p title={time} className="max-w-[85%] whitespace-pre-wrap break-words rounded-2xl rounded-bl-md bg-cream-50 px-3 py-1.5 text-sm text-wood-800 shadow-sm ring-1 ring-cream-300">
-        {message.text}
-      </p>
+      <div className="flex max-w-full items-end gap-1.5">
+        <p className="max-w-[80%] whitespace-pre-wrap break-words rounded-2xl rounded-bl-md bg-cream-50 px-3 py-1.5 text-sm text-wood-800 shadow-sm ring-1 ring-cream-300">
+          {message.text}
+        </p>
+        {time}
+      </div>
     </li>
   );
 }

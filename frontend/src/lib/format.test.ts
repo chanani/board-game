@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { canForfeit, decimal, offlineSecondsNow, percent, resultLabel } from './format';
+import { canForfeit, chatTime, decimal, offlineSecondsNow, percent, resultLabel } from './format';
 import type { RoomMember } from '../api/types';
 
 const offline = (seconds: number): RoomMember => ({ id: 2, nickname: '밥', host: false, connected: false, offlineSeconds: seconds, ready: false });
@@ -28,5 +28,12 @@ describe('format', () => {
     expect(canForfeit(offline(59), 1, 0, 0)).toBe(false);
     expect(canForfeit(offline(60), 1, 0, 0)).toBe(true);
     expect(canForfeit(offline(90), 2, 0, 0)).toBe(false);
+  });
+
+  it('채팅 시간은 현지 시각 24시간제 HH:mm으로, 잘못된 값은 빈 문자열로 보여준다', () => {
+    expect(chatTime(new Date(2026, 9, 6, 9, 5).toISOString())).toBe('09:05');
+    expect(chatTime(new Date(2026, 9, 6, 0, 0).toISOString())).toBe('00:00');
+    expect(chatTime(new Date(2026, 9, 6, 23, 59).toISOString())).toBe('23:59');
+    expect(chatTime('nope')).toBe('');
   });
 });

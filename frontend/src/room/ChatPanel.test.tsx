@@ -76,4 +76,31 @@ describe('ChatPanel', () => {
     expect(onSend).not.toHaveBeenCalled();
     expect(input).toHaveValue('안녕');
   });
+
+  describe('시간 표시', () => {
+    const at = (h: number, m: number, s = 0) => new Date(2026, 9, 6, h, m, s).toISOString();
+    const line = (id: number, memberId: number, minute: number, sec = 0): ChatMessage =>
+      ({ id, memberId, nickname: memberId === 1 ? '앨리스' : '밥', text: `글${id}`, sentAt: at(14, minute, sec) });
+
+    it('말풍선 옆에 HH:mm을 보여 준다', () => {
+      render(<ChatPanel messages={[line(1, 2, 5)]} meId={1} onSend={vi.fn()} />);
+
+      expect(screen.getByText('14:05')).toBeInTheDocument();
+    });
+
+    it('같은 사람이 같은 분에 이어서 보낸 글은 마지막에만 시간을 보여 준다', () => {
+      render(<ChatPanel messages={[line(1, 2, 5, 1), line(2, 2, 5, 20), line(3, 2, 5, 50)]} meId={1} onSend={vi.fn()} />);
+
+      expect(screen.getAllByText('14:05')).toHaveLength(1);
+      expect(screen.getByText('글3').closest('li')).toHaveTextContent('14:05');
+      expect(screen.getByText('글1').closest('li')).not.toHaveTextContent('14:05');
+    });
+
+    it('분이 바뀌거나 보낸 사람이 바뀌면 각각 시간을 보여 준다', () => {
+      render(<ChatPanel messages={[line(1, 2, 5), line(2, 2, 6), line(3, 1, 6), line(4, 2, 6)]} meId={1} onSend={vi.fn()} />);
+
+      expect(screen.getAllByText('14:05')).toHaveLength(1);
+      expect(screen.getAllByText('14:06')).toHaveLength(3);
+    });
+  });
 });

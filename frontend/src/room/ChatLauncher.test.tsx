@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import type { ChatMessage } from '../api/chat';
@@ -29,7 +29,7 @@ describe('ChatLauncher', () => {
     expect(onOpen).toHaveBeenCalled();
 
     await userEvent.click(screen.getByRole('button', { name: '채팅 닫기' }));
-    expect(screen.queryByRole('dialog', { name: '채팅' })).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: '채팅' })).not.toBeInTheDocument());
   });
 
   it('모바일에서는 아래 시트로 열린다', async () => {
@@ -55,7 +55,7 @@ describe('ChatLauncher', () => {
 
     await userEvent.keyboard('{Escape}');
 
-    expect(screen.queryByRole('dialog', { name: '채팅' })).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: '채팅' })).not.toBeInTheDocument());
   });
 
   it('위에 모달이 떠 있으면 Esc는 모달만 닫고 채팅은 그대로 둔다', async () => {

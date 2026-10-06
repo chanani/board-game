@@ -20,6 +20,16 @@ export function dateTime(iso: string): string {
   return new Date(iso).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
+/** 채팅 말풍선 옆 시간. 현지 시각 24시간제 HH:mm, 읽을 수 없는 값은 빈 문자열. */
+export function chatTime(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+  const two = (value: number) => String(value).padStart(2, '0');
+  return `${two(date.getHours())}:${two(date.getMinutes())}`;
+}
+
 const RESULT_LABELS: Record<ResultType, string> = { WIN: '승', DRAW: '무', LOSE: '패' };
 
 export function resultLabel(result: ResultType | null): string {

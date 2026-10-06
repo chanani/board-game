@@ -65,6 +65,15 @@ body {
   }
 }
 
+/* 얇고 둥근 스크롤바 (채팅 목록, 모바일 상대 레일 등) */
+@utility scroll-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-cream-300) transparent;
+  &::-webkit-scrollbar { width: 6px; height: 6px; }
+  &::-webkit-scrollbar-track { background: transparent; }
+  &::-webkit-scrollbar-thumb { background: var(--color-cream-300); border-radius: 9999px; }
+}
+
 /* 카드 3D 뒤집기 */
 .card-3d { perspective: 700px; }
 .card-inner { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; transition: transform 350ms cubic-bezier(.2,.7,.3,1.2); }
