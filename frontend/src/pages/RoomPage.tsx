@@ -118,8 +118,8 @@ export function RoomPage() {
 
   return (
     <div className={`space-y-4 ${playing ? 'pb-20' : ''}`}>
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
           <h1 className="text-xl font-black text-cream-50 drop-shadow">{room.name}</h1>
           <div className="mt-1 flex flex-wrap items-center gap-1.5" data-testid="room-chips">
             <RoomChip>🃏 {room.gameTypeName}</RoomChip>
@@ -129,7 +129,7 @@ export function RoomPage() {
             {room.locked ? <RoomChip>🔒 비공개</RoomChip> : null}
           </div>
         </div>
-        <Button variant="danger" onClick={requestLeave}>나가기</Button>
+        <Button variant="danger" className="shrink-0" onClick={requestLeave}>나가기</Button>
       </div>
       {showGame && view ? (
         <PaperSafariTable

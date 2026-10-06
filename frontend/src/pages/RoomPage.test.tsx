@@ -88,6 +88,15 @@ describe('RoomPage 관전자', () => {
     expect(within(chips).getByLabelText('관전 1명').querySelector('svg')).not.toBeNull();
   });
 
+  it('칩이 여러 줄로 늘어나도 나가기 버튼은 줄어들지 않는다(좁은 화면에서 글자가 두 줄로 깨지지 않게)', async () => {
+    setChannel({ room: { ...baseRoom, locked: true } });
+    renderRoom();
+    await act(async () => {});
+
+    expect(screen.getByRole('button', { name: '나가기' })).toHaveClass('shrink-0');
+    expect(screen.getByTestId('room-chips').parentElement).toHaveClass('min-w-0');
+  });
+
   it('관전자가 없으면 관전 칩을 숨기고 대기 중이면 대기 중 칩을 보여준다', async () => {
     setChannel({ room: { ...baseRoom, status: 'WAITING', spectators: [], members: [...members, { ...members[1], id: 3, nickname: '캐롤' }] } });
     renderRoom();
