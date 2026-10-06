@@ -60,9 +60,10 @@ export function RoundResultModal({ view, meId, nicknameOf, onReady }: Props) {
   });
 
   return (
-    <Modal open title={`${game.roundNumber}라운드 결과`} wide>
-      <h2 className="mb-4 text-xl font-black">{game.roundNumber}라운드 결과</h2>
-      <ul className="mb-4 space-y-1">
+    <Modal open title={`${game.roundNumber}라운드 결과`} wide padding="roomy">
+      <div className="space-y-6">
+      <h2 className="text-xl font-black">{game.roundNumber}라운드 결과</h2>
+      <ul className="space-y-2">
         {results.map((result, index) => (
           <motion.li key={result.playerId} initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.15 * index }}
             className={`flex justify-between rounded-lg px-3 py-2 text-sm ${won(result.outcome) ? 'bg-mustard-300/60' : 'bg-cream-200/60'}`}>
@@ -73,7 +74,7 @@ export function RoundResultModal({ view, meId, nicknameOf, onReady }: Props) {
           </motion.li>
         ))}
       </ul>
-      <div className="mb-4 grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2">
         {game.round.boards.map((board, boardIndex) => (
           <Felt key={board.playerId} className="p-3">
             <PlayerBoard board={staged(board, boardIndex)} nickname={nicknameOf(board.playerId)} tokens={game.tokens[String(board.playerId)] ?? 0} active={false} size="sm" />
@@ -97,6 +98,7 @@ export function RoundResultModal({ view, meId, nicknameOf, onReady }: Props) {
         {game.status === 'ROUND_OVER' && seated ? (
           <Button onClick={onReady} disabled={ready}>{ready ? '다른 사람을 기다리는 중…' : '다음 라운드 준비'}</Button>
         ) : null}
+      </div>
       </div>
     </Modal>
   );

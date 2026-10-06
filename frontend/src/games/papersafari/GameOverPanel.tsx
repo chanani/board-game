@@ -18,14 +18,15 @@ export function GameOverPanel({ game, meId, nicknameOf, onClose }: Props) {
   return (
     <>
       <Confetti active={game.winnerId !== null} />
-    <Modal open title="게임 종료" onClose={onClose} wide>
+    <Modal open title="게임 종료" onClose={onClose} wide padding="roomy">
+      <div className="space-y-6">
       <div className="text-center">
         <motion.div initial={{ rotateY: 180, scale: 0.6 }} animate={{ rotateY: 0, scale: 1 }} transition={{ type: 'spring', bounce: 0.4, duration: 0.8 }}
           className="mx-auto flex h-24 w-20 items-center justify-center rounded-2xl bg-cream-50 text-5xl shadow-[0_5px_0_var(--color-cream-300),0_12px_20px_rgb(0_0_0/0.3)]">
           {won ? '🏆' : '🌿'}
         </motion.div>
         <h2 className="mt-3 text-2xl font-black">{game.winnerId !== null ? `${nicknameOf(game.winnerId)}님 승리!` : '게임 종료'}</h2>
-        <ul className="my-4 space-y-1 text-sm">
+        <ul className="my-4 space-y-2 text-sm">
           {standings.map(([memberId, tokens]) => (
             <li key={memberId} className={`flex justify-between rounded-lg px-3 py-1.5 ${isWinner(Number(memberId)) ? 'gold-sparkle bg-mustard-300/60 font-bold' : 'bg-cream-200/60'}`}>
               <span>{nicknameOf(Number(memberId))}</span>
@@ -35,9 +36,9 @@ export function GameOverPanel({ game, meId, nicknameOf, onClose }: Props) {
         </ul>
       </div>
       {lastRound ? (
-        <section className="mb-4 text-left">
-          <h3 className="mb-2 text-sm font-bold">마지막 라운드 결과</h3>
-          <ul className="mb-3 space-y-1 text-sm">
+        <section className="space-y-6 text-left">
+          <h3 className="text-sm font-bold">마지막 라운드 결과</h3>
+          <ul className="space-y-2 text-sm">
             {[...lastRound.players].sort((a, b) => a.score - b.score).map((result) => (
               <li key={result.playerId} className="flex justify-between rounded-lg bg-cream-200/60 px-3 py-1.5">
                 <span>{nicknameOf(result.playerId)}</span>
@@ -47,7 +48,7 @@ export function GameOverPanel({ game, meId, nicknameOf, onClose }: Props) {
               </li>
             ))}
           </ul>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-2">
             {game.round.boards.map((board) => (
               <Felt key={board.playerId} className="p-3">
                 <PlayerBoard board={board} nickname={nicknameOf(board.playerId)}
@@ -59,6 +60,7 @@ export function GameOverPanel({ game, meId, nicknameOf, onClose }: Props) {
       ) : null}
       <div className="text-center">
         <Button onClick={onClose}>대기실로 돌아가기</Button>
+      </div>
       </div>
     </Modal>
     </>

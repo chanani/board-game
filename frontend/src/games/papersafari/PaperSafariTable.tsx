@@ -53,9 +53,16 @@ type Props = {
   transition?: ViewTransition | null;
 };
 
-function instruction(phase: string, myTurn: boolean, needsFlip: boolean, currentName: string, canDiscard: boolean): string {
+function placeText(canDiscard: boolean, compact: boolean): string {
+  if (compact) {
+    return canDiscard ? '바꿀 카드를 누르거나 버리세요' : '바꿀 카드를 눌러 주세요 (버리기 불가)';
+  }
+  return canDiscard ? '교체할 내 카드를 누르거나, 버리기를 누르세요.' : '교체할 내 카드를 눌러 주세요. (이 카드는 버릴 수 없어요)';
+}
+
+function instruction(phase: string, myTurn: boolean, needsFlip: boolean, currentName: string, canDiscard: boolean, compact: boolean): string {
   if (phase === 'SETUP_FLIP') {
-    return needsFlip ? '내 카드 1장을 골라 뒤집어 주세요.' : '다른 사람이 카드를 뒤집기를 기다리는 중…';
+    return needsFlip ? (compact ? '카드 1장을 뒤집어 주세요' : '내 카드 1장을 골라 뒤집어 주세요.') : '다른 사람이 카드를 뒤집기를 기다리는 중…';
   }
   if (phase === 'ROUND_OVER') {
     return '라운드가 끝났어요!';
@@ -64,10 +71,10 @@ function instruction(phase: string, myTurn: boolean, needsFlip: boolean, current
     return `${currentName}님의 차례예요.`;
   }
   if (phase === 'DRAW') {
-    return '덱 또는 버린 카드 더미에서 카드를 가져오세요.';
+    return compact ? '덱이나 버린 카드에서 가져오세요' : '덱 또는 버린 카드 더미에서 카드를 가져오세요.';
   }
   if (phase === 'PLACE') {
-    return canDiscard ? '교체할 내 카드를 누르거나, 버리기를 누르세요.' : '교체할 내 카드를 눌러 주세요. (이 카드는 버릴 수 없어요)';
+    return placeText(canDiscard, compact);
   }
   return '엿볼 내 뒷면 카드를 고르세요.';
 }
@@ -158,7 +165,7 @@ export function PaperSafariTable({ view, room, meId, log, receivedAt, now, error
   };
 
   const drawable = myTurn && round.phase === 'DRAW';
-  const instructionText = instruction(round.phase, myTurn, needsFlip, nicknameOf(round.currentPlayerId), canDiscard);
+  const instructionText = instruction(round.phase, myTurn, needsFlip, nicknameOf(round.currentPlayerId), canDiscard, !wide);
 
   const footer = myBoard ? (
     <div className="flex flex-wrap items-center justify-between gap-3">

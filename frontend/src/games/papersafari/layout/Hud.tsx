@@ -7,7 +7,7 @@ export function Hud({ roundNumber, instruction, myTurn, log }: Props) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-2">
       <span className="rounded-lg bg-black/35 px-3 py-1 text-sm font-bold text-cream-50">🦁 {roundNumber}라운드</span>
-      <p role="status" className={`rounded-full px-4 py-1.5 text-sm font-bold shadow-[0_3px_0_rgb(0_0_0/0.3)] ${myTurn ? 'turn-glow bg-mustard-400 text-wood-800' : 'bg-cream-50 text-wood-800'}`}>
+      <p role="status" data-testid="instruction" className={`flex min-h-[3rem] line-clamp-2 items-center justify-center rounded-2xl px-4 py-1.5 text-center text-sm font-bold shadow-[0_3px_0_rgb(0_0_0/0.3)] ${myTurn ? 'turn-glow bg-mustard-400 text-wood-800' : 'bg-cream-50 text-wood-800'}`}>
         {instruction}
       </p>
       <div className="relative">

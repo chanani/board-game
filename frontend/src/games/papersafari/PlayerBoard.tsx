@@ -53,7 +53,7 @@ export function PlayerBoard({ board, nickname, tokens, active, size = 'md', puls
           <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold text-wood-800 shadow-[0_2px_0_rgb(0_0_0/0.3)] ${active ? 'turn-glow bg-mustard-400' : 'bg-cream-50'}`}>{nickname}</span>
           {connected === false ? <span className="text-xs text-cream-100">연결 끊김 {offlineSeconds}초</span> : null}
           {onForfeit ? (
-            <button type="button" onClick={onForfeit} className="rounded-md bg-red-50 px-1.5 py-0.5 text-xs font-medium text-red-700 hover:bg-red-100">
+            <button type="button" onClick={onForfeit} className="relative z-10 rounded-md bg-red-50 px-1.5 py-0.5 text-xs font-medium text-red-700 hover:bg-red-100">
               내보내기
             </button>
           ) : null}

@@ -1,7 +1,9 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useRef, type KeyboardEvent, type ReactNode } from 'react';
 
-type Props = { open: boolean; title: string; onClose?: () => void; children: ReactNode; wide?: boolean };
+type Props = { open: boolean; title: string; onClose?: () => void; children: ReactNode; wide?: boolean; padding?: 'normal' | 'roomy' };
+
+const PADDING = { normal: 'p-6', roomy: 'p-5 sm:p-8' };
 
 const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
@@ -9,7 +11,7 @@ function focusables(root: HTMLElement | null): HTMLElement[] {
   return root ? Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE)) : [];
 }
 
-export function Modal({ open, title, onClose, children, wide = false }: Props) {
+export function Modal({ open, title, onClose, children, wide = false, padding = 'normal' }: Props) {
   const boxRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -56,7 +58,7 @@ export function Modal({ open, title, onClose, children, wide = false }: Props) {
             role="dialog"
             aria-modal="true"
             aria-label={title}
-            className={`paper max-h-[90vh] w-full overflow-y-auto p-6 ${wide ? 'max-w-4xl' : 'max-w-lg'}`}
+            className={`paper max-h-[90vh] w-full overflow-y-auto ${PADDING[padding]} ${wide ? 'max-w-4xl' : 'max-w-lg'}`}
             initial={{ y: 60, scale: 0.92, opacity: 0 }}
             animate={{ y: 0, scale: 1, opacity: 1 }}
             exit={{ y: 40, scale: 0.95, opacity: 0 }}

@@ -2,6 +2,7 @@ import type { BoardView } from '../../../api/types';
 import { Felt } from '../../../components/Felt';
 import { CenterPiles } from './CenterPiles';
 import { Hud } from './Hud';
+import { OpponentSeat } from './OpponentSeat';
 import { Seat } from './Seat';
 import { SpectatorNotice } from './SpectatorNotice';
 import { seatRows } from './seats';
@@ -20,9 +21,8 @@ export function TableRound(props: TableProps) {
     }
     return (
       <div key={board.playerId} data-testid="opponent-seat">
-        <Seat board={board} nickname={nicknameOf(board.playerId)} tokens={tokensOf(board.playerId)}
-          active={round.currentPlayerId === board.playerId} held={round.held} size="sm" presence={presenceOf(board.playerId)}
-          handLabel={`${nicknameOf(board.playerId)}님이 들고 있는 카드`} />
+        <OpponentSeat board={board} nickname={nicknameOf(board.playerId)} tokens={tokensOf(board.playerId)}
+          active={round.currentPlayerId === board.playerId} held={round.held} presence={presenceOf(board.playerId)} />
       </div>
     );
   };

@@ -275,3 +275,60 @@ describe('관전자 화면', () => {
     expect(screen.queryByText(/\(나\)/)).not.toBeInTheDocument();
   });
 });
+
+describe('게임 화면 다듬기', () => {
+  it('모바일 배치에서는 짧은 안내 문구를, PC 배치에서는 긴 문구를 쓴다', () => {
+    setMediaMatches(false);
+    const { unmount } = render(<PaperSafariTable {...baseProps(build({ phase: 'DRAW', current: ME }))} />);
+    expect(screen.getByTestId('instruction')).toHaveTextContent('덱이나 버린 카드에서 가져오세요');
+    unmount();
+    setMediaMatches(true);
+    render(<PaperSafariTable {...baseProps(build({ phase: 'DRAW', current: ME }))} />);
+    expect(screen.getByTestId('instruction')).toHaveTextContent('덱 또는 버린 카드 더미에서 카드를 가져오세요.');
+  });
+
+  it.each([true, false])('안내 문구 영역은 두 줄 높이로 고정된다 (PC 배치 %s)', (wide) => {
+    setMediaMatches(wide);
+    render(<PaperSafariTable {...baseProps(build({ phase: 'DRAW', current: OPPONENT }))} />);
+    expect(screen.getByTestId('instruction')).toHaveClass('min-h-[3rem]', 'line-clamp-2');
+  });
+
+  it('모바일 배치에서는 내 판 옆 세로 칸에 버리기와 예상 점수를 둔다', () => {
+    setMediaMatches(false);
+    render(<PaperSafariTable {...baseProps(build({ phase: 'PLACE', current: ME, held: { playerId: ME, source: 'DECK', card: { kind: 'NUMBER', value: 5 } } }))} />);
+    const side = screen.getByTestId('my-side');
+    expect(within(side).getByRole('button', { name: '버리기' })).toBeEnabled();
+    expect(within(side).getByText(/현재 예상 점수/)).toBeInTheDocument();
+  });
+
+  describe('상대 판 확대', () => {
+    const withOpponentCards = (): PaperSafariSessionView => {
+      const view = build({ phase: 'DRAW', current: ME });
+      const opponentSlots = faceDown().map((slot) => {
+        if (slot.column !== 0 || slot.row > 1) {
+          return slot;
+        }
+        return { ...slot, faceUp: true, card: { kind: 'NUMBER', value: slot.row === 0 ? 3 : 4 } as CardView };
+      });
+      return { ...view, game: { ...view.game, round: { ...view.game.round, boards: [view.game.round.boards[0], { playerId: OPPONENT, slots: opponentSlots }] } } };
+    };
+
+    it.each([true, false])('상대 판을 누르면 큰 판과 예상 점수를 보여 준다 (PC 배치 %s)', async (wide) => {
+      setMediaMatches(wide);
+      render(<PaperSafariTable {...baseProps(withOpponentCards())} />);
+      expect(screen.getByTestId('opponent-estimate')).toHaveTextContent('예상 7점');
+
+      await userEvent.click(screen.getByRole('button', { name: '밥님의 판 크게 보기' }));
+
+      const dialog = screen.getByRole('dialog', { name: '밥님의 판' });
+      expect(within(dialog).getByText(/예상 점수/)).toHaveTextContent('예상 점수 7');
+      expect(within(dialog).getByText(/가려진 4장/)).toBeInTheDocument();
+    });
+
+    it('내 자리는 확대 버튼이 없다', () => {
+      render(<PaperSafariTable {...baseProps(withOpponentCards())} />);
+      expect(screen.queryByRole('button', { name: /앨리스.*크게 보기/ })).not.toBeInTheDocument();
+      expect(screen.getAllByRole('button', { name: /크게 보기/ })).toHaveLength(1);
+    });
+  });
+});
