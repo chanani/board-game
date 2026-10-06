@@ -325,6 +325,15 @@ describe('게임 화면 다듬기', () => {
     expect(side.querySelector('strong')).toHaveClass('text-lg', '@max-[110px]:text-base');
   });
 
+  it('모바일 배치의 상단 안내는 한 줄 격자에 고정되고, 기록이 없어도 마지막 기록 줄 높이를 잡아 둔다', () => {
+    setMediaMatches(false);
+    render(<PaperSafariTable {...baseProps(build({ phase: 'DRAW', current: ME }))} />);
+    expect(screen.getByTestId('hud')).toHaveClass('grid', 'grid-cols-[auto_minmax(0,1fr)_auto]');
+    const lastLog = screen.getByTestId('last-log');
+    expect(lastLog).toBeEmptyDOMElement();
+    expect(lastLog).toHaveClass('h-4', 'truncate');
+  });
+
   it('모바일 상대 줄은 Tailwind가 실제로 만드는 안전한 가운데 정렬 클래스를 쓴다', () => {
     setMediaMatches(false);
     render(<PaperSafariTable {...baseProps(build({ phase: 'DRAW', current: ME }))} />);
