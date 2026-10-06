@@ -267,4 +267,36 @@ class StompGameFlowTest {
     void 로그인하지_않으면_WebSocket에_연결할_수_없다() {
         assertThatThrownBy(() -> connect("JSESSIONID=invalid")).isInstanceOf(Exception.class);
     }
+
+    @Test
+    void 방_참가자와_관전자는_채팅을_주고받고_방_밖_사람은_받지_못한다() throws Exception {
+        Player host = player();
+        Player guest = player();
+        Player watcher = player();
+        String[] outsiderCredentials = signUpAndLogin();
+        BlockingQueue<String> problems = new LinkedBlockingQueue<>();
+        StompSession outsiderStomp = connect(outsiderCredentials[1], recordingProblems(problems));
+        String code = startedRoom(host, guest);
+        post("/api/rooms/" + code + "/watch", Map.of(), watcher.cookie());
+        BlockingQueue<JsonNode> hostChat = subscribe(host.stomp(), "/topic/rooms/" + code + "/chat");
+        BlockingQueue<JsonNode> watcherChat = subscribe(watcher.stomp(), "/topic/rooms/" + code + "/chat");
+        BlockingQueue<JsonNode> outsiderChat = subscribe(outsiderStomp, "/topic/rooms/" + code + "/chat");
+        Thread.sleep(500);
+
+        host.stomp().send("/app/rooms/" + code + "/chat", Map.of("text", "안녕"));
+
+        JsonNode received = watcherChat.poll(5, TimeUnit.SECONDS);
+        assertThat(received).isNotNull();
+        assertThat(received.get("text").asText()).isEqualTo("안녕");
+        assertThat(received.get("memberId").asLong()).isEqualTo(host.id());
+        assertThat(hostChat.poll(5, TimeUnit.SECONDS)).isNotNull();
+        assertThat(outsiderChat.poll(1, TimeUnit.SECONDS)).isNull();
+        assertThat(problems).isEmpty();
+        assertThat(outsiderStomp.isConnected()).isTrue();
+
+        watcher.stomp().send("/app/rooms/" + code + "/chat", Map.of("text", "   "));
+        JsonNode error = watcher.errors().poll(5, TimeUnit.SECONDS);
+        assertThat(error).isNotNull();
+        assertThat(error.get("code").asText()).isEqualTo("INVALID_CHAT_MESSAGE");
+    }
 }

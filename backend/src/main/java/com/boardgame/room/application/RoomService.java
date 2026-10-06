@@ -9,6 +9,7 @@ import com.boardgame.game.GameSessionFactories;
 import com.boardgame.game.GameType;
 import com.boardgame.game.event.GameStartedEvent;
 import com.boardgame.room.api.CreateRoomRequest;
+import com.boardgame.room.domain.RoomClosedEvent;
 import com.boardgame.room.api.GameSummaryResponse;
 import com.boardgame.room.api.RoomResponse;
 import com.boardgame.room.api.RoomSummaryResponse;
@@ -77,7 +78,7 @@ public class RoomService {
         requireNotInAnyRoom(member.id());
         RoomProfile profile = new RoomProfile(newCode(), name, settings);
         Room room = Room.open(profile, participantOf(member));
-        registry.save(room);
+        saveAndNotifyClosed(room);
         presence.baseline(room.memberIds(), clock.instant());
         return broadcast(room);
     }
@@ -115,7 +116,7 @@ public class RoomService {
         Room room = find(rawCode);
         requireNotInOtherRoom(member.id(), room);
         room.admit(participantOf(member), passed);
-        registry.save(room);
+        saveAndNotifyClosed(room);
         presence.baseline(room.memberIds(), clock.instant());
         return broadcast(room);
     }
@@ -124,16 +125,32 @@ public class RoomService {
         Room room = find(rawCode);
         requireNotInOtherRoom(member.id(), room);
         room.watch(participantOf(member));
-        registry.save(room);
+        saveAndNotifyClosed(room);
         return broadcast(room);
     }
 
     public synchronized RoomResponse seat(String rawCode, long memberId) {
         Room room = find(rawCode);
         room.seat(memberId);
-        registry.save(room);
+        saveAndNotifyClosed(room);
         presence.baseline(room.memberIds(), clock.instant());
         return broadcast(room);
+    }
+
+    public synchronized Optional<String> nicknameOf(String rawCode, long memberId) {
+        return registry.find(RoomCode.parse(rawCode))
+                .stream()
+                .flatMap(room -> Stream.concat(room.participants().stream(), room.spectators().stream()))
+                .filter(participant -> participant.memberId() == memberId)
+                .map(Participant::nickname)
+                .findFirst();
+    }
+
+    private void saveAndNotifyClosed(Room room) {
+        registry.save(room);
+        if (!registry.exists(room.code())) {
+            eventPublisher.publishEvent(new RoomClosedEvent(room.codeValue()));
+        }
     }
 
     public synchronized boolean isOccupant(String rawCode, long memberId) {
@@ -147,7 +164,7 @@ public class RoomService {
         List<Long> before = room.memberIds();
         List<GameOutcome> outcomes = room.leave(memberId);
         baselineNewcomers(room, before);
-        registry.save(room);
+        saveAndNotifyClosed(room);
         broadcastUnlessEmpty(room);
         outcomePublisher.publish(room, outcomes, clock.instant());
     }
@@ -173,7 +190,7 @@ public class RoomService {
         }
         Room room = find(rawCode);
         room.setReady(memberId, ready);
-        registry.save(room);
+        saveAndNotifyClosed(room);
         return broadcast(room);
     }
 
@@ -204,7 +221,7 @@ public class RoomService {
         List<Long> before = room.memberIds();
         List<GameOutcome> outcomes = room.act(memberId, action);
         baselineNewcomers(room, before);
-        registry.save(room);
+        saveAndNotifyClosed(room);
         broadcast(room);
         outcomePublisher.publish(room, outcomes, clock.instant());
     }
@@ -230,7 +247,7 @@ public class RoomService {
         List<Long> before = room.memberIds();
         List<GameOutcome> outcomes = room.leave(targetId);
         baselineNewcomers(room, before);
-        registry.save(room);
+        saveAndNotifyClosed(room);
         broadcastUnlessEmpty(room);
         outcomePublisher.publish(room, outcomes, clock.instant());
     }

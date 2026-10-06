@@ -82,4 +82,15 @@ class RoomTopicGuardTest {
         assertThat(guard.preSend(send, null)).isSameAs(send);
         verify(roomService, never()).isOccupant(anyString(), anyLong());
     }
+
+    @Test
+    void 방_참가자는_채팅_토픽도_구독할_수_있고_그_밖의_하위_경로는_막는다() {
+        when(roomService.isOccupant("ABCDEF", 7L)).thenReturn(true);
+        LoginMember user = new LoginMember(7L, "칠");
+        Message<?> chat = message(StompCommand.SUBSCRIBE, "/topic/rooms/ABCDEF/chat", user);
+
+        assertThat(guard.preSend(chat, null)).isSameAs(chat);
+        assertThat(guard.preSend(message(StompCommand.SUBSCRIBE, "/topic/rooms/ABCDEF/other", user), null)).isNull();
+        assertThat(guard.preSend(message(StompCommand.SUBSCRIBE, "/topic/rooms/ABCDEF/chat/x", user), null)).isNull();
+    }
 }
