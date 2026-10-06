@@ -55,6 +55,7 @@ export function GameLobbyPage() {
   const [stat, setStat] = useState<GameStat | null>(null);
   const [statFailed, setStatFailed] = useState(false);
   const [rankings, setRankings] = useState<Ranking[]>([]);
+  const [myCode, setMyCode] = useState<string | null>(null);
 
   useEffect(() => {
     recordsApi.me().then((stats) => setStat(stats.stats.find((item) => item.gameType === gameType) ?? null)).catch(() => setStatFailed(true));
@@ -63,18 +64,22 @@ export function GameLobbyPage() {
 
   const failedRef = useRef(false);
 
-  const loadRooms = useCallback((manual = false) => roomsApi
-    .list(gameType)
-    .then((next) => {
-      failedRef.current = false;
-      setRooms(next);
-    })
-    .catch((error) => {
-      if (manual || !failedRef.current) {
-        toast.show(messageOf(error));
-      }
-      failedRef.current = true;
-    }), [toast, gameType]);
+  const loadRooms = useCallback((manual = false) => {
+    // 내 방은 목록과 따로 불러온다(실패해도 목록·알림에 영향 없음).
+    roomsApi.mine().then((mine) => setMyCode(mine?.code ?? null)).catch(() => undefined);
+    return roomsApi
+      .list(gameType)
+      .then((next) => {
+        failedRef.current = false;
+        setRooms(next);
+      })
+      .catch((error) => {
+        if (manual || !failedRef.current) {
+          toast.show(messageOf(error));
+        }
+        failedRef.current = true;
+      });
+  }, [toast, gameType]);
 
   usePolling(() => loadRooms(), POLL_MS);
 
@@ -133,6 +138,14 @@ export function GameLobbyPage() {
     }
     join(room.code, room.name);
   };
+
+  /** 내가 들어가 있는 방이면 참가·관전 대신 돌아가기. */
+  const returnAction = (room: RoomSummary) => (
+    <div className="flex shrink-0 items-center gap-2">
+      <span className="text-xs font-bold text-green-700">참여 중</span>
+      <Button onClick={() => navigate(`/rooms/${room.code}`)}>돌아가기</Button>
+    </div>
+  );
 
   const waiting = rooms.filter((room) => room.status === 'WAITING');
   const playing = rooms.filter((room) => room.status === 'PLAYING');
@@ -194,9 +207,11 @@ export function GameLobbyPage() {
                         </p>
                         <p className="mt-0.5 text-xs text-stone-500"><ThemeBadge theme={room.theme} /></p>
                       </div>
-                      <Button variant="secondary" disabled={full} onClick={() => joinFromList(room)}>
-                        {full ? '가득 참' : '참가'}
-                      </Button>
+                      {room.code === myCode ? returnAction(room) : (
+                        <Button variant="secondary" disabled={full} onClick={() => joinFromList(room)}>
+                          {full ? '가득 참' : '참가'}
+                        </Button>
+                      )}
                     </motion.li>
                   );
                 })}
@@ -218,7 +233,7 @@ export function GameLobbyPage() {
                       </p>
                       <p className="mt-0.5 text-xs text-stone-500"><ThemeBadge theme={room.theme} /></p>
                     </div>
-                    {room.locked ? (
+                    {room.code === myCode ? returnAction(room) : room.locked ? (
                       <Button variant="secondary" disabled className="inline-flex items-center gap-1"><LockIcon className="h-4 w-4" />비공개</Button>
                     ) : (
                       <Button variant="secondary" onClick={() => enter(() => roomsApi.watch(room.code))}>관전하기</Button>

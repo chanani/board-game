@@ -203,6 +203,41 @@ describe('GameLobbyPage', () => {
     expect(screen.getByText('열린방')).toBeInTheDocument();
   });
 
+  it('게임 중인 방 목록에서 내가 들어가 있는 방은 관전하기 대신 돌아가기다', async () => {
+    api.mine.mockResolvedValue({ code: 'PLAY01', status: 'PLAYING' });
+    renderLobby();
+    const back = await screen.findByRole('button', { name: '돌아가기' });
+
+    expect(within(screen.getByText('공개판').closest('li') as HTMLElement).queryByRole('button', { name: '관전하기' })).not.toBeInTheDocument();
+    expect(back.closest('li')).toHaveTextContent('참여 중');
+    await userEvent.click(back);
+    expect(await screen.findByText('방 화면')).toBeInTheDocument();
+    expect(api.watch).not.toHaveBeenCalled();
+  });
+
+  it('대기 중인 방 목록에서도 내 방은 참가 대신 돌아가기다', async () => {
+    api.mine.mockResolvedValue({ code: 'WAIT01', status: 'WAITING' });
+    renderLobby();
+    const back = await screen.findByRole('button', { name: '돌아가기' });
+    const item = screen.getByText('열린방').closest('li') as HTMLElement;
+
+    expect(item).toContainElement(back);
+    expect(item).toHaveTextContent('참여 중');
+    expect(within(item).queryByRole('button', { name: '참가' })).not.toBeInTheDocument();
+    expect(within(screen.getByText('잠긴방').closest('li') as HTMLElement).getByRole('button', { name: '참가' })).toBeInTheDocument();
+  });
+
+  it('내 방이 없으면 지금처럼 참가·관전하기다', async () => {
+    api.mine.mockResolvedValue(null);
+    renderLobby();
+    await screen.findByText('열린방');
+
+    expect(screen.queryByRole('button', { name: '돌아가기' })).not.toBeInTheDocument();
+    expect(screen.queryByText('참여 중')).not.toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: '참가' })).toHaveLength(2);
+    expect(screen.getByRole('button', { name: '관전하기' })).toBeInTheDocument();
+  });
+
   it('1초마다 방 목록을 새로 불러온다', async () => {
     vi.useFakeTimers();
     renderLobby();
