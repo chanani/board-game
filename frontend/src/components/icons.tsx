@@ -89,6 +89,10 @@ export const ScrollIcon = ({ className }: IconProps) => (
   <Svg className={className ?? 'h-4 w-4'}><path d="M6 4h11a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H8" /><path d="M6 4a2 2 0 0 0-2 2v2h4V6a2 2 0 0 0-2-2z" /><path d="M8 20a2 2 0 0 1-2-2V8" /><path d="M10 9h6M10 13h6M10 17h3" /></Svg>
 );
 
+export const ChevronRightIcon = ({ className }: IconProps) => (
+  <Svg className={className ?? 'h-4 w-4'}><path d="m9 6 6 6-6 6" /></Svg>
+);
+
 export const LogoutIcon = ({ className }: IconProps) => (
   <Svg className={className ?? 'h-4 w-4'}><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3" /><path d="M10 16l-4-4 4-4" /><path d="M6 12h10" /></Svg>
 );

@@ -70,7 +70,7 @@ describe('진행 기록 창', () => {
     await waitFor(() => expect(dialog).toBeVisible());
     expect(within(dialog).getAllByRole('listitem')).toHaveLength(2);
     expect(screen.queryByTestId('log-popover')).not.toBeInTheDocument();
-    expect(within(dialog).getAllByRole('list')[0]).toHaveClass('max-h-[70vh]', 'overflow-y-auto');
+    expect(within(dialog).getAllByRole('list')[0]).toHaveClass('max-h-[60vh]', 'overflow-y-auto');
   });
 
   it('PC에서는 팝오버가 열린다', async () => {
@@ -87,6 +87,11 @@ describe('진행 기록 창', () => {
     await userEvent.click(screen.getByRole('button', { name: '진행 기록 보기' }));
     const dialog = await screen.findByRole('dialog');
     expect(within(dialog).getAllByRole('listitem')).toHaveLength(2);
+  });
+
+  it('최근 진행 줄 버튼에는 누를 수 있다는 화살표가 있다', () => {
+    render(<TurnBar instruction="안내" myTurn={false} log={log} nicknameOf={nick} deadline={null} serverNow={0} />);
+    expect(screen.getByRole('button', { name: '진행 기록 보기' }).lastElementChild?.tagName.toLowerCase()).toBe('svg');
   });
 
   it('기록이 없으면 최근 진행 줄은 버튼이 아니다', () => {

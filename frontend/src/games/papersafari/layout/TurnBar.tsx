@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import type { LogEntry } from '../../../lib/eventLog';
 import { Countdown } from '../../../components/Countdown';
-import { KindDot, Sentence } from './Hud';
+import { KindDot, Sentence } from './LogList';
+import { ChevronRightIcon } from '../../../components/icons';
 import { LogModal } from './LogModal';
 
 type Props = {
@@ -34,19 +35,19 @@ export function TurnBar({ instruction, myTurn, log, nicknameOf, deadline, server
   ) : null;
   return (
     <>
-    <div data-testid="turn-bar"
-      className={`flex flex-nowrap items-center justify-center overflow-hidden whitespace-nowrap rounded-xl border backdrop-blur-[2px] ${tone} ${size}`}>
-      <p role="status" data-testid="instruction" className="flex min-w-0 shrink items-center font-bold">
-        <span className="truncate">{instruction}</span>
-      </p>
-      <Countdown deadline={deadline} serverNow={serverNow} onWarn={onWarn} />
-      <p data-testid="last-log" className="min-w-0 shrink-[3] truncate opacity-85">
-        {line ? (
-          <button type="button" aria-label="진행 기록 보기" onClick={() => setOpen(true)} className="max-w-full cursor-pointer truncate">{line}</button>
-        ) : null}
-      </p>
-    </div>
-    <LogModal open={open} onClose={() => setOpen(false)} log={log} nicknameOf={nicknameOf} />
+      <div data-testid="turn-bar"
+        className={`flex flex-nowrap items-center justify-center overflow-hidden whitespace-nowrap rounded-xl border backdrop-blur-[2px] ${tone} ${size}`}>
+        <p role="status" data-testid="instruction" className="flex min-w-0 shrink items-center font-bold">
+          <span className="truncate">{instruction}</span>
+        </p>
+        <Countdown deadline={deadline} serverNow={serverNow} onWarn={onWarn} />
+        <p data-testid="last-log" className="min-w-0 shrink-[3] truncate opacity-85">
+          {line ? (
+            <button type="button" aria-label="진행 기록 보기" onClick={() => setOpen(true)} className="inline-flex max-w-full cursor-pointer items-center rounded underline decoration-dotted underline-offset-2 opacity-90 hover:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-current"><span className="min-w-0 truncate">{line}</span><ChevronRightIcon className="ml-0.5 h-3 w-3 shrink-0" /></button>
+          ) : null}
+        </p>
+      </div>
+      <LogModal open={open} onClose={() => setOpen(false)} log={log} nicknameOf={nicknameOf} />
     </>
   );
 }
