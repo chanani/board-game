@@ -1,0 +1,18 @@
+import { readFileSync } from 'node:fs';
+import { describe, expect, it } from 'vitest';
+
+const css = readFileSync(`${__dirname}/index.css`, 'utf8');
+
+describe('index.css', () => {
+  it('누를 수 있는 곳은 손가락 커서, 꺼진 곳은 not-allowed다', () => {
+    expect(css).toMatch(/button:not\(:disabled\)[^{]*\{[^}]*cursor:\s*pointer/);
+    expect(css).toMatch(/:disabled[^{]*\{[^}]*cursor:\s*not-allowed/);
+    expect(css).toMatch(/\[aria-disabled="true"\]/);
+  });
+
+  it('차례 링 색 변수는 :root에 있고 해변만 노랑이다', () => {
+    expect(css).toMatch(/--turn-ring:\s*var\(--accent\)/);
+    const beach = css.match(/\[data-theme="BEACH"\]\s*\{[^}]*\}/)?.[0] ?? '';
+    expect(beach).toContain('--turn-ring: #facc15');
+  });
+});

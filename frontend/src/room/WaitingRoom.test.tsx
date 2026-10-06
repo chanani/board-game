@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import type { Room } from '../api/types';
 import { ToastProvider } from '../components/Toast';
+import { setMediaMatches } from '../test/media';
 import { WaitingRoom } from './WaitingRoom';
 
 const room: Room = {
@@ -100,7 +101,7 @@ describe('WaitingRoom', () => {
 
     expect(within(felt).queryByRole('button', { name: '게임 시작' })).not.toBeInTheDocument();
     expect(within(bar).getByRole('button', { name: '게임 시작' })).toBeInTheDocument();
-    expect(bar).toHaveTextContent('준비 0/1');
+    expect(bar).not.toHaveTextContent('준비 0/1');
     expect(felt.contains(bar)).toBe(false);
     expect(within(felt).queryByText(/코드/)).not.toBeInTheDocument();
     // 행동 바는 펠트 다음(아래)에 온다.
@@ -121,14 +122,31 @@ describe('WaitingRoom', () => {
     renderRoom();
 
     expect(screen.getByRole('button', { name: '게임 시작' })).toBeDisabled();
-    expect(screen.getByText('모두 준비하면 시작할 수 있어요')).toBeVisible();
+    expect(screen.getByRole('button', { name: '게임 시작' })).toHaveAttribute('title', '모두 준비하면 시작할 수 있어요');
   });
 
   it('혼자면 2명 이상 모여야 한다고 알려 준다', () => {
     renderRoom({ room: { ...room, members: [room.members[0]] } });
 
     expect(screen.getByRole('button', { name: '게임 시작' })).toBeDisabled();
-    expect(screen.getByText('2명 이상 모여야 해요')).toBeVisible();
+    expect(screen.getByRole('button', { name: '게임 시작' })).toHaveAttribute('title', '2명 이상 모여야 해요');
+  });
+
+  it('PC에서는 규칙 패널을 펼쳐 둔다', () => {
+    setMediaMatches(true);
+    renderRoom();
+
+    expect(screen.getByText('페이퍼 사파리 규칙')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '규칙 보기' })).not.toBeInTheDocument();
+  });
+
+  it('모바일에서는 규칙 패널 대신 규칙 보기 버튼이 있고 누르면 규칙 창이 열린다', async () => {
+    setMediaMatches(false);
+    renderRoom();
+
+    expect(screen.queryByText('페이퍼 사파리 규칙')).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: '규칙 보기' }));
+    expect(await screen.findByRole('dialog', { name: '페이퍼 사파리 규칙' })).toBeInTheDocument();
   });
 
   it('참가자는 준비하기로 준비하고 준비 취소로 되돌린다', async () => {

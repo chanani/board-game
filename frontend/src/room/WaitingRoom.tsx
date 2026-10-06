@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import type { ChatMessage } from '../api/chat';
 import type { Room, RoomMember } from '../api/types';
-import { BinocularsIcon } from '../components/icons';
-import { Panel } from '../components/ui';
+import { BinocularsIcon, BookIcon } from '../components/icons';
+import { Button, Panel } from '../components/ui';
 import { Felt } from '../components/Felt';
+import { RulesCarousel } from '../games/papersafari/RulesCarousel';
 import { RULE_SUMMARY } from '../games/papersafari/rules';
+import { PC_QUERY, useMediaQuery } from '../lib/useMediaQuery';
 import { ChatPanel } from './ChatPanel';
 import { KickConfirmModal } from './KickConfirmModal';
 import { MemberList } from './MemberList';
@@ -33,6 +35,8 @@ const FELT_RIM = 'p-[13px]';
 export function WaitingRoom({ room, meId, receivedAt, now, onStart, onReady, onForfeit, onKick, onSeat, chat }: Props) {
   const spectating = room.spectators.some((spectator) => spectator.id === meId);
   const [kickTarget, setKickTarget] = useState<RoomMember | null>(null);
+  const wide = useMediaQuery(PC_QUERY);
+  const [rulesOpen, setRulesOpen] = useState(false);
   const canKick = !spectating && room.status === 'WAITING' && room.hostId === meId;
   const askKick = (memberId: number) => setKickTarget(room.members.find((member) => member.id === memberId) ?? null);
   const confirmKick = () => {
@@ -60,13 +64,20 @@ export function WaitingRoom({ room, meId, receivedAt, now, onStart, onReady, onF
           <h2 className="font-bold">채팅</h2>
           <ChatPanel messages={chat.messages} meId={meId} onSend={chat.onSend} className="flex-1" />
         </Panel>
-        <Panel>
-          <h2 className="font-bold">페이퍼 사파리 규칙</h2>
-          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-stone-600">
-            {RULE_SUMMARY.map((line) => <li key={line}>{line}</li>)}
-          </ul>
-        </Panel>
+        {wide ? (
+          <Panel>
+            <h2 className="font-bold">페이퍼 사파리 규칙</h2>
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-stone-600">
+              {RULE_SUMMARY.map((line) => <li key={line}>{line}</li>)}
+            </ul>
+          </Panel>
+        ) : (
+          <Button variant="secondary" onClick={() => setRulesOpen(true)} className="flex items-center justify-center gap-1.5 self-center px-3 py-1.5">
+            <BookIcon /> 규칙 보기
+          </Button>
+        )}
       </div>
+      <RulesCarousel open={rulesOpen} onClose={() => setRulesOpen(false)} />
       <KickConfirmModal nickname={kickTarget?.nickname ?? null} onCancel={() => setKickTarget(null)} onConfirm={confirmKick} />
     </div>
   );

@@ -548,7 +548,7 @@ describe('모바일 게임 화면 (상대 판·내 차례·손 카드)', () => {
   it('내 차례면 내 판에 테마 강조색 테두리 링이 생기고, 아니면 없다', () => {
     setMediaMatches(false);
     const { unmount } = render(<PaperSafariTable {...baseProps(build({ phase: 'DRAW', current: ME }))} />);
-    expect(screen.getByTestId('board-1')).toHaveClass('turn-ring', 'ring-(--accent)');
+    expect(screen.getByTestId('board-1')).toHaveClass('turn-ring', 'ring-(--turn-ring)');
     unmount();
     render(<PaperSafariTable {...baseProps(build({ phase: 'DRAW', current: OPPONENT }))} />);
     expect(screen.getByTestId('board-1')).not.toHaveClass('turn-ring');

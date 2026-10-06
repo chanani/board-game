@@ -46,7 +46,7 @@ export function PlayerBoard({ result, board, nickname, active, turnRing = false,
 
   return (
     <div data-testid={`board-${board.playerId}`} data-winner={result ? result.winner : undefined}
-      className={`rounded-2xl bg-black/15 p-2 backdrop-blur-[1px] ${result ? 'mx-auto w-fit' : ''} ${turnRing ? 'ring-[3px] ring-inset ring-(--accent) turn-ring' : ''} ${result?.winner ? 'ring-[3px] ring-mustard-400 shadow-[0_0_18px_rgb(242_179_61/0.7)]' : ''}`}>
+      className={`rounded-2xl bg-black/15 p-2 backdrop-blur-[1px] ${result ? 'mx-auto w-fit' : ''} ${turnRing ? 'ring-[3px] ring-inset ring-(--turn-ring) turn-ring' : ''} ${result?.winner ? 'ring-[3px] ring-mustard-400 shadow-[0_0_18px_rgb(242_179_61/0.7)]' : ''}`}>
       <div className="mb-2 flex items-center justify-between gap-2 text-sm">
         <span className="flex min-w-0 flex-wrap items-center gap-1.5">
           {connected !== undefined ? (

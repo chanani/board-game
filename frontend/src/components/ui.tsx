@@ -6,12 +6,13 @@ export function Panel({ children, className = '', as: Tag = 'section' }: PanelPr
   return <Tag className={`paper p-5 ${className}`}>{children}</Tag>;
 }
 
-type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'secondary' | 'danger' };
+type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'secondary' | 'muted' | 'danger' };
 
 const VARIANTS = {
   // 강조색은 방 테마 변수(--accent)를 따르고, 방 밖에서는 :root의 원목(머스터드) 값이다.
   primary: 'bg-(--accent) text-(--accent-text) shadow-[0_4px_0_var(--accent-shadow),0_8px_14px_rgb(0_0_0/0.3)] hover:bg-(--accent-hover)',
   secondary: 'bg-cream-50 text-wood-800 shadow-[0_4px_0_var(--color-cream-300),0_8px_14px_rgb(0_0_0/0.25)] hover:bg-white',
+  muted: 'bg-stone-200 text-stone-700 shadow-[0_4px_0_var(--color-stone-400),0_8px_14px_rgb(0_0_0/0.25)] hover:bg-stone-100',
   danger: 'bg-brick-500 text-cream-50 shadow-[0_4px_0_var(--color-brick-700),0_8px_14px_rgb(0_0_0/0.3)] hover:brightness-110',
 };
 
