@@ -16,7 +16,8 @@ export type SeatBubbles = Map<number, Bubble>;
 export function useSeatBubbles(latest: ChatMessage | null): SeatBubbles {
   const [bubbles, setBubbles] = useState<SeatBubbles>(() => new Map());
   const timers = useRef(new Map<number, ReturnType<typeof setTimeout>>());
-  const shownId = useRef<number | null>(null);
+  // 다시 마운트될 때(게임이 끝나 대기실로 돌아올 때 등) 이미 받은 지난 메시지는 띄우지 않는다.
+  const shownId = useRef<number | null>(latest?.id ?? null);
 
   useEffect(() => {
     if (!latest || latest.spectator || shownId.current === latest.id) {
@@ -50,7 +51,8 @@ function withoutMember(current: SeatBubbles, memberId: number): SeatBubbles {
  * 자리(아바타) 위에 뜨는 크림색 말풍선. 채팅창에 같은 말이 있으니 장식으로 숨긴다(aria-hidden).
  * 동작 줄이기 설정은 App의 MotionConfig가 따른다.
  */
-export function SeatBubble({ memberId, bubble }: { memberId: number; bubble?: Bubble }) {
+/** 맨 위 자리는 펠트 가장자리에 가까우니 한 줄(lines=1)만 보여 펠트 밖으로 덜 솟게 한다. */
+export function SeatBubble({ memberId, bubble, lines = 2 }: { memberId: number; bubble?: Bubble; lines?: 1 | 2 }) {
   if (!bubble) {
     return null;
   }
@@ -58,7 +60,7 @@ export function SeatBubble({ memberId, bubble }: { memberId: number; bubble?: Bu
     <motion.span key={bubble.key} aria-hidden="true"
       initial={{ opacity: 0, scale: 0.6, y: 6 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ type: 'spring', bounce: 0.45, duration: 0.35 }}
       className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 w-max max-w-[160px] -translate-x-1/2 origin-bottom">
-      <span data-testid={`seat-bubble-${memberId}`} aria-hidden="true" className="line-clamp-2 block max-w-[160px] break-words rounded-xl bg-[#fffaf0] px-2.5 py-1 text-center text-[11px] leading-snug font-semibold text-[#2e1d10] shadow-[0_4px_10px_rgb(0_0_0/0.3)]">
+      <span data-testid={`seat-bubble-${memberId}`} aria-hidden="true" className={`${lines === 1 ? 'line-clamp-1' : 'line-clamp-2'} block max-w-[160px] break-words rounded-xl bg-[#fffaf0] px-2.5 py-1 text-center text-[11px] leading-snug font-semibold text-[#2e1d10] shadow-[0_4px_10px_rgb(0_0_0/0.3)]`}>
         {bubble.text}
       </span>
       <span aria-hidden="true" className="absolute left-1/2 top-full -translate-x-1/2 border-x-[6px] border-t-[6px] border-x-transparent border-t-[#fffaf0]" />

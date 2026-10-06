@@ -244,7 +244,8 @@ describe('WaitingRoom', () => {
     });
 
     it('같은 사람이 다시 말하면 내용을 바꾸고 그때부터 4초를 다시 센다', () => {
-      const { rerender } = render(view(live(5, 2, '안녕하세요')));
+      const { rerender } = render(view(null));
+      rerender(view(live(5, 2, '안녕하세요')));
       act(() => { vi.advanceTimersByTime(3000); });
       rerender(view(live(6, 2, '준비할게요')));
 
@@ -255,10 +256,21 @@ describe('WaitingRoom', () => {
       expect(screen.queryByTestId('seat-bubble-2')).not.toBeInTheDocument();
     });
 
-    it('자기 말도 자기 자리 위에 뜬다', () => {
-      render(view(live(5, 1, '시작할게요')));
+    it('자기 말도 자기 자리 위에 뜨고, 펠트 가장자리에 가까운 맨 위 자리는 한 줄만 보인다', () => {
+      const { rerender } = render(view(null));
+      rerender(view(live(5, 1, '시작할게요')));
 
-      expect(within(screen.getAllByTestId('chair')[0]).getByTestId('seat-bubble-1')).toHaveTextContent('시작할게요');
+      const bubble = within(screen.getAllByTestId('chair')[0]).getByTestId('seat-bubble-1');
+      expect(bubble).toHaveTextContent('시작할게요');
+      expect(bubble).toHaveClass('line-clamp-1');
+    });
+
+    it('대기실이 다시 그려질 때 이미 받은 지난 메시지는 띄우지 않고, 그 뒤 새 메시지는 띄운다', () => {
+      const { rerender } = render(view(live(5, 2, '게임 중에 한 말')));
+      expect(screen.queryByTestId('seat-bubble-2')).not.toBeInTheDocument();
+
+      rerender(view(live(6, 2, '다시 한 판 해요')));
+      expect(screen.getByTestId('seat-bubble-2')).toHaveTextContent('다시 한 판 해요');
     });
 
     it('기록으로만 있는 메시지에는 말풍선이 없다', () => {
@@ -268,7 +280,8 @@ describe('WaitingRoom', () => {
     });
 
     it('관전자의 말에는 말풍선이 없다', () => {
-      render(view(live(5, 2, '구경할게요', { spectator: true })));
+      const { rerender } = render(view(null));
+      rerender(view(live(5, 2, '구경할게요', { spectator: true })));
 
       expect(screen.queryByTestId('seat-bubble-2')).not.toBeInTheDocument();
     });

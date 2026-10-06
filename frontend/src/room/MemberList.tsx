@@ -53,7 +53,7 @@ export function MemberList({ members, maxPlayers, meId, receivedAt, now, onForfe
           <li key={member ? member.id : `empty-${index}`} data-testid="chair"
             style={{ left: `${left}%`, top: `${top}%` }}
             className="absolute flex w-24 -translate-x-1/2 -translate-y-6 flex-col items-center gap-1 sm:-translate-y-7">
-            {member ? <SeatBubble memberId={member.id} bubble={bubbles?.get(member.id)} /> : null}
+            {member ? <SeatBubble memberId={member.id} bubble={bubbles?.get(member.id)} lines={top < 20 ? 1 : 2} /> : null}
             <AnimatePresence mode="wait">
               {member ? (
                 <motion.div key="taken" initial={{ scale: 0, y: -20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0 }}
