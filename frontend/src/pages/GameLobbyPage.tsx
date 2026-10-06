@@ -29,8 +29,8 @@ function RoomListTitle({ title, count }: { title: string; count: number }) {
   return (
     <div className="flex items-center gap-2">
       <h2 className="font-bold text-wood-800">{title}</h2>
-      <span data-testid="room-count" aria-label={`${count}개`}
-        className="min-w-6 rounded-full bg-cream-200 px-2 py-0.5 text-center text-xs font-bold tabular-nums text-wood-700">{count}</span>
+      <span data-testid="room-count"
+        className="min-w-6 rounded-full bg-cream-200 px-2 py-0.5 text-center text-xs font-bold tabular-nums text-wood-700">{count}<span className="sr-only">개</span></span>
     </div>
   );
 }
@@ -161,7 +161,7 @@ export function GameLobbyPage() {
         </Panel>
         <div className="space-y-6 pt-2">
           <section className="paper p-4">
-            <div className="mb-3 flex items-center justify-between gap-2">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
               <RoomListTitle title="기다리는 방" count={waiting.length} />
               <div className="flex items-center gap-1.5">
                 <button type="button" aria-label="새로고침" onClick={refresh} className="rounded-full p-1.5 text-stone-500 hover:bg-cream-200/60 hover:text-wood-800">

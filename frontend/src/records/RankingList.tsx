@@ -8,10 +8,10 @@ const MEDAL_COLORS = ['bg-mustard-400 text-wood-800', 'bg-stone-300 text-wood-80
 function Medal({ rank }: { rank: number }) {
   const color = MEDAL_COLORS[rank - 1];
   if (!color) {
-    return <span className="flex h-7 w-7 items-center justify-center text-sm font-black tabular-nums text-stone-500">{rank}</span>;
+    return <span aria-hidden="true" className="flex h-7 w-7 items-center justify-center text-sm font-black tabular-nums text-stone-500">{rank}</span>;
   }
   return (
-    <span data-testid={`medal-${rank}`} className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-black tabular-nums shadow-[inset_0_-2px_0_rgb(0_0_0/0.15)] ${color}`}>
+    <span data-testid={`medal-${rank}`} aria-hidden="true" className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-black tabular-nums shadow-[inset_0_-2px_0_rgb(0_0_0/0.15)] ${color}`}>
       {rank}
     </span>
   );

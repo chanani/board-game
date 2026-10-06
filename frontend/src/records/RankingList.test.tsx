@@ -25,6 +25,8 @@ describe('RankingList', () => {
     expect(within(rows[2]).getByTestId('medal-3')).toHaveTextContent('3');
     expect(within(rows[3]).queryByTestId('medal-4')).not.toBeInTheDocument();
     expect(rows[3]).toHaveTextContent('4');
+    expect(within(rows[0]).getByTestId('medal-1')).toHaveAttribute('aria-hidden', 'true');
+    rows.forEach((row, index) => expect(within(row).getByText(`${index + 1}위`)).toHaveClass('sr-only'));
   });
 
   it('승·무·패 막대에 그림 역할과 n승 n무 n패 이름이 있다', () => {

@@ -149,21 +149,3 @@ export const DiceIcon = ({ className }: IconProps) => (
 export const HourglassIcon = ({ className }: IconProps) => (
   <Svg className={className ?? 'h-3.5 w-3.5'}><path d="M6 3h12M6 21h12" /><path d="M8 3v3l4 6-4 6v3M16 3v3l-4 6 4 6v3" /></Svg>
 );
-
-const RANK_COLORS = [
-  { fill: '#f2b33d', stroke: '#b77b14' },
-  { fill: '#d6d3d1', stroke: '#78716c' },
-  { fill: '#d08a4e', stroke: '#8a4f22' },
-];
-
-/** 순위표 1~3위 메달(금·은·동). */
-export const RankMedalIcon = ({ rank, className }: IconProps & { rank: number }) => {
-  const color = RANK_COLORS[rank - 1] ?? RANK_COLORS[2];
-  return (
-    <svg data-testid={`rank-medal-${rank}`} viewBox="0 0 24 24" className={className ?? 'h-5 w-5'} aria-hidden="true">
-      <path d="M8 2h8l-2 6h-4z" fill="#b4461a" />
-      <circle cx="12" cy="14" r="7" fill={color.fill} stroke={color.stroke} strokeWidth="1.5" />
-      <text x="12" y="17.5" textAnchor="middle" fontSize="9" fontWeight="800" fill="#3f2a17">{rank}</text>
-    </svg>
-  );
-};

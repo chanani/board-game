@@ -104,8 +104,8 @@ export function CreateRoomModal({ open, defaultName, onClose, onCreate }: Props)
                 transition={{ duration: 0.22, ease: 'easeOut' }}>
                 <div className="px-0.5 pb-1 pt-3">
                   <TextInput id="createPassword" label="비밀번호" type="password" value={password} onChange={(e) => setPassword(e.target.value)}
-                    minLength={4} maxLength={20} autoComplete="off" placeholder="4~20자" required />
-                  <p className="mt-1.5 text-xs text-stone-500">4~20자로 정해요. 함께할 친구에게 알려 주세요.</p>
+                    minLength={4} maxLength={20} autoComplete="off" placeholder="4~20자" required aria-describedby="createPasswordHint" />
+                  <p id="createPasswordHint" className="mt-1.5 text-xs text-stone-500">4~20자로 정해요. 함께할 친구에게 알려 주세요.</p>
                 </div>
               </motion.div>
             ) : null}

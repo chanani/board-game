@@ -150,6 +150,6 @@ describe('CreateRoomModal', () => {
     expect(inner).toHaveClass('pt-3');
     expect(reveal.className).not.toMatch(/\b(m|mt|my|pt|py)-/);
     expect(within(inner).getByLabelText('비밀번호')).toBeInTheDocument();
-    expect(within(inner).getByText(/4~20자/)).toBeInTheDocument();
+    expect(within(inner).getByLabelText('비밀번호')).toHaveAccessibleDescription(/4~20자로 정해요/);
   });
 });
