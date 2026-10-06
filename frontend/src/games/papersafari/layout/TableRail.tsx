@@ -19,7 +19,7 @@ export function TableRail(props: TableProps) {
   return (
     <div className="space-y-3">
       <Hud instruction={instructionText} myTurn={myTurn} log={log} compact />
-      <WoodRail className="flex justify-center-safe gap-[3px] overflow-x-auto px-1.5 py-2">
+      <WoodRail className="flex justify-center-safe gap-[3px] overflow-x-auto px-1 py-2">
         {opponents.map((board) => (
           <div key={board.playerId} className="shrink-0">
             <OpponentSeat board={board} nickname={nicknameOf(board.playerId)}

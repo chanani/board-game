@@ -459,11 +459,12 @@ describe('모바일 게임 화면 (상대 판·내 차례·손 카드)', () => {
     expect(hand).toHaveClass('pointer-events-none');
   });
 
-  it('모바일 상대 줄은 3px 간격이다', () => {
+  it('모바일 상대 줄은 3px 간격이고, 좌우 여백 4px라 390px 화면에 상대 판 둘(172px×2)이 넘치지 않는다', () => {
     setMediaMatches(false);
     render(<PaperSafariTable {...baseProps(build({ phase: 'DRAW', current: ME }))} />);
     const rail = screen.getByRole('button', { name: '밥님의 판 크게 보기' }).closest('.overflow-x-auto');
-    expect(rail).toHaveClass('gap-[3px]');
+    expect(rail).toHaveClass('gap-[3px]', 'px-1');
+    expect(rail).not.toHaveClass('px-1.5');
   });
 
   it('내 차례면 내 판에 겨자색 테두리 링이 생기고, 아니면 없다', () => {
