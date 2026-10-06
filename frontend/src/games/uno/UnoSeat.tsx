@@ -43,7 +43,7 @@ export function UnoSeat({ player, nickname, active, backWidth, maxBacks, timer, 
         {timer ? <Countdown size="sm" deadline={timer.deadline} serverNow={timer.serverNow} /> : null}
       </div>
       {connected === false ? <span className="felt-ink text-xs">연결 끊김 {offlineSeconds}초</span> : null}
-      <div data-uno-zone={`hand:${player.playerId}`} aria-hidden="true" className="flex" style={{ minHeight: backWidth * 1.5 }}>
+      <div data-uno-zone={`hand:${player.playerId}`} aria-hidden="true" className="flex" style={{ minHeight: backWidth * 1.5, minWidth: backWidth }}>
         {Array.from({ length: backs }, (_, index) => (
           <span key={index} style={{ marginLeft: index === 0 ? 0 : -backWidth * 0.62 }}><UnoCardFace card={null} width={backWidth} decorative /></span>
         ))}

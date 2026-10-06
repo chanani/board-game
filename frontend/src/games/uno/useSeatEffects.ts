@@ -28,7 +28,7 @@ function targetOf(event: UnoEvent): { kind: Kind; id: number | null; ms: number 
 export function useSeatEffects(events: UnoEvent[]): Record<number, SeatEffect> {
   const [effects, setEffects] = useState<Record<number, SeatEffect>>({});
   const seen = useRef<number | null>(null);
-  const timers = useRef<number[]>([]);
+  const timers = useRef(new Map<string, number>());
   useEffect(() => () => timers.current.forEach((timer) => window.clearTimeout(timer)), []);
 
   const set = useCallback((id: number, kind: Kind, value: boolean) => {
@@ -50,7 +50,9 @@ export function useSeatEffects(events: UnoEvent[]): Record<number, SeatEffect> {
       }
       const id = target.id;
       set(id, target.kind, true);
-      timers.current.push(window.setTimeout(() => set(id, target.kind, false), target.ms));
+      const key = `${id}:${target.kind}`;
+      window.clearTimeout(timers.current.get(key));
+      timers.current.set(key, window.setTimeout(() => set(id, target.kind, false), target.ms));
     });
   }, [events, set]);
 

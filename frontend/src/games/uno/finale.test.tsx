@@ -5,6 +5,8 @@ import { UnoTable } from './UnoTable';
 import { num, unoEvent, unoView } from './unoFixtures';
 
 const toast = vi.hoisted(() => ({ show: vi.fn() }));
+const reduced = vi.hoisted(() => ({ value: false }));
+vi.mock('motion/react', async (importOriginal) => ({ ...(await importOriginal<typeof import('motion/react')>()), useReducedMotion: () => reduced.value }));
 vi.mock('../../components/Toast', () => ({ useToast: () => toast }));
 
 const room: Room = {
@@ -30,7 +32,10 @@ function table(game: UnoView, transition: { seq: number; from: UnoView | null; t
   );
 }
 
-afterEach(() => vi.useRealTimers());
+afterEach(() => {
+  vi.useRealTimers();
+  reduced.value = false;
+});
 
 describe('우노 게임 끝 연출', () => {
   it('끝나는 순간을 보면 배너 뒤에 결과 창을 연다', () => {
@@ -50,5 +55,50 @@ describe('우노 게임 끝 연출', () => {
     render(table(over, { seq: 1, from: null, to: over, animate: false }));
 
     expect(screen.getByRole('dialog', { name: '게임 결과' })).toBeInTheDocument();
+  });
+});
+
+describe('우노 게임 끝 연출 예외', () => {
+  it('기권으로 끝나면 배너 없이 바로 결과 창', () => {
+    const forfeit: UnoView = { ...over, result: { reason: 'FORFEIT', winnerId: 1, points: 0, players: [] } };
+    const { rerender } = render(table(playing, null));
+
+    rerender(table(forfeit, { seq: 2, from: playing, to: forfeit, animate: true }));
+
+    expect(screen.getByRole('dialog', { name: '게임 결과' })).toBeInTheDocument();
+    expect(screen.queryByTestId('game-end-banner')).not.toBeInTheDocument();
+  });
+
+  it('동작 줄이기면 바로 결과 창', () => {
+    reduced.value = true;
+    const { rerender } = render(table(playing, null));
+
+    rerender(table(over, { seq: 2, from: playing, to: over, animate: true }));
+
+    expect(screen.getByRole('dialog', { name: '게임 결과' })).toBeInTheDocument();
+  });
+
+  it('지난 전환(to가 지금 화면이 아님)으로는 연출하지 않는다', () => {
+    const stale = { ...over, hand: [] };
+    render(table(over, { seq: 2, from: playing, to: stale, animate: true }));
+
+    expect(screen.getByRole('dialog', { name: '게임 결과' })).toBeInTheDocument();
+    expect(screen.queryByTestId('game-end-banner')).not.toBeInTheDocument();
+  });
+
+  it('새 판의 첫 화면에는 결과 창이 비치지 않는다', () => {
+    const next = unoView({ startedAt: 5000, participantIds: [1, 2], players: playing.players });
+    const { rerender } = render(table(over, { seq: 1, from: null, to: over, animate: false }));
+    expect(screen.getByRole('dialog', { name: '게임 결과' })).toBeInTheDocument();
+
+    const seen: boolean[] = [];
+    const observer = new MutationObserver(() => seen.push(Boolean(screen.queryByRole('dialog', { name: '게임 결과' }))));
+    observer.observe(document.body, { childList: true, subtree: true });
+    rerender(table(next, { seq: 2, from: over, to: next, animate: true }));
+    observer.disconnect();
+
+    expect(screen.queryByRole('dialog', { name: '게임 결과' })).not.toBeInTheDocument();
+    expect(screen.getByTestId('uno-table')).toBeInTheDocument();
+    expect(seen.every((open) => !open)).toBe(true);
   });
 });

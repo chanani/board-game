@@ -56,7 +56,7 @@ export function UnoTable({ view, room, meId, log, receivedAt, now, errorSeq, nic
   const maxBacks = layout === 'portrait' && opponentIds.length >= 3 ? 4 : 7;
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const { ghosts } = useUnoMotion(containerRef, transition, meId);
+  const { ghosts } = useUnoMotion(containerRef, transition, meId, sizes.center);
   const finale = useUnoFinale(game, transition);
   const effects = useSeatEffects(game.events);
   const reduced = useReducedMotion();

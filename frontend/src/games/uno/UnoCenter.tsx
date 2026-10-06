@@ -30,19 +30,19 @@ function DirectionArrows({ direction, size }: { direction: UnoDirection; size: n
   const spin = reduce ? undefined : { rotate };
   return (
     <motion.div key={direction} className="pointer-events-none absolute inset-0" initial={reduce ? false : { scale: 1.25 }} animate={{ scale: 1 }} transition={{ duration: 0.4 }}>
-    <motion.svg role="img" aria-label={label} data-direction={direction} viewBox="0 0 100 100" width={size} height={size}
-      className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-white/40"
-      style={{ scaleX }}
-      animate={spin} transition={{ repeat: Infinity, duration: 20, ease: 'linear' }}>
-      <g fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
-        <path d="M50 6 A44 44 0 0 1 94 50" />
-        <path d="M50 94 A44 44 0 0 1 6 50" />
-      </g>
-      <g fill="currentColor">
-        <path d="M94 50 l-6 -9 l12 0 z" transform="rotate(8 94 50)" />
-        <path d="M6 50 l6 9 l-12 0 z" transform="rotate(8 6 50)" />
-      </g>
-    </motion.svg>
+      <motion.svg role="img" aria-label={label} data-direction={direction} viewBox="0 0 100 100" width={size} height={size}
+        className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-white/40"
+        style={{ scaleX }}
+        animate={spin} transition={{ repeat: Infinity, duration: 20, ease: 'linear' }}>
+        <g fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
+          <path d="M50 6 A44 44 0 0 1 94 50" />
+          <path d="M50 94 A44 44 0 0 1 6 50" />
+        </g>
+        <g fill="currentColor">
+          <path d="M94 50 l-6 -9 l12 0 z" transform="rotate(8 94 50)" />
+          <path d="M6 50 l6 9 l-12 0 z" transform="rotate(8 6 50)" />
+        </g>
+      </motion.svg>
     </motion.div>
   );
 }
