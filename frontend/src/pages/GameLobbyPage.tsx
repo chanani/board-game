@@ -99,7 +99,7 @@ export function GameLobbyPage() {
     }
     if (error instanceof ApiError && error.code === 'ROOM_ALREADY_PLAYING') {
       setAsking(null);
-      toast.show('게임 중인 방이에요. 목록에서 관전할 수 있어요.');
+      toast.show(rooms.some((room) => room.code === targetCode && room.locked) ? '게임 중인 비공개방이에요.' : '게임 중인 방이에요. 목록에서 관전할 수 있어요.');
       return;
     }
     toast.show(messageOf(error));

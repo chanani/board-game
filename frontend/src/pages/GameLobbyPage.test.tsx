@@ -122,6 +122,17 @@ describe('GameLobbyPage', () => {
     expect(await screen.findByText('게임 중인 방이에요. 목록에서 관전할 수 있어요.')).toBeInTheDocument();
   });
 
+  it('코드로 들어가다 게임 중인 비공개방이면 관전 안내 대신 비공개라고 알린다', async () => {
+    api.join.mockRejectedValueOnce(new ApiError(409, 'ROOM_ALREADY_PLAYING', '이미 시작했어요.'));
+    renderLobby();
+    await screen.findByText('비밀판');
+    await userEvent.type(screen.getByLabelText('방 코드로 들어가기'), 'PLAY02');
+    await userEvent.click(screen.getByRole('button', { name: '입장' }));
+
+    expect(await screen.findByText('게임 중인 비공개방이에요.')).toBeInTheDocument();
+    expect(screen.queryByText('게임 중인 방이에요. 목록에서 관전할 수 있어요.')).not.toBeInTheDocument();
+  });
+
   it('이미 방에 있어도 로비에 머문다', async () => {
     api.mine.mockResolvedValue({ code: 'ABC234' });
     renderLobby();
