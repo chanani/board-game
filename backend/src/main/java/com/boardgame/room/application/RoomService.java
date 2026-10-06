@@ -178,7 +178,10 @@ public class RoomService {
     }
 
     public synchronized void leave(String rawCode, long memberId) {
-        Room room = find(rawCode);
+        leave(find(rawCode), memberId);
+    }
+
+    private void leave(Room room, long memberId) {
         List<Long> before = room.memberIds();
         List<GameOutcome> outcomes = room.leave(memberId);
         baselineNewcomers(room, before);
@@ -338,10 +341,19 @@ public class RoomService {
         Instant now = clock.instant();
         List<Departure> departures = registry.all()
                 .stream()
-                .filter(room -> room.status() == RoomStatus.PLAYING)
+                .filter(Room::isGameInProgress)
                 .flatMap(room -> longDisconnected(room, now))
                 .toList();
-        departures.forEach(departure -> leave(departure.code(), departure.memberId()));
+        departures.forEach(this::forfeitQuietly);
+    }
+
+    // 한 사람의 처리가 실패해도 나머지 사람의 자동 기권은 계속한다.
+    private void forfeitQuietly(Departure departure) {
+        try {
+            leave(registry.get(departure.code()), departure.memberId());
+        } catch (RuntimeException e) {
+            log.warn("자동 기권 처리 실패: room={}, member={}", departure.code(), departure.memberId(), e);
+        }
     }
 
     private Stream<Departure> longDisconnected(Room room, Instant now) {
@@ -349,10 +361,10 @@ public class RoomService {
                 .stream()
                 .filter(room::isPlaying)
                 .filter(memberId -> presence.isOfflineAtLeast(memberId, now, FORFEIT_GRACE))
-                .map(memberId -> new Departure(room.codeValue(), memberId));
+                .map(memberId -> new Departure(room.code(), memberId));
     }
 
-    private record Departure(String code, long memberId) {
+    private record Departure(RoomCode code, long memberId) {
     }
 
     public synchronized void kick(String rawCode, long requesterId, long targetId) {

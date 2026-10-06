@@ -132,6 +132,17 @@ class RoomTest {
     }
 
     @Test
+    void 게임이_진행_중인지_묻는다() {
+        Room room = openRoom();
+        room.join(bob, null, new FakeRoomPasswordHasher());
+        assertThat(room.isGameInProgress()).isFalse();
+
+        start(room, 1L);
+
+        assertThat(room.isGameInProgress()).isTrue();
+    }
+
+    @Test
     void 시작_전에는_자동_행동을_할_수_없고_마감도_없다() {
         Room room = openRoom();
 

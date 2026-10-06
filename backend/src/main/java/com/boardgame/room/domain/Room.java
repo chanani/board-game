@@ -174,6 +174,10 @@ public class Room {
         return RoomStatus.PLAYING;
     }
 
+    public boolean isGameInProgress() {
+        return status() == RoomStatus.PLAYING;
+    }
+
     public boolean isPlaying(long memberId) {
         return status() == RoomStatus.PLAYING && game.isPlaying(memberId);
     }
