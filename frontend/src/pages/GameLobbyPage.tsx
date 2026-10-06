@@ -13,12 +13,12 @@ import { useToast } from '../components/Toast';
 import { entryBySlug } from '../games/catalog';
 import { PaperSafariBoxArt } from '../games/PaperSafariBoxArt';
 import { usePolling } from '../lib/usePolling';
+import { CreateRoomModal } from '../room/CreateRoomModal';
 import { PasswordModal } from '../room/PasswordModal';
 import { RankingList } from '../records/RankingList';
 import { StatSummary } from '../records/StatSummary';
 
 const POLL_MS = 1000;
-const SEAT_OPTIONS = [2, 3, 4, 5];
 type Asking = { code: string; name: string; error: string | null };
 
 export function GameLobbyPage() {
@@ -29,10 +29,7 @@ export function GameLobbyPage() {
   const navigate = useNavigate();
   const toast = useToast();
   const [rooms, setRooms] = useState<RoomSummary[]>([]);
-  const [name, setName] = useState(`${member?.nickname ?? ''}의 방`);
-  const [maxPlayers, setMaxPlayers] = useState(5);
-  const [priv, setPriv] = useState(false);
-  const [password, setPassword] = useState('');
+  const [creating, setCreating] = useState(false);
   const [asking, setAsking] = useState<Asking | null>(null);
   const [spins, setSpins] = useState(0);
   const reduceMotion = useReducedMotion();
@@ -77,9 +74,9 @@ export function GameLobbyPage() {
     }
   };
 
-  const handleCreate = (event: FormEvent) => {
-    event.preventDefault();
-    enter(() => roomsApi.create(name, gameType, maxPlayers, priv ? password : undefined));
+  const handleCreate = (name: string, maxPlayers: number, password?: string) => {
+    setCreating(false);
+    enter(() => roomsApi.create(name, gameType, maxPlayers, password));
   };
 
   const join = async (targetCode: string, targetName: string, pw?: string) => {
@@ -137,44 +134,24 @@ export function GameLobbyPage() {
           </div>
         </div>
         <Panel>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <form className="space-y-3" onSubmit={handleCreate}>
-              <TextInput id="roomName" label="새 방 만들기" value={name} onChange={(e) => setName(e.target.value)} maxLength={20} required />
-              <div>
-                <span id="seatLabel" className="text-sm font-semibold text-wood-700">최대 인원</span>
-                <div role="radiogroup" aria-labelledby="seatLabel" className="mt-1 flex gap-2">
-                  {SEAT_OPTIONS.map((count) => (
-                    <button key={count} type="button" role="radio" aria-checked={maxPlayers === count} onClick={() => setMaxPlayers(count)}
-                      className={`press-3d h-9 w-9 rounded-full text-sm font-bold shadow ${maxPlayers === count ? 'bg-mustard-400 text-wood-800' : 'bg-cream-50 text-wood-700'}`}>
-                      {count}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <label className="flex items-center gap-2 text-sm font-semibold text-wood-700">
-                <input type="checkbox" checked={priv} onChange={(e) => setPriv(e.target.checked)} />
-                비공개방
-              </label>
-              {priv ? (
-                <TextInput id="createPassword" label="비밀번호" type="password" value={password} onChange={(e) => setPassword(e.target.value)}
-                  minLength={4} maxLength={20} autoComplete="off" placeholder="4~20자" required />
-              ) : null}
-              <Button type="submit">방 만들기</Button>
-            </form>
-            <form className="space-y-2" onSubmit={handleJoinByCode}>
+          <form className="flex items-end gap-2" onSubmit={handleJoinByCode}>
+            <div className="flex-1">
               <TextInput id="roomCode" label="방 코드로 들어가기" placeholder="ABC234" value={code} onChange={(e) => setCode(e.target.value)} maxLength={6} required />
-              <Button type="submit" variant="secondary">입장</Button>
-            </form>
-          </div>
+            </div>
+            <Button type="submit" variant="secondary">입장</Button>
+          </form>
         </Panel>
         <Felt className="mt-10 p-4">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="font-bold text-cream-50">기다리는 방</h2>
-            <button type="button" aria-label="새로고침" onClick={refresh} className="rounded-full p-1 text-cream-200 hover:text-cream-50">
-              <motion.span className="block" animate={{ rotate: spins * 360 }} transition={reduceMotion ? { duration: 0 } : { duration: 0.5 }}>
-                <RefreshIcon className="h-5 w-5" />
-              </motion.span>
-            </button>
+            <div className="flex items-center gap-2">
+              <Button onClick={() => setCreating(true)}>＋ 방 만들기</Button>
+              <button type="button" aria-label="새로고침" onClick={refresh} className="rounded-full p-1 text-cream-200 hover:text-cream-50">
+                <motion.span className="block" animate={{ rotate: spins * 360 }} transition={reduceMotion ? { duration: 0 } : { duration: 0.5 }}>
+                  <RefreshIcon className="h-5 w-5" />
+                </motion.span>
+              </button>
+            </div>
           </div>
           {waiting.length === 0 ? <p className="text-sm text-cream-200">지금은 열린 방이 없어요. 방을 만들어 친구를 불러보세요!</p> : null}
           <ul className="grid gap-2 sm:grid-cols-2">
@@ -214,7 +191,7 @@ export function GameLobbyPage() {
                 <div>
                   <p className="font-medium">{room.name}</p>
                   <p className="text-xs text-stone-500">
-                    <span>{room.roundNumber ?? 1}라운드 진행 중</span> · <span>{room.playerCount}명</span> · <span aria-label={`관전 ${room.spectatorCount}명`}>👀 {room.spectatorCount}</span>
+                    <span>게임 진행 중</span> · <span>{room.playerCount}명</span> · <span aria-label={`관전 ${room.spectatorCount}명`}>👀 {room.spectatorCount}</span>
                   </p>
                 </div>
                 {room.locked ? (
@@ -237,6 +214,7 @@ export function GameLobbyPage() {
           <RankingList rankings={rankings} limit={5} />
         </Panel>
       </div>
+      <CreateRoomModal open={creating} defaultName={`${member?.nickname ?? ''}의 방`} onClose={() => setCreating(false)} onCreate={handleCreate} />
       <PasswordModal open={asking !== null} roomName={asking?.name ?? ''} error={asking?.error ?? null}
         onSubmit={(pw) => asking && join(asking.code, asking.name, pw)} onCancel={() => setAsking(null)} />
     </div>

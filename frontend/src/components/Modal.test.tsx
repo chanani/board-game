@@ -55,4 +55,34 @@ describe('Modal', () => {
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
+
+  it('onClose가 있으면 ✕ 버튼으로 닫는다', async () => {
+    const onClose = vi.fn();
+    render(<Modal open title="결과" onClose={onClose}><p>내용</p></Modal>);
+
+    await userEvent.click(screen.getByRole('button', { name: '닫기' }));
+
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it('배경을 누르면 닫히고 안쪽을 누르면 닫히지 않는다', async () => {
+    const onClose = vi.fn();
+    render(<Modal open title="결과" onClose={onClose}><p>내용</p></Modal>);
+
+    await userEvent.click(screen.getByText('내용'));
+    await userEvent.click(screen.getByRole('dialog'));
+    expect(onClose).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByTestId('modal-backdrop'));
+
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it('onClose가 없으면 ✕도 없고 배경을 눌러도 그대로다', async () => {
+    render(<Modal open title="결과"><p>내용</p></Modal>);
+
+    expect(screen.queryByRole('button', { name: '닫기' })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByTestId('modal-backdrop'));
+
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+  });
 });

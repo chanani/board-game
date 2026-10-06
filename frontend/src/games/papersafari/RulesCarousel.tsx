@@ -96,9 +96,6 @@ export function RulesCarousel({ open, onClose }: Props) {
         </div>
         <Button onClick={() => goTo(index + 1)} disabled={index === LAST}>다음</Button>
       </div>
-      <div className="mt-4 text-center">
-        <button type="button" onClick={onClose} className="text-sm text-stone-500 underline">닫기</button>
-      </div>
     </Modal>
   );
 }

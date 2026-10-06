@@ -1,4 +1,5 @@
 import { AnimatePresence, motion } from 'motion/react';
+import { CloseIcon } from './icons';
 import { useEffect, useRef, type KeyboardEvent, type ReactNode } from 'react';
 
 type Props = { open: boolean; title: string; onClose?: () => void; children: ReactNode; wide?: boolean; padding?: 'normal' | 'roomy' };
@@ -70,6 +71,12 @@ export function Modal({ open, title, onClose, children, wide = false, padding = 
           className="fixed inset-0 z-40 flex items-center justify-center bg-wood-900/60 p-4 backdrop-blur-[2px]"
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
           onKeyDown={handleKeyDown}
+          data-testid="modal-backdrop"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) {
+              onClose?.();
+            }
+          }}
         >
           <motion.div
             ref={boxRef}
@@ -77,13 +84,19 @@ export function Modal({ open, title, onClose, children, wide = false, padding = 
             aria-modal="true"
             aria-label={title}
             tabIndex={-1}
-            className={`paper outline-none max-h-[90vh] w-full overflow-y-auto ${PADDING[padding]} ${wide ? 'max-w-4xl' : 'max-w-lg'}`}
+            className={`paper relative outline-none max-h-[90vh] w-full overflow-y-auto ${PADDING[padding]} ${wide ? 'max-w-4xl' : 'max-w-lg'}`}
             initial={{ y: 60, scale: 0.92, opacity: 0 }}
             animate={{ y: 0, scale: 1, opacity: 1 }}
             exit={{ y: 40, scale: 0.95, opacity: 0 }}
             transition={{ type: 'spring', bounce: 0.3, duration: 0.45 }}
           >
             {children}
+            {onClose ? (
+              <button type="button" aria-label="닫기" onClick={onClose}
+                className="absolute right-3 top-3 rounded-full p-1.5 text-stone-500 hover:bg-cream-200 hover:text-wood-800">
+                <CloseIcon className="h-5 w-5" />
+              </button>
+            ) : null}
           </motion.div>
         </motion.div>
       ) : null}

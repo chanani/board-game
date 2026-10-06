@@ -44,18 +44,21 @@ beforeEach(() => {
 afterEach(() => vi.useRealTimers());
 
 describe('GameLobbyPage', () => {
-  it('최대 인원과 비밀번호를 정해 방을 만든다', async () => {
+  it('방 만들기 모달에서 최대 인원과 비밀번호를 정해 방을 만든다', async () => {
     renderLobby();
     await screen.findByText('열린방');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: '＋ 방 만들기' }));
 
-    expect(within(screen.getByRole('radiogroup', { name: '최대 인원' })).getAllByRole('radio')).toHaveLength(4);
-    expect(screen.queryByLabelText('비밀번호')).not.toBeInTheDocument();
-    await userEvent.clear(screen.getByLabelText('새 방 만들기'));
-    await userEvent.type(screen.getByLabelText('새 방 만들기'), '우리방');
-    await userEvent.click(screen.getByRole('radio', { name: '3' }));
-    await userEvent.click(screen.getByRole('checkbox', { name: '비공개방' }));
-    await userEvent.type(screen.getByLabelText('비밀번호'), '1234');
-    await userEvent.click(screen.getByRole('button', { name: '방 만들기' }));
+    const dialog = await screen.findByRole('dialog', { name: '방 만들기' });
+    expect(within(within(dialog).getByRole('radiogroup', { name: '최대 인원' })).getAllByRole('radio')).toHaveLength(4);
+    expect(within(dialog).queryByLabelText('비밀번호')).not.toBeInTheDocument();
+    await userEvent.clear(within(dialog).getByLabelText('방 이름'));
+    await userEvent.type(within(dialog).getByLabelText('방 이름'), '우리방');
+    await userEvent.click(within(dialog).getByRole('radio', { name: '3' }));
+    await userEvent.click(within(dialog).getByRole('switch', { name: '비공개방' }));
+    await userEvent.type(within(dialog).getByLabelText('비밀번호'), '1234');
+    await userEvent.click(within(dialog).getByRole('button', { name: '만들기' }));
 
     expect(api.create).toHaveBeenCalledWith('우리방', 'PAPER_SAFARI', 3, '1234');
     expect(await screen.findByText('방 화면')).toBeInTheDocument();
@@ -64,9 +67,20 @@ describe('GameLobbyPage', () => {
   it('기본은 5명 공개방이다', async () => {
     renderLobby();
     await screen.findByText('열린방');
-    await userEvent.click(screen.getByRole('button', { name: '방 만들기' }));
+    await userEvent.click(screen.getByRole('button', { name: '＋ 방 만들기' }));
+    await userEvent.click(within(await screen.findByRole('dialog', { name: '방 만들기' })).getByRole('button', { name: '만들기' }));
 
     expect(api.create).toHaveBeenCalledWith('앨리스의 방', 'PAPER_SAFARI', 5, undefined);
+  });
+
+  it('코드 입력칸과 입장 버튼은 한 줄에 있다', async () => {
+    renderLobby();
+    await screen.findByText('열린방');
+
+    const row = screen.getByRole('button', { name: '입장' }).parentElement;
+
+    expect(row).toHaveClass('flex');
+    expect(row).toContainElement(screen.getByLabelText('방 코드로 들어가기'));
   });
 
   it('기다리는 방과 게임 중인 방을 나눠 보여준다', async () => {
@@ -74,7 +88,7 @@ describe('GameLobbyPage', () => {
 
     expect(await screen.findByRole('heading', { name: '기다리는 방' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: '게임 중인 방' })).toBeInTheDocument();
-    expect(screen.getByText('3라운드 진행 중')).toBeInTheDocument();
+    expect(screen.getAllByText('게임 진행 중')).toHaveLength(2);
     expect(screen.getAllByText('2명')).toHaveLength(2);
   });
 
