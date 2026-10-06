@@ -33,8 +33,11 @@ type Props = {
   timer?: SeatTimer;
 };
 
-/** 가장 작은 판은 여백과 이름표도 줄여, 세로 휴대폰 둥근 테이블의 한 줄(상대·덱·상대)에 들어가게 한다. */
-const PAD = { mini: 'p-1', xs: 'p-2', sm: 'p-2', md: 'p-2', lg: 'p-2' };
+/** 작은 판(mini·xs)은 카드 격자 폭에 맞춰(w-min) 연결 끊김 같은 글씨가 판을 넓히지 않고 줄바꿈되게 한다.
+ * 가장 작은 판은 여백과 이름표도 줄여, 세로 휴대폰 둥근 테이블의 한 줄(상대·덱·상대)에 들어가게 한다. */
+const PAD = { mini: 'p-1 w-min', xs: 'p-2 w-min', sm: 'p-2', md: 'p-2', lg: 'p-2' };
+/** grid-cols-3은 minmax(0,1fr)이라 w-min 판에서 열이 0까지 줄어 카드가 겹친다. 작은 판은 카드 폭 그대로인 auto 열을 쓴다. */
+const COLUMNS = { mini: 'grid-cols-[repeat(3,auto)]', xs: 'grid-cols-[repeat(3,auto)]', sm: 'grid-cols-3', md: 'grid-cols-3', lg: 'grid-cols-3' };
 const GAP = { mini: 'gap-0.5', xs: 'gap-1', sm: 'gap-1.5', md: 'gap-2.5', lg: 'gap-2.5' };
 
 export function PlayerBoard({ result, board, nickname, active, turnRing = false, size = 'md', pulseSlots = false, onSlotClick, canClick, connected, offlineSeconds = 0, onForfeit, zoomLabel, onZoom, timer }: Props) {
@@ -58,14 +61,14 @@ export function PlayerBoard({ result, board, nickname, active, turnRing = false,
           {timer ? <Countdown size="sm" deadline={timer.deadline} serverNow={timer.serverNow} /> : null}
           {connected === false ? <span className="felt-ink text-xs">연결 끊김 {offlineSeconds}초</span> : null}
           {onForfeit ? (
-            <button type="button" onClick={onForfeit} className="rounded-md bg-red-50 px-1.5 py-0.5 text-xs font-medium text-red-700 hover:bg-red-100">
+            <button type="button" onClick={onForfeit} className="whitespace-nowrap rounded-md bg-red-50 px-1.5 py-0.5 text-xs font-medium text-red-700 hover:bg-red-100">
               내보내기
             </button>
           ) : null}
         </span>
         {result ? <b data-testid="board-total" className="felt-ink shrink-0 text-xs">{result.total}</b> : null}
       </div>
-      <div data-testid="board-grid" className={`relative grid ${result ? 'grid-cols-[repeat(3,auto)] justify-center gap-x-4 gap-y-2' : `grid-cols-3 ${GAP[size]}`}`}>
+      <div data-testid="board-grid" className={`relative grid ${result ? 'grid-cols-[repeat(3,auto)] justify-center gap-x-4 gap-y-2' : `${COLUMNS[size]} ${GAP[size]}`}`}>
         {onZoom ? (
           <button type="button" aria-label={zoomLabel} onClick={onZoom}
             className="absolute inset-0 z-[5] cursor-zoom-in rounded-xl focus-visible:outline-2 focus-visible:outline-mustard-400" />

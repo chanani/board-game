@@ -443,8 +443,23 @@ describe('게임 화면 다듬기', () => {
     const aside = screen.getByTestId('table-aside');
     expect(within(aside).getByTestId('aside-slot')).toBeInTheDocument();
     expect(within(aside).getByTestId('turn-bar')).toHaveClass('flex-col');
-    expect(screen.getByTestId('table-round')).toHaveAttribute('data-density', 'compact');
-    within(screen.getByTestId('opponent-seat')).getAllByRole('button', { name: '뒷면 카드' }).forEach((card) => expect(card).toHaveClass('w-10'));
+    expect(screen.getByTestId('table-round')).toHaveAttribute('data-density', 'landscape');
+    within(screen.getByTestId('opponent-seat')).getAllByRole('button', { name: '뒷면 카드' }).forEach((card) => expect(card).toHaveClass('w-7'));
+    expect(within(screen.getByTestId('my-row')).getByRole('button', { name: '덱에서 뽑기' })).toBeInTheDocument();
+  });
+
+  it('휴대폰을 눕히면 상대 4명은 맞은편 한 줄에 모두 앉는다', () => {
+    setMediaMatches((query) => query.includes('orientation: landscape'));
+    render(<PaperSafariTable {...baseProps(withOpponents(4))} />);
+    expect(within(screen.getByTestId('opponent-row')).getAllByTestId('opponent-seat')).toHaveLength(4);
+  });
+
+  it('작은 상대 판은 카드 격자 폭에 맞춰, 연결 끊김 같은 글씨가 판을 넓히지 않는다', () => {
+    setMediaMatches(false);
+    render(<PaperSafariTable {...baseProps(build({ phase: 'DRAW', current: ME }))} />);
+    expect(screen.getByTestId('board-2')).toHaveClass('w-min');
+    expect(within(screen.getByTestId('board-2')).getByTestId('board-grid')).toHaveClass('grid-cols-[repeat(3,auto)]');
+    expect(screen.getByTestId('board-1')).not.toHaveClass('w-min');
   });
 
   it('세로라도 폭이 넉넉한 태블릿은 왼쪽 칸 없이 줄인 둥근 테이블을 쓴다', () => {

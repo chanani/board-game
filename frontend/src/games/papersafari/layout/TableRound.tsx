@@ -9,10 +9,11 @@ import { seatRows } from './seats';
 import type { TableProps } from '../PaperSafariTable';
 
 /**
- * pc: 큰 둥근 테이블. compact: 휴대폰을 눕힌 화면·태블릿용으로 카드와 여백을 줄인 테이블.
- * mini: 세로 휴대폰용 가장 작은 테이블(상대 카드 폭 28px, 예상 점수는 크게 보기에서만).
+ * pc: 큰 둥근 테이블. compact: 태블릿용으로 카드와 여백을 줄인 테이블.
+ * landscape: 휴대폰을 눕힌 낮은 화면. 상대는 모두 맞은편 한 줄(양 끝은 조금 아래), 덱·내 판·내 옆 칸은 아래 한 줄.
+ * mini: 세로 휴대폰용 가장 작은 테이블. landscape·mini는 상대 카드 폭 28px, 예상 점수는 크게 보기에서만.
  */
-export type TableDensity = 'pc' | 'compact' | 'mini';
+export type TableDensity = 'pc' | 'compact' | 'landscape' | 'mini';
 
 type DensityStyle = {
   opponent: SeatSize;
@@ -34,6 +35,11 @@ const DENSITY: Record<TableDensity, DensityStyle> = {
     opponent: 'xs', piles: 'sm', me: 'sm',
     felt: 'gap-2 px-[5%] pb-3 pt-4',
     top: 'gap-6', middle: 'gap-3', myRow: 'mt-2',
+  },
+  landscape: {
+    opponent: 'mini', piles: 'sm', me: 'sm',
+    felt: 'gap-2 px-[6%] pb-3 pt-3',
+    top: 'gap-3', middle: 'gap-3', myRow: 'mt-0',
   },
   mini: {
     opponent: 'mini', piles: 'xs', me: 'sm',
@@ -59,7 +65,7 @@ export function TableRound({ density = 'pc', ...props }: Props) {
     }
     return (
       <div key={board.playerId} data-testid="opponent-seat">
-        <OpponentSeat board={board} nickname={nicknameOf(board.playerId)} size={style.opponent} handOverlay={!pc} showEstimate={density !== 'mini'}
+        <OpponentSeat board={board} nickname={nicknameOf(board.playerId)} size={style.opponent} handOverlay={!pc} showEstimate={style.opponent !== 'mini'}
           active={round.currentPlayerId === board.playerId} held={round.held} presence={presenceOf(board.playerId)} timer={timerFor(board.playerId)} />
       </div>
     );
@@ -73,31 +79,59 @@ export function TableRound({ density = 'pc', ...props }: Props) {
       hand={<HandAnchor board={myBoard} held={round.held} size={style.me} handLabel="들고 있는 카드" />}
       onDiscard={() => send({ type: 'DISCARD' })} onUndo={() => send({ type: 'CANCEL_DRAW' })} />
   ) : null;
+  const piles = (
+    <CenterPiles deckSize={round.deckSize} discardTop={round.discardTop} drawable={drawable} size={style.piles}
+      onDrawDeck={() => send({ type: 'DRAW_DECK' })} onDrawDiscard={() => send({ type: 'DRAW_DISCARD' })} />
+  );
+  const sideBox = (width: string) => (mySide ? <div className={`flex ${width} shrink-0`}>{mySide}</div> : null);
+
+  // 눕힌 휴대폰: 높이가 낮아 상대는 모두 맞은편 한 줄(양 끝은 조금 아래로 둘러앉은 느낌), 덱·내 판·내 옆 칸은 아래 한 줄.
+  const landscapeRows = (
+    <>
+      <div data-testid="opponent-row" className={`flex items-start justify-center ${style.top}`}>
+        <div className="pt-6">{opponentSeat(rows.left)}</div>
+        {rows.top.map(opponentSeat)}
+        <div className="pt-6">{opponentSeat(rows.right)}</div>
+      </div>
+      <div data-testid="my-row" className={`${style.myRow} flex items-center justify-center gap-4`}>
+        {piles}
+        {mySeat ?? <SpectatorNotice />}
+        {sideBox('w-28')}
+      </div>
+    </>
+  );
+
+  // 그 밖의 배치: 위 줄 · 가운데 줄(왼쪽 상대, 덱, 오른쪽 상대) · 내 줄.
+  // 덱·버린 카드 묶음과 내 판 사이는 PC에서 32px 이상(mt-8 + gap-4, 내 차례에 판이 8px 떠올라도 40px) 띄운다.
+  const roundRows = (
+    <>
+      {rows.top.length > 0 ? (
+        <div className={`flex items-start justify-center ${style.top}`}>{rows.top.map(opponentSeat)}</div>
+      ) : null}
+      <div className={`grid grid-cols-[1fr_auto_1fr] items-center ${style.middle}`}>
+        <div className="justify-self-start">{opponentSeat(rows.left)}</div>
+        {piles}
+        <div className="justify-self-end">{opponentSeat(rows.right)}</div>
+      </div>
+      {pc ? (
+        <div data-testid="my-row" className={`${style.myRow} grid grid-cols-[1fr_auto_1fr] items-end gap-4`}>
+          <div />
+          {mySeat ? <div className={`transition-transform duration-300 ${myTurn ? '-translate-y-2' : ''}`}>{mySeat}</div> : <SpectatorNotice />}
+          {mySide ? <div className="flex w-36 self-center justify-self-start">{mySide}</div> : <div />}
+        </div>
+      ) : (
+        <div data-testid="my-row" className={`${style.myRow} flex w-full items-start justify-center gap-2`}>
+          {mySeat ?? <SpectatorNotice />}
+          {sideBox('w-28')}
+        </div>
+      )}
+    </>
+  );
+
   return (
     <div data-testid="table-round" data-density={density} className="space-y-3">
       <Felt shape="oval" className={`mx-auto flex w-full flex-col ${style.felt}`}>
-        {rows.top.length > 0 ? (
-          <div className={`flex items-start justify-center ${style.top}`}>{rows.top.map(opponentSeat)}</div>
-        ) : null}
-        <div className={`grid grid-cols-[1fr_auto_1fr] items-center ${style.middle}`}>
-          <div className="justify-self-start">{opponentSeat(rows.left)}</div>
-          <CenterPiles deckSize={round.deckSize} discardTop={round.discardTop} drawable={drawable} size={style.piles}
-            onDrawDeck={() => send({ type: 'DRAW_DECK' })} onDrawDiscard={() => send({ type: 'DRAW_DISCARD' })} />
-          <div className="justify-self-end">{opponentSeat(rows.right)}</div>
-        </div>
-        {/* 덱·버린 카드 묶음과 내 판 사이는 PC에서 32px 이상(mt-8 + gap-4, 내 차례에 판이 8px 떠올라도 40px) 띄운다. */}
-        {pc ? (
-          <div data-testid="my-row" className={`${style.myRow} grid grid-cols-[1fr_auto_1fr] items-end gap-4`}>
-            <div />
-            {mySeat ? <div className={`transition-transform duration-300 ${myTurn ? '-translate-y-2' : ''}`}>{mySeat}</div> : <SpectatorNotice />}
-            {mySide ? <div className="flex w-36 self-center justify-self-start">{mySide}</div> : <div />}
-          </div>
-        ) : (
-          <div data-testid="my-row" className={`${style.myRow} flex w-full items-start justify-center gap-2`}>
-            {mySeat ?? <SpectatorNotice />}
-            {mySide ? <div className="flex w-28 shrink-0">{mySide}</div> : null}
-          </div>
-        )}
+        {density === 'landscape' ? landscapeRows : roundRows}
       </Felt>
     </div>
   );

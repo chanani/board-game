@@ -57,7 +57,7 @@ type Props = {
   aside?: ReactNode;
 };
 
-const DENSITY_OF: Record<TableLayout, TableDensity> = { pc: 'pc', landscape: 'compact', tablet: 'compact', portrait: 'mini' };
+const DENSITY_OF: Record<TableLayout, TableDensity> = { pc: 'pc', landscape: 'landscape', tablet: 'compact', portrait: 'mini' };
 
 function placeText(canDiscard: boolean, compact: boolean): string {
   if (compact) {
@@ -221,7 +221,7 @@ export function PaperSafariTable({ view: rawView, room, meId, log, receivedAt, n
               {aside}
               {turnBar}
             </div>
-            <TableRound {...tableProps} density="compact" />
+            <TableRound {...tableProps} density="landscape" />
           </div>
         ) : (
           <>
