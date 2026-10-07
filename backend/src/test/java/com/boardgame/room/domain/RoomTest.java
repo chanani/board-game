@@ -196,6 +196,67 @@ class RoomTest {
     }
 
     @Test
+    void 기권하고_나간_참가자가_같은_방에_다시_들어오면_끝난_게임_화면을_받지_않는다() {
+        Room room = playingRoom();
+        room.leave(2L);
+
+        room.join(bob, null, new FakeRoomPasswordHasher());
+
+        assertThat(room.status()).isEqualTo(RoomStatus.WAITING);
+        assertThat(room.viewFor(2L)).isEmpty();
+        assertThat(room.viewFor(1L)).contains("view-1");
+    }
+
+    @Test
+    void 게임이_끝난_뒤_나갔다가_다시_들어와도_끝난_게임_화면을_받지_않는다() {
+        Room room = playingRoom();
+        created.get().finish();
+        room.leave(2L);
+
+        room.join(bob, null, new FakeRoomPasswordHasher());
+
+        assertThat(room.viewFor(2L)).isEmpty();
+        assertThat(room.viewFor(1L)).contains("view-1");
+    }
+
+    @Test
+    void 내보냈다가_다시_들어온_참가자도_끝난_게임_화면을_받지_않는다() {
+        Room room = playingRoom();
+        created.get().finish();
+        room.kick(1L, 2L);
+
+        room.join(bob, null, new FakeRoomPasswordHasher());
+
+        assertThat(room.viewFor(2L)).isEmpty();
+    }
+
+    @Test
+    void 기권하고_나간_뒤_관전으로_돌아와_끝까지_본_사람은_결과_화면을_받는다() {
+        Room room = openRoom();
+        room.join(bob, null, new FakeRoomPasswordHasher());
+        room.join(carol, null, new FakeRoomPasswordHasher());
+        start(room, 1L);
+        room.leave(3L);
+        room.watch(carol);
+
+        room.leave(2L);
+
+        assertThat(room.status()).isEqualTo(RoomStatus.WAITING);
+        assertThat(room.viewFor(3L)).contains("view-3");
+    }
+
+    @Test
+    void 다음_게임이_시작되면_다시_들어온_참가자도_새_게임_화면을_받는다() {
+        Room room = playingRoom();
+        room.leave(2L);
+        room.join(bob, null, new FakeRoomPasswordHasher());
+
+        start(room, 1L);
+
+        assertThat(room.viewFor(2L)).contains("view-2");
+    }
+
+    @Test
     void 게임이_끝나면_대기_상태로_돌아가_다시_시작할_수_있다() {
         Room room = openRoom();
         room.join(bob, null, new FakeRoomPasswordHasher());

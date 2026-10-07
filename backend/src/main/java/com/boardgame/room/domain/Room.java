@@ -65,6 +65,7 @@ public class Room {
             throw new BusinessException(ErrorCode.ROOM_NOT_PLAYING);
         }
         occupants.addSpectator(participant);
+        game.rejoin(participant.memberId());
     }
 
     public void seat(long memberId) {
@@ -85,12 +86,14 @@ public class Room {
     public List<GameOutcome> leave(long memberId) {
         if (occupants.isSpectator(memberId)) {
             occupants.removeSpectator(memberId);
+            recordDeparture(memberId);
             return List.of();
         }
         occupants.requirePlayer(memberId);
         boolean wasPlaying = status() == RoomStatus.PLAYING;
         List<GameOutcome> outcomes = forfeitIfPlaying(memberId);
         occupants.removePlayer(memberId);
+        recordDeparture(memberId);
         settleIfJustFinished(wasPlaying);
         return outcomes;
     }
@@ -104,6 +107,7 @@ public class Room {
             throw new BusinessException(ErrorCode.INVALID_INPUT);
         }
         occupants.removePlayer(targetId);
+        recordDeparture(targetId);
     }
 
     /** 대기 중에 방장이 최대 인원과 테마를 바꾼다. 비밀번호와 이름, 준비 상태는 그대로 둔다. */
@@ -164,7 +168,7 @@ public class Room {
         if (game == null) {
             return Optional.empty();
         }
-        return Optional.of(game.viewFor(memberId));
+        return game.viewFor(memberId);
     }
 
     public RoomStatus status() {
@@ -281,6 +285,13 @@ public class Room {
 
     public List<Long> occupantIds() {
         return occupants.occupantIds();
+    }
+
+    private void recordDeparture(long memberId) {
+        if (game == null) {
+            return;
+        }
+        game.depart(memberId);
     }
 
     private List<GameOutcome> forfeitIfPlaying(long memberId) {
