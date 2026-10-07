@@ -164,4 +164,39 @@ class OldMaidSessionTimerTest {
         assertThat(view.events().get(0).auto()).isTrue();
         assertThat(session.deadline()).contains(T0.plusSeconds(35));
     }
+
+    // A: 3·4, B: 3·조커, C: 9·10, D: 4. A가 B의 0번(하트 3)을 뽑아 짝 버리기 단계(마감 5초 + 15초).
+    private OldMaidSession drawnPairAtFiveSeconds() {
+        OldMaidGame game = OldMaidFixtures.game(A, hands(
+                List.of(s(Rank.THREE), s(Rank.FOUR)),
+                List.of(h(Rank.THREE), JOKER),
+                List.of(c(Rank.NINE), d(Rank.TEN)),
+                List.of(c(Rank.FOUR))));
+        OldMaidSession session = new OldMaidSession(List.of(1L, 2L, 3L, 4L), game, clock);
+        clock.advance(Duration.ofSeconds(5));
+        session.act(1L, draw(0));
+        return session;
+    }
+
+    @Test
+    void R27_R37_기권은_TurnStep을_따라_짝_버리기_단계에_상대만_바뀌면_마감을_그대로_둔다() {
+        OldMaidSession session = drawnPairAtFiveSeconds();
+        clock.advance(Duration.ofSeconds(3));
+
+        session.forfeit(2L);
+
+        assertThat(viewOf(session, 1L).stage().name()).isEqualTo("DISCARD");
+        assertThat(session.deadline()).contains(T0.plusSeconds(20));
+    }
+
+    @Test
+    void R25_R37_기권은_TurnStep을_따라_넘겨받은_손패로_짝이_버려져_차례가_넘어가면_마감을_새로_잰다() {
+        OldMaidSession session = drawnPairAtFiveSeconds();
+        clock.advance(Duration.ofSeconds(3));
+
+        session.forfeit(4L);
+
+        assertThat(viewOf(session, 2L).stage().name()).isEqualTo("DRAW");
+        assertThat(session.deadline()).contains(T0.plusSeconds(23));
+    }
 }

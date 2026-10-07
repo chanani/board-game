@@ -196,10 +196,10 @@ public record GameAction(String type, Integer column, Integer row, Integer cardI
 
 ### 4.6 `OldMaidSession` 계약
 
-- `act`: `OldMaidCommand` 실행 → `timer.humanActed(turnSeq)` → 끝났으면 결과.
+- `act`: `OldMaidCommand` 실행 → `timer.humanActed(game.step())` → 끝났으면 결과.
 - `signal`: `OldMaidSignal.PEEK` → 받아 주면 `OldMaidPeekSignal`, 아니면 빈 값.
-- `autoAct(random)`: R35, `timer.autoActed(drawer, turnSeq)`.
-- `forfeit`: R25~R29, `timer.follow(turnSeq)`.
+- `autoAct(random)`: R35·R38, `timer.autoActed(자동으로 행동한 사람들, game.step())`.
+- `forfeit`: R25~R29, `timer.follow(game.step())`. 마감은 `TurnStep`(`turnSeq` + 단계)이 바뀔 때만 다시 잰다: 짝 버리기 단계에 상대만 바뀌면 그대로, 넘겨받은 손패로 짝이 버려져 차례가 넘어가면 새로 잰다.
 - `deadline()`: 게임 중이면 마감, 끝나면 빈 값. `isPlaying(id)`: 게임 중이고 카드를 가진 사람만 true. `roundNumber()` = 1.
 - 결과(끝나는 행동에서 딱 한 번): `[RoundCompleted(1, 등수 순 RoundEntry), GameCompleted(자리 순 MatchEntry)]`(R32).
 - `viewFor(id)`: `new OldMaidSessionView(view)`. 참가자가 아니어도(관전자) 공개 화면.
