@@ -7,6 +7,8 @@ const POSITIONS: Record<number, SeatPosition[]> = {
   3: ['left', 'top', 'right'],
   4: ['left', 'top-left', 'top-right', 'right'],
   5: ['left', 'top-left', 'top', 'top-right', 'right'],
+  // 도둑잡기 6명 판을 관전하면 상대가 6명이다(위 줄에 넷).
+  6: ['left', 'top-left', 'top', 'top', 'top-right', 'right'],
 };
 
 export function seatOrder(playerIds: number[], meId: number): number[] {
@@ -18,7 +20,7 @@ export function seatOrder(playerIds: number[], meId: number): number[] {
 }
 
 export function seatPositions(count: number): SeatPosition[] {
-  return POSITIONS[count] ?? POSITIONS[5];
+  return POSITIONS[count] ?? POSITIONS[6];
 }
 
 export type SeatRows = { top: number[]; left: number | null; right: number | null };

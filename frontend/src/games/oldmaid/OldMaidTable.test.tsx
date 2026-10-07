@@ -56,6 +56,16 @@ describe('OldMaidTable 배치', () => {
     expect(within(screen.getByTestId('seat-right')).getAllByTestId('oldmaid-seat')).toHaveLength(1);
   });
 
+  it('관전자는 6명 모두 앉힌다', () => {
+    render(table({ ...sixPlayers(), hand: null, viewerId: 99, currentPlayerId: 6, targetId: 1 }, 99, 6));
+
+    const seated = screen.getAllByTestId('oldmaid-seat').map((seat) => seat.getAttribute('data-player'));
+    expect(seated).toHaveLength(6);
+    expect(new Set(seated)).toEqual(new Set(['1', '2', '3', '4', '5', '6']));
+    expect(within(screen.getByTestId('seat-row-top')).getAllByTestId('oldmaid-seat')).toHaveLength(4);
+    expect(within(screen.getByTestId('seat-right')).getByRole('group', { name: /^프랭크, 카드/ })).toBeInTheDocument();
+  });
+
   it('세로 휴대폰은 상대를 한 줄에, 눕힌 휴대폰은 왼쪽 칸과 테이블로 나눈다', () => {
     setMediaMatches(false);
     const { unmount } = render(table(sixPlayers(), 1, 6));

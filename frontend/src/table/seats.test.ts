@@ -33,4 +33,9 @@ describe('seats', () => {
     expect(seatPositions(5)).toEqual(['left', 'top-left', 'top', 'top-right', 'right']);
     expect(seatRows(5)).toEqual({ top: [1, 2, 3], left: 0, right: 4 });
   });
+
+  it('관전자가 보는 6명은 왼쪽·위 넷·오른쪽', () => {
+    expect(seatPositions(6)).toEqual(['left', 'top-left', 'top', 'top', 'top-right', 'right']);
+    expect(seatRows(6)).toEqual({ top: [1, 2, 3, 4], left: 0, right: 5 });
+  });
 });
