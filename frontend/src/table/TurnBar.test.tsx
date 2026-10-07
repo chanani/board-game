@@ -28,6 +28,12 @@ describe('차례 안내 바', () => {
     expect(screen.queryByTestId('my-turn-badge')).not.toBeInTheDocument();
   });
 
+  it('좁은 화면에서 넘치면 차례 문구보다 최근 진행부터 줄인다', () => {
+    render(<TurnBar instruction="안내" myTurn log={log} nicknameOf={nick} deadline={null} serverNow={0} compact />);
+    expect(screen.getByTestId('instruction')).toHaveClass('shrink-0', 'max-w-[75%]');
+    expect(screen.getByTestId('last-log')).toHaveClass('shrink-[3]');
+  });
+
   it('기록이 없으면 마지막 기록 칸은 비어 있다', () => {
     render(<TurnBar instruction="안내" myTurn={false} log={[]} deadline={null} serverNow={0} />);
     expect(screen.getByTestId('last-log')).toBeEmptyDOMElement();

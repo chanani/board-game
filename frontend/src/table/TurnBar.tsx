@@ -22,7 +22,8 @@ type Props = {
 };
 
 /**
- * 차례 문구 + 카운트다운 + 최근 진행 내역을 한 줄에 둔다. 줄바꿈 없이 높이를 고정하고, 넘치면 진행 내역부터 말줄임한다.
+ * 차례 문구 + 카운트다운 + 최근 진행 내역을 한 줄에 둔다. 줄바꿈 없이 높이를 고정하고, 넘치면 진행 내역부터 말줄임한다
+ * (차례 문구는 줄 폭의 3/4까지는 줄이지 않는다).
  * 펠트의 나무 테두리(box-shadow 13px)는 레이아웃에 잡히지 않으므로 PC는 mb-8(보이는 간격 19px)로 테이블과 띄운다.
  */
 export function TurnBar({ instruction, myTurn, log, nicknameOf, deadline, serverNow, onWarn, locked = false, compact = false, stacked = false }: Props) {
@@ -51,7 +52,7 @@ export function TurnBar({ instruction, myTurn, log, nicknameOf, deadline, server
             <PlayIcon className="h-3 w-3" />내 차례
           </span>
         ) : null}
-        <p role="status" data-testid="instruction" className="flex min-w-0 shrink items-center font-bold">
+        <p role="status" data-testid="instruction" className={`flex min-w-0 items-center font-bold ${stacked ? 'shrink' : 'max-w-[75%] shrink-0'}`}>
           <span className={stacked ? 'break-keep' : 'truncate'}>{instruction}</span>
         </p>
         <Countdown deadline={deadline} serverNow={serverNow} onWarn={onWarn} />
