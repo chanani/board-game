@@ -328,10 +328,11 @@ describe('WaitingRoom', () => {
       ],
     });
     beforeEach(() => {
-      vi.mocked(recordsApi.member).mockReset().mockImplementation(async (id: number) => stats(id, id === 2 ? '밥' : '캐롤'));
+      const names: Record<number, string> = { 1: '앨리스', 2: '밥' };
+      vi.mocked(recordsApi.member).mockReset().mockImplementation(async (id: number) => stats(id, names[id] ?? '캐롤'));
     });
 
-    it('다른 사람 자리를 누르면 그 사람의 승률 창이 뜨고, 내 자리는 버튼이 아니다', async () => {
+    it('다른 사람 자리를 누르면 그 사람의 승률 창이 뜬다', async () => {
       renderRoom();
 
       expect(screen.queryByRole('button', { name: '앨리스님 전적 보기' })).not.toBeInTheDocument();
@@ -341,6 +342,27 @@ describe('WaitingRoom', () => {
       expect(recordsApi.member).toHaveBeenCalledWith(2);
       expect(within(dialog).getByTestId('avatar')).toHaveAttribute('data-avatar', 'RABBIT');
       expect(await within(dialog).findByTestId('stat-PAPER_SAFARI')).toHaveTextContent('페이퍼 사파리4판3승75.0%');
+    });
+
+    it('내 자리를 누르면 같은 창에 내 승률이 뜬다', async () => {
+      renderRoom();
+
+      await userEvent.click(screen.getByRole('button', { name: '내 전적 보기' }));
+
+      const dialog = await screen.findByRole('dialog', { name: '앨리스님 전적' });
+      expect(recordsApi.member).toHaveBeenCalledWith(1);
+      expect(await within(dialog).findByTestId('stat-PAPER_SAFARI')).toHaveTextContent('페이퍼 사파리4판3승75.0%');
+    });
+
+    it('방장이 내 자리를 눌러도 내보내기 버튼은 없고 전적 창만 뜬다', async () => {
+      setMediaMatches(false);
+      renderRoom();
+
+      expect(screen.queryByRole('button', { name: '앨리스님 내보내기' })).not.toBeInTheDocument();
+      await userEvent.click(screen.getByRole('button', { name: '내 전적 보기' }));
+
+      expect(await screen.findByRole('dialog', { name: '앨리스님 전적' })).toBeInTheDocument();
+      expect(screen.queryByText('앨리스님을 내보낼까요?')).not.toBeInTheDocument();
     });
 
     it('방장이 내보내기 X를 누르면 전적 창이 아니라 내보내기 확인 창이 뜬다', async () => {
@@ -358,6 +380,14 @@ describe('WaitingRoom', () => {
       renderRoom({ room: { ...room, spectators: [{ id: 3, nickname: '캐롤' }, { id: 1, nickname: '앨리스' }] }, meId: 2 });
 
       await userEvent.click(screen.getByRole('button', { name: '캐롤님 전적 보기' }));
+      expect(await screen.findByRole('dialog', { name: '캐롤님 전적' })).toBeInTheDocument();
+      expect(recordsApi.member).toHaveBeenCalledWith(3);
+    });
+
+    it('관전 중인 내 이름을 눌러도 내 전적을 볼 수 있다', async () => {
+      renderRoom({ room: { ...room, spectators: [{ id: 3, nickname: '캐롤' }] }, meId: 3 });
+
+      await userEvent.click(screen.getByRole('button', { name: '내 전적 보기' }));
       expect(await screen.findByRole('dialog', { name: '캐롤님 전적' })).toBeInTheDocument();
       expect(recordsApi.member).toHaveBeenCalledWith(3);
     });

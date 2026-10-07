@@ -9,7 +9,7 @@ import { findGame } from '../games/registry';
 import { PC_QUERY, useMediaQuery } from '../lib/useMediaQuery';
 import { ChatPanel } from './ChatPanel';
 import { KickConfirmModal } from './KickConfirmModal';
-import { MemberList } from './MemberList';
+import { MemberList, statsLabelOf } from './MemberList';
 import { MemberStatsModal, type StatsTarget } from './MemberStatsModal';
 import { MemberAvatar } from '../components/Avatar';
 import { useSeatBubbles } from './useSeatBubbles';
@@ -67,11 +67,8 @@ export function WaitingRoom({ room, meId, receivedAt, now, onStart, onReady, onF
             <BinocularsIcon /> 관전 중:
             {room.spectators.map((spectator, index) => {
               const separator = index < room.spectators.length - 1 ? ',' : '';
-              if (spectator.id === meId) {
-                return <span key={spectator.id} className="inline-flex items-center gap-1"><MemberAvatar memberId={spectator.id} avatar={spectator.avatar} size={18} />{spectator.nickname}{separator}</span>;
-              }
               return (
-                <button key={spectator.id} type="button" aria-label={`${spectator.nickname}님 전적 보기`} onClick={() => setStatsTarget(spectator)}
+                <button key={spectator.id} type="button" aria-label={statsLabelOf(spectator, meId)} onClick={() => setStatsTarget(spectator)}
                   className="inline-flex cursor-pointer items-center gap-1 rounded-full underline decoration-dotted underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-mustard-300">
                   <MemberAvatar memberId={spectator.id} avatar={spectator.avatar} size={18} />{spectator.nickname}{separator}
                 </button>

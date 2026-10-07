@@ -21,7 +21,7 @@ type Props = {
   onKick?: (memberId: number) => void;
   /** 사람 id별 말풍선 내용(대기실 채팅). */
   bubbles?: SeatBubbles;
-  /** 있으면 나 말고 다른 사람의 아바타가 전적 보기 버튼이 된다. */
+  /** 있으면 모든 참가자(나 포함)의 아바타가 전적 보기 버튼이 된다. */
   onShowStats?: (member: RoomMember) => void;
 };
 
@@ -67,9 +67,10 @@ export function MemberList({ members, maxPlayers, meId, receivedAt, now, onForfe
                 <motion.div key="taken" initial={{ scale: 0, y: -20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0 }}
                   transition={{ type: 'spring', bounce: 0.5 }}
                   className="relative flex h-12 w-12 items-center justify-center rounded-full bg-cream-50 text-xl font-black text-wood-800 shadow-[0_4px_0_var(--color-cream-300),0_10px_16px_rgb(0_0_0/0.4)] sm:h-14 sm:w-14 sm:text-2xl">
-                  {onShowStats && member.id !== meId ? (
+                  {onShowStats ? (
                     // 아바타 전체가 누르는 영역. 연결 점·내보내기 X는 뒤에 그려 이 버튼 위에 놓이므로 X를 누르면 전적 창이 뜨지 않는다.
-                    <button type="button" aria-label={`${member.nickname}님 전적 보기`} onClick={() => onShowStats(member)}
+                    // 내 자리에는 내보내기·기권 버튼이 없고 준비 버튼은 테이블 아래 행동 바에 있어, 내 자리를 눌러도 겹치지 않는다.
+                    <button type="button" aria-label={statsLabelOf(member, meId)} onClick={() => onShowStats(member)}
                       className="block h-full w-full cursor-pointer rounded-full outline-none transition-transform hover:scale-105 focus-visible:ring-[3px] focus-visible:ring-mustard-300 motion-reduce:transition-none motion-reduce:hover:scale-100">
                       <AvatarFace avatar={avatarOf(member.avatar, member.id)} />
                     </button>
@@ -94,6 +95,11 @@ export function MemberList({ members, maxPlayers, meId, receivedAt, now, onForfe
       })}
     </ul>
   );
+}
+
+/** 전적 보기 버튼의 접근 이름. 내 자리는 "내 전적 보기". */
+export function statsLabelOf(member: { id: number; nickname: string }, meId: number): string {
+  return member.id === meId ? '내 전적 보기' : `${member.nickname}님 전적 보기`;
 }
 
 type SeatedProps = {
