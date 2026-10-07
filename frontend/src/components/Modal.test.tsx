@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import { useState } from 'react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { Modal } from './Modal';
@@ -119,5 +120,48 @@ describe('Modal', () => {
     await userEvent.pointer([{ keys: '[MouseLeft>]', target: screen.getByText('내용') }, { keys: '[/MouseLeft]', target: screen.getByTestId('modal-backdrop') }]);
 
     expect(onClose).not.toHaveBeenCalled();
+  });
+
+  describe('닫으면 포커스 돌려주기', () => {
+    function Opener() {
+      const [open, setOpen] = useState(false);
+      return (
+        <>
+          <button type="button" onClick={() => setOpen(true)}>열기</button>
+          <button type="button">다른 버튼</button>
+          <Modal open={open} title="창" onClose={() => setOpen(false)}><button type="button">확인</button></Modal>
+        </>
+      );
+    }
+
+    it('열 때 포커스가 있던 버튼으로 Esc·닫기 버튼으로 닫은 뒤 포커스가 돌아온다', async () => {
+      render(<Opener />);
+      const opener = screen.getByRole('button', { name: '열기' });
+
+      await userEvent.click(opener);
+      expect(screen.getByRole('button', { name: '확인' })).toHaveFocus();
+      await userEvent.keyboard('{Escape}');
+      expect(opener).toHaveFocus();
+
+      await userEvent.click(opener);
+      await userEvent.click(screen.getByRole('button', { name: '닫기' }));
+      expect(opener).toHaveFocus();
+    });
+
+    it('여는 요소가 사라졌으면 아무 데도 옮기지 않는다', async () => {
+      function Vanishing() {
+        const [open, setOpen] = useState(false);
+        return (
+          <>
+            {open ? null : <button type="button" onClick={() => setOpen(true)}>열기</button>}
+            <Modal open={open} title="창" onClose={() => setOpen(false)}><button type="button">확인</button></Modal>
+          </>
+        );
+      }
+      render(<Vanishing />);
+      await userEvent.click(screen.getByRole('button', { name: '열기' }));
+      await userEvent.keyboard('{Escape}');
+      expect(screen.getByRole('button', { name: '열기' })).not.toHaveFocus();
+    });
   });
 });

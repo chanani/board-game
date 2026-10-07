@@ -29,6 +29,19 @@ function focusInitial(box: HTMLElement | null, initialFocus: InitialFocus) {
   (items.find((item) => item.dataset.close === undefined) ?? items[0])?.focus();
 }
 
+/** 기억한 요소가 아직 화면에 있고, 포커스가 다른 곳(새로 연 창 등)으로 옮겨 가지 않았을 때만 돌려준다. */
+function restoreFocus(opener: HTMLElement | null) {
+  if (!opener || !opener.isConnected || opener === document.body) {
+    return;
+  }
+  const active = document.activeElement;
+  const elsewhere = active !== null && active !== document.body && !active.closest('[role="dialog"]');
+  if (elsewhere) {
+    return;
+  }
+  opener.focus({ preventScroll: true });
+}
+
 export function Modal({ open, title, onClose, children, wide = false, padding = 'normal', initialFocus = 'first' }: Props) {
   const boxRef = useRef<HTMLDivElement>(null);
   const downOnBackdrop = useRef(false);
@@ -50,10 +63,14 @@ export function Modal({ open, title, onClose, children, wide = false, padding = 
     return () => document.removeEventListener('keydown', onKey);
   }, [open]);
 
+  // 열 때 포커스가 있던 곳(여는 버튼 등)을 기억해 두었다가, 닫히면(또는 사라지면) 그곳으로 돌려준다.
   useEffect(() => {
-    if (open) {
-      focusInitial(boxRef.current, initialFocus);
+    if (!open) {
+      return undefined;
     }
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    focusInitial(boxRef.current, initialFocus);
+    return () => restoreFocus(opener);
   }, [open, initialFocus]);
 
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
