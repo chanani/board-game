@@ -194,6 +194,18 @@ describe('OldMaidTable 고르기', () => {
       expect(screen.queryByTestId('target-fan')).not.toBeInTheDocument();
     });
 
+    it('R36 처음 버리기에 손을 다 비운 사람은 단계가 끝나 등수가 정해지기 전에도 다 버림', () => {
+      const players = [
+        { playerId: 1, cardCount: 1, rank: null, forfeited: false, openingDone: true },
+        { playerId: 2, cardCount: 0, rank: null, forfeited: false, openingDone: false },
+        { playerId: 3, cardCount: 4, rank: null, forfeited: true, openingDone: false },
+      ];
+      render(table({ ...opening, canDiscard: false, hand: [D2], players }));
+
+      expect(screen.getByRole('group', { name: '밥, 카드 0장, 다 버림' })).toBeInTheDocument();
+      expect(screen.getByRole('group', { name: '캐롤, 카드 4장, 기권' })).toBeInTheDocument();
+    });
+
     it('R37 짝 버리기 단계: 뽑은 짝이 빛나고 짝 버리기를 누르면 그 두 장을 보낸다. 가운데 부채는 누를 수 없다', async () => {
       const send = vi.fn();
       render(table({ stage: 'DISCARD', canDiscard: true, hand: [H7, D2, S7], deadline: 15000, serverNow: 0 }, { send }));

@@ -143,10 +143,11 @@ export function OldMaidTable({ view, room, meId, log, receivedAt, now, errorSeq,
   const targetPlayer = game.players.find((player) => player.playerId === game.targetId);
   const thiefId = game.result?.thiefId ?? null;
 
-  // R36: 처음 버리기 단계에는 "버리는 중"·"다 버림"(빈손·기권은 표시 없음), R37: 짝 버리기 단계의 뽑은 사람은 "짝 버리는 중".
+  // R36: 처음 버리기 단계에는 "버리는 중"·"다 버림"(손을 다 비운 사람도 등수가 정해질 때까지 "다 버림", 기권은 표시 없음),
+  // R37: 짝 버리기 단계의 뽑은 사람은 "짝 버리는 중".
   const seatNote = (player: OldMaidSessionView['game']['players'][number], active: boolean): SeatNote | null => {
-    if (opening && player.cardCount > 0 && !player.forfeited) {
-      return player.openingDone ? { text: '다 버림', done: true } : { text: '버리는 중', done: false };
+    if (opening && !player.forfeited) {
+      return player.openingDone || player.cardCount === 0 ? { text: '다 버림', done: true } : { text: '버리는 중', done: false };
     }
     if (active && game.stage === 'DISCARD') {
       return { text: '짝 버리는 중', done: false };
