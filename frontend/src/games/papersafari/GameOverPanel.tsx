@@ -52,7 +52,8 @@ function resultFor(board: BoardView, done: boolean, winnerId: number | null, lab
   const winner = done && winnerId === board.playerId;
   const suffix = done && outcome ? ` · ${resultLabel(outcome)}` : '';
   return {
-    tag: `${label(board.playerId)}${suffix}`,
+    tag: label(board.playerId),
+    suffix,
     total: done ? totalLabel(values) : '합계 …',
     badges: values.map((value) => (done ? String(value ?? '?') : '…')),
     notes: done ? wildNotes(board) : undefined,
@@ -68,9 +69,9 @@ function ScoreRows({ players, done, nicknameOf }: { players: PlayerResultView[];
     <ul className="space-y-2">
       {rows.map((result, index) => (
         <motion.li key={result.playerId} data-testid="score-row" initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.15 * index }}
-          className={`flex justify-between rounded-lg px-3 py-2 text-sm ${won(result) ? 'gold-sparkle bg-mustard-300/60' : 'bg-cream-200/60'}`}>
-          <span className="font-medium">{nicknameOf(result.playerId)}</span>
-          <span>
+          className={`flex justify-between gap-2 rounded-lg px-3 py-2 text-sm ${won(result) ? 'gold-sparkle bg-mustard-300/60' : 'bg-cream-200/60'}`}>
+          <span data-testid="score-name" title={nicknameOf(result.playerId)} className="min-w-0 truncate font-medium">{nicknameOf(result.playerId)}</span>
+          <span data-testid="score-value" className="shrink-0 whitespace-nowrap">
             {done ? <><RollingNumber value={result.score} />점 · <strong className={won(result) ? 'text-safari-700' : ''}>{resultLabel(result.outcome)}</strong></> : '…'}
           </span>
         </motion.li>

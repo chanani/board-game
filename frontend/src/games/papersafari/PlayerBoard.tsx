@@ -12,7 +12,8 @@ import { zeroPairColumns } from './score';
 export type SeatTimer = { deadline: number | null | undefined; serverNow: number | undefined };
 
 /** notes: 열마다 와일드가 복사한 값 안내("와일드 → -2", 없으면 빈 글). */
-export type BoardResult = { tag: string; total: string; badges: string[]; notes?: string[]; winner: boolean };
+/** tag: 이름표(좁으면 말줄임), suffix: 이름 뒤에 붙는 결과(" · 승리", 잘리지 않음). */
+export type BoardResult = { tag: string; suffix?: string; total: string; badges: string[]; notes?: string[]; winner: boolean };
 
 type Props = {
   result?: BoardResult;
@@ -52,15 +53,25 @@ export function PlayerBoard({ result, board, nickname, active, turnRing = false,
     <div data-testid={`board-${board.playerId}`} data-winner={result ? result.winner : undefined}
       className={`rounded-2xl bg-black/15 ${PAD[size]} backdrop-blur-[1px] ${result ? 'mx-auto w-fit' : ''} ${turnRing ? 'ring-[3px] ring-inset ring-(--turn-ring) turn-ring' : ''} ${result?.winner ? 'ring-[3px] ring-mustard-400 shadow-[0_0_18px_rgb(242_179_61/0.7)]' : ''}`}>
       <div className={`flex items-center justify-between gap-2 text-sm ${size === 'mini' ? 'mb-1' : 'mb-2'}`}>
-        <span className="flex min-w-0 flex-wrap items-center gap-1.5">
+        <span className={`flex min-w-0 items-center gap-1.5 ${result ? '' : 'flex-wrap'}`}>
           {connected !== undefined ? (
             <span aria-hidden="true" className={`inline-block h-2 w-2 shrink-0 rounded-full ${connected ? 'bg-green-500' : 'bg-stone-400'}`} />
           ) : null}
-          <span className={`rounded-full py-0.5 font-bold ${size === 'mini' ? 'inline-block max-w-[5.5rem] truncate px-1.5 align-middle text-[10px]' : 'px-2.5 text-xs'} shadow-[0_2px_0_rgb(0_0_0/0.3)] ${active ? 'turn-glow bg-(--turn-tag-bg) text-(--turn-tag-ink)' : 'bg-cream-50 text-wood-800'}`}>{result?.winner ? <CrownIcon className="mr-1 inline h-3.5 w-3.5 align-[-2px]" testId="winner-crown" /> : null}{result ? result.tag : nickname}</span>
+          {result ? (
+            // 결과 화면: 좁으면 닉네임만 먼저 말줄임되고, 결과 글과 오른쪽 합계는 잘리지 않는다.
+            <span data-testid="board-tag" title={`${result.tag}${result.suffix ?? ''}`}
+              className="flex min-w-0 items-center rounded-full bg-cream-50 px-2.5 py-0.5 text-xs font-bold text-wood-800 shadow-[0_2px_0_rgb(0_0_0/0.3)]">
+              {result.winner ? <CrownIcon className="mr-1 h-3.5 w-3.5 shrink-0" testId="winner-crown" /> : null}
+              <span data-testid="board-tag-name" className="min-w-0 truncate">{result.tag}</span>
+              {result.suffix ? <span className="shrink-0 whitespace-pre">{result.suffix}</span> : null}
+            </span>
+          ) : (
+            <span className={`rounded-full py-0.5 font-bold ${size === 'mini' ? 'inline-block max-w-[5.5rem] truncate px-1.5 align-middle text-[10px]' : 'px-2.5 text-xs'} shadow-[0_2px_0_rgb(0_0_0/0.3)] ${active ? 'turn-glow bg-(--turn-tag-bg) text-(--turn-tag-ink)' : 'bg-cream-50 text-wood-800'}`}>{nickname}</span>
+          )}
           {timer ? <Countdown size="sm" deadline={timer.deadline} serverNow={timer.serverNow} /> : null}
           {connected === false ? <span className="felt-ink text-xs">연결 끊김 {offlineSeconds}초</span> : null}
         </span>
-        {result ? <b data-testid="board-total" className="felt-ink shrink-0 text-xs">{result.total}</b> : null}
+        {result ? <b data-testid="board-total" className="felt-ink shrink-0 whitespace-nowrap text-xs">{result.total}</b> : null}
       </div>
       <div data-testid="board-grid" className={`relative grid ${result ? 'grid-cols-[repeat(3,auto)] justify-center gap-x-4 gap-y-2' : `${COLUMNS[size]} ${GAP[size]}`}`}>
         {onZoom ? (

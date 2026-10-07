@@ -319,4 +319,29 @@ describe('GameOverPanel 단판 결과', () => {
     expect(boards).toHaveClass('justify-center');
     expect(within(boards).getAllByTestId(/^board-\d+$/)).toHaveLength(1);
   });
+
+  it('긴 닉네임이면 닉네임만 말줄임되고 합계 라벨·점수·결과 글은 잘리지 않는다', () => {
+    vi.useFakeTimers();
+    const longName = '아주아주긴닉네임열자';
+    render(<GameOverPanel game={game} room={room} meId={2} nicknameOf={(id) => (id === 1 ? longName : names[id])} onReady={vi.fn()} onClose={vi.fn()} />);
+    revealAll();
+
+    const board = within(screen.getByTestId('board-1'));
+    const total = board.getByTestId('board-total');
+    expect(total).toHaveTextContent(/^합계 \d+점$/);
+    expect(total).toHaveClass('shrink-0', 'whitespace-nowrap');
+    expect(total).not.toHaveClass('truncate');
+    const name = board.getByTestId('board-tag-name');
+    expect(name).toHaveTextContent(longName);
+    expect(name).toHaveClass('min-w-0', 'truncate');
+    const tag = board.getByTestId('board-tag');
+    expect(tag.getAttribute('title')).toMatch(new RegExp(`^${longName} · \\S+$`));
+    expect(name.nextElementSibling).toHaveTextContent(/^· \S+$/);
+    // 앞 공백이 접히지 않게 whitespace-pre(줄바꿈도 하지 않는다)
+    expect(name.nextElementSibling).toHaveClass('shrink-0', 'whitespace-pre');
+
+    const row = screen.getAllByTestId('score-row')[0];
+    expect(within(row).getByTestId('score-name')).toHaveClass('min-w-0', 'truncate');
+    expect(within(row).getByTestId('score-value')).toHaveClass('shrink-0', 'whitespace-nowrap');
+  });
 });
