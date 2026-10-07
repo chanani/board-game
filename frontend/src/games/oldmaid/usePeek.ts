@@ -18,8 +18,10 @@ export function effectivePeek(game: OldMaidView, signal: GameSignal | null | und
  * 고르는 자리 신호를 보낸다. 같은 자리는 다시 보내지 않고, 100ms 안에 여러 번 오면 마지막 값(null 포함)만 간격이 지난 뒤 보낸다(trailing).
  * 서버는 50ms 안의 신호를 버리므로 마지막 상태가 반드시 서버에 닿게 하려면 trailing이 빠지면 안 된다(Task 4 판정).
  * turnKey(판 시작 시각:차례 순번)가 바뀌면 서버가 신호를 지웠으므로 기억을 처음으로 돌린다.
+ * clearedSeq는 서버 화면의 peek이 "고르지 않음"일 때 그 seq(아니면 null). 같은 차례에서 서버가 들림을 지우면
+ * (상대가 그대로인 다시 정하기, R27) 마지막으로 보낸 자리 기억만 지워 같은 자리도 다시 보낸다.
  */
-export function usePeekSender(send: ((action: GameAction) => void) | undefined, turnKey: string): (index: number | null) => void {
+export function usePeekSender(send: ((action: GameAction) => void) | undefined, turnKey: string, clearedSeq: number | null = null): (index: number | null) => void {
   const lastSent = useRef<number | null>(null);
   const lastAt = useRef(Number.NEGATIVE_INFINITY);
   const pending = useRef<{ index: number | null } | null>(null);
@@ -40,6 +42,11 @@ export function usePeekSender(send: ((action: GameAction) => void) | undefined, 
     stop();
   }, [turnKey, stop]);
   useEffect(() => stop, [stop]);
+  useEffect(() => {
+    if (clearedSeq !== null) {
+      lastSent.current = null;
+    }
+  }, [clearedSeq]);
 
   const flush = useCallback(() => {
     const next = pending.current;

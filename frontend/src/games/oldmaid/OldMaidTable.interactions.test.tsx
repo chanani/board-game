@@ -90,4 +90,18 @@ describe('OldMaidTable 고르기', () => {
 
     expect(screen.queryByRole('button', { name: /번째 카드$/ })).not.toBeInTheDocument();
   });
+  it('상대가 바뀌면(장수가 같아도) 가운데 부채의 고르던 카드가 내려간다', async () => {
+    const players = [
+      { playerId: 1, cardCount: 2, rank: null, forfeited: false },
+      { playerId: 2, cardCount: 3, rank: null, forfeited: false },
+      { playerId: 3, cardCount: 3, rank: null, forfeited: false },
+    ];
+    const { rerender } = render(table({ players, targetId: 2, turnSeq: 1 }));
+    await userEvent.hover(screen.getByRole('button', { name: '밥님의 2번째 카드' }));
+    expect(screen.getAllByTestId('target-card')[1]).toHaveAttribute('data-lifted', 'true');
+
+    rerender(table({ players, targetId: 3, turnSeq: 2 }));
+
+    expect(screen.getAllByTestId('target-card').some((card) => card.hasAttribute('data-lifted'))).toBe(false);
+  });
 });

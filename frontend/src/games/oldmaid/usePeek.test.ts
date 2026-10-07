@@ -76,5 +76,20 @@ describe('usePeekSender', () => {
     expect(send).toHaveBeenCalledTimes(2);
     expect(send).toHaveBeenLastCalledWith({ type: 'PEEK', index: null });
   });
-});
+  it('같은 차례에서 서버가 들림을 지우면(상대 그대로 다시 정하기) 같은 자리도 다시 보낸다', () => {
+    vi.useFakeTimers();
+    const send = vi.fn();
+    const { result, rerender } = renderHook(({ clearedSeq }) => usePeekSender(send, '1000:1', clearedSeq), {
+      initialProps: { clearedSeq: 0 as number | null },
+    });
 
+    act(() => result.current(2));
+    rerender({ clearedSeq: null });
+    rerender({ clearedSeq: 4 });
+    act(() => vi.advanceTimersByTime(PEEK_THROTTLE_MS));
+    act(() => result.current(2));
+
+    expect(send).toHaveBeenCalledTimes(2);
+    expect(send).toHaveBeenLastCalledWith({ type: 'PEEK', index: 2 });
+  });
+});
