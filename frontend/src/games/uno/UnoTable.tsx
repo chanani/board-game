@@ -205,7 +205,7 @@ export function UnoTable({ view, room, meId, log, receivedAt, now, errorSeq, nic
       className={`relative space-y-1 rounded-2xl px-1 py-1 ${myTurn ? 'turn-ring ring-[3px] ring-inset ring-(--turn-ring)' : ''}`}>
       {effects[meId]?.bubble ? (
         <motion.span data-testid="my-uno-bubble" initial={reduced ? false : { scale: 0.6 }} animate={{ scale: 1 }}
-          className="absolute -top-3 left-1/2 z-10 -translate-x-1/2 rounded-full bg-yellow-300 px-2.5 py-0.5 text-xs font-black text-wood-900 shadow">우노!</motion.span>
+          className="pointer-events-none absolute -top-3 left-1/2 z-20 w-max -translate-x-1/2 whitespace-nowrap rounded-full bg-yellow-300 px-2.5 py-0.5 text-xs font-black leading-tight text-wood-900 shadow">우노!</motion.span>
       ) : null}
       <UnoActionBar stage={game.stage} myTurn={myTurn} onDraw={draw} onPlayDrawn={playDrawn} onKeep={() => send({ type: 'KEEP' })}
         canCallUno={game.canCallUno} called={called} catchTarget={catchTarget}

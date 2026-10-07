@@ -33,7 +33,8 @@ export function UnoSeat({ player, nickname, active, backWidth, maxBacks, timer, 
       className={`relative flex flex-col items-center gap-1 rounded-2xl px-1.5 py-1 ${active ? 'turn-ring bg-black/20 ring-[3px] ring-inset ring-(--turn-ring)' : ''}`}>
       {bubble ? (
         <motion.span data-testid="uno-bubble" initial={reduced ? false : { scale: 0.6 }} animate={{ scale: 1 }}
-          className="absolute -top-7 left-1/2 -translate-x-1/2 rounded-full bg-yellow-300 px-2.5 py-0.5 text-xs font-black text-wood-900 shadow">우노!</motion.span>
+          // 자리 폭(좁은 이름표)에 끌려 줄바꿈되지 않게 글자 폭 그대로(w-max·nowrap) 두고, 이웃 자리 위로 넘쳐도 가려지지 않게 앞으로 띄운다.
+          className="pointer-events-none absolute -top-6 left-1/2 z-20 w-max -translate-x-1/2 whitespace-nowrap rounded-full bg-yellow-300 px-2.5 py-0.5 text-xs font-black leading-tight text-wood-900 shadow">우노!</motion.span>
       ) : null}
       {skipped ? (
         <motion.span data-testid="skip-mark" initial={{ opacity: 1 }} animate={{ opacity: 0 }} transition={{ duration: 0.8 }}
@@ -51,13 +52,13 @@ export function UnoSeat({ player, nickname, active, backWidth, maxBacks, timer, 
           <span key={index} style={{ marginLeft: index === 0 ? 0 : -backWidth * 0.62 }}><UnoCardFace card={null} width={backWidth} decorative /></span>
         ))}
       </div>
-      <div className="flex items-center gap-1 text-[11px] font-bold">
+      <div className="flex flex-nowrap items-center gap-1 text-[11px] font-bold">
         {active ? (
-          <span data-testid="turn-tag" className="rounded-full bg-(--turn-tag-bg) px-2 py-0.5 text-(--turn-tag-ink) shadow-[0_1px_0_rgb(0_0_0/0.3)]">차례</span>
+          <span data-testid="turn-tag" className="whitespace-nowrap rounded-full bg-(--turn-tag-bg) px-2 py-0.5 text-(--turn-tag-ink) shadow-[0_1px_0_rgb(0_0_0/0.3)]">차례</span>
         ) : null}
-        <span data-testid="card-count" className="rounded-full bg-black/35 px-2 py-0.5 text-cream-50">{player.cardCount}장</span>
+        <span data-testid="card-count" className="whitespace-nowrap rounded-full bg-black/35 px-2 py-0.5 text-cream-50">{player.cardCount}장</span>
         {player.unoDeclared ? (
-          <span data-testid="uno-badge" className="inline-flex items-center gap-0.5 rounded-full bg-yellow-300 px-2 py-0.5 text-wood-900"><StarIcon className="h-3 w-3" />우노</span>
+          <span data-testid="uno-badge" className="inline-flex items-center gap-0.5 whitespace-nowrap rounded-full bg-yellow-300 px-2 py-0.5 text-wood-900"><StarIcon className="h-3 w-3" />우노</span>
         ) : null}
       </div>
     </motion.div>
