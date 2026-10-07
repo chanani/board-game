@@ -33,7 +33,9 @@ const FELT: Record<TableLayout, string> = {
 };
 /** 눕힌 화면에 상대가 5명이면 옆 칸에 세 줄로 쌓여 손패가 화면 밖으로 밀리므로, 상대를 위 줄에 두고 가운데를 그 아래에 둔다. */
 const LANDSCAPE_TOP_SEATS = 5;
-const FELT_LANDSCAPE_TOP = 'flex-col items-center justify-center gap-2 px-[4%] py-2';
+// 위 줄 배치는 390px 높이에 들어가도록 펠트 여백을 줄이고, 자리 뒷면을 작게, 부채 위 안내 줄은 뺀다(같은 말이 왼쪽 차례 줄과 "뽑히는 중" 표시에 있다).
+const FELT_LANDSCAPE_TOP = 'flex-col items-center justify-center gap-1 px-[4%] py-1';
+const LANDSCAPE_TOP_BACK = 16;
 /** 뽑기를 보낸 뒤 차례가 바뀌거나 오류가 오기 전까지 다시 보내지 않는 시간(우노와 같다). */
 const PENDING_MS = 3000;
 /** R23: 섞기 버튼 잠금 시간(서버 쿨다운과 같다). */
@@ -97,7 +99,9 @@ export function OldMaidTable({ view, room, meId, log, receivedAt, now, errorSeq,
   const opponentIds = seatOrder(game.players.map((player) => player.playerId), meId).filter((id) => id !== meId);
   const rows = seatRows(opponentIds.length);
   const seatsBeside = layout === 'landscape' && opponentIds.length < LANDSCAPE_TOP_SEATS;
-  const feltClass = layout === 'landscape' && !seatsBeside ? FELT_LANDSCAPE_TOP : FELT[layout];
+  const seatsOnTop = layout === 'landscape' && !seatsBeside;
+  const feltClass = seatsOnTop ? FELT_LANDSCAPE_TOP : FELT[layout];
+  const backWidth = seatsOnTop ? LANDSCAPE_TOP_BACK : sizes.back;
   const maxBacks = layout === 'portrait' && opponentIds.length >= 3 ? 4 : 7;
   const containerRef = useRef<HTMLDivElement>(null);
   const { ghosts } = useOldMaidMotion(containerRef, transition, meId, sizes.pick);
@@ -121,7 +125,7 @@ export function OldMaidTable({ view, room, meId, log, receivedAt, now, errorSeq,
     return (
       <div key={player.playerId} className="relative z-10">
         <OldMaidSeat player={player} nickname={nicknameOf(player.playerId)} avatar={roomAvatarOf(room, player.playerId)}
-          active={active} targeted={targeted} liftIndex={targeted ? liftIndex : null} backWidth={sizes.back} maxBacks={maxBacks}
+          active={active} targeted={targeted} liftIndex={targeted ? liftIndex : null} backWidth={backWidth} maxBacks={maxBacks}
           timer={active && game.deadline !== null ? { deadline: game.deadline, serverNow: game.serverNow } : undefined}
           connected={member?.connected} offlineSeconds={member ? offlineSecondsNow(member, receivedAt, now) : 0}
           shuffling={shuffling.has(player.playerId)} thief={thiefId === player.playerId} />
@@ -130,7 +134,7 @@ export function OldMaidTable({ view, room, meId, log, receivedAt, now, errorSeq,
   };
   const seatAt = (index: number | null) => (index === null ? null : seat(opponentIds[index]));
 
-  const caption = pickCaption(game, meId, nicknameOf);
+  const caption = seatsOnTop ? null : pickCaption(game, meId, nicknameOf);
   const showFan = live && targetPlayer !== undefined && game.targetId !== meId;
   const center = (
     <div data-testid="center" className="flex w-full min-w-0 flex-col items-center gap-2">
@@ -187,8 +191,9 @@ export function OldMaidTable({ view, room, meId, log, receivedAt, now, errorSeq,
   return (
     <div ref={containerRef} inert={finale !== 'playing'} data-testid="oldmaid-table" data-layout={layout}>
       {layout === 'landscape' ? (
-        <div data-testid="landscape-table" className="grid grid-cols-[10.5rem_1fr] items-start gap-3">
-          <div data-testid="table-aside" className="sticky top-2 space-y-2">{aside}{turnBar}{asideFooter}</div>
+        // 눕힌 휴대폰(390px 높이)에 한 화면으로 들어가게 페이지 위아래 여백(24px)을 4px만 남기고 왼쪽 칸 사이 간격도 줄인다(내 차례 6명 판 기준).
+        <div data-testid="landscape-table" className="-my-5 grid grid-cols-[10.5rem_1fr] items-start gap-3">
+          <div data-testid="table-aside" className="sticky top-1 space-y-0.5">{aside}{turnBar}{asideFooter}</div>
           <div className="space-y-2">{felt}{mine}</div>
         </div>
       ) : (

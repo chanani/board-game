@@ -88,6 +88,21 @@ describe('OldMaidTable 배치', () => {
     expect(within(screen.getByTestId('opponent-row')).getAllByTestId('oldmaid-seat')).toHaveLength(5);
   });
 
+  it('눕힌 휴대폰 위 줄 배치(상대 5명)는 390px 높이에 들어가게 부채 위 안내 줄을 빼고 자리 뒷면을 작게 그린다', () => {
+    setMediaMatches((query) => query === LANDSCAPE_PHONE_QUERY);
+    const { unmount } = render(table());
+    expect(screen.getByTestId('pick-caption')).toBeInTheDocument();
+    expect(within(screen.getAllByTestId('oldmaid-seat')[0]).getAllByTestId('playing-card-back')[0]).toHaveAttribute('width', '20');
+    unmount();
+
+    render(table(sixPlayers(), 1, 6));
+    expect(screen.queryByTestId('pick-caption')).not.toBeInTheDocument();
+    expect(within(screen.getAllByTestId('oldmaid-seat')[0]).getAllByTestId('playing-card-back')[0]).toHaveAttribute('width', '16');
+    // 페이지 위아래 여백을 줄이고(4px만 남김) 왼쪽 칸 간격을 좁힌다.
+    expect(screen.getByTestId('landscape-table')).toHaveClass('-my-5');
+    expect(screen.getByTestId('table-aside')).toHaveClass('space-y-0.5');
+  });
+
   it('내가 뽑는 사람이면 안내·리본·가운데 상대 부채가 보인다', () => {
     render(table({ players: [
       { playerId: 1, cardCount: 2, rank: null, forfeited: false },
