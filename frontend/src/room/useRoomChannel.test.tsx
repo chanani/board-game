@@ -376,6 +376,17 @@ describe('useRoomChannel', () => {
     expect(toast.show).not.toHaveBeenCalled();
   });
 
+  it('차례가 바뀌는 순간 보낸 섞기가 거절돼도 알림 없이 보내기 잠금만 푼다', async () => {
+    vi.spyOn(roomsApi, 'get').mockResolvedValue(room('방'));
+    toast.show.mockClear();
+    const { result } = renderHook(() => useRoomChannel('ABCDEF'));
+
+    act(() => state.handlers.get('/user/queue/errors')?.({ status: 409, code: 'OLD_MAID_SHUFFLE_NOT_ALLOWED', message: '지금은 손패를 섞을 수 없어요.' }));
+
+    expect(toast.show).not.toHaveBeenCalled();
+    expect(result.current.errorSeq).toBe(1);
+  });
+
   it('섞기 쿨다운 오류는 알림 없이 보내기 잠금만 푼다', async () => {
     vi.spyOn(roomsApi, 'get').mockResolvedValue(room('방'));
     toast.show.mockClear();

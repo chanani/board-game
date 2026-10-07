@@ -10,8 +10,8 @@ import { prependLog, type LogDraft, type LogEntry } from '../lib/eventLog';
 import { useRealtime } from '../realtime/RealtimeContext';
 
 // 여러 명이 동시에 잡기를 누르면 늦은 사람은 이 오류를 받는다. 정상 상황이라 알림을 띄우지 않는다(D25).
-// 섞기를 빠르게 거듭 누르면 쿨다운 오류가 온다. 이것도 알림 없이 보내기 잠금만 푼다.
-const QUIET_ERROR_CODES = new Set(['UNO_CATCH_CLOSED', 'OLD_MAID_SHUFFLE_TOO_FAST']);
+// 섞기를 빠르게 거듭 누르면 쿨다운 오류가, 차례가 바뀌는 순간 누르면 섞을 수 없다는 오류가 온다. 이것도 알림 없이 보내기 잠금만 푼다.
+const QUIET_ERROR_CODES = new Set(['UNO_CATCH_CLOSED', 'OLD_MAID_SHUFFLE_TOO_FAST', 'OLD_MAID_SHUFFLE_NOT_ALLOWED']);
 const CHAT_ERROR_CODES = new Set(['INVALID_CHAT_MESSAGE', 'CHAT_TOO_FAST']);
 
 const SYNC_RETRY_MS = 1000;
