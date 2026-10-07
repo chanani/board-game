@@ -13,6 +13,10 @@ import { GAME_ORDER, gameOf } from '../games/registry';
 
 type Tab = 'records' | 'ranking';
 
+// 고르지 않은 게임 탭도 원목 배경 위에서 밝은 글자(대비 약 9:1)와 옅은 테두리로 또렷이 읽히게 한다.
+const GAME_TAB_ON = 'bg-cream-50 text-wood-800 shadow ring-1 ring-inset ring-cream-50';
+const GAME_TAB_OFF = 'bg-black/35 text-cream-50 ring-1 ring-inset ring-cream-50/45 hover:bg-black/45';
+
 export function RecordsPage() {
   const params = useParams();
   const { member } = useAuth();
@@ -84,7 +88,7 @@ export function RecordsPage() {
       <div role="tablist" aria-label="게임" className="flex gap-2">
         {GAME_ORDER.map((type) => (
           <button key={type} type="button" role="tab" aria-selected={game === type} onClick={() => setGame(type)}
-            className={`rounded-full px-3 py-1 text-sm font-bold ${game === type ? 'bg-cream-50 text-wood-800 shadow' : 'bg-black/25 text-cream-100'}`}>
+            className={`rounded-full px-3 py-1 text-sm font-bold ${game === type ? GAME_TAB_ON : GAME_TAB_OFF}`}>
             {gameOf(type).name}
           </button>
         ))}

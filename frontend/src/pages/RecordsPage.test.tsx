@@ -171,6 +171,17 @@ describe('RecordsPage', () => {
     expect(screen.getByRole('heading', { name: '우노 순위표 (5판 이상)' })).toBeInTheDocument();
   });
 
+  it('고르지 않은 게임 탭도 밝은 글자와 테두리로 읽힌다', async () => {
+    renderPage();
+    await screen.findByText('2승 0무 1패');
+
+    const off = screen.getByRole('tab', { name: '우노' });
+    expect(off).toHaveAttribute('aria-selected', 'false');
+    expect(off).toHaveClass('text-cream-50', 'ring-1');
+    expect(off.className).not.toMatch(/text-cream-100/);
+    expect(screen.getByRole('tab', { name: '페이퍼 사파리' })).toHaveClass('bg-cream-50', 'text-wood-800');
+  });
+
   it('게임 탭을 바꿔도 내 통계는 다시 불러오지 않고 비우지 않는다', async () => {
     renderPage();
     await screen.findByText('2승 0무 1패');
