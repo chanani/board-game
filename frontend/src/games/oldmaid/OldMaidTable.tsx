@@ -175,7 +175,9 @@ export function OldMaidTable({ view, room, meId, log, receivedAt, now, errorSeq,
   const seatAt = (index: number | null) => (index === null ? null : seat(opponentIds[index]));
 
   const caption = seatsOnTop ? null : pickCaption(game, meId, nicknameOf);
-  const showFan = live && targetPlayer !== undefined && game.targetId !== meId;
+  // 짝 버리기 단계에 상대의 마지막 카드를 뽑았으면 그 상대는 이미 끝냈으므로 빈 부채를 그리지 않는다.
+  const targetEmptied = game.stage === 'DISCARD' && targetPlayer?.cardCount === 0;
+  const showFan = live && targetPlayer !== undefined && game.targetId !== meId && !targetEmptied;
   const center = (
     <div data-testid="center" className="flex w-full min-w-0 flex-col items-center gap-2">
       {caption ? <p data-testid="pick-caption" className="felt-ink text-xs font-bold">{caption}</p> : null}

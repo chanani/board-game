@@ -219,6 +219,20 @@ describe('OldMaidTable 고르기', () => {
       expect(send).toHaveBeenCalledWith({ type: 'DISCARD', cardIds: [H7.id, S7.id] });
     });
 
+    it('R37 짝 버리기 단계에 상대의 마지막 카드를 뽑았으면 가운데에 빈 부채를 그리지 않는다', () => {
+      const players = [
+        { playerId: 1, cardCount: 3, rank: null, forfeited: false, openingDone: true },
+        { playerId: 2, cardCount: 0, rank: 1, forfeited: false, openingDone: true },
+        { playerId: 3, cardCount: 2, rank: null, forfeited: false, openingDone: true },
+      ];
+      const { rerender } = render(table({ stage: 'DISCARD', canDiscard: true, hand: [H7, D2, S7], players }));
+
+      expect(screen.queryByTestId('target-fan')).not.toBeInTheDocument();
+
+      rerender(table({ stage: 'DISCARD', canDiscard: true, hand: [H7, D2, S7] }));
+      expect(screen.getByTestId('target-fan')).toBeInTheDocument();
+    });
+
     it('R37 남이 짝을 버리는 중이면 그 자리에 짝 버리는 중, 내 카드는 누를 수 없다', () => {
       render(table({ stage: 'DISCARD', currentPlayerId: 2, targetId: 3, canDiscard: false }));
 
