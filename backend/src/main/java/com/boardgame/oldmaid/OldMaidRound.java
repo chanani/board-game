@@ -1,5 +1,8 @@
 package com.boardgame.oldmaid;
 
+import com.boardgame.common.error.BusinessException;
+import com.boardgame.common.error.ErrorCode;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -52,6 +55,42 @@ public class OldMaidRound {
         finishIfEmpty(turn.target(), batch);
         finishIfEmpty(drawer, batch);
         advanceFrom(drawer);
+    }
+
+    // R17~R19: 뽑는 사람의 신호만, 상대 손패 범위 안(또는 "고르지 않음")일 때만 받는다.
+    boolean peek(PlayerId player, Optional<SlotIndex> slot, Instant now) {
+        Turn turn = turns.current();
+        if (!turn.isDrawer(player) || !fits(turn.target(), slot)) {
+            return false;
+        }
+        return turns.movePeek(slot, now);
+    }
+
+    private boolean fits(PlayerId target, Optional<SlotIndex> slot) {
+        return slot.map(index -> index.value() < table.sizeOf(target))
+                .orElse(true);
+    }
+
+    // R22~R24: 카드를 가진 사람이 내 차례가 아닐 때, 1초에 한 번.
+    void shuffle(PlayerId player, Instant now, EventBatch batch) {
+        if (!table.holds(player)) {
+            throw new BusinessException(ErrorCode.OLD_MAID_SHUFFLE_NOT_ALLOWED);
+        }
+        turns.useShuffle(player, now);
+        table.shuffle(player);
+        batch.add(OldMaidEvent.shuffle(player));
+    }
+
+    boolean canShuffle(PlayerId player) {
+        return table.holds(player) && !turns.current().isDrawer(player);
+    }
+
+    Optional<SlotIndex> peekSlot() {
+        return turns.peekSlot();
+    }
+
+    long peekSeq() {
+        return turns.peekSeq();
     }
 
     // R15·R16: 카드 가진 사람이 2명 이상일 때만 from 다음 사람에게 차례를 넘긴다(아니면 게임이 끝난다).

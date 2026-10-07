@@ -2,6 +2,7 @@ package com.boardgame.oldmaid;
 
 import com.boardgame.common.error.BusinessException;
 import com.boardgame.common.error.ErrorCode;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -49,6 +50,30 @@ public class OldMaidGame {
 
     public void draw(PlayerId player, SlotIndex slot) {
         run(player, OldMaidEndReason.NORMAL, batch -> round.draw(player, slot, batch));
+    }
+
+    // R17~R21: 신호는 기록(이벤트)을 바꾸지 않는다. 끝난 게임·남의 신호는 조용히 false.
+    public boolean peek(PlayerId player, Optional<SlotIndex> slot, Instant now) {
+        if (isFinished()) {
+            return false;
+        }
+        return round.peek(player, slot, now);
+    }
+
+    public void shuffle(PlayerId player, Instant now) {
+        run(player, OldMaidEndReason.NORMAL, batch -> round.shuffle(player, now, batch));
+    }
+
+    public boolean canShuffle(PlayerId player) {
+        return !isFinished() && round.canShuffle(player);
+    }
+
+    public Optional<SlotIndex> peekSlot() {
+        return round.peekSlot();
+    }
+
+    public long peekSeq() {
+        return round.peekSeq();
     }
 
     // 끝나면 최종 등수(도둑·기권자 포함), 게임 중이면 손패를 비운 사람의 등수만.
