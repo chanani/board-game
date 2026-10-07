@@ -208,4 +208,26 @@ describe('UnoTable 배치', () => {
 
     expect(screen.getByTestId('instruction')).toHaveTextContent('낼 카드를 고르거나 카드를 뽑으세요.');
   });
+
+  it('내 차례면 안내 바에 "내 차례" 표시가 붙고 내 손패 칸을 강조 테두리로 두른다', () => {
+    renderTable();
+
+    expect(within(screen.getByTestId('turn-bar')).getByTestId('my-turn-badge')).toHaveTextContent('내 차례');
+    const mine = screen.getByTestId('my-area');
+    expect(mine).toHaveAttribute('data-active', 'true');
+    expect(mine).toHaveClass('turn-ring');
+    expect(screen.queryByTestId('turn-tag')).not.toBeInTheDocument();
+  });
+
+  it('상대 차례면 그 상대 자리만 강조 테두리와 "차례" 표시로 돋보이고 내 칸은 강조하지 않는다', () => {
+    renderTable({ currentPlayerId: 2 });
+
+    const bob = screen.getByRole('group', { name: '밥, 카드 7장, 차례' });
+    expect(bob).toHaveAttribute('data-active', 'true');
+    expect(bob).toHaveClass('turn-ring');
+    expect(within(bob).getByTestId('turn-tag')).toHaveTextContent('차례');
+    expect(screen.getByRole('group', { name: '캐롤, 카드 7장' })).not.toHaveAttribute('data-active');
+    expect(screen.getByTestId('my-area')).not.toHaveClass('turn-ring');
+    expect(screen.queryByTestId('my-turn-badge')).not.toBeInTheDocument();
+  });
 });

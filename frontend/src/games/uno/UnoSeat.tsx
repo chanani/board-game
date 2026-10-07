@@ -24,10 +24,13 @@ export function UnoSeat({ player, nickname, active, backWidth, maxBacks, timer, 
   const reduced = useReducedMotion();
   const shake = shaking && !reduced;
   const backs = Math.min(player.cardCount, maxBacks);
-  const label = `${nickname}, 카드 ${player.cardCount}장${player.unoDeclared ? ', 우노' : ''}`;
+  const label = `${nickname}, 카드 ${player.cardCount}장${player.unoDeclared ? ', 우노' : ''}${active ? ', 차례' : ''}`;
   return (
     <motion.div role="group" aria-label={label} data-testid="uno-seat" data-player={player.playerId} data-shaking={shaking ? 'true' : undefined}
-      animate={shake ? { x: [0, -6, 6, -6, 6, 0] } : { x: 0 }} transition={{ duration: 0.5 }} className="relative flex flex-col items-center gap-1">
+      data-active={active ? 'true' : undefined}
+      animate={shake ? { x: [0, -6, 6, -6, 6, 0] } : { x: 0 }} transition={{ duration: 0.5 }}
+      // 차례인 상대 자리는 페이퍼 사파리 판처럼 안쪽 강조 테두리로 둘러 멀리서도 보이게 한다. 여백은 늘 같아 차례가 바뀌어도 자리가 흔들리지 않는다.
+      className={`relative flex flex-col items-center gap-1 rounded-2xl px-1.5 py-1 ${active ? 'turn-ring bg-black/20 ring-[3px] ring-inset ring-(--turn-ring)' : ''}`}>
       {bubble ? (
         <motion.span data-testid="uno-bubble" initial={reduced ? false : { scale: 0.6 }} animate={{ scale: 1 }}
           className="absolute -top-7 left-1/2 -translate-x-1/2 rounded-full bg-yellow-300 px-2.5 py-0.5 text-xs font-black text-wood-900 shadow">우노!</motion.span>
@@ -49,6 +52,9 @@ export function UnoSeat({ player, nickname, active, backWidth, maxBacks, timer, 
         ))}
       </div>
       <div className="flex items-center gap-1 text-[11px] font-bold">
+        {active ? (
+          <span data-testid="turn-tag" className="rounded-full bg-(--turn-tag-bg) px-2 py-0.5 text-(--turn-tag-ink) shadow-[0_1px_0_rgb(0_0_0/0.3)]">차례</span>
+        ) : null}
         <span data-testid="card-count" className="rounded-full bg-black/35 px-2 py-0.5 text-cream-50">{player.cardCount}장</span>
         {player.unoDeclared ? (
           <span data-testid="uno-badge" className="inline-flex items-center gap-0.5 rounded-full bg-yellow-300 px-2 py-0.5 text-wood-900"><StarIcon className="h-3 w-3" />우노</span>

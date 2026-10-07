@@ -21,6 +21,13 @@ describe('차례 안내 바', () => {
     expect(last.querySelector('[data-kind="draw-deck"] svg')).not.toBeNull();
   });
 
+  it('내 차례면 강조된 "내 차례" 표시를 붙이고, 아니면 붙이지 않는다', () => {
+    const { rerender } = render(<TurnBar instruction="안내" myTurn log={[]} deadline={null} serverNow={0} />);
+    expect(screen.getByTestId('my-turn-badge')).toHaveTextContent('내 차례');
+    rerender(<TurnBar instruction="안내" myTurn={false} log={[]} deadline={null} serverNow={0} />);
+    expect(screen.queryByTestId('my-turn-badge')).not.toBeInTheDocument();
+  });
+
   it('기록이 없으면 마지막 기록 칸은 비어 있다', () => {
     render(<TurnBar instruction="안내" myTurn={false} log={[]} deadline={null} serverNow={0} />);
     expect(screen.getByTestId('last-log')).toBeEmptyDOMElement();

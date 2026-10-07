@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { LogEntry } from '../lib/eventLog';
 import { Countdown } from '../components/Countdown';
 import { KindDot, Sentence } from './LogList';
-import { ChevronRightIcon } from '../components/icons';
+import { ChevronRightIcon, PlayIcon } from '../components/icons';
 import { LogModal } from './LogModal';
 
 type Props = {
@@ -45,6 +45,12 @@ export function TurnBar({ instruction, myTurn, log, nicknameOf, deadline, server
     <>
       <div data-testid="turn-bar"
         className={`flex overflow-hidden rounded-xl border backdrop-blur-[2px] ${tone} ${shape}`}>
+        {myTurn ? (
+          <span data-testid="my-turn-badge"
+            className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-(--accent-text) px-2 py-0.5 text-[11px] font-black leading-none text-(--accent) shadow-[0_1px_0_rgb(0_0_0/0.25)]">
+            <PlayIcon className="h-3 w-3" />내 차례
+          </span>
+        ) : null}
         <p role="status" data-testid="instruction" className="flex min-w-0 shrink items-center font-bold">
           <span className={stacked ? 'break-keep' : 'truncate'}>{instruction}</span>
         </p>
