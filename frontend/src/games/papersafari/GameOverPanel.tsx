@@ -6,7 +6,7 @@ import { FELT_GRID, Felt } from '../../components/Felt';
 import { Modal } from '../../components/Modal';
 import { RollingNumber } from '../../components/RollingNumber';
 import { resultLabel } from '../../lib/format';
-import { FooterButton, HeadlineIcon, ReadyChips, useResultSound } from '../../table/gameOver';
+import { FooterButton, HeadlineIcon, ReadyChips, useGameOverCue } from '../../table/gameOver';
 import { PlayerBoard, type BoardResult } from './PlayerBoard';
 import { resolveBoard } from './score';
 import { roomAvatarOf } from '../../lib/avatars';
@@ -18,6 +18,8 @@ type Props = {
   nicknameOf: (memberId: number) => string;
   onReady: () => void;
   onClose: () => void;
+  /** 게임이 방금 끝난 전환(liveGameEnd). 있으면 결과가 공개될 때 게임 끝 소리를 한 번 울린다. */
+  ended?: object | null;
 };
 
 const REVEAL_STEP_MS = 120;
@@ -82,14 +84,15 @@ function ScoreRows({ players, done, nicknameOf }: { players: PlayerResultView[];
 }
 
 /** 단판 게임 결과: 카드 순차 공개 → 점수 → 승자 또는 무승부, 그리고 다음 게임 준비. */
-export function GameOverPanel({ game, room, meId, nicknameOf, onReady, onClose }: Props) {
+export function GameOverPanel({ game, room, meId, nicknameOf, onReady, onClose, ended = null }: Props) {
   const players = game.lastRoundResult?.players ?? [];
   const boards = game.round.boards;
   // 기권으로 끝나 점수가 없으면 공개할 카드도 없으므로 바로 결과를 보여 준다. 점수 배지·합계도 셀 수 없어 그리지 않는다.
   const forfeited = players.length === 0;
   const total = forfeited ? 0 : boards.reduce((sum, board) => sum + board.slots.length, 0);
   const { revealed, done } = useStagedReveal(total);
-  useResultSound(done, players.find((player) => player.playerId === meId)?.outcome);
+  // 이긴 사람은 카드를 다 공개한 뒤에 알 수 있으므로, 배너가 아니라 공개가 끝날 때 울린다(미리 이긴 소리로 결과를 알려 주지 않게).
+  useGameOverCue(ended, done, game.winnerId === meId);
   const me = room.members.find((member) => member.id === meId);
   const guest = me !== undefined && !me.host;
   const offsets = boards.map((_, index) => boards.slice(0, index).reduce((sum, board) => sum + board.slots.length, 0));

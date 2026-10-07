@@ -1,21 +1,41 @@
 import { useEffect, useRef } from 'react';
-import type { ResultType, RoomMember } from '../api/types';
+import type { RoomMember } from '../api/types';
 import { CheckIcon, DrawIcon, MedalIcon } from '../components/icons';
+import type { ViewTransition } from '../games/gameModule';
 import { useSound } from '../lib/sound';
 
-/** 공개가 끝나면 내 결과 효과음을 한 번만 울린다. 무승부는 이기지도 지지도 않았으니 울리지 않는다. */
-export function useResultSound(done: boolean, outcome: ResultType | undefined) {
+type Finishable = { status: string };
+
+/**
+ * 이 화면이 "게임 중 → 끝"을 실시간으로 받은 전환이면 그 전환을, 아니면 null을 돌려준다.
+ * 이미 끝난 게임을 불러오거나 다시 들어온 것(직전 화면 없음·동기화 응답)은 null이라 게임 끝 소리를 내지 않는다.
+ */
+export function liveGameEnd<G extends Finishable>(game: G, transition: ViewTransition<G> | null | undefined): ViewTransition<G> | null {
+  if (!transition || !transition.animate || transition.to !== game || !transition.from) {
+    return null;
+  }
+  const ended = transition.from.status !== 'GAME_OVER' && game.status === 'GAME_OVER';
+  return ended ? transition : null;
+}
+
+/** 울린 게임 끝(전환 객체). 테이블·결과 창이 다시 그려지거나 새로 열려도 한 번만 울리게 한다. */
+const cued = new WeakSet<object>();
+
+/**
+ * 게임이 끝나면 방의 모두에게 게임 끝 소리를 한 번 울린다. 이긴 사람은 밝은 소리, 나머지(진 사람·무승부·관전자)는 부드러운 소리.
+ * ended는 liveGameEnd의 결과, ready는 울릴 때(연출 배너·결과 공개)가 되었는지. 소리 켜기/끄기·음량은 useSound가 따른다.
+ */
+export function useGameOverCue(ended: object | null, ready: boolean, won: boolean) {
   const { play } = useSound();
   const playRef = useRef(play);
   playRef.current = play;
-  const sounded = useRef(false);
   useEffect(() => {
-    if (!done || !outcome || outcome === 'DRAW' || sounded.current) {
+    if (!ended || !ready || cued.has(ended)) {
       return;
     }
-    sounded.current = true;
-    playRef.current(outcome === 'WIN' ? 'roundWin' : 'roundLose');
-  }, [done, outcome]);
+    cued.add(ended);
+    playRef.current(won ? 'gameOverWin' : 'gameOverEnd');
+  }, [ended, ready, won]);
 }
 
 export function HeadlineIcon({ won }: { won: boolean }) {

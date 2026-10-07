@@ -27,6 +27,7 @@ import { UnoGhostLayer } from './motion/UnoGhostLayer';
 import { useUnoMotion } from './motion/useUnoMotion';
 import { useSeatEffects } from './useSeatEffects';
 import { useUnoFinale } from './useUnoFinale';
+import { liveGameEnd, useGameOverCue } from '../../table/gameOver';
 
 const PENDING_MS = 3000;
 
@@ -61,6 +62,8 @@ export function UnoTable({ view, room, meId, log, receivedAt, now, errorSeq, nic
   const containerRef = useRef<HTMLDivElement>(null);
   const { ghosts } = useUnoMotion(containerRef, transition, meId, sizes.center);
   const finale = useUnoFinale(game, transition);
+  // 마지막 카드가 나가면 이긴 사람이 보이므로 "게임 끝!" 배너와 함께 울린다. 연출이 없으면(기권·동작 줄이기) 바로 울린다.
+  useGameOverCue(liveGameEnd(game, transition), finale === 'banner' || finale === 'done', game.winnerId === meId);
   const effects = useSeatEffects(game.events);
   const reduced = useReducedMotion();
   const toast = useToast();

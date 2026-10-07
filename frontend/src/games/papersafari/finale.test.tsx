@@ -187,3 +187,65 @@ describe('게임 종료 연출', () => {
     await waitFor(() => expect(screen.queryByRole('dialog', { name: '진행 기록' })).not.toBeInTheDocument());
   });
 });
+
+describe('게임 끝 소리', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    motionState.reduced = false;
+    play.mockReset();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  const cues = () => play.mock.calls.filter(([name]) => name === 'gameOverWin' || name === 'gameOverEnd');
+
+  it('게임 중 → 끝 전환이면 결과 창에서 카드 공개가 끝날 때 한 번만 울리고, 라운드 소리는 내지 않는다', () => {
+    const { rerender } = render(ui(playing));
+    const ended = over();
+    const transition = { seq: 2, from: playing, to: ended, animate: true };
+    rerender(ui(ended, transition));
+
+    advance(2500);
+    expect(resultDialog()).toBeInTheDocument();
+    expect(cues()).toHaveLength(0);
+    for (let step = 0; step < 12; step += 1) {
+      advance(120);
+    }
+    // 나(앨리스)는 졌으므로 부드러운 소리.
+    expect(cues()).toEqual([['gameOverEnd']]);
+
+    rerender(ui(ended, transition));
+    advance(3000);
+    expect(cues()).toHaveLength(1);
+    expect(play).not.toHaveBeenCalledWith('roundWin');
+    expect(play).not.toHaveBeenCalledWith('roundLose');
+  });
+
+  it('이미 끝난 게임을 불러오거나(직전 화면 없음) 동기화로 받으면 울리지 않는다', () => {
+    const ended = over();
+    const revealAll = () => {
+      for (let step = 0; step < 20; step += 1) {
+        advance(120);
+      }
+    };
+    const loaded = render(ui(ended, { seq: 1, from: null, to: ended, animate: true }));
+    revealAll();
+    expect(screen.getAllByTestId('score-value')[0]).toHaveTextContent('점');
+    loaded.unmount();
+    render(ui(ended, { seq: 1, from: playing, to: ended, animate: false }));
+    revealAll();
+
+    expect(resultDialog()).toBeInTheDocument();
+    expect(cues()).toHaveLength(0);
+  });
+
+  it('상대가 나가 기권으로 끝나도 결과 창이 열리면 바로 한 번 울린다', () => {
+    const { rerender } = render(ui(playing));
+    const forfeited = { ...over(null), winnerId: ME };
+    rerender(ui(forfeited, { seq: 2, from: playing, to: forfeited, animate: true }));
+
+    expect(resultDialog()).toBeInTheDocument();
+    expect(cues()).toEqual([['gameOverWin']]);
+  });
+});

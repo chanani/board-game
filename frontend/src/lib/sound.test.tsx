@@ -175,8 +175,9 @@ describe('카드 움직임 소리', () => {
       const { play } = useSound();
       return <button type="button" onClick={() => names.forEach((name) => play(name))}>재생</button>;
     }
-    render(<SoundProvider><Probe /></SoundProvider>);
+    const utils = render(<SoundProvider><Probe /></SoundProvider>);
     await userEvent.click(screen.getByRole('button', { name: '재생' }));
+    utils.unmount();
     delete (window as unknown as { AudioContext?: unknown }).AudioContext;
   }
 
@@ -210,5 +211,29 @@ describe('카드 움직임 소리', () => {
     await playAll(['myTurn', 'tick']);
 
     expect(hz).toEqual([784, 1047, 660, 660]);
+  });
+  it('게임 끝 소리: 이긴 사람(밝은 소리)과 나머지(부드러운 소리)는 서로 다른 음으로, 둘 다 올라가는 음으로 난다', async () => {
+    await playAll(['gameOverWin']);
+    const win = [...hz];
+    await playAll(['gameOverEnd']);
+    const end = [...hz];
+
+    expect(win.length).toBeGreaterThan(2);
+    expect(end.length).toBeGreaterThan(2);
+    expect(win).not.toEqual(end);
+    expect(Math.max(...win)).toBeGreaterThan(Math.max(...end));
+    expect(win.slice(0, 4)).toEqual([...win.slice(0, 4)].sort((a, b) => a - b));
+    expect(end.slice(0, 3)).toEqual([...end.slice(0, 3)].sort((a, b) => a - b));
+  });
+
+  it('효과음을 끄거나 음량이 0이면 게임 끝 소리도 나지 않는다', async () => {
+    writeMuted(true);
+    await playAll(['gameOverWin', 'gameOverEnd']);
+    expect(noises + hz.length).toBe(0);
+
+    writeMuted(false);
+    writeVolume(0);
+    await playAll(['gameOverWin', 'gameOverEnd']);
+    expect(noises + hz.length).toBe(0);
   });
 });

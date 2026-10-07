@@ -253,11 +253,12 @@ describe('GameOverPanel 단판 결과', () => {
     expect(screen.getByRole('dialog', { name: '게임 결과' })).not.toHaveTextContent('토큰');
   });
 
-  it('효과음은 모든 카드가 공개된 뒤에 한 번만 울리고, play가 바뀌어도 다시 울리지 않는다', () => {
+  it('방금 끝난 게임이면 모든 카드가 공개된 뒤에 게임 끝 소리를 한 번만 울리고, play가 바뀌어도 다시 울리지 않는다', () => {
     vi.useFakeTimers();
+    const ended = {};
     const ui = (fn: SoundApi['play']) => (
       <SoundContext.Provider value={{ ...SILENT_SOUND, play: fn }}>
-        <GameOverPanel game={game} room={room} meId={1} nicknameOf={nicknameOf} onReady={vi.fn()} onClose={vi.fn()} />
+        <GameOverPanel game={game} room={room} meId={1} nicknameOf={nicknameOf} onReady={vi.fn()} onClose={vi.fn()} ended={ended} />
       </SoundContext.Provider>
     );
     const play = vi.fn();
@@ -269,30 +270,38 @@ describe('GameOverPanel 단판 결과', () => {
     expect(play).not.toHaveBeenCalled();
     act(() => { vi.advanceTimersByTime(120); });
     expect(play).toHaveBeenCalledOnce();
-    expect(play).toHaveBeenCalledWith('roundWin');
+    expect(play).toHaveBeenCalledWith('gameOverWin');
+    expect(play).not.toHaveBeenCalledWith('roundWin');
 
     const next = vi.fn();
     utils.rerender(ui(next));
     act(() => { vi.advanceTimersByTime(1000); });
     expect(next).not.toHaveBeenCalled();
   });
-  it('무승부면 효과음을 울리지 않고, 진 사람에게는 진 소리를 울린다', () => {
+
+  it('진 사람·무승부는 부드러운 게임 끝 소리를 듣고, 이미 끝난 게임을 불러온 결과 창은 소리를 내지 않는다', () => {
     vi.useFakeTimers();
-    const ui = (view: PaperSafariView, meId: number, fn: SoundApi['play']) => (
+    const ui = (view: PaperSafariView, meId: number, fn: SoundApi['play'], ended: object | null) => (
       <SoundContext.Provider value={{ ...SILENT_SOUND, play: fn }}>
-        <GameOverPanel game={view} room={room} meId={meId} nicknameOf={nicknameOf} onReady={vi.fn()} onClose={vi.fn()} />
+        <GameOverPanel game={view} room={room} meId={meId} nicknameOf={nicknameOf} onReady={vi.fn()} onClose={vi.fn()} ended={ended} />
       </SoundContext.Provider>
     );
     const drawPlay = vi.fn();
-    const drawn = render(ui(tie, 1, drawPlay));
+    const drawn = render(ui(tie, 1, drawPlay, {}));
     revealAll();
-    expect(drawPlay).not.toHaveBeenCalled();
+    expect(drawPlay).toHaveBeenCalledExactlyOnceWith('gameOverEnd');
     drawn.unmount();
 
     const losePlay = vi.fn();
-    render(ui(game, 2, losePlay));
+    const lost = render(ui(game, 2, losePlay, {}));
     revealAll();
-    expect(losePlay).toHaveBeenCalledWith('roundLose');
+    expect(losePlay).toHaveBeenCalledExactlyOnceWith('gameOverEnd');
+    lost.unmount();
+
+    const loadedPlay = vi.fn();
+    render(ui(game, 1, loadedPlay, null));
+    revealAll();
+    expect(loadedPlay).not.toHaveBeenCalled();
   });
 
   it('기권으로 끝나 점수가 없으면 바로 남은 사람의 승리를 보여 주고 점수 줄은 없다', () => {

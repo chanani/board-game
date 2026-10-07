@@ -17,6 +17,7 @@ import { GhostLayer } from './motion/GhostLayer';
 import { HiddenZonesContext, LiftedZonesContext } from './motion/ZoneAnchor';
 import { useCardMotion } from './motion/useCardMotion';
 import { GameEndBanner } from '../../table/GameEndBanner';
+import { liveGameEnd } from '../../table/gameOver';
 import { slotKey, useFinale } from './useFinale';
 
 const PENDING_MS = 3000;
@@ -103,6 +104,7 @@ export function PaperSafariTable({ view: rawView, room, meId, log, receivedAt, n
   const { play } = useSound();
   const finale = useFinale(rawView.game, transition ?? null, () => play('flip'));
   const view = maskPending(rawView, finale.pending);
+  const ended = liveGameEnd(rawView.game, transition);
   const game = view.game;
   const round = game.round;
   const pendingUntil = useRef(0);
@@ -136,7 +138,7 @@ export function PaperSafariTable({ view: rawView, room, meId, log, receivedAt, n
   };
 
   if (finale.phase === 'done') {
-    return <GameOverPanel game={game} room={room} meId={meId} nicknameOf={nicknameOf} onReady={onReadyNext} onClose={onCloseGameOver} />;
+    return <GameOverPanel game={game} room={room} meId={meId} nicknameOf={nicknameOf} onReady={onReadyNext} onClose={onCloseGameOver} ended={ended} />;
   }
 
   const myBoard = round.boards.find((board) => board.playerId === meId);

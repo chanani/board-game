@@ -37,20 +37,20 @@ function renderPanel(overrides: Partial<UnoView>, meId = 1, play = vi.fn()) {
 }
 
 describe('UnoGameOverPanel', () => {
-  it('내가 이기면 내가 이겼어요와 얻은 점수, 이긴 소리', async () => {
+  it('내가 이기면 내가 이겼어요와 얻은 점수(게임 끝 소리는 테이블이 울리므로 결과 창은 소리를 내지 않는다)', async () => {
     const { play } = renderPanel(ended);
 
     const dialog = screen.getByRole('dialog', { name: '게임 결과' });
     expect(within(dialog).getByRole('heading', { name: '내가 이겼어요!' })).toBeInTheDocument();
     await waitFor(() => expect(within(dialog).getByTestId('won-points')).toHaveTextContent('+47점'));
-    expect(play).toHaveBeenCalledWith('roundWin');
+    expect(play).not.toHaveBeenCalled();
   });
 
-  it('남이 이기면 그 사람 이름과 진 소리', () => {
+  it('남이 이기면 그 사람 이름', () => {
     const { play } = renderPanel(ended, 2);
 
     expect(screen.getByRole('heading', { name: '앨리스님이 이겼어요!' })).toBeInTheDocument();
-    expect(play).toHaveBeenCalledWith('roundLose');
+    expect(play).not.toHaveBeenCalled();
   });
 
   it('진 사람마다 남은 카드·장수·점수를 점수 큰 순으로, 카드는 10장까지 보여 준다', () => {

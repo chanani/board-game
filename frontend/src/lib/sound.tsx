@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
-export type SoundName = 'draw' | 'place' | 'flip' | 'myTurn' | 'roundWin' | 'roundLose' | 'click' | 'tick' | 'uno' | 'chat';
+export type SoundName = 'draw' | 'place' | 'flip' | 'myTurn' | 'roundWin' | 'roundLose' | 'click' | 'tick' | 'uno' | 'chat' | 'gameOverWin' | 'gameOverEnd';
 /** 카드를 가져오거나 내려놓을 때(그리고 사이트 버튼을 누를 때) 나는 소리. 닉네임 메뉴에서 고른다. */
 export type DrawSound = 'swish' | 'pop' | 'tock' | 'chime';
 export type SoundApi = {
@@ -192,7 +192,26 @@ const RECIPES: Record<Exclude<SoundName, CardMoveSound>, Recipe> = {
   tick: (ctx, out) => { tone(ctx, out, 660, 0, 0.09, 'square', 0.06); tone(ctx, out, 660, 0.16, 0.09, 'square', 0.06); },
   // 남의 채팅 도착: 짧고 부드러운 '톡'(사인파가 살짝 올라가며 0.08초에 사라지고, 위에 아주 작은 맑은 음을 얹는다).
   chat: (ctx, out) => { glide(ctx, out, 988, 1319, 0, 0.08, 0.11); tone(ctx, out, 2637, 0.01, 0.04, 'sine', 0.025); },
+  gameOverWin,
+  gameOverEnd,
 };
+
+/** 게임 끝 · 이긴 사람: 밝게 올라가는 아르페지오(C5·E5·G5 → C6)에 위로 반짝이는 음을 얹어 약 1.3초 울린다. */
+function gameOverWin(ctx: AudioContext, out: AudioNode) {
+  [523, 659, 784].forEach((frequency, index) => tone(ctx, out, frequency, index * 0.1, 0.2, 'triangle', 0.14));
+  tone(ctx, out, 1047, 0.3, 0.95, 'triangle', 0.16);
+  tone(ctx, out, 784, 0.3, 0.95, 'sine', 0.07);
+  tone(ctx, out, 1319, 0.42, 0.8, 'sine', 0.06);
+  tone(ctx, out, 2093, 0.54, 0.6, 'sine', 0.03);
+}
+
+/** 게임 끝 · 그 밖의 모두(진 사람·무승부·관전자): 낮고 느리게 올라가는 부드러운 종소리(G4·C5 → E5), 약 1.2초. */
+function gameOverEnd(ctx: AudioContext, out: AudioNode) {
+  tone(ctx, out, 392, 0, 0.35, 'sine', 0.11);
+  tone(ctx, out, 523, 0.16, 0.4, 'sine', 0.11);
+  tone(ctx, out, 659, 0.32, 0.85, 'sine', 0.11);
+  tone(ctx, out, 523, 0.32, 0.85, 'sine', 0.045);
+}
 
 function recipeOf(name: SoundName, drawSound: DrawSound): Recipe {
   return isCardMove(name) ? DRAW_RECIPES[drawSound] : RECIPES[name];

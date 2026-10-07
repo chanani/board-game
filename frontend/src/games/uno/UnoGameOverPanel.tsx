@@ -3,7 +3,7 @@ import type { Room, UnoResultPlayer, UnoView } from '../../api/types';
 import { Confetti } from '../../components/Confetti';
 import { Modal } from '../../components/Modal';
 import { RollingNumber } from '../../components/RollingNumber';
-import { FooterButton, HeadlineIcon, ReadyChips, useResultSound } from '../../table/gameOver';
+import { FooterButton, HeadlineIcon, ReadyChips } from '../../table/gameOver';
 import { UnoCardFace } from './UnoCardFace';
 
 type Props = {
@@ -38,11 +38,9 @@ export function UnoGameOverPanel({ game, room, meId, nicknameOf, onReady, onClos
   const result = game.result;
   const winnerId = game.winnerId;
   const won = winnerId === meId;
-  const participant = game.participantIds.includes(meId);
   const emptied = result?.reason === 'EMPTY_HAND';
   const [shown, setShown] = useState(0);
   useEffect(() => setShown(result?.points ?? 0), [result?.points]);
-  useResultSound(true, participant ? (won ? 'WIN' : 'LOSE') : undefined);
   const me = room.members.find((member) => member.id === meId);
   const guest = me !== undefined && !me.host;
   const rows = [...(result?.players ?? [])].sort((a, b) => b.points - a.points);
