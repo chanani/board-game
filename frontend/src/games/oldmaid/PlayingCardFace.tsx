@@ -37,25 +37,38 @@ export function SuitGlyph({ suit, x, y, size, fill, flip = false, testId }: Glyp
   return <path data-testid={testId} data-suit={suit} transform={transform} fill={fill} d={SUIT_PATHS[suit]} />;
 }
 
-// 숫자 카드 무늬 배치(카드 그림 200×300). 가운데보다 아래에 있는 무늬는 돌려서 그린다.
-// 왼쪽 줄 무늬의 왼쪽 끝(74 − 13 ≈ 62)이 모서리 띠(CORNER_EXTENT 60) 밖에 오게 한다.
-const L = 74;
+// 숫자 카드 무늬 배치(카드 그림 200×300): 실제 트럼프의 표준 배치를 따른다.
+// 무늬 칸은 위 줄 y 60 ~ 아래 줄 y 240(세로 가운데 150 기준 위아래 대칭)이고, 줄 사이 위치는 그 사이 비율로 정한다.
+// 2·3은 가운데 세로줄 하나, 4~10은 왼쪽·오른쪽 두 줄에 필요하면 가운데 줄(5·7·8·9·10)을 더한다.
+// 왼쪽 줄 무늬의 왼쪽 끝(76 − 0.46 × 30 ≈ 62)이 모서리 띠(CORNER_EXTENT 60) 밖이고, 오른쪽 줄도 대칭으로 140 안이다.
+// 가운데(150)보다 아래 무늬는 180도 돌려 그린다.
+const L = 76;
 const C = 100;
-const R = 126;
-const CORNERS4: [number, number][] = [[L, 78], [R, 78], [L, 222], [R, 222]];
-const SIDES8: [number, number][] = [[L, 78], [R, 78], [L, 126], [R, 126], [L, 174], [R, 174], [L, 222], [R, 222]];
+const R = 124;
+const TOP = 60;
+const BOTTOM = 240;
+/** 위 줄(0)부터 아래 줄(1)까지의 비율을 카드 y로. */
+function row(fraction: number): number {
+  return TOP + (BOTTOM - TOP) * fraction;
+}
+function sides(...fractions: number[]): [number, number][] {
+  return fractions.flatMap((fraction): [number, number][] => [[L, row(fraction)], [R, row(fraction)]]);
+}
+function middle(...fractions: number[]): [number, number][] {
+  return fractions.map((fraction): [number, number] => [C, row(fraction)]);
+}
 export const PIPS: Record<number, [number, number][]> = {
-  2: [[C, 78], [C, 222]],
-  3: [[C, 78], [C, 150], [C, 222]],
-  4: CORNERS4,
-  5: [...CORNERS4, [C, 150]],
-  6: [...CORNERS4, [L, 150], [R, 150]],
-  7: [...CORNERS4, [L, 150], [R, 150], [C, 114]],
-  8: [...CORNERS4, [L, 150], [R, 150], [C, 114], [C, 186]],
-  9: [...SIDES8, [C, 150]],
-  10: [...SIDES8, [C, 102], [C, 198]],
+  2: middle(0, 1),
+  3: middle(0, 1 / 2, 1),
+  4: sides(0, 1),
+  5: [...sides(0, 1), ...middle(1 / 2)],
+  6: sides(0, 1 / 2, 1),
+  7: [...sides(0, 1 / 2, 1), ...middle(1 / 4)],
+  8: [...sides(0, 1 / 2, 1), ...middle(1 / 4, 3 / 4)],
+  9: [...sides(0, 1 / 3, 2 / 3, 1), ...middle(1 / 2)],
+  10: [...sides(0, 1 / 3, 2 / 3, 1), ...middle(1 / 6, 5 / 6)],
 };
-export const PIP_SIZE = 26;
+export const PIP_SIZE = 30;
 /** A의 큰 무늬 크기. F-c8: 왼쪽 끝 100 − SUIT_HALF_WIDTH × 84 ≈ 61.4가 모서리 띠 밖이다. */
 export const ACE_PIP_SIZE = 84;
 /** 무늬 그림의 가장 넓은 반폭(하트·스페이드가 100 상자에서 x 4~96)을 무늬 크기에 대한 비율로. */

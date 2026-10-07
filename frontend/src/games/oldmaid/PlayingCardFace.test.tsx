@@ -92,9 +92,39 @@ describe('PlayingCardFace', () => {
     expect(container.innerHTML).toContain('var(--card-back-from, #23305A)');
   });
 
+  it('숫자 카드 무늬는 표준 배치: 위 줄·아래 줄이 같고, 7 말고는 위아래 대칭이고, 열은 가운데를 두고 좌우 대칭이다', () => {
+    Object.entries(PIPS).forEach(([count, pips]) => {
+      expect(pips).toHaveLength(Number(count));
+      const ys = pips.map(([, y]) => y);
+      expect(Math.min(...ys)).toBe(60);
+      expect(Math.max(...ys)).toBe(240);
+      pips.forEach(([x]) => expect([76, 100, 124]).toContain(x));
+      pips.forEach(([x, y]) => expect(pips).toContainEqual([200 - x, y]));
+      if (count !== '7') {
+        pips.forEach(([x, y]) => expect(pips).toContainEqual([x, 300 - y]));
+      }
+    });
+    expect(PIPS[2].every(([x]) => x === 100)).toBe(true);
+    expect(PIPS[3].map(([, y]) => y)).toEqual([60, 150, 240]);
+    // 4줄짜리(9·10)는 위에서 아래까지 같은 간격.
+    const nineSides = PIPS[9].filter(([x]) => x === 76).map(([, y]) => y);
+    expect(nineSides).toEqual([60, 120, 180, 240]);
+    expect(PIPS[10].filter(([x]) => x === 100).map(([, y]) => y)).toEqual([90, 210]);
+  });
+
+  it('가운데보다 아래쪽 무늬는 180도 돌려 그린다', () => {
+    const { container } = render(<PlayingCardFace card={playingCard('SPADES', 'EIGHT')} width={60} />);
+
+    const transforms = Array.from(container.querySelectorAll('[data-testid="pip"]')).map((pip) => pip.getAttribute('transform') ?? '');
+    const flipped = transforms.filter((transform) => transform.includes('rotate(180)'));
+    expect(flipped).toHaveLength(3);
+    flipped.forEach((transform) => expect(Number(/translate\(\d+ (\d+)\)/.exec(transform)?.[1])).toBeGreaterThan(150));
+  });
+
   it('F-c8 가운데 그림은 겹친 손패에서 보이는 모서리 띠(x 58) 안으로 들어오지 않는다', () => {
     const pipColumns = Object.values(PIPS).flat().map(([x]) => x);
     expect(Math.min(...pipColumns) - SUIT_HALF_WIDTH * PIP_SIZE).toBeGreaterThan(CORNER_BAND);
+    expect(Math.max(...pipColumns) + SUIT_HALF_WIDTH * PIP_SIZE).toBeLessThan(200 - CORNER_BAND);
     expect(100 - SUIT_HALF_WIDTH * ACE_PIP_SIZE).toBeGreaterThan(CORNER_BAND);
 
     const king = render(<PlayingCardFace card={playingCard('CLUBS', 'KING')} width={60} />);
