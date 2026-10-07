@@ -1,4 +1,3 @@
-import type { ChatMessage } from '../api/chat';
 import type { Room } from '../api/types';
 
 /** 서버 Avatar enum과 같은 순서·키. 기본 그림은 회원 id를 12로 나눈 나머지 자리다(백엔드 Avatar.defaultFor와 같다). */
@@ -44,12 +43,4 @@ export function withMyAvatar<T extends Room | null>(room: T, meId: number, mine:
   }
   const patch = <P extends { id: number; avatar?: string }>(person: P): P => (person.id === meId ? { ...person, avatar: mine } : person);
   return { ...room, members: room.members.map(patch), spectators: room.spectators.map(patch) };
-}
-
-/** 채팅 메시지에 보낸 사람의 그림 키를 붙인다(방 정보 기준). */
-export function withChatAvatars(messages: ChatMessage[], room: Room | null): ChatMessage[] {
-  if (!room) {
-    return messages;
-  }
-  return messages.map((message) => ({ ...message, avatar: roomAvatarOf(room, message.memberId) }));
 }

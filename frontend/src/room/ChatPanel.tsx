@@ -34,17 +34,20 @@ export function ChatPanel({ messages, meId, onSend, className = '', autoFocus = 
   };
 
   // 위로 올려 지난 대화를 보고 있으면 그대로 두고, 맨 아래에 있었거나 내가 보낸 글이면 따라 내려간다.
+  // 새 글이 왔는지는 마지막 글의 id로 판단한다(방 정보 갱신으로 같은 글의 객체만 바뀌어도 끌어내리지 않는다).
   const last = messages.at(-1);
+  const lastId = last?.id;
+  const lastMemberId = last?.memberId;
   useLayoutEffect(() => {
     const list = listRef.current;
-    if (!list || !last) {
+    if (!list || lastId === undefined) {
       return;
     }
-    if (nearBottomRef.current || last.memberId === meId) {
+    if (nearBottomRef.current || lastMemberId === meId) {
       list.scrollTop = list.scrollHeight;
       nearBottomRef.current = true;
     }
-  }, [last, meId]);
+  }, [lastId, lastMemberId, meId]);
 
   return (
     <div className={`flex min-h-0 flex-col gap-3 ${className}`}>

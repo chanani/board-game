@@ -19,7 +19,8 @@ import { WaitingRoom } from '../room/WaitingRoom';
 import { RoomBackdrop, RoomThemeProvider } from '../room/roomTheme';
 import { PC_QUERY, useMediaQuery } from '../lib/useMediaQuery';
 import { useTableLayout } from '../lib/useTableLayout';
-import { withChatAvatars, withMyAvatar } from '../lib/avatars';
+import { withMyAvatar } from '../lib/avatars';
+import { useChatAvatars } from '../room/useChatAvatars';
 import { ChatColorProvider, chatOrderOf } from '../room/chatColors';
 
 function isPresent(room: Room, meId: number): boolean {
@@ -52,7 +53,7 @@ export function RoomPage() {
   // 이 화면은 REST 입장(참가·관전) 뒤에만 오므로 채팅도 방 채널과 같은 시점에 시작한다.
   const roomChat = useRoomChat(code, room !== null && !missing, meId);
   // 채팅 머리줄 그림은 방 정보(참가자·관전자)에서 찾는다.
-  const chatMessages = useMemo(() => withChatAvatars(roomChat.messages, room), [roomChat.messages, room]);
+  const chatMessages = useChatAvatars(roomChat.messages, room);
   const chat = { ...roomChat, messages: chatMessages };
 
   useEffect(() => {

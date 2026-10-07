@@ -159,4 +159,27 @@ describe('ChatPanel', () => {
       expect(screen.getAllByText('14:06')).toHaveLength(3);
     });
   });
+
+  it('위로 올려 보고 있으면, 같은 글의 객체만 새로 바뀐(방 정보 갱신) 목록에는 맨 아래로 끌려가지 않는다', () => {
+    const sent: ChatMessage[] = [
+      { id: 1, memberId: 2, nickname: '밥', text: '안녕', sentAt: '2026-10-06T00:00:00Z' },
+      { id: 2, memberId: 1, nickname: '앨리스', text: '반가워', sentAt: '2026-10-06T00:00:01Z' },
+    ];
+    const view = render(<ChatPanel messages={sent} meId={1} onSend={vi.fn()} />);
+    const list = screen.getByRole('list', { name: '채팅 메시지' });
+    let top = 0;
+    Object.defineProperty(list, 'scrollHeight', { configurable: true, get: () => 1000 });
+    Object.defineProperty(list, 'clientHeight', { configurable: true, get: () => 200 });
+    Object.defineProperty(list, 'scrollTop', { configurable: true, get: () => top, set: (value: number) => { top = value; } });
+    // 지난 대화를 보려고 위로 올린다.
+    top = 100;
+    fireEvent.scroll(list);
+
+    view.rerender(<ChatPanel messages={sent.map((message) => ({ ...message, avatar: 'CAT' }))} meId={1} onSend={vi.fn()} />);
+    expect(top).toBe(100);
+
+    // 새 글이 오면(내 글) 따라 내려간다.
+    view.rerender(<ChatPanel messages={[...sent, { id: 3, memberId: 1, nickname: '앨리스', text: '또', sentAt: '2026-10-06T00:00:02Z' }]} meId={1} onSend={vi.fn()} />);
+    expect(top).toBe(1000);
+  });
 });

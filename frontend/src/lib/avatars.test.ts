@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Room } from '../api/types';
-import { AVATAR_KEYS, avatarOf, defaultAvatar, roomAvatarOf, withChatAvatars, withMyAvatar } from './avatars';
+import { AVATAR_KEYS, avatarOf, defaultAvatar, roomAvatarOf, withMyAvatar } from './avatars';
 
 const room: Room = {
   code: 'ABC234', name: '방', gameType: 'UNO', gameTypeName: '우노', status: 'WAITING', hostId: 1, maxPlayers: 4, locked: false, theme: 'WOOD',
@@ -40,10 +40,5 @@ describe('프로필 그림 키', () => {
     expect(withMyAvatar(room, 1, undefined)).toBe(room);
     expect(withMyAvatar(null, 1, 'PIG')).toBeNull();
     expect(withMyAvatar(room, 3, 'CAT').spectators[0].avatar).toBe('CAT');
-  });
-
-  it('채팅 메시지에 보낸 사람 그림을 붙인다', () => {
-    const [message] = withChatAvatars([{ id: 1, memberId: 3, nickname: '캐롤', text: '안녕', sentAt: '' }], room);
-    expect(message.avatar).toBe('KOALA');
   });
 });
