@@ -36,6 +36,12 @@ server {
         try_files $uri =404;
     }
 
+    # 홈 화면 아이콘용 매니페스트. nginx 기본 mime.types에 없을 수도 있어 형식을 직접 정한다.
+    location = /manifest.webmanifest {
+        types { application/manifest+json webmanifest; }
+        try_files $uri =404;
+    }
+
     location / {
         try_files $uri /index.html;
     }
