@@ -1,5 +1,5 @@
-import { useRef } from 'react';
-import type { OldMaidSessionView } from '../../api/types';
+import { useEffect, useRef, useState } from 'react';
+import type { GameAction, OldMaidSessionView } from '../../api/types';
 import { Felt } from '../../components/Felt';
 import { useSound } from '../../lib/sound';
 import { roomAvatarOf } from '../../lib/avatars';
@@ -15,6 +15,7 @@ import { oldMaidInstruction, pickCaption, useOldMaidSizes } from './layout';
 import { MyHand } from './MyHand';
 import { OldMaidSeat } from './OldMaidSeat';
 import { TargetFan } from './TargetFan';
+import { effectivePeek, usePeekSender } from './usePeek';
 
 // PC 펠트는 화면 높이에서 머리글·상태 바·차례 줄·손패 몫(약 32rem)을 뺀 만큼까지만 늘어나 1280×860 한 화면에 들어간다.
 const FELT: Record<TableLayout, string> = {
@@ -22,8 +23,12 @@ const FELT: Record<TableLayout, string> = {
   landscape: 'flex-row items-center justify-center gap-3 px-[4%] py-2',
   portrait: 'flex-col gap-3 px-3 py-4',
 };
+/** 뽑기를 보낸 뒤 화면이 바뀌거나 오류가 오기 전까지 다시 보내지 않는 시간(우노와 같다). */
+const PENDING_MS = 3000;
+/** R23: 섞기 버튼 잠금 시간(서버 쿨다운과 같다). */
+const SHUFFLE_LOCK_MS = 1000;
 
-export function OldMaidTable({ view, room, meId, log, receivedAt, now, nicknameOf, aside, asideFooter }: TableProps<OldMaidSessionView>) {
+export function OldMaidTable({ view, room, meId, log, receivedAt, now, errorSeq, nicknameOf, send: rawSend, signal, sendSignal, aside, asideFooter }: TableProps<OldMaidSessionView>) {
   const game = view.game;
   const layout = useTableLayout();
   const wide = layout === 'pc';
@@ -31,7 +36,50 @@ export function OldMaidTable({ view, room, meId, log, receivedAt, now, nicknameO
   const { play } = useSound();
   const live = game.status === 'IN_PROGRESS';
   const myTurn = live && game.currentPlayerId === meId;
-  const liftIndex = game.peek?.index ?? null;
+  const liftIndex = effectivePeek(game, signal);
+
+  // 뽑기는 보낸 뒤 화면이 바뀌거나 오류가 오기 전까지 다시 보내지 않는다(우노와 같은 패턴). 섞기는 이 잠금을 쓰지 않는다.
+  const pendingUntil = useRef(0);
+  useEffect(() => {
+    pendingUntil.current = 0;
+  }, [view, errorSeq]);
+  const send = (action: GameAction) => {
+    if (Date.now() < pendingUntil.current) {
+      return;
+    }
+    pendingUntil.current = Date.now() + PENDING_MS;
+    rawSend(action);
+  };
+  const draw = (index: number) => send({ type: 'DRAW', index });
+  const turnKey = `${game.startedAt}:${game.turnSeq}`;
+  const sendPeek = usePeekSender(sendSignal, turnKey);
+
+  // R23: 섞기는 1초 잠금(서버 쿨다운과 같다). 쿨다운 오류는 조용히 넘어간다(D14).
+  const [shuffleLocked, setShuffleLocked] = useState(false);
+  useEffect(() => {
+    if (!shuffleLocked) {
+      return undefined;
+    }
+    const timer = window.setTimeout(() => setShuffleLocked(false), SHUFFLE_LOCK_MS);
+    return () => window.clearTimeout(timer);
+  }, [shuffleLocked]);
+  const shuffle = () => {
+    if (shuffleLocked) {
+      return;
+    }
+    setShuffleLocked(true);
+    rawSend({ type: 'SHUFFLE' });
+  };
+
+  // 내가 뽑는 사람이 된 새 차례마다 한 번 차례 소리.
+  const myTurnKey = useRef<string | null>(null);
+  useEffect(() => {
+    const key = myTurn ? turnKey : null;
+    if (key !== null && myTurnKey.current !== key) {
+      play('myTurn');
+    }
+    myTurnKey.current = key;
+  }, [myTurn, turnKey, play]);
   const opponentIds = seatOrder(game.players.map((player) => player.playerId), meId).filter((id) => id !== meId);
   const rows = seatRows(opponentIds.length);
   const maxBacks = layout === 'portrait' && opponentIds.length >= 3 ? 4 : 7;
@@ -67,7 +115,7 @@ export function OldMaidTable({ view, room, meId, log, receivedAt, now, nicknameO
       <div className="flex w-full min-w-0 items-end justify-center gap-4">
         {showFan && targetPlayer ? (
           <TargetFan ownerName={nicknameOf(targetPlayer.playerId)} count={targetPlayer.cardCount} cardWidth={sizes.pick}
-            minVisible={sizes.pickMinVisible} liftIndex={liftIndex} layout={layout} />
+            minVisible={sizes.pickMinVisible} liftIndex={liftIndex} layout={layout} interactive={myTurn} onPeek={sendPeek} onDraw={draw} />
         ) : null}
         <DiscardPairs pairs={game.recentPairs} count={game.discardCount} cardWidth={sizes.pair} />
       </div>
@@ -100,7 +148,7 @@ export function OldMaidTable({ view, room, meId, log, receivedAt, now, nicknameO
     <div data-testid="my-area" data-active={myTurn ? 'true' : undefined} className="relative -my-1 rounded-2xl px-1 py-1">
       {myTurn ? <TurnRibbon deadline={game.deadline} serverNow={game.serverNow} /> : null}
       <MyHand cards={game.hand} liftIndex={live && game.targetId === meId ? liftIndex : null} layout={layout} sizes={sizes} zoneId={meId}
-        canShuffle={game.canShuffle} shuffleLocked={false} onShuffle={() => undefined} />
+        canShuffle={game.canShuffle} shuffleLocked={shuffleLocked} onShuffle={shuffle} />
     </div>
   );
   const turnBar = (
