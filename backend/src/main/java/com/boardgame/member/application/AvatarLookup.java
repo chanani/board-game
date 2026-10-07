@@ -1,11 +1,10 @@
 package com.boardgame.member.application;
 
-import com.boardgame.member.domain.AvatarBook;
-import java.util.Collection;
+import com.boardgame.member.domain.Avatar;
 
-/** 방·순위표처럼 여러 회원을 한꺼번에 보여 줄 때 프로필 그림을 한 번에 찾는다. */
+/** 한 회원의 프로필 그림을 찾는다. 방에 들어올 때 잠금 밖에서 한 번만 부른다. */
 @FunctionalInterface
 public interface AvatarLookup {
 
-    AvatarBook avatarsOf(Collection<Long> memberIds);
+    Avatar avatarOf(long memberId);
 }

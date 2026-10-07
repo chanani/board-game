@@ -14,6 +14,7 @@ import com.boardgame.member.domain.PasswordEncryptor;
 import com.boardgame.member.domain.RawPassword;
 import java.util.Locale;
 import java.util.Objects;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,10 +24,13 @@ public class MemberService {
 
     private final MemberRepository memberRepository;
     private final PasswordEncryptor passwordEncryptor;
+    private final ApplicationEventPublisher eventPublisher;
 
-    public MemberService(MemberRepository memberRepository, PasswordEncryptor passwordEncryptor) {
+    public MemberService(MemberRepository memberRepository, PasswordEncryptor passwordEncryptor,
+                         ApplicationEventPublisher eventPublisher) {
         this.memberRepository = memberRepository;
         this.passwordEncryptor = passwordEncryptor;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional
@@ -56,6 +60,7 @@ public class MemberService {
         Avatar chosen = Avatar.parse(avatarKeyOf(request));
         Member member = find(memberId);
         member.changeAvatar(chosen);
+        eventPublisher.publishEvent(new AvatarChangedEvent(memberId, chosen));
         return member;
     }
 

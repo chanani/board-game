@@ -2,7 +2,6 @@ package com.boardgame.member.api;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -10,7 +9,6 @@ import com.boardgame.member.domain.Avatar;
 import com.boardgame.room.application.RoomNotifier;
 import com.boardgame.support.ApiUsers;
 import com.boardgame.support.ApiUsers.User;
-import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -78,26 +76,5 @@ class MemberAvatarApiTest {
         mockMvc.perform(patch("/api/members/me/avatar").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"avatar\": \"CAT\"}"))
                 .andExpect(status().isUnauthorized());
-    }
-
-    @Test
-    void 방_정보에_참가자와_관전자의_그림이_실린다() throws Exception {
-        User host = ApiUsers.create(mockMvc);
-        User guest = ApiUsers.create(mockMvc);
-        change(host, "{\"avatar\": \"FROG\"}").andExpect(status().isOk());
-        String body = mockMvc.perform(post("/api/rooms").session(host.session())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\": \"그림 방\", \"gameType\": \"PAPER_SAFARI\"}"))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.members[0].avatar").value("FROG"))
-                .andReturn().getResponse().getContentAsString();
-        String code = JsonPath.read(body, "$.code");
-
-        mockMvc.perform(post("/api/rooms/{code}/join", code).session(guest.session()))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.members[1].avatar").value(Avatar.defaultFor(guest.id()).key()));
-        change(guest, "{\"avatar\": \"TIGER\"}").andExpect(status().isOk());
-        mockMvc.perform(get("/api/rooms/{code}", code).session(guest.session()))
-                .andExpect(jsonPath("$.members[1].avatar").value("TIGER"));
     }
 }

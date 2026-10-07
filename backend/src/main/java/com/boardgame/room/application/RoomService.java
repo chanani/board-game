@@ -8,7 +8,7 @@ import com.boardgame.game.GameOutcome;
 import com.boardgame.game.GameSessionFactories;
 import com.boardgame.game.GameType;
 import com.boardgame.game.event.GameStartedEvent;
-import com.boardgame.member.application.AvatarLookup;
+import com.boardgame.member.domain.Avatar;
 import com.boardgame.room.api.CreateRoomRequest;
 import com.boardgame.room.domain.RoomClosedEvent;
 import com.boardgame.room.domain.RoomTheme;
@@ -66,13 +66,13 @@ public class RoomService {
     private final RoomPasswordHasher hasher;
     private final TurnTimer turnTimer;
     private final Random random;
-    private final AvatarLookup avatars;
+    private final RoomAvatars avatars;
 
     public RoomService(RoomRegistry registry, RoomCodeGenerator codeGenerator, GameSessionFactories sessionFactories,
                        RoomNotifier notifier, OutcomePublisher outcomePublisher,
                        ApplicationEventPublisher eventPublisher, Clock clock, PresenceTracker presence,
                        RoomPasswordHasher hasher, TurnTimer turnTimer,
-                       @Qualifier(TurnTimerConfig.RANDOM) Random random, AvatarLookup avatars) {
+                       @Qualifier(TurnTimerConfig.RANDOM) Random random, RoomAvatars avatars) {
         this.registry = registry;
         this.codeGenerator = codeGenerator;
         this.sessionFactories = sessionFactories;
@@ -87,9 +87,10 @@ public class RoomService {
         this.avatars = avatars;
     }
 
-    // 비밀번호 해시(BCrypt)는 느리므로 서비스 전체 잠금 밖에서 먼저 만든다.
+    // 비밀번호 해시(BCrypt)와 프로필 그림(DB)은 느리므로 서비스 전체 잠금 밖에서 먼저 만든다.
     public RoomResponse create(LoginMember member, CreateRoomRequest request) {
         RoomSettings settings = settingsOf(request);
+        avatars.load(member.id());
         return open(member, new RoomName(request.name()), settings);
     }
 
@@ -122,6 +123,7 @@ public class RoomService {
     public RoomResponse join(String rawCode, LoginMember member, String password) {
         RoomLock lock = lockToPass(rawCode, member.id());
         lock.require(password, hasher);
+        avatars.load(member.id());
         return admit(rawCode, member, lock);
     }
 
@@ -140,7 +142,13 @@ public class RoomService {
         return broadcast(room);
     }
 
-    public synchronized RoomResponse watch(String rawCode, LoginMember member) {
+    // 프로필 그림(DB)은 잠금 밖에서 읽어 둔다.
+    public RoomResponse watch(String rawCode, LoginMember member) {
+        avatars.load(member.id());
+        return admitSpectator(rawCode, member);
+    }
+
+    private synchronized RoomResponse admitSpectator(String rawCode, LoginMember member) {
         Room room = find(rawCode);
         requireNotInOtherRoom(member.id(), room);
         room.watch(participantOf(member));
@@ -401,6 +409,16 @@ public class RoomService {
         return request.theme();
     }
 
+    /** 그림 변경이 커밋된 뒤(잠금 밖) 메모리 그림을 고치고, 그 사람이 있는 방에 다시 알린다. */
+    public void avatarChanged(long memberId, Avatar avatar) {
+        avatars.remember(memberId, avatar);
+        rebroadcastRoomOf(memberId);
+    }
+
+    private synchronized void rebroadcastRoomOf(long memberId) {
+        registry.findByMember(memberId).ifPresent(this::broadcastRoomOnly);
+    }
+
     public synchronized void presenceChanged(long memberId) {
         registry.findByMember(memberId)
                 .filter(room -> room.contains(memberId))
@@ -412,7 +430,7 @@ public class RoomService {
     }
 
     private RoomResponse response(Room room) {
-        return RoomResponse.from(room, presence, clock.instant(), avatars.avatarsOf(room.occupantIds()));
+        return RoomResponse.from(room, presence, clock.instant(), avatars.bookOf(room.occupantIds()));
     }
 
     private RoomResponse broadcast(Room room) {

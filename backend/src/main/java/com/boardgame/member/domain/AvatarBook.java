@@ -17,6 +17,10 @@ public final class AvatarBook {
         return new AvatarBook(Map.of());
     }
 
+    public static AvatarBook from(Map<Long, Avatar> avatars) {
+        return new AvatarBook(avatars);
+    }
+
     public static AvatarBook of(Collection<Member> members) {
         return new AvatarBook(members.stream().collect(Collectors.toMap(Member::id, Member::avatar)));
     }

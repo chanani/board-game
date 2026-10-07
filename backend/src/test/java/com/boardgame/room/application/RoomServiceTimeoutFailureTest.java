@@ -1,6 +1,5 @@
 package com.boardgame.room.application;
 
-import com.boardgame.member.domain.AvatarBook;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -8,6 +7,7 @@ import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import com.boardgame.member.domain.Avatar;
 import com.boardgame.common.security.LoginMember;
 import com.boardgame.game.GameAction;
 import com.boardgame.game.GameSession;
@@ -45,7 +45,7 @@ class RoomServiceTimeoutFailureTest {
     private final TurnTimer timer = new TurnTimer(scheduler);
     private final RoomService service = new RoomService(new RoomRegistry(), () -> ROOM_CODE,
             new GameSessionFactories(List.of(new FailingFactory())), notifier, new OutcomePublisher(events),
-            events, clock, new PresenceTracker(), new FakeRoomPasswordHasher(), timer, new FixedRandom(0), ids -> AvatarBook.empty());
+            events, clock, new PresenceTracker(), new FakeRoomPasswordHasher(), timer, new FixedRandom(0), new RoomAvatars(Avatar::defaultFor));
 
     private final class FailingFactory implements GameSessionFactory {
 
