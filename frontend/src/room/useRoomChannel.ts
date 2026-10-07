@@ -28,6 +28,14 @@ const isRoomGone = (error: unknown) =>
 
 export type { ViewTransition } from '../games/gameModule';
 
+const isInProgress = (view: SessionView | null) => {
+  if (view === null) {
+    return false;
+  }
+  const game = findGame(sessionGameType(view));
+  return game !== undefined && !game.isGameOver(view);
+};
+
 export function useRoomChannel(code: string, { poll = false, meId = 0 }: Options = {}) {
   const { realtime, connected } = useRealtime();
   const toast = useToast();
@@ -243,6 +251,22 @@ export function useRoomChannel(code: string, { poll = false, meId = 0 }: Options
       syncPendingRef.current = true;
       realtime.publish(`/app/rooms/${code}/sync`, {});
     }
+  }, [status, code, connected, realtime]);
+
+  // 서버는 게임이 끝나면 방(대기 중)을 끝 화면보다 먼저 보낸다. 끝 화면을 놓치면 RoomPage가 진행 중 화면으로 테이블을 붙잡고 있으므로,
+  // 잠시 기다려도 화면이 여전히 진행 중이면 한 번 동기화해 끝 화면을 받아 온다(바로 따라온 끝 화면의 연출은 건드리지 않는다).
+  useEffect(() => {
+    if (status !== 'WAITING' || !connected) {
+      return undefined;
+    }
+    const timer = window.setTimeout(() => {
+      if (!isInProgress(viewRef.current)) {
+        return;
+      }
+      syncPendingRef.current = true;
+      realtime.publish(`/app/rooms/${code}/sync`, {});
+    }, SYNC_RETRY_MS);
+    return () => window.clearTimeout(timer);
   }, [status, code, connected, realtime]);
 
   const send = useCallback(

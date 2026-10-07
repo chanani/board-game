@@ -306,6 +306,19 @@ describe('RoomPage 결과 모달', () => {
     expect(screen.getByTestId('turn-bar')).toBe(table);
   });
 
+  it('대기 중인 방에 진행 중 화면이 남아 있어도 그 게임의 참가자·관전자가 아니었던 사람에게는 대기실을 보여 준다', async () => {
+    const othersOnly: PaperSafariSessionView = {
+      game: { ...finished.game, viewerId: 3, status: 'IN_ROUND', winnerId: null, lastRoundResult: null, round: { ...finished.game.round, phase: 'DRAW', boards: [boardOf(1), boardOf(2)] } },
+    };
+    setChannel({ room: waitingWithMe, view: othersOnly });
+    renderRoom();
+    await act(async () => {});
+
+    expect(screen.queryByTestId('turn-bar')).not.toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: '게임 결과' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /준비/ })).toBeInTheDocument();
+  });
+
   it('다른 방에서 닫은 결과 기록은 지우지 않는다', async () => {
     window.sessionStorage.setItem('bg.dismissedGameOver', JSON.stringify(['XYZ789:1:{}']));
     setChannel({ room: { ...waitingWithMe, status: 'PLAYING' }, view: null });

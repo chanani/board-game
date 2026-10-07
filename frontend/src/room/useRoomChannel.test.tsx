@@ -224,6 +224,54 @@ describe('useRoomChannel', () => {
     expect((result.current.transition?.to as PaperSafariView).roundNumber).toBe(2);
   });
 
+  describe('게임이 끝나 방이 대기 중으로 바뀔 때', () => {
+    const gameOverView = (): PaperSafariSessionView => ({ game: { ...sessionView(3).game, status: 'GAME_OVER', winnerId: 1 } });
+    const syncCalls = () => state.publish.mock.calls.filter((call) => (call as unknown[])[0] === '/app/rooms/ABCDEF/sync');
+
+    async function playing() {
+      vi.spyOn(roomsApi, 'get').mockResolvedValue(room('방', 'PLAYING'));
+      state.connected = true;
+      const hook = renderHook(() => useRoomChannel('ABCDEF'));
+      await act(async () => {});
+      act(() => state.handlers.get('/user/queue/game')?.(sessionView(3)));
+      state.publish.mockClear();
+      return hook;
+    }
+
+    it('끝 화면이 오지 않고 진행 중 화면만 남아 있으면 한 번 동기화를 요청해 끝 화면을 받아 온다', async () => {
+      vi.useFakeTimers();
+      try {
+        await playing();
+
+        act(() => state.handlers.get('/topic/rooms/ABCDEF')?.(room('방', 'WAITING')));
+        expect(syncCalls()).toHaveLength(0);
+        await act(async () => { await vi.advanceTimersByTimeAsync(1000); });
+        expect(syncCalls()).toHaveLength(1);
+
+        await act(async () => { await vi.advanceTimersByTimeAsync(10000); });
+        expect(syncCalls()).toHaveLength(1);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('끝 화면이 바로 따라오면 동기화하지 않고 끝 화면 연출도 그대로 둔다', async () => {
+      vi.useFakeTimers();
+      try {
+        const { result } = await playing();
+
+        act(() => state.handlers.get('/topic/rooms/ABCDEF')?.(room('방', 'WAITING')));
+        act(() => state.handlers.get('/user/queue/game')?.(gameOverView()));
+        await act(async () => { await vi.advanceTimersByTimeAsync(5000); });
+
+        expect(syncCalls()).toHaveLength(0);
+        expect(result.current.transition?.animate).toBe(true);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+  });
+
   it('관전 중 확인(poll)에서 404면 missing이 되고, 다른 실패는 조용히 넘긴다', async () => {
     vi.useFakeTimers();
     try {
