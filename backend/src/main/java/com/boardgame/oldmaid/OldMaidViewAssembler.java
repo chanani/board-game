@@ -10,7 +10,7 @@ import com.boardgame.oldmaid.view.OldMaidResultView;
 import com.boardgame.oldmaid.view.OldMaidView;
 import java.util.List;
 
-// 게임 상태를 보는 사람의 화면으로 옮긴다. 끝난 뒤에는 차례·신호·섞기 칸을 비운다.
+// 게임 상태를 보는 사람의 화면으로 옮긴다. 끝난 뒤에는 차례·신호·섞기 칸을, 처음 버리기 단계에는 차례·신호 칸을 비운다.
 final class OldMaidViewAssembler {
 
     private static final int RECENT_PAIRS = 6;
@@ -20,18 +20,21 @@ final class OldMaidViewAssembler {
 
     static OldMaidView assemble(OldMaidGame game, PlayerId viewer, OldMaidViewContext context) {
         boolean live = !game.isFinished();
+        boolean turning = live && !game.isOpening();
         return new OldMaidView(
                 viewer.value(),
                 live ? OldMaidStatus.IN_PROGRESS : OldMaidStatus.GAME_OVER,
+                live ? game.stage() : null,
                 context.startedAtMillis(),
-                live ? Long.valueOf(game.drawer().value()) : null,
-                live ? Long.valueOf(game.target().value()) : null,
+                turning ? Long.valueOf(game.drawer().value()) : null,
+                turning ? Long.valueOf(game.target().value()) : null,
                 game.turnSeq().value(),
                 context.participantIds(),
                 players(game),
                 hand(game, viewer),
-                live ? peek(game) : null,
+                turning ? peek(game) : null,
                 game.canShuffle(viewer),
+                game.isParticipant(viewer) && game.canDiscard(viewer),
                 game.discardCount(),
                 pairs(game),
                 discards(game),
@@ -54,7 +57,7 @@ final class OldMaidViewAssembler {
         return game.seats()
                 .stream()
                 .map(player -> new OldMaidPlayerView(player.value(), game.cardCount(player),
-                        rankValueOf(game, player), game.hasForfeited(player)))
+                        rankValueOf(game, player), game.hasForfeited(player), game.openingDone(player)))
                 .toList();
     }
 

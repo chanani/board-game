@@ -13,6 +13,7 @@ import com.boardgame.oldmaid.OldMaidStatus;
 import com.boardgame.oldmaid.PlayingCard;
 import com.boardgame.oldmaid.Rank;
 import com.boardgame.oldmaid.Suit;
+import com.boardgame.oldmaid.view.OldMaidCardView;
 import com.boardgame.oldmaid.view.OldMaidPlayerView;
 import com.boardgame.oldmaid.view.OldMaidSessionView;
 import com.boardgame.oldmaid.view.OldMaidView;
@@ -28,7 +29,10 @@ import com.boardgame.support.MutableClock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -54,7 +58,7 @@ class OldMaidRoomLeaveTest {
             events, clock, presence, new FakeRoomPasswordHasher(), new TurnTimer(new FakeTaskScheduler()),
             new FixedRandom(0), new RoomAvatars(Avatar::defaultFor));
 
-    // 짝을 버린 뒤: 방장 [스페이드 5, 스페이드 6], 2번 [하트 5], 3번 [조커], 4번 [하트 6]. 나머지는 모두 같은 손 안의 짝이다.
+    // 처음 버리기 단계에서 짝을 다 버린 뒤: 방장 [5 한 장, 스페이드 6], 2번 [하트 5], 3번 [조커], 4번 [하트 6]. 나머지는 모두 같은 손 안의 짝이다.
     private static List<PlayingCard> riggedDeck() {
         List<List<PlayingCard>> piles = List.of(
                 new ArrayList<>(List.of(card(Suit.SPADES, Rank.FIVE), card(Suit.SPADES, Rank.SIX))),
@@ -94,6 +98,24 @@ class OldMaidRoomLeaveTest {
         List.of(TARGET, THIRD, FOURTH)
                 .forEach(this::joinReady);
         service.start(CODE, HOST);
+        List.of(HOST, TARGET, THIRD, FOURTH)
+                .forEach(this::discardOpeningPairs);
+    }
+
+    // R36: 처음 버리기 단계에서 각자 같은 숫자 두 장씩 직접 버린다.
+    private void discardOpeningPairs(long memberId) {
+        Map<Rank, List<Integer>> byRank = viewOf(memberId).hand()
+                .stream()
+                .collect(Collectors.groupingBy(OldMaidCardView::rank, LinkedHashMap::new,
+                        Collectors.mapping(OldMaidCardView::id, Collectors.toList())));
+        byRank.values()
+                .forEach(ids -> discardPairsOf(memberId, ids));
+    }
+
+    private void discardPairsOf(long memberId, List<Integer> ids) {
+        IntStream.range(0, ids.size() / 2)
+                .forEach(index -> service.act(CODE, memberId, new GameAction("DISCARD", null, null, null, null, null,
+                        null, List.of(ids.get(index * 2), ids.get(index * 2 + 1)))));
     }
 
     private void joinReady(long memberId) {
@@ -106,9 +128,20 @@ class OldMaidRoomLeaveTest {
         return ((OldMaidSessionView) room.viewFor(memberId).orElseThrow()).game();
     }
 
+    // 방장이 2번의 하트 5를 뽑아 2번은 빈손으로 1등, 방장은 5 짝을 직접 버린다(R37).
+    private void drawAndDiscard() {
+        service.act(CODE, HOST, new GameAction("DRAW", null, null, null, null, null, 0));
+        List<Integer> fives = viewOf(HOST).hand()
+                .stream()
+                .filter(card -> card.rank() == Rank.FIVE)
+                .map(OldMaidCardView::id)
+                .toList();
+        service.act(CODE, HOST, new GameAction("DISCARD", null, null, null, null, null, null, fives));
+    }
+
     @Test
     void R28_끝낸_사람이_방을_나가도_오류가_없고_게임은_이어진다() {
-        service.act(CODE, HOST, new GameAction("DRAW", null, null, null, null, null, 0));
+        drawAndDiscard();
         OldMaidPlayerView finished = viewOf(THIRD).players().get(1);
         assertThat(finished.cardCount()).isZero();
         assertThat(finished.rank()).isEqualTo(1);
@@ -125,7 +158,7 @@ class OldMaidRoomLeaveTest {
 
     @Test
     void R28_끝낸_사람은_끊긴_지_60초가_지나도_손으로_기권시킬_수_없다() {
-        service.act(CODE, HOST, new GameAction("DRAW", null, null, null, null, null, 0));
+        drawAndDiscard();
         clock.advance(Duration.ofSeconds(61));
 
         service.forfeitDisconnected(CODE, THIRD, TARGET);
@@ -139,7 +172,7 @@ class OldMaidRoomLeaveTest {
 
     @Test
     void 아직_카드를_쥔_사람은_끊긴_지_60초가_지나면_손으로_기권시킬_수_있다() {
-        service.act(CODE, HOST, new GameAction("DRAW", null, null, null, null, null, 0));
+        drawAndDiscard();
         clock.advance(Duration.ofSeconds(61));
 
         service.forfeitDisconnected(CODE, THIRD, FOURTH);
