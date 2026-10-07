@@ -15,11 +15,21 @@ export function OldMaidGhostLayer({ ghosts }: { ghosts: OldMaidGhost[] }) {
     <div aria-hidden="true" data-testid="oldmaid-ghost-layer" data-theme={theme} className="pointer-events-none fixed inset-0 z-30">
       {ghosts.map((ghost) => {
         const box = ghostBox(ghost.from, ghost.to, ghost.width);
+        const seconds = ghost.duration / 1000;
+        const delay = ghost.delay / 1000;
+        const hidden = { backfaceVisibility: 'hidden' as const };
+        // flip이면(내가 뽑은 카드) 뒷면으로 떠나 날아오는 동안 앞면으로 뒤집힌다(우노 고스트와 같은 방식).
         return (
-          <motion.div key={ghost.id} className="absolute" style={{ left: box.left, top: box.top, width: box.width, height: box.height }}
+          <motion.div key={ghost.id} className="absolute" style={{ left: box.left, top: box.top, width: box.width, height: box.height, perspective: 600 }}
             initial={{ x: 0, y: 0, opacity: 0 }} animate={{ x: box.dx, y: box.dy, opacity: 1 }}
-            transition={{ duration: ghost.duration / 1000, delay: ghost.delay / 1000, ease: 'easeInOut', opacity: { duration: 0, delay: ghost.delay / 1000 } }}>
-            <PlayingCardFace card={ghost.card} width={ghost.width} decorative />
+            transition={{ duration: seconds, delay, ease: 'easeInOut', opacity: { duration: 0, delay } }}>
+            {ghost.flip ? (
+              <motion.div data-testid="oldmaid-ghost-flip" initial={{ rotateY: 180 }} animate={{ rotateY: 0 }} transition={{ duration: seconds, delay }}
+                className="relative h-full w-full" style={{ transformStyle: 'preserve-3d' }}>
+                <div className="absolute inset-0" style={hidden}><PlayingCardFace card={ghost.card} width={ghost.width} decorative /></div>
+                <div className="absolute inset-0" style={{ ...hidden, transform: 'rotateY(180deg)' }}><PlayingCardFace card={null} width={ghost.width} decorative /></div>
+              </motion.div>
+            ) : <PlayingCardFace card={ghost.card} width={ghost.width} decorative />}
           </motion.div>
         );
       })}

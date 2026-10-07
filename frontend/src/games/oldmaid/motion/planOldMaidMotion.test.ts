@@ -22,6 +22,36 @@ describe('planOldMaidMotion', () => {
     expect(plan.sounds).toEqual([{ name: 'draw', delay: 0 }, { name: 'place', delay: DRAW_MS }]);
   });
 
+  it('내가 뽑으면 내 손패로 날아오는 카드는 뒷면에서 앞면으로 뒤집히며 들어온다(뽑은 카드는 내 손패에 새로 생긴 카드)', () => {
+    const from = oldMaidView({ hand: [card('SPADES', 'THREE'), card('HEARTS', 'SEVEN')], events: base.events });
+    const to = oldMaidView({ hand: [card('SPADES', 'THREE'), card('HEARTS', 'SEVEN'), card('CLUBS', 'KING')], events: [
+      oldMaidEvent(4, 'DRAW', { actorId: 1, targetId: 2, count: 1 }),
+    ] });
+
+    expect(planOldMaidMotion(from, to, 1).flights).toEqual([
+      { card: card('CLUBS', 'KING'), from: 'target', to: 'hand:1', delay: 0, duration: DRAW_MS, flip: true },
+    ]);
+  });
+
+  it('내가 뽑아 곧바로 짝이 되면 짝 중 원래 내 손패에 없던 카드가 앞면으로 뒤집히며 들어온다', () => {
+    const from = oldMaidView({ hand: [card('SPADES', 'THREE'), card('HEARTS', 'SEVEN')], events: base.events });
+    const to = oldMaidView({ hand: [card('HEARTS', 'SEVEN')], events: [
+      oldMaidEvent(4, 'DRAW', { actorId: 1, targetId: 2, count: 1 }),
+      oldMaidEvent(5, 'PAIR', { actorId: 1, cards: [card('SPADES', 'THREE'), card('DIAMONDS', 'THREE')] }),
+    ] });
+
+    const [drawn] = planOldMaidMotion(from, to, 1).flights;
+
+    expect(drawn).toEqual({ card: card('DIAMONDS', 'THREE'), from: 'target', to: 'hand:1', delay: 0, duration: DRAW_MS, flip: true });
+  });
+
+  it('남이 뽑는 카드는 누구에게도 얼굴을 보이지 않는다(숨김 정보)', () => {
+    const to = oldMaidView({ hand: [card('SPADES', 'THREE'), card('HEARTS', 'SEVEN')], events: [oldMaidEvent(4, 'DRAW', { actorId: 3, targetId: 1, count: 1 })] });
+
+    expect(planOldMaidMotion(base, to, 1).flights[0]).toMatchObject({ card: null, flip: false });
+    expect(planOldMaidMotion(base, to, 2).flights[0]).toMatchObject({ card: null, flip: false });
+  });
+
   it('내가 뽑히는 상대면 내 손패에서 날아간다', () => {
     const to = oldMaidView({ events: [oldMaidEvent(4, 'DRAW', { actorId: 3, targetId: 1, count: 1 })] });
 

@@ -17,14 +17,33 @@ export const FINALE_GAP_MS = 100;
 
 const empty = (): OldMaidPlan => ({ flights: [], sounds: [] });
 
+/**
+ * 내가 뽑은 카드(내 화면에만 있는 정보): 새 손패에 새로 생긴 카드, 곧바로 짝이 되어 손패에 없으면 내 짝 중 원래 손패에 없던 카드.
+ * 남이 뽑은 카드는 알 수 없으므로(숨김 정보) 여기서 찾지 않는다.
+ */
+function drawnByMe(from: OldMaidView, to: OldMaidView, fresh: OldMaidEvent[], meId: number): PlayingCard | null {
+  if (!from.hand || !to.hand) {
+    return null;
+  }
+  const before = new Set(from.hand.map((one) => one.id));
+  const added = to.hand.find((one) => !before.has(one.id));
+  if (added) {
+    return added;
+  }
+  const paired = fresh.find((event) => event.type === 'PAIR' && event.actorId === meId);
+  return paired?.cards.find((one) => !before.has(one.id)) ?? null;
+}
+
 /** 이벤트 하나를 계획에 더하고 다음 비행 시작 시각을 돌려준다. */
-function add(plan: OldMaidPlan, event: OldMaidEvent, clock: number, from: OldMaidView, meId: number): number {
+function add(plan: OldMaidPlan, event: OldMaidEvent, clock: number, from: OldMaidView, meId: number, drawn: PlayingCard | null): number {
   const actor = event.actorId;
   const target = event.targetId;
   if (event.type === 'DRAW' && actor !== null && target !== null) {
     // 뽑히는 사람 본인은 가운데 부채 대신 자기 손패에서 카드가 나간다.
     const source: OldMaidZone = target === meId ? `hand:${meId}` : 'target';
-    plan.flights.push({ card: null, from: source, to: `hand:${actor}`, delay: clock, duration: DRAW_MS, flip: false });
+    // 내가 뽑으면 날아오며 뒷면에서 앞면으로 뒤집혀 내 손패에 앞면으로 들어온다. 남이 뽑는 카드는 끝까지 뒷면(숨김 정보).
+    const face = actor === meId ? drawn : null;
+    plan.flights.push({ card: face, from: source, to: `hand:${actor}`, delay: clock, duration: DRAW_MS, flip: face !== null });
     plan.sounds.push({ name: 'draw', delay: clock });
     return clock + DRAW_MS;
   }
@@ -58,9 +77,9 @@ export function planOldMaidMotion(from: OldMaidView | null, to: OldMaidView, meI
   }
   const lastSeq = latestSeq(from.events);
   const plan = empty();
-  to.events
-    .filter((event) => event.seq > lastSeq)
-    .reduce((clock, event) => add(plan, event, clock, from, meId), 0);
+  const fresh = to.events.filter((event) => event.seq > lastSeq);
+  const drawn = drawnByMe(from, to, fresh, meId);
+  fresh.reduce((clock, event) => add(plan, event, clock, from, meId, drawn), 0);
   return plan;
 }
 
