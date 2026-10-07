@@ -36,8 +36,20 @@ const baseRoom: Room = {
   hostId: 1, maxPlayers: 4, locked: false, members, spectators: [{ id: 3, nickname: '캐롤' }], theme: 'WOOD',
 };
 
+// 방 채널의 notifyLeft처럼 방마다 한 번만 알린다.
+let leftNotified: string | null = null;
+const notifyLeft = (code: string) => {
+  if (leftNotified === code) {
+    return false;
+  }
+  leftNotified = code;
+  toast.show('방에서 나왔어요.', 'info');
+  return true;
+};
+
 function setChannel(overrides: Record<string, unknown>) {
   channel.value = {
+    notifyLeft,
     room: baseRoom, receivedAt: 0, view: null, transition: null, log: [], missing: false,
     send: vi.fn(), nicknameOf: (id: number) => members.find((member) => member.id === id)?.nickname ?? '떠난 플레이어', errorSeq: 0,
     ...overrides,
@@ -62,6 +74,7 @@ function roomTree() {
 
 beforeEach(() => {
   toast.show.mockReset();
+  leftNotified = null;
 });
 afterEach(() => {
   window.sessionStorage.clear();

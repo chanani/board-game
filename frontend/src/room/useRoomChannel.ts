@@ -3,7 +3,7 @@ import { ApiError, messageOf } from '../api/http';
 import { roomsApi } from '../api/rooms';
 import type { ApiErrorBody, GameAction, GameSignal, Room, SessionView } from '../api/types';
 import { useToast } from '../components/Toast';
-import { departures } from '../lib/departures';
+import { departures, isPresent } from '../lib/departures';
 import type { ViewTransition } from '../games/gameModule';
 import { findGame, sessionGameType } from '../games/registry';
 import { prependLog, type LogDraft, type LogEntry } from '../lib/eventLog';
@@ -57,6 +57,8 @@ export function useRoomChannel(code: string, { poll = false, meId = 0 }: Options
   const namesRef = useRef(new Map<number, string>());
   // 마지막으로 보낸 행동과 그때의 화면. 그 행동이 거절됐을 때 화면이 이미 지나쳤는지 게임 모듈에 묻는다.
   const lastSentRef = useRef<{ action: GameAction; view: SessionView } | null>(null);
+  // "방에서 나왔어요"를 알린 방 코드. 방 확인·동기화 오류·화면의 나감 확인이 함께 와도 방마다 한 번만 알린다.
+  const leftNotifiedRef = useRef<string | null>(null);
 
   const appendLog = useCallback((lines: LogDraft[]) => {
     if (lines.length === 0) {
@@ -87,6 +89,9 @@ export function useRoomChannel(code: string, { poll = false, meId = 0 }: Options
     (next: Room, { live }: { live: boolean }) => {
       const prev = roomRef.current;
       roomRef.current = next;
+      if (meId !== 0 && isPresent(next, meId) && leftNotifiedRef.current === next.code) {
+        leftNotifiedRef.current = null;
+      }
       next.members.forEach((member) => namesRef.current.set(member.id, member.nickname));
       setRoom(next);
       setReceivedAt(Date.now());
@@ -94,7 +99,7 @@ export function useRoomChannel(code: string, { poll = false, meId = 0 }: Options
         announceDepartures(prev, next);
       }
     },
-    [announceDepartures],
+    [announceDepartures, meId],
   );
 
   const nicknameOf = useCallback(
@@ -120,15 +125,28 @@ export function useRoomChannel(code: string, { poll = false, meId = 0 }: Options
     [nicknameOf, appendLog],
   );
 
+  /** 이 방에서 나왔다고 알린다. 이 방에서 이미 알렸으면 알리지 않고 false(모든 게임·모든 경로가 이 한 곳을 지난다). */
+  const notifyLeft = useCallback(
+    (roomCode: string) => {
+      if (leftNotifiedRef.current === roomCode) {
+        return false;
+      }
+      leftNotifiedRef.current = roomCode;
+      toast.show(LEFT_MESSAGE, 'info');
+      return true;
+    },
+    [toast],
+  );
+
   const showFailure = useCallback(
     (error: unknown) => {
       if (error instanceof ApiError && error.code === 'NOT_IN_ROOM') {
-        toast.show(LEFT_MESSAGE, 'info');
+        notifyLeft(code);
         return;
       }
       toast.show(messageOf(error));
     },
-    [toast],
+    [toast, notifyLeft, code],
   );
 
   useEffect(() => {
@@ -197,7 +215,7 @@ export function useRoomChannel(code: string, { poll = false, meId = 0 }: Options
           setErrorSeq((current) => current + 1);
         }
         if (error.code === 'NOT_IN_ROOM') {
-          toast.show(LEFT_MESSAGE, 'info');
+          notifyLeft(code);
           setMissing(true);
           return;
         }
@@ -210,7 +228,7 @@ export function useRoomChannel(code: string, { poll = false, meId = 0 }: Options
       }),
     ];
     return () => offs.forEach((off) => off());
-  }, [code, realtime, acceptRoom, acceptView, toast, isStaleRejection]);
+  }, [code, realtime, acceptRoom, acceptView, toast, isStaleRejection, notifyLeft]);
 
   useEffect(() => {
     if (!connected) {
@@ -302,5 +320,5 @@ export function useRoomChannel(code: string, { poll = false, meId = 0 }: Options
     [code, realtime],
   );
 
-  return { room, receivedAt, view, transition, log, missing, send, sendSignal, signal, nicknameOf, errorSeq };
+  return { room, receivedAt, view, transition, log, missing, send, sendSignal, signal, nicknameOf, errorSeq, notifyLeft };
 }

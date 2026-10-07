@@ -2,6 +2,11 @@ import type { Room } from '../api/types';
 
 export type Departure = { memberId: number; text: string };
 
+/** 내가 그 방의 참가자나 관전자인지. */
+export function isPresent(room: Room, meId: number): boolean {
+  return room.members.some((member) => member.id === meId) || room.spectators.some((spectator) => spectator.id === meId);
+}
+
 /** 내가 방에서 빠진 갱신이면, 같이 빠진 사람들의 알림은 이미 떠난 내게 의미가 없다. */
 function wasRemoved(prev: Room, next: Room, meId: number): boolean {
   const had = prev.members.some((member) => member.id === meId);

@@ -194,6 +194,36 @@ describe('useRoomChannel', () => {
     expect(toast.show).toHaveBeenCalledWith('방에서 나왔어요.', 'info');
   });
 
+  it('오프라인 중 기권된 사람이 다시 들어와 화면의 나감 확인·방 확인·동기화 오류가 함께 와도 방에서 나왔다는 알림은 한 번만 뜬다', async () => {
+    vi.spyOn(roomsApi, 'get').mockRejectedValue(new ApiError(403, 'NOT_IN_ROOM', '이 방의 참가자가 아닙니다.'));
+    state.connected = true;
+    const { result } = renderHook(() => useRoomChannel('ABCDEF', { meId: 7 }));
+    toast.show.mockClear();
+
+    let first = true;
+    act(() => { first = result.current.notifyLeft('ABCDEF'); });
+    await act(async () => {});
+    act(() => state.handlers.get('/user/queue/errors')?.({ status: 403, code: 'NOT_IN_ROOM', message: '이 방의 참가자가 아닙니다.' }));
+
+    expect(first).toBe(true);
+    expect(result.current.notifyLeft('ABCDEF')).toBe(false);
+    expect(toast.show).toHaveBeenCalledTimes(1);
+    expect(toast.show).toHaveBeenCalledWith('방에서 나왔어요.', 'info');
+    expect(result.current.missing).toBe(true);
+  });
+
+  it('나왔다고 알린 방에 다시 들어온 게 확인되면 다음에 나올 때 다시 알린다', () => {
+    vi.spyOn(roomsApi, 'get').mockReturnValue(new Promise<Room>(() => {}));
+    const { result } = renderHook(() => useRoomChannel('ABCDEF', { meId: 7 }));
+    toast.show.mockClear();
+
+    act(() => { result.current.notifyLeft('ABCDEF'); });
+    act(() => state.handlers.get('/topic/rooms/ABCDEF')?.({ ...room('방'), spectators: [{ id: 7, nickname: '나' }] }));
+    act(() => state.handlers.get('/user/queue/errors')?.({ status: 403, code: 'NOT_IN_ROOM', message: '이 방의 참가자가 아닙니다.' }));
+
+    expect(toast.show).toHaveBeenCalledTimes(2);
+  });
+
   it('떠난 플레이어도 마지막으로 본 닉네임으로 부른다', async () => {
     const withMembers = (ids: number[]): Room => ({
       ...room('방'),

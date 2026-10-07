@@ -1,8 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { messageOf } from '../api/http';
 import { roomsApi } from '../api/rooms';
-import type { Room } from '../api/types';
 import { useAuth } from '../auth/AuthContext';
 import { RoomStatusBar } from '../components/RoomStatusBar';
 import { Button, Panel } from '../components/ui';
@@ -20,12 +19,9 @@ import { RoomBackdrop, RoomThemeProvider } from '../room/roomTheme';
 import { PC_QUERY, useMediaQuery } from '../lib/useMediaQuery';
 import { useTableLayout } from '../lib/useTableLayout';
 import { withMyAvatar } from '../lib/avatars';
+import { isPresent } from '../lib/departures';
 import { useChatAvatars } from '../room/useChatAvatars';
 import { ChatColorProvider, chatOrderOf } from '../room/chatColors';
-
-function isPresent(room: Room, meId: number): boolean {
-  return room.members.some((member) => member.id === meId) || room.spectators.some((spectator) => spectator.id === meId);
-}
 
 export function RoomPage() {
   const { code = '' } = useParams();
@@ -37,7 +33,7 @@ export function RoomPage() {
   // 게임이 끝나면 관전자는 자동으로 자리에 앉으므로, 게임을 지켜봤는지 따로 기억해 결과 창을 보여 준다.
   const [watched, setWatched] = useState(false);
   // 관전자는 마지막 참가자가 나가 방이 사라져도 알림을 받지 못하므로 주기적으로 방을 확인한다.
-  const { room: channelRoom, receivedAt, view, transition, log, missing, send, sendSignal, signal, nicknameOf, errorSeq } = useRoomChannel(code, { poll: spectating, meId });
+  const { room: channelRoom, receivedAt, view, transition, log, missing, send, sendSignal, signal, nicknameOf, errorSeq, notifyLeft } = useRoomChannel(code, { poll: spectating, meId });
   // 방금 바꾼 내 프로필 그림은 다음 방 갱신을 기다리지 않고 바로 보인다.
   const room = useMemo(() => withMyAvatar(channelRoom, meId, member?.avatar), [channelRoom, meId, member?.avatar]);
   const [now, setNow] = useState(() => Date.now());
@@ -74,20 +70,16 @@ export function RoomPage() {
   }, [room?.status]);
 
   // 나간 방 화면은 페이지 전환(Layout의 AnimatePresence) 동안 잠깐 남아 다시 그려진다. 주소가 바뀌면 navigate가 새로 만들어져
-  // 이 효과가 다시 돌므로, 방마다 한 번만 알리고 로비로 보낸다(전에는 '방에서 나왔어요' 알림이 두 번 떴다).
-  const leftNotified = useRef<string | null>(null);
+  // 이 효과가 다시 돌므로, 방마다 한 번만 알리고 로비로 보낸다. 알림은 방 채널의 동기화 오류(NOT_IN_ROOM)와 같은 곳(notifyLeft)을 지나
+  // 오프라인 중 기권된 사람이 다시 들어와 둘이 함께 와도 한 번만 뜬다.
   useEffect(() => {
-    if (room && isPresent(room, meId)) {
-      leftNotified.current = null;
+    if (!room || missing || isPresent(room, meId)) {
       return;
     }
-    if (!room || missing || leftNotified.current === room.code) {
-      return;
+    if (notifyLeft(room.code)) {
+      navigate(lobbyPath(room.gameType), { replace: true });
     }
-    leftNotified.current = room.code;
-    toast.show('방에서 나왔어요.', 'info');
-    navigate(lobbyPath(room.gameType), { replace: true });
-  }, [room, missing, meId, navigate, toast]);
+  }, [room, missing, meId, navigate, notifyLeft]);
 
   if (missing) {
     return <Navigate to={room ? lobbyPath(room.gameType) : '/'} replace />;
