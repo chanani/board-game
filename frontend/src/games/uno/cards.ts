@@ -5,6 +5,9 @@ export const COLOR_NAMES: Record<UnoColor, string> = { RED: '빨강', YELLOW: '�
 /** 카드 색은 규칙 정보라 테마와 상관없이 고정이다(D22). */
 export const COLOR_HEX: Record<UnoColor, string> = { RED: '#D93A3A', YELLOW: '#F2B705', GREEN: '#2E9E4F', BLUE: '#2B6CD4' };
 export const WILD_HEX = '#1F2430';
+/** 카드 왼쪽 위 모서리 숫자·기호가 차지하는 폭(카드 그림 폭 200 기준). 손패가 겹쳐도 이만큼은 늘 보이게 한다. */
+export const CORNER_EXTENT = 76;
+export const CARD_ART_WIDTH = 200;
 
 const KIND_ORDER: Record<UnoCardKind, number> = { NUMBER: 0, SKIP: 1, REVERSE: 2, DRAW_TWO: 3, WILD: 4, WILD_DRAW_FOUR: 5 };
 const SYMBOLS: Record<UnoCardKind, (card: UnoCard) => string> = {

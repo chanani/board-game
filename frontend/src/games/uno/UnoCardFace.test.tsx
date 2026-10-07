@@ -69,4 +69,23 @@ describe('UnoCardFace', () => {
     expect(screen.queryByRole('img')).not.toBeInTheDocument();
     expect(container.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
   });
+
+  it('겹쳐도 알아보게 왼쪽 위·오른쪽 아래 모서리에 크고 굵은 숫자·기호를 둔다', () => {
+    render(
+      <>
+        <UnoCardFace card={num('YELLOW', 7, 1)} width={60} />
+        <UnoCardFace card={skip('RED', 19)} width={60} />
+        <UnoCardFace card={reverse('GREEN', 71)} width={60} />
+        <UnoCardFace card={drawTwo('BLUE', 48)} width={60} />
+        <UnoCardFace card={wild(100)} width={60} />
+        <UnoCardFace card={wildFour(104)} width={60} />
+      </>,
+    );
+
+    const corners = screen.getAllByTestId('corner-index').map((corner) => corner.getAttribute('data-corner'));
+    expect(corners).toEqual(['7', '7', 'skip', 'skip', 'reverse', 'reverse', '+2', '+2', 'wild', 'wild', '+4', '+4']);
+    const seven = screen.getByRole('img', { name: '노랑 7' }).querySelector('[data-testid="corner-index"] text');
+    expect(Number(seven?.getAttribute('font-size'))).toBeGreaterThanOrEqual(60);
+    expect(seven).toHaveAttribute('font-weight', '900');
+  });
 });

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { fanAngle, fanOverhang, handSpacing, UNO_PC_SHORT_SIZES, UNO_SIZES, unoInstruction, unoSizes } from './layout';
+import { CARD_ART_WIDTH, CORNER_EXTENT } from './cards';
+import { fanAngle, fanOverhang, handSpacing, minVisibleOf, UNO_PC_SHORT_SIZES, UNO_SIZES, unoInstruction, unoSizes } from './layout';
 import { unoView } from './unoFixtures';
 
 const nick = (id: number) => ({ 1: '앨리스', 2: '밥', 3: '캐롤' })[id] ?? '떠난 플레이어';
@@ -35,13 +36,21 @@ describe('손패 간격', () => {
     });
   });
 
+  it('겹친 카드도 왼쪽 위 모서리 숫자·기호 폭만큼은 늘 보인다', () => {
+    [UNO_SIZES.portrait, UNO_SIZES.landscape, UNO_SIZES.pc, UNO_PC_SHORT_SIZES].forEach((sizes) => {
+      expect(minVisibleOf(sizes)).toBe(sizes.minVisible);
+      expect((minVisibleOf(sizes) * CARD_ART_WIDTH) / sizes.hand).toBeGreaterThanOrEqual(CORNER_EXTENT);
+      expect(handSpacing(30, 320, sizes).step).toBeGreaterThanOrEqual(minVisibleOf(sizes));
+    });
+  });
+
   it('기운 카드가 옆으로 삐져나오는 폭을 잰다', () => {
     expect(fanOverhang(88, 0)).toBe(0);
     expect(fanOverhang(88, 12)).toBeCloseTo(12.76, 1);
   });
 
   it('배치마다 카드 크기가 정해져 있다', () => {
-    expect(UNO_SIZES.pc).toEqual({ hand: 88, back: 36, center: 96, minVisible: 32 });
+    expect(UNO_SIZES.pc).toEqual({ hand: 88, back: 36, center: 96, minVisible: 34 });
     expect(UNO_SIZES.landscape).toEqual({ hand: 48, back: 22, center: 52, minVisible: 22 });
     expect(UNO_SIZES.portrait).toEqual({ hand: 60, back: 22, center: 64, minVisible: 24 });
     expect(UNO_PC_SHORT_SIZES).toEqual({ hand: 72, back: 26, center: 72, minVisible: 28 });

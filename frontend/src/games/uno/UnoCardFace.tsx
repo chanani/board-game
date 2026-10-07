@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import { useId, type ReactNode } from 'react';
 import type { UnoCard, UnoColor } from '../../api/types';
 import { cardName, COLOR_HEX, isWild, WILD_HEX } from './cards';
 
@@ -62,6 +62,83 @@ function Symbol({ card, fill }: { card: UnoCard; fill: string }) {
   );
 }
 
+const CORNER_X = 44;
+const CORNER_Y = 52;
+const OUTLINE = '#1F2430';
+const OUTLINE_WIDTH = 7;
+
+type Stroke = { ink: string; extra: number };
+
+/** 흰 글자·기호 아래에 어두운 윤곽을 먼저 깔아 노랑 바탕이나 가운데 흰 타원 위에서도 읽히게 한다. */
+function Outlined({ draw }: { draw: (stroke: Stroke) => ReactNode }) {
+  return (
+    <>
+      <g strokeOpacity="0.55" fillOpacity="0.55">{draw({ ink: OUTLINE, extra: OUTLINE_WIDTH })}</g>
+      {draw({ ink: '#fff', extra: 0 })}
+    </>
+  );
+}
+
+function CornerText({ text, size }: { text: string; size: number }) {
+  return (
+    <text x={CORNER_X} y={CORNER_Y} textAnchor="middle" dominantBaseline="central" fontSize={size} fontWeight="900" fontFamily={FONT}
+      fill="#fff" stroke={OUTLINE} strokeOpacity="0.6" strokeWidth={OUTLINE_WIDTH} strokeLinejoin="round" paintOrder="stroke">{text}</text>
+  );
+}
+
+const AT_CORNER = (scale: number) => `translate(${CORNER_X} ${CORNER_Y}) scale(${scale}) translate(-100 -150)`;
+
+function CornerSkip() {
+  return (
+    <g transform={AT_CORNER(0.4)}>
+      <Outlined draw={({ ink, extra }) => (
+        <g fill="none" stroke={ink} strokeWidth={18 + extra * 2.5} strokeLinecap="round"><circle cx="100" cy="150" r="44" /><path d="M70 180 L130 120" /></g>
+      )} />
+    </g>
+  );
+}
+
+function CornerReverse() {
+  return (
+    <g transform={AT_CORNER(0.42)}>
+      <Outlined draw={({ ink, extra }) => (
+        <g fill={ink} stroke={ink} strokeLinecap="round" strokeLinejoin="round">
+          <path d="M66 166 A44 44 0 0 1 124 108" fill="none" strokeWidth={16 + extra * 2.5} />
+          <path d="M112 90 L144 106 L118 130 Z" strokeWidth={extra * 2.5} />
+          <path d="M134 134 A44 44 0 0 1 76 192" fill="none" strokeWidth={16 + extra * 2.5} />
+          <path d="M88 210 L56 194 L82 170 Z" strokeWidth={extra * 2.5} />
+        </g>
+      )} />
+    </g>
+  );
+}
+
+/**
+ * 진짜 우노 카드처럼 왼쪽 위 모서리에 크고 굵은 숫자·기호를 둔다. 손패가 겹쳐 왼쪽 일부만 보여도 무슨 카드인지 알 수 있다.
+ * 가로 CORNER_EXTENT 안에 들어가게 글자 크기를 정했다.
+ */
+function Corner({ card }: { card: UnoCard }) {
+  if (card.kind === 'NUMBER') {
+    const underline = card.number === 6 || card.number === 9;
+    return (
+      <g data-testid="corner-index" data-corner={card.number}>
+        <CornerText text={String(card.number)} size={66} />
+        {underline ? <rect x={CORNER_X - 14} y={CORNER_Y + 27} width="28" height="6" rx="3" fill="#fff" stroke={OUTLINE} strokeOpacity="0.6" strokeWidth="3" paintOrder="stroke" /> : null}
+      </g>
+    );
+  }
+  if (card.kind === 'DRAW_TWO' || card.kind === 'WILD_DRAW_FOUR') {
+    return <g data-testid="corner-index" data-corner={card.kind === 'DRAW_TWO' ? '+2' : '+4'}><CornerText text={card.kind === 'DRAW_TWO' ? '+2' : '+4'} size={50} /></g>;
+  }
+  if (card.kind === 'SKIP') {
+    return <g data-testid="corner-index" data-corner="skip"><CornerSkip /></g>;
+  }
+  if (card.kind === 'REVERSE') {
+    return <g data-testid="corner-index" data-corner="reverse"><CornerReverse /></g>;
+  }
+  return <g data-testid="corner-index" data-corner="wild" transform={AT_CORNER(0.34)}><Wheel /></g>;
+}
+
 function ColorMark({ color }: { color: UnoColor }) {
   const shape = MARKS[color];
   const common = { 'data-testid': 'color-mark', 'data-shape': shape, fill: '#fff', fillOpacity: 0.6 } as const;
@@ -113,8 +190,8 @@ export function UnoCardFace({ card, width, decorative = false, className }: Prop
       <rect x="12" y="12" width="176" height="276" rx="14" fill={color} />
       {wild ? null : <ellipse cx="100" cy="150" rx="70" ry="123" fill="#fff" />}
       <Symbol card={card} fill={color} />
-      <g transform="translate(16 16) scale(0.26)"><Symbol card={card} fill="#fff" /></g>
-      <g transform="rotate(180 100 150) translate(16 16) scale(0.26)"><Symbol card={card} fill="#fff" /></g>
+      <Corner card={card} />
+      <g transform="rotate(180 100 150)"><Corner card={card} /></g>
       {card.color ? <ColorMark color={card.color} /> : null}
     </svg>
   );

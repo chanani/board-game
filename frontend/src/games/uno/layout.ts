@@ -1,13 +1,14 @@
 import type { UnoStage, UnoView } from '../../api/types';
 import { useMediaQuery } from '../../lib/useMediaQuery';
 import type { TableLayout } from '../../lib/useTableLayout';
+import { CARD_ART_WIDTH, CORNER_EXTENT } from './cards';
 
 export type UnoSizes = { hand: number; back: number; center: number; minVisible: number };
 
 /** 스펙 6.4 표: 내 손패·상대 뒷면·가운데 더미 카드 폭(px)과 손패 겹침 최소 보이는 폭. 높이는 폭의 1.5배.
  * 눕힌 휴대폰은 손패까지 한 화면 높이(약 390px)에 들어가도록 작게 둔다. */
 export const UNO_SIZES: Record<TableLayout, UnoSizes> = {
-  pc: { hand: 88, back: 36, center: 96, minVisible: 32 },
+  pc: { hand: 88, back: 36, center: 96, minVisible: 34 },
   landscape: { hand: 48, back: 22, center: 52, minVisible: 22 },
   portrait: { hand: 60, back: 22, center: 64, minVisible: 24 },
 };
@@ -50,15 +51,21 @@ export function fanOverhang(width: number, angle: number): number {
  * 손패 카드 왼쪽 끝 사이 간격과 줄 양끝 여백. 화면 폭에 맞춰 겹치다가 최소 보이는 폭보다 좁아지면 그 폭으로 두고 가로 스크롤.
  * 여백(inset)은 기운 카드가 삐져나오는 폭과 빛 테두리를 품어서 첫 카드와 마지막 카드가 잘리지 않게 한다.
  */
+/** 겹친 카드가 적어도 보여 줘야 하는 폭: 배치별 최소 폭과 왼쪽 위 모서리 표시 폭 중 큰 값. */
+export function minVisibleOf(sizes: UnoSizes): number {
+  return Math.max(sizes.minVisible, Math.ceil((sizes.hand * CORNER_EXTENT) / CARD_ART_WIDTH));
+}
+
 export function handSpacing(count: number, containerWidth: number, sizes: UnoSizes, angle = 0): { step: number; scroll: boolean; inset: number } {
   const loose = sizes.hand + GAP;
+  const minVisible = minVisibleOf(sizes);
   const inset = Math.ceil(fanOverhang(sizes.hand, angle)) + GLOW_ROOM;
   if (count <= 1 || containerWidth <= 0) {
     return { step: loose, scroll: false, inset };
   }
   const fit = Math.floor((containerWidth - inset * 2 - sizes.hand) / (count - 1));
-  if (fit < sizes.minVisible) {
-    return { step: sizes.minVisible, scroll: true, inset: inset + FADE_ROOM };
+  if (fit < minVisible) {
+    return { step: minVisible, scroll: true, inset: inset + FADE_ROOM };
   }
   return { step: Math.min(loose, fit), scroll: false, inset };
 }
