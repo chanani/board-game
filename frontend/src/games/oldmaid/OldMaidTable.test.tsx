@@ -67,6 +67,17 @@ describe('OldMaidTable 배치', () => {
     expect(screen.getByTestId('landscape-table')).toBeInTheDocument();
   });
 
+  it('눕힌 휴대폰에 상대가 5명이면 옆 칸에 세 줄로 쌓지 않고 상대를 위 줄에, 가운데를 그 아래에 둔다', () => {
+    setMediaMatches((query) => query === LANDSCAPE_PHONE_QUERY);
+    const { unmount } = render(table());
+    expect(screen.getByTestId('opponent-row')).toHaveAttribute('data-placement', 'side');
+    unmount();
+
+    render(table(sixPlayers(), 1, 6));
+    expect(screen.getByTestId('opponent-row')).toHaveAttribute('data-placement', 'top');
+    expect(within(screen.getByTestId('opponent-row')).getAllByTestId('oldmaid-seat')).toHaveLength(5);
+  });
+
   it('내가 뽑는 사람이면 안내·리본·가운데 상대 부채가 보인다', () => {
     render(table({ players: [
       { playerId: 1, cardCount: 2, rank: null, forfeited: false },

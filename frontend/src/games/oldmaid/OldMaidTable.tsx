@@ -31,6 +31,9 @@ const FELT: Record<TableLayout, string> = {
   landscape: 'flex-row items-center justify-center gap-3 px-[4%] py-2',
   portrait: 'flex-col gap-3 px-3 py-4',
 };
+/** 눕힌 화면에 상대가 5명이면 옆 칸에 세 줄로 쌓여 손패가 화면 밖으로 밀리므로, 상대를 위 줄에 두고 가운데를 그 아래에 둔다. */
+const LANDSCAPE_TOP_SEATS = 5;
+const FELT_LANDSCAPE_TOP = 'flex-col items-center justify-center gap-2 px-[4%] py-2';
 /** 뽑기를 보낸 뒤 화면이 바뀌거나 오류가 오기 전까지 다시 보내지 않는 시간(우노와 같다). */
 const PENDING_MS = 3000;
 /** R23: 섞기 버튼 잠금 시간(서버 쿨다운과 같다). */
@@ -92,6 +95,8 @@ export function OldMaidTable({ view, room, meId, log, receivedAt, now, errorSeq,
   }, [myTurn, turnKey, play]);
   const opponentIds = seatOrder(game.players.map((player) => player.playerId), meId).filter((id) => id !== meId);
   const rows = seatRows(opponentIds.length);
+  const seatsBeside = layout === 'landscape' && opponentIds.length < LANDSCAPE_TOP_SEATS;
+  const feltClass = layout === 'landscape' && !seatsBeside ? FELT_LANDSCAPE_TOP : FELT[layout];
   const maxBacks = layout === 'portrait' && opponentIds.length >= 3 ? 4 : 7;
   const containerRef = useRef<HTMLDivElement>(null);
   const { ghosts } = useOldMaidMotion(containerRef, transition, meId, sizes.pick);
@@ -140,7 +145,7 @@ export function OldMaidTable({ view, room, meId, log, receivedAt, now, errorSeq,
     </div>
   );
   const felt = (
-    <Felt shape="oval" className={`mx-auto flex w-full ${FELT[layout]}`}>
+    <Felt shape="oval" className={`mx-auto flex w-full ${feltClass}`}>
       {wide ? (
         <>
           {rows.top.length > 0 ? (
@@ -154,9 +159,10 @@ export function OldMaidTable({ view, room, meId, log, receivedAt, now, errorSeq,
         </>
       ) : (
         <>
-          <div data-testid="opponent-row" className={`flex flex-wrap items-start justify-center gap-x-2 gap-y-3 ${layout === 'landscape' ? 'min-w-0 flex-[2]' : ''}`}>{opponentIds.map(seat)}</div>
+          <div data-testid="opponent-row" data-placement={seatsBeside ? 'side' : 'top'}
+            className={`flex flex-wrap items-start justify-center gap-x-2 gap-y-3 ${seatsBeside ? 'min-w-0 flex-[2]' : ''}`}>{opponentIds.map(seat)}</div>
           {/* 눕힌 화면은 가운데 큰 부채가 폭을 다 차지해 상대 자리가 세로로 쌓이지 않게 몫을 나눈다(부채는 제 폭에 맞춰 겹친다). */}
-          <div className={`flex min-w-0 justify-center ${layout === 'landscape' ? 'flex-[3]' : ''}`}>{center}</div>
+          <div className={`flex min-w-0 justify-center ${seatsBeside ? 'flex-[3]' : 'w-full'}`}>{center}</div>
         </>
       )}
     </Felt>
