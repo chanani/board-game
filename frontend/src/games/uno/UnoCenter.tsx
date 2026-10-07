@@ -61,9 +61,14 @@ export function UnoCenter({ drawPileCount, discardTop, discardCount, currentColo
       <div className="relative flex items-center justify-center gap-4 px-2 py-2">
         <DirectionArrows direction={direction} size={ringSize} />
         <div className="flex flex-col items-center gap-1">
-          <button type="button" aria-label={`카드 뽑기, 남은 ${drawPileCount}장`} data-uno-zone="draw" disabled={!canDraw} onClick={onDraw}
-            className={`press-3d relative flex flex-col items-center rounded-lg disabled:cursor-not-allowed ${canDraw ? 'turn-glow' : ''}`}>
-            <span aria-hidden="true" className="relative block" style={{ width: cardWidth + 4, height: height + 4 }}>
+          {/* 뽑을 차례 강조는 버튼 사각 테두리가 아니라 카드 더미 자체가 떠오르며 카드 모양을 따라 빛나게 한다.
+              키보드로 왔을 때(focus-visible)만 카드 모서리에 맞춘 둥근 링을 그린다. */}
+          <button type="button" aria-label={`카드 뽑기, 남은 ${drawPileCount}장`} data-uno-zone="draw" data-ready={canDraw ? 'true' : undefined}
+            disabled={!canDraw} onClick={onDraw}
+            className="group relative flex flex-col items-center rounded-lg outline-none focus-visible:outline-none disabled:cursor-not-allowed">
+            <span aria-hidden="true" data-testid="draw-stack"
+              className={`relative block outline-offset-2 transition-transform duration-100 group-focus-visible:outline-2 group-focus-visible:outline-(--turn-ring) group-enabled:group-active:translate-y-0.5 ${canDraw ? 'uno-deck-ready' : ''}`}
+              style={{ width: cardWidth + 4, height: height + 4, borderRadius: cardWidth * 0.1 }}>
               {[2, 1, 0].map((offset) => (
                 <span key={offset} className="absolute" style={{ left: 2 - offset, top: 2 - offset }}>
                   <UnoCardFace card={null} width={cardWidth} decorative />

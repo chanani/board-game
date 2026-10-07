@@ -20,4 +20,9 @@ describe('index.css', () => {
     expect(css).toMatch(/--turn-halo:\s*var\(--color-cream-50\)/);
     expect(css).toMatch(/@keyframes turn-glow[^\n]*var\(--turn-halo\)/);
   });
+
+  it('우노 뽑을 더미 강조는 카드 윤곽을 따르는 빛이고, 떠오르는 맥박은 움직임을 허락할 때만이다', () => {
+    expect(css).toMatch(/\.uno-deck-ready \{ filter: drop-shadow\([^)]*var\(--turn-ring\)\)/);
+    expect(css).toMatch(/@media \(prefers-reduced-motion: no-preference\) \{\s*\.uno-deck-ready \{ animation: uno-deck-ready/);
+  });
 });

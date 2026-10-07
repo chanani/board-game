@@ -79,6 +79,23 @@ describe('UnoTable 배치', () => {
     expect(send).toHaveBeenCalledWith({ type: 'DRAW' });
   });
 
+  it('뽑을 차례면 버튼 사각 테두리 대신 카드 더미가 떠오르며 빛나고, 키보드 포커스 링은 카드 모서리를 따른다', () => {
+    renderTable();
+
+    const button = within(screen.getByTestId('uno-center')).getByRole('button', { name: /^카드 뽑기/ });
+    expect(button).not.toHaveClass('turn-glow');
+    expect(button).toHaveClass('outline-none');
+    const stack = within(button).getByTestId('draw-stack');
+    expect(stack).toHaveClass('uno-deck-ready', 'group-focus-visible:outline-2');
+    expect(stack.style.borderRadius).not.toBe('');
+  });
+
+  it('남의 차례에는 뽑을 더미가 빛나지 않는다', () => {
+    renderTable({ currentPlayerId: 2 });
+
+    expect(screen.getByTestId('draw-stack')).not.toHaveClass('uno-deck-ready');
+  });
+
   it('남의 차례에는 뽑을 더미가 막히고 행동 바가 비어 있다', () => {
     renderTable({ currentPlayerId: 2, playableCardIds: [] });
 

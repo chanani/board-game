@@ -347,6 +347,15 @@ body {
 
 @keyframes turn-glow { 0%, 100% { box-shadow: 0 0 0 2px var(--turn-halo), 0 0 6px var(--turn-ring); } 50% { box-shadow: 0 0 0 2px var(--turn-halo), 0 0 18px var(--turn-ring); } }
 .turn-glow { animation: turn-glow 1.4s ease-in-out infinite; }
+/* 우노 뽑을 더미: 뽑을 차례면 카드 모양(drop-shadow는 SVG 윤곽을 따른다)대로 빛나고, 움직임을 허락하면 살짝 떠올라 맥박친다. */
+.uno-deck-ready { filter: drop-shadow(0 0 6px var(--turn-ring)); }
+@keyframes uno-deck-ready {
+  0%, 100% { transform: translateY(0); filter: drop-shadow(0 0 3px var(--turn-ring)); }
+  50% { transform: translateY(-5px); filter: drop-shadow(0 0 12px var(--turn-ring)) drop-shadow(0 6px 6px rgb(0 0 0 / 0.3)); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .uno-deck-ready { animation: uno-deck-ready 1.6s ease-in-out infinite; }
+}
 /* 내 차례 링은 판 안쪽(inset)에만 그려 판 밖의 이름표·안내를 덮지 않는다. */
 @keyframes turn-ring { 0%, 100% { box-shadow: 0 0 0 1px var(--turn-ring-edge), inset 0 0 0 3px var(--turn-ring), inset 0 0 4px 3px color-mix(in srgb, var(--turn-ring) 35%, transparent); } 50% { box-shadow: 0 0 0 1px var(--turn-ring-edge), inset 0 0 0 3px var(--turn-ring), inset 0 0 14px 4px color-mix(in srgb, var(--turn-ring) 55%, transparent); } }
 .turn-ring { animation: turn-ring 1.4s ease-in-out infinite; }
