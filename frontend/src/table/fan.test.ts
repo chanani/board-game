@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { EDGE_FADE, fanAngle, fanSpacing } from './fan';
+import { EDGE_FADE, FAN_EDGE_MAX, fanAngle, fanRoom, fanSpacing, fixedFanRoom, handHeadroom } from './fan';
 
 describe('fan', () => {
   it('폭이 넉넉하면 카드 폭 + 6px 간격', () => {
@@ -23,5 +23,15 @@ describe('fan', () => {
 
   it('스크롤 줄 양끝 흐림은 16px', () => {
     expect(EDGE_FADE).toBe('linear-gradient(to right, transparent, black 16px, black calc(100% - 16px), transparent)');
+  });
+
+  it('고정 줄 높이는 1~20장 어느 장수의 위·아래 여백보다 작지 않다', () => {
+    const fixed = fixedFanRoom(84, 5, 23);
+    for (let count = 1; count <= 20; count += 1) {
+      const angles = Array.from({ length: count }, (_, index) => fanAngle(index, count));
+      expect(fixed.headroom).toBeGreaterThanOrEqual(handHeadroom(84, angles, 5, 23));
+      expect(fixed.room).toBeGreaterThanOrEqual(fanRoom(84, Math.abs(fanAngle(0, count)), 5));
+    }
+    expect(fixed.room).toBe(fanRoom(84, FAN_EDGE_MAX, 5));
   });
 });

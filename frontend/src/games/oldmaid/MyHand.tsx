@@ -3,7 +3,7 @@ import { useRef } from 'react';
 import type { PlayingCard } from '../../api/types';
 import { ShuffleIcon } from '../../components/icons';
 import type { TableLayout } from '../../lib/useTableLayout';
-import { EDGE_FADE, FAN_RADIUS, fanAngle, fanDrop, fanRoom, fanSpacing, handHeadroom } from '../../table/fan';
+import { EDGE_FADE, FAN_RADIUS, fanAngle, fanDrop, fanSpacing, fixedFanRoom } from '../../table/fan';
 import { useElementWidth } from '../../table/useElementWidth';
 import { useFreshIds } from '../../table/useFreshIds';
 import { handMinVisible, LIFT_RATIO, type OldMaidSizes } from './layout';
@@ -34,7 +34,9 @@ export function MyHand({ cards, liftIndex, layout, sizes, zoneId, canShuffle, sh
   const edgeAngle = Math.abs(fanAngle(0, count));
   const lift = sizes.hand * 1.5 * LIFT_RATIO;
   const angles = cards.map((_, index) => fanAngle(index, count));
-  const top = handHeadroom(sizes.hand, angles, radius, lift);
+  // 줄 높이는 장수와 상관없이 고정한다(스펙 6.4): 위·아래 여백을 가장 크게 기울 수 있는 각도로 재고, 빈 손패도 같은 높이.
+  const { headroom: top, room } = fixedFanRoom(sizes.hand, radius, lift);
+  const rowHeight = top + sizes.hand * 1.5 + BOTTOM_GAP + room;
   const { step, scroll, inset } = fanSpacing(count, width, sizes.hand, handMinVisible(sizes), edgeAngle);
   const innerWidth = count === 0 ? 0 : (count - 1) * step + sizes.hand + inset * 2;
   const shuffle = canShuffle ? (
@@ -44,7 +46,11 @@ export function MyHand({ cards, liftIndex, layout, sizes, zoneId, canShuffle, sh
     </button>
   ) : null;
   if (count === 0) {
-    return <p data-testid="hand-empty" className="felt-ink py-6 text-center text-sm font-bold">손패를 모두 비웠어요</p>;
+    return (
+      <div data-testid="hand-empty" className="flex items-center justify-center" style={{ height: rowHeight }}>
+        <p className="felt-ink text-center text-sm font-bold">손패를 모두 비웠어요</p>
+      </div>
+    );
   }
   return (
     // 섞기 버튼은 따로 줄을 두지 않고 손패 칸 오른쪽 위(들림 여백)에 띄워 높이를 아낀다(눕힌 휴대폰 한 화면).
@@ -52,7 +58,7 @@ export function MyHand({ cards, liftIndex, layout, sizes, zoneId, canShuffle, sh
       {shuffle ? <div className="absolute right-0 top-0 z-20">{shuffle}</div> : null}
       <div ref={boxRef} role="group" aria-label={`내 카드 ${count}장`} data-testid="my-hand" data-oldmaid-zone={`hand:${zoneId}`}
         className={scroll ? 'overflow-x-auto' : 'overflow-x-clip'} style={scroll ? { maskImage: EDGE_FADE, WebkitMaskImage: EDGE_FADE } : undefined}>
-        <div className="relative" style={{ width: innerWidth, height: top + sizes.hand * 1.5 + BOTTOM_GAP + fanRoom(sizes.hand, edgeAngle, radius), margin: scroll ? undefined : '0 auto' }}>
+        <div data-testid="my-hand-row" className="relative" style={{ width: innerWidth, height: rowHeight, margin: scroll ? undefined : '0 auto' }}>
           {cards.map((card, index) => {
             const lifted = index === liftIndex;
             const angle = angles[index];

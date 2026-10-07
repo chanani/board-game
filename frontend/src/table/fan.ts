@@ -2,6 +2,8 @@ import type { TableLayout } from '../lib/useTableLayout';
 
 const FAN_STEP = 5;
 const FAN_MAX = 30;
+/** 부채 끝 카드가 기울 수 있는 가장 큰 각도(장수가 많을 때 ±15°). */
+export const FAN_EDGE_MAX = FAN_MAX / 2;
 // 부채꼴 호의 반지름(카드 폭의 배수). 가장자리 카드일수록 이 원을 따라 아래로 내려앉는다.
 // 눕힌 휴대폰은 손패까지 한 화면 높이(약 390px)에 들어가야 해서 호를 납작하게 둔다.
 export const FAN_RADIUS: Record<TableLayout, number> = { pc: 5, portrait: 5, landscape: 2.5 };
@@ -43,6 +45,19 @@ export const HAND_GLOW = 6;
 export function handHeadroom(width: number, angles: number[], radius: number, maxLift: number): number {
   const need = angles.map((angle) => maxLift + HAND_GLOW + fanUnderhang(width, angle) - fanDrop(width, angle, radius));
   return Math.ceil(Math.max(maxLift + HAND_GLOW, ...need));
+}
+
+// 장수와 상관없는 높이를 잴 때 0°~최대 각도를 이 간격으로 훑는다(실제 각도는 그 사이 아무 값이나 될 수 있다).
+const ANGLE_SAMPLE_STEP = 0.5;
+
+/**
+ * 장수와 상관없이 고정한 부채 줄의 위 여백과 아래 여백: 어떤 장수에서 나올 수 있는 기울기라도 들린 카드·가장자리 카드가 잘리지 않는 높이.
+ * 장수가 바뀔 때 줄 높이가 출렁이지 않게 한다(도둑잡기 스펙 6.4 "손패 줄 높이 고정").
+ */
+export function fixedFanRoom(width: number, radius: number, maxLift: number): { headroom: number; room: number } {
+  const samples = Math.round(FAN_EDGE_MAX / ANGLE_SAMPLE_STEP);
+  const angles = Array.from({ length: samples + 1 }, (_, index) => index * ANGLE_SAMPLE_STEP);
+  return { headroom: handHeadroom(width, angles, radius, maxLift), room: fanRoom(width, FAN_EDGE_MAX, radius) };
 }
 
 /** 모든 배치의 손패 부채꼴: 카드마다 최대 ±15° 안에서 고르게 기울인다(장수가 적으면 덜 벌린다). */

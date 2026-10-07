@@ -1,11 +1,14 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
+import type { PlayingCard } from '../../api/types';
 import { OLD_MAID_SIZES } from './layout';
 import { MyHand } from './MyHand';
 import { card, JOKER } from './oldMaidFixtures';
 
 const sizes = OLD_MAID_SIZES.pc;
+const RANKS = ['TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT', 'NINE', 'TEN', 'JACK', 'QUEEN', 'KING', 'ACE'] as const;
+const hand = (count: number): PlayingCard[] => Array.from({ length: count }, (_, index) => card(index % 2 === 0 ? 'SPADES' : 'HEARTS', RANKS[index % RANKS.length]));
 
 describe('MyHand', () => {
   it('D13 서버 순서 그대로(정렬하지 않음) 앞면으로 보인다', () => {
@@ -43,5 +46,18 @@ describe('MyHand', () => {
     render(<MyHand cards={[]} liftIndex={null} layout="pc" sizes={sizes} zoneId={1} canShuffle={false} shuffleLocked={false} onShuffle={vi.fn()} />);
 
     expect(screen.getByTestId('hand-empty')).toHaveTextContent('손패를 모두 비웠어요');
+  });
+
+  it('스펙 6.4 손패 줄 높이는 장수와 상관없이 같고 빈 손패도 같은 높이다', () => {
+    const heightOf = (count: number) => {
+      const { unmount } = render(<MyHand cards={hand(count)} liftIndex={null} layout="pc" sizes={sizes} zoneId={1} canShuffle={false} shuffleLocked={false} onShuffle={vi.fn()} />);
+      const height = screen.getByTestId(count === 0 ? 'hand-empty' : 'my-hand-row').style.height;
+      unmount();
+      return height;
+    };
+
+    const one = heightOf(1);
+    expect(one).toMatch(/px$/);
+    expect([heightOf(2), heightOf(5), heightOf(14), heightOf(0)]).toEqual([one, one, one, one]);
   });
 });
