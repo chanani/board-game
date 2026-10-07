@@ -1,6 +1,7 @@
 package com.boardgame.uno;
 
 import java.util.List;
+import java.util.Optional;
 
 // R22: 도전자 본인에게만 보여 줄 공개. 다음 상태 변화에서 지운다.
 public record ChallengeReveal(PlayerId challenger, FourCharge charge) {
@@ -15,6 +16,10 @@ public record ChallengeReveal(PlayerId challenger, FourCharge charge) {
 
     public boolean guilty() {
         return !charge.legal();
+    }
+
+    public Optional<UnoColor> previousColor() {
+        return charge.previousColor();
     }
 
     public boolean isFor(PlayerId viewer) {

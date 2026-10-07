@@ -47,8 +47,9 @@ public record UnoEvent(long seq, UnoEventType type, PlayerId actor, PlayerId tar
         return new UnoEvent(0L, UnoEventType.PENALTY, null, target, null, null, count, reason, false);
     }
 
-    public static UnoEvent challenge(PlayerId challenger, PlayerId charged, UnoEventReason verdict) {
-        return new UnoEvent(0L, UnoEventType.CHALLENGE, challenger, charged, null, null, null, verdict, false);
+    /** previousColor: +4를 내기 직전의 색(판정 기준). 화면이 판정 이유를 쓰도록 color 칸에 싣는다. */
+    public static UnoEvent challenge(PlayerId challenger, PlayerId charged, UnoEventReason verdict, UnoColor previousColor) {
+        return new UnoEvent(0L, UnoEventType.CHALLENGE, challenger, charged, null, previousColor, null, verdict, false);
     }
 
     public static UnoEvent unoCall(PlayerId actor) {

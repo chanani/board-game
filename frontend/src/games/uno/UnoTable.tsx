@@ -97,18 +97,6 @@ export function UnoTable({ view, room, meId, log, receivedAt, now, errorSeq, nic
     }
   }, [hasReveal]);
   const showReveal = hasReveal && !revealClosed;
-  // +4를 낸 순간의 "지금 색"을 기억해 공개 창에서 그 색 카드를 표시한다(서버 화면에는 바뀐 색만 있다).
-  const lastColor = useRef(game.currentColor);
-  const lastStage = useRef(game.stage);
-  const [fourBaseColor, setFourBaseColor] = useState<UnoColor | null>(null);
-  useEffect(() => {
-    if (game.stage === 'CHALLENGE' && lastStage.current !== 'CHALLENGE') {
-      setFourBaseColor(lastColor.current);
-    }
-    lastColor.current = game.currentColor;
-    lastStage.current = game.stage;
-  }, [game.stage, game.currentColor]);
-
   // 남의 도전 결과는 알림으로만(D10). 처음 그린 화면의 이벤트는 알리지 않는다.
   const seenSeq = useRef(maxSeq(game.events));
   // 이벤트 순번은 판마다 다시 시작하므로, 새 판이 시작되면 본 순번과 닫은 공개를 처음으로 되돌린다.
@@ -236,8 +224,9 @@ export function UnoTable({ view, room, meId, log, receivedAt, now, errorSeq, nic
       <ColorPicker open={myTurn && game.stage === 'CHOOSE_COLOR'} mode="first" risky={false} counts={counts}
         onCancel={() => undefined} onPick={(color) => send({ type: 'CHOOSE_COLOR', color })} />
       <ChallengePrompt open={myTurn && game.stage === 'CHALLENGE' && game.challenge !== null} byName={nicknameOf(game.challenge?.byId ?? 0)}
+        previousColor={game.challenge?.previousColor ?? null}
         deadline={game.deadline} serverNow={game.serverNow} onAccept={() => send({ type: 'ACCEPT' })} onChallenge={() => send({ type: 'CHALLENGE' })} />
-      {showReveal && game.reveal ? <ChallengeReveal reveal={game.reveal} name={nicknameOf(game.reveal.playerId)} highlightColor={fourBaseColor} onClose={closeReveal} /> : null}
+      {showReveal && game.reveal ? <ChallengeReveal reveal={game.reveal} name={nicknameOf(game.reveal.playerId)} challengerName={nicknameOf(meId)} onClose={closeReveal} /> : null}
     </>
   );
 

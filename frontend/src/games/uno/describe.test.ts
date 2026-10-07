@@ -78,10 +78,10 @@ describe('describeUno', () => {
   });
 
   it('도전 결과를 한 줄로 쓰고 도전 벌칙 줄은 쓰지 않는다', () => {
-    expect(texts([unoEvent(5, 'CHALLENGE', { actorId: 2, targetId: 1, reason: 'GUILTY' }), unoEvent(6, 'PENALTY', { targetId: 1, count: 4, reason: 'CHALLENGE_GUILTY' })]))
-      .toEqual(['밥님이 도전에 성공했어요! 앨리스님이 4장을 뽑아요']);
-    expect(texts([unoEvent(5, 'CHALLENGE', { actorId: 2, targetId: 1, reason: 'INNOCENT' }), unoEvent(6, 'PENALTY', { targetId: 2, count: 6, reason: 'CHALLENGE_FAILED' })]))
-      .toEqual(['밥님이 도전에 실패해 6장을 뽑고 차례를 건너뛰어요']);
+    expect(texts([unoEvent(5, 'CHALLENGE', { actorId: 2, targetId: 1, reason: 'GUILTY', color: 'RED' }), unoEvent(6, 'PENALTY', { targetId: 1, count: 4, reason: 'CHALLENGE_GUILTY' })]))
+      .toEqual(['앨리스님이 빨강 카드를 갖고 있었어요 — 도전 성공! 앨리스님이 4장']);
+    expect(texts([unoEvent(5, 'CHALLENGE', { actorId: 2, targetId: 1, reason: 'INNOCENT', color: 'RED' }), unoEvent(6, 'PENALTY', { targetId: 2, count: 6, reason: 'CHALLENGE_FAILED' })]))
+      .toEqual(['앨리스님에게 빨강 카드가 없었어요 — 정당한 +4, 밥님이 6장']);
   });
 
   it('우노 외침과 잡힘, 더미 다시 만들기를 쓴다', () => {

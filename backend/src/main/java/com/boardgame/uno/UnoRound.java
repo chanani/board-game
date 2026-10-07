@@ -82,7 +82,7 @@ public class UnoRound {
         progress.requireDrawnOrAny(cardId);
         requirePlayable(card);
         UnoColor color = colorFor(card, chosen);
-        boolean legalFour = holdsNoActiveColor(player);
+        FourBasis fourBasis = fourBasisOf(player);
         players.closeCatch();
         players.discardFrom(player, cardId);
         table.discard(card, color);
@@ -92,14 +92,18 @@ public class UnoRound {
             applyLastCard(card, events);
             return;
         }
-        resolve(player, card, legalFour, events);
+        resolve(player, card, fourBasis, events);
     }
 
-    // R11: 낼 때(손에서 빼기 전, 새 색을 칠하기 전) 현재 색 카드가 없었는지. 현재 색이 없으면 합법.
-    private boolean holdsNoActiveColor(PlayerId player) {
+    // R11: 낼 때(손에서 빼기 전, 새 색을 칠하기 전)의 현재 색(직전 색)과 그 색 카드가 없었는지. 현재 색이 없으면 합법.
+    private FourBasis fourBasisOf(PlayerId player) {
         return table.color()
-                .map(color -> !players.holdsColor(player, color))
-                .orElse(true);
+                .map(color -> new FourBasis(color, !players.holdsColor(player, color)))
+                .orElse(FourBasis.noColor());
+    }
+
+    private boolean holdsNoActiveColor(PlayerId player) {
+        return fourBasisOf(player).legal();
     }
 
     private void requirePlayable(UnoCard card) {
@@ -124,12 +128,12 @@ public class UnoRound {
     }
 
     // R15~R18
-    void resolve(PlayerId player, UnoCard card, boolean legalFour, EventBatch events) {
+    void resolve(PlayerId player, UnoCard card, FourBasis fourBasis, EventBatch events) {
         switch (card.kind()) {
             case SKIP -> skipNext(events);
             case REVERSE -> reverse(player, events);
             case DRAW_TWO -> drawTwoNext(events);
-            case WILD_DRAW_FOUR -> awaitChallenge(new FourCharge(player, legalFour, players.cardsOf(player)));
+            case WILD_DRAW_FOUR -> awaitChallenge(new FourCharge(player, fourBasis, players.cardsOf(player)));
             case NUMBER, WILD -> passTurn(NEXT);
         }
     }
@@ -158,14 +162,14 @@ public class UnoRound {
 
     // R20: 낸 사람이 4장. +4 카드와 고른 색은 그대로, 받는 사람이 정상 차례를 한다(D9).
     private void challengeSucceeds(PlayerId challenger, FourCharge charge, EventBatch events) {
-        events.add(UnoEvent.challenge(challenger, charge.by(), UnoEventReason.GUILTY));
+        events.add(UnoEvent.challenge(challenger, charge.by(), UnoEventReason.GUILTY, charge.previousColor().orElse(null)));
         penalize(charge.by(), FOUR, UnoEventReason.CHALLENGE_GUILTY, events);
         progress.begin(Turn.play(challenger));
     }
 
     // R21: 받는 사람이 6장을 뽑고 차례를 잃는다.
     private void challengeFails(PlayerId challenger, FourCharge charge, EventBatch events) {
-        events.add(UnoEvent.challenge(challenger, charge.by(), UnoEventReason.INNOCENT));
+        events.add(UnoEvent.challenge(challenger, charge.by(), UnoEventReason.INNOCENT, charge.previousColor().orElse(null)));
         penalize(challenger, FOUR + CHALLENGE_PENALTY, UnoEventReason.CHALLENGE_FAILED, events);
         passTurn(NEXT);
     }

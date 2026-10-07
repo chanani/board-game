@@ -26,4 +26,9 @@ describe('우노 규칙', () => {
     await userEvent.click(screen.getByRole('button', { name: '2번째 설명' }));
     expect(await screen.findAllByRole('img', { name: '우노 카드 뒷면' })).toHaveLength(3);
   });
+
+  it('+4 도전은 고른 색이 아니라 직전 색 기준임을 밝힌다', () => {
+    const challenge = UNO_RULE_SLIDES.find((slide) => slide.title === '도전');
+    expect(challenge?.body).toContain('판정 기준은 낸 사람이 고른 색이 아니라 +4를 내기 직전의 색이에요.');
+  });
 });

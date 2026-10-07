@@ -95,7 +95,8 @@ export type UnoEvent = {
   seq: number; type: UnoEventType; actorId: number | null; targetId: number | null; card: UnoCard | null;
   color: UnoColor | null; count: number | null; reason: UnoEventReason | null; auto: boolean;
 };
-export type UnoReveal = { playerId: number; cards: UnoCard[]; guilty: boolean };
+/** previousColor: +4를 내기 직전의 색. 도전 판정은 고른 색이 아니라 이 색 기준이다. */
+export type UnoReveal = { playerId: number; cards: UnoCard[]; guilty: boolean; previousColor: UnoColor | null };
 export type UnoResultPlayer = { playerId: number; cards: UnoCard[]; points: number };
 export type UnoResult = { reason: 'EMPTY_HAND' | 'FORFEIT'; winnerId: number; points: number; players: UnoResultPlayer[] };
 export type UnoView = {
@@ -120,7 +121,8 @@ export type UnoView = {
   canCallUno: boolean;
   unoCatch: { playerId: number } | null;
   canCatch: boolean;
-  challenge: { byId: number; targetId: number } | null;
+  /** previousColor: +4를 내기 직전의 색(도전 판정 기준). */
+  challenge: { byId: number; targetId: number; previousColor: UnoColor | null } | null;
   reveal: UnoReveal | null;
   result: UnoResult | null;
   winnerId: number | null;

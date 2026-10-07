@@ -4,6 +4,7 @@ import static com.boardgame.common.error.ErrorAssertions.assertError;
 import static com.boardgame.uno.UnoColor.BLUE;
 import static com.boardgame.uno.UnoColor.GREEN;
 import static com.boardgame.uno.UnoColor.RED;
+import static com.boardgame.uno.UnoColor.YELLOW;
 import static com.boardgame.uno.UnoFixtures.A;
 import static com.boardgame.uno.UnoFixtures.B;
 import static com.boardgame.uno.UnoFixtures.C;
@@ -70,6 +71,36 @@ class UnoWildFourTest {
         game.challenge(B);
 
         assertThat(game.latestEvents().get(0).reason()).isEqualTo(UnoEventReason.INNOCENT);
+    }
+
+    @Test
+    void R11_판정_기준은_고른_색이_아니라_직전_색이고_도전_기록과_공개에_직전_색을_싣는다() {
+        // 직전 색 빨강 카드는 없고 고른 초록은 갖고 있다: 공식 규칙대로 합법(도전 실패).
+        UnoGame game = withAHand(List.of(wildFour(0), num(GREEN, 2), num(GREEN, 3), num(BLUE, 1)));
+        four(game, A, GREEN);
+
+        assertThat(game.pendingCharge()).hasValueSatisfying(charge -> {
+            assertThat(charge.legal()).isTrue();
+            assertThat(charge.previousColor()).contains(RED);
+        });
+        game.challenge(B);
+
+        UnoEvent challenge = game.latestEvents().get(0);
+        assertThat(challenge.reason()).isEqualTo(UnoEventReason.INNOCENT);
+        assertThat(challenge.color()).isEqualTo(RED);
+        assertThat(game.revealFor(B)).hasValueSatisfying(reveal -> assertThat(reveal.previousColor()).contains(RED));
+    }
+
+    @Test
+    void R11_직전_색_카드가_있었으면_도전_기록에_그_색을_싣고_성공한다() {
+        UnoGame game = withAHand(List.of(wildFour(0), num(RED, 2), num(YELLOW, 1), num(BLUE, 1)));
+        four(game, A, YELLOW);
+
+        game.challenge(B);
+
+        UnoEvent challenge = game.latestEvents().get(0);
+        assertThat(challenge.reason()).isEqualTo(UnoEventReason.GUILTY);
+        assertThat(challenge.color()).isEqualTo(RED);
     }
 
     @Test

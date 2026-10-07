@@ -1,4 +1,4 @@
-import type { UnoEvent, UnoSessionView, UnoStage, UnoView } from '../../api/types';
+import type { UnoColor, UnoEvent, UnoSessionView, UnoStage, UnoView } from '../../api/types';
 import type { LogDraft } from '../../lib/eventLog';
 import { cardName, COLOR_NAMES, isWild } from './cards';
 
@@ -44,12 +44,19 @@ function penaltyLines(event: UnoEvent, nicknameOf: Nickname, ending: boolean): L
   return [];
 }
 
+/** 도전 판정 이유를 쓴다: 고른 색이 아니라 +4 직전의 색(event.color) 카드를 낸 사람이 갖고 있었는지. */
+export function challengeVerdictText(guilty: boolean, chargedName: string, challengerName: string, previousColor: UnoColor | null): string {
+  const color = previousColor ? COLOR_NAMES[previousColor] : '직전 색';
+  if (guilty) {
+    return `${chargedName}님이 ${color} 카드를 갖고 있었어요 — 도전 성공! ${chargedName}님이 4장`;
+  }
+  return `${chargedName}님에게 ${color} 카드가 없었어요 — 정당한 +4, ${challengerName}님이 6장`;
+}
+
 function challengeLine(event: UnoEvent, nicknameOf: Nickname): LogDraft {
   const challenger = event.actorId ?? 0;
-  if (event.reason === 'GUILTY') {
-    return { kind: 'challenge', actorId: challenger, text: `${nicknameOf(challenger)}님이 도전에 성공했어요! ${nicknameOf(event.targetId ?? 0)}님이 4장을 뽑아요` };
-  }
-  return { kind: 'challenge', actorId: challenger, text: `${nicknameOf(challenger)}님이 도전에 실패해 6장을 뽑고 차례를 건너뛰어요` };
+  const text = challengeVerdictText(event.reason === 'GUILTY', nicknameOf(event.targetId ?? 0), nicknameOf(challenger), event.color);
+  return { kind: 'challenge', actorId: challenger, text };
 }
 
 function gameEndLine(event: UnoEvent, nicknameOf: Nickname): LogDraft {

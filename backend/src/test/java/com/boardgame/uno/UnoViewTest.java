@@ -125,6 +125,7 @@ class UnoViewTest {
         JsonNode bystander = json(challenged, C);
         assertThat(challenger.at("/game/reveal/playerId").asLong()).isEqualTo(A);
         assertThat(challenger.at("/game/reveal/guilty").asBoolean()).isTrue();
+        assertThat(challenger.at("/game/reveal/previousColor").asText()).isEqualTo("RED");
         assertThat(cardIdsIn(challenger.at("/game/reveal/cards"))).containsExactlyInAnyOrderElementsOf(idsOf(A_HAND.subList(1, 4)));
         assertThat(bystander.at("/game/reveal").isNull()).isTrue();
         assertThat(json(challenged, A).at("/game/reveal").isNull()).isTrue();
@@ -160,7 +161,8 @@ class UnoViewTest {
 
         JsonNode bystander = json(session, C);
 
-        assertThat(fieldNames(bystander.at("/game/challenge"))).containsExactlyInAnyOrder("byId", "targetId");
+        assertThat(fieldNames(bystander.at("/game/challenge"))).containsExactlyInAnyOrder("byId", "targetId", "previousColor");
+        assertThat(bystander.at("/game/challenge/previousColor").asText()).isEqualTo("RED");
         assertThat(bystander.at("/game/challenge/byId").asLong()).isEqualTo(A);
         assertThat(bystander.at("/game/challenge/targetId").asLong()).isEqualTo(B);
         assertThat(bystander.at("/game/stage").asText()).isEqualTo("CHALLENGE");

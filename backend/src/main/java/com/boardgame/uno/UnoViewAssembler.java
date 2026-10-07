@@ -72,7 +72,7 @@ final class UnoViewAssembler {
 
     private static UnoChallengeView challenge(UnoGame game) {
         return game.pendingCharge()
-                .map(charge -> new UnoChallengeView(charge.by().value(), game.actor().value()))
+                .map(charge -> new UnoChallengeView(charge.by().value(), game.actor().value(), charge.previousColor().orElse(null)))
                 .orElse(null);
     }
 
