@@ -1,4 +1,4 @@
-import type { OldMaidEvent, OldMaidSessionView, OldMaidView } from '../../api/types';
+import type { OldMaidEvent, OldMaidSessionView } from '../../api/types';
 import type { LogDraft } from '../../lib/eventLog';
 import { rankLabel } from './cards';
 
@@ -22,10 +22,10 @@ export function describeOldMaidEvent(event: OldMaidEvent, nicknameOf: Nickname):
   const name = nicknameOf(actor);
   const target = nicknameOf(event.targetId ?? 0);
   switch (event.type) {
+    case 'DEAL':
+      return [{ kind: 'start', actorId: actor, text: '카드를 나눠 줬어요. 같은 숫자 두 장을 골라 버리세요' }];
     case 'START':
       return [{ kind: 'start', actorId: actor, text: `${name}님부터 ${target}님의 카드를 뽑아요` }];
-    case 'DEAL_PAIRS':
-      return (event.count ?? 0) > 0 ? [{ kind: 'pair', actorId: actor, text: `${name}님이 처음 짝 ${event.count}쌍을 버렸어요` }] : [];
     case 'DRAW':
       return [{ kind: 'draw-deck', actorId: actor, text: `${name}님이 ${target}님의 카드를 1장 뽑았어요` }];
     case 'PAIR':
@@ -43,24 +43,37 @@ export function describeOldMaidEvent(event: OldMaidEvent, nicknameOf: Nickname):
   }
 }
 
-// 시간 초과 자동 뽑기 자체는 "시간이 지나…" 한 줄로 대신한다. 뒤따른 짝·끝냄은 쓴다.
-function linesOf(events: OldMaidEvent[], nicknameOf: Nickname): LogDraft[] {
-  return events
-    .filter((event) => !(event.auto && event.type === 'DRAW'))
-    .flatMap((event) => describeOldMaidEvent(event, nicknameOf));
-}
-
-function timeouts(prev: OldMaidView, next: OldMaidView, nicknameOf: Nickname): LogDraft[] {
-  if (next.autoActSeq <= prev.autoActSeq) {
+// 시간 초과 자동 뽑기는 "시간이 지나 … 대신 카드를 뽑았어요" 한 줄로, 자동으로 버린 짝은 사람마다 한 줄로 묶는다(R38:
+// 처음 버리기 마감에는 여러 사람의 짝이 한꺼번에 버려진다). 뒤따른 끝냄·첫 차례는 그대로 쓴다.
+function autoPairLine(events: OldMaidEvent[], event: OldMaidEvent, nicknameOf: Nickname): LogDraft[] {
+  const actor = event.actorId ?? 0;
+  const mine = events.filter((one) => one.auto && one.type === 'PAIR' && one.actorId === event.actorId);
+  if (mine[0] !== event) {
     return [];
   }
-  return next.lastAutoActorIds.map((actorId) => ({ kind: 'timeout', actorId, text: `시간이 지나 ${nicknameOf(actorId)}님 대신 카드를 뽑았어요` }));
+  const what = mine.length === 1 ? `${rankLabel(event.cards[0])} 짝을` : `짝 ${mine.length}쌍을`;
+  return [{ kind: 'timeout', actorId: actor, text: `시간이 지나 ${nicknameOf(actor)}님의 ${what} 자동으로 버렸어요` }];
+}
+
+function lineOf(events: OldMaidEvent[], event: OldMaidEvent, nicknameOf: Nickname): LogDraft[] {
+  if (event.auto && event.type === 'DRAW') {
+    const actor = event.actorId ?? 0;
+    return [{ kind: 'timeout', actorId: actor, text: `시간이 지나 ${nicknameOf(actor)}님 대신 카드를 뽑았어요` }];
+  }
+  if (event.auto && event.type === 'PAIR' && event.cards.length > 0) {
+    return autoPairLine(events, event, nicknameOf);
+  }
+  return describeOldMaidEvent(event, nicknameOf);
+}
+
+function linesOf(events: OldMaidEvent[], nicknameOf: Nickname): LogDraft[] {
+  return events.flatMap((event) => lineOf(events, event, nicknameOf));
 }
 
 export function describeOldMaid(prev: OldMaidSessionView | null, next: OldMaidSessionView, nicknameOf: Nickname): LogDraft[] {
   if (!prev) {
-    // 방에서 처음 받은 화면: 막 시작한 게임(START 있음)만 쓰고, 다시 연결로 받은 중간 화면은 반복하지 않는다.
-    return next.game.events.some((event) => event.type === 'START') ? linesOf(next.game.events, nicknameOf) : [];
+    // 방에서 처음 받은 화면: 막 시작한 게임(나눔 DEAL 또는 첫 차례 START 있음)만 쓰고, 다시 연결로 받은 중간 화면은 반복하지 않는다.
+    return next.game.events.some((event) => event.type === 'DEAL' || event.type === 'START') ? linesOf(next.game.events, nicknameOf) : [];
   }
   const before = prev.game;
   const after = next.game;
@@ -69,5 +82,5 @@ export function describeOldMaid(prev: OldMaidSessionView | null, next: OldMaidSe
   }
   const lastSeq = latestSeq(before.events);
   const fresh = after.events.filter((event) => event.seq > lastSeq);
-  return [...linesOf(fresh, nicknameOf), ...timeouts(before, after, nicknameOf)];
+  return linesOf(fresh, nicknameOf);
 }

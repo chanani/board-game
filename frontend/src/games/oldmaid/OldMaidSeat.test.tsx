@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { OldMaidPlayerView } from '../../api/types';
 import { OldMaidSeat } from './OldMaidSeat';
 
-const player = (fields: Partial<OldMaidPlayerView> = {}): OldMaidPlayerView => ({ playerId: 2, cardCount: 3, rank: null, forfeited: false, ...fields });
+const player = (fields: Partial<OldMaidPlayerView> = {}): OldMaidPlayerView => ({ playerId: 2, cardCount: 3, rank: null, forfeited: false, openingDone: true, ...fields });
 
 describe('OldMaidSeat', () => {
   it('이름·장수·차례·뽑히는 중을 보이고 접근성 이름에 담는다', () => {
@@ -37,8 +37,22 @@ describe('OldMaidSeat', () => {
     expect(screen.getByTestId('thief-badge')).toHaveTextContent('도둑');
     expect(screen.queryByTestId('rank-badge')).not.toBeInTheDocument();
 
-    rerender(<OldMaidSeat player={player({ cardCount: 0, rank: 4, forfeited: true })} nickname="밥" active={false} targeted={false} backWidth={30} maxBacks={7} liftIndex={null} />);
+    rerender(<OldMaidSeat player={player({ cardCount: 0, rank: 4, forfeited: true, openingDone: true })} nickname="밥" active={false} targeted={false} backWidth={30} maxBacks={7} liftIndex={null} />);
     expect(screen.getByRole('group', { name: '밥, 카드 0장, 4등, 기권' })).toBeInTheDocument();
     expect(screen.getByTestId('forfeit-tag')).toHaveTextContent('기권');
+  });
+
+  it('R36·R37 짝 버리기 표시: 버리는 중이면 차례 배지 대신, 다 버렸으면 다 버림', () => {
+    const { rerender } = render(<OldMaidSeat player={player()} nickname="밥" active={false} targeted={false} backWidth={30} maxBacks={7} liftIndex={null}
+      note={{ text: '버리는 중', done: false }} />);
+    expect(screen.getByRole('group', { name: '밥, 카드 3장, 버리는 중' })).toBeInTheDocument();
+    expect(screen.getByTestId('discard-note')).not.toHaveAttribute('data-done');
+
+    rerender(<OldMaidSeat player={player()} nickname="밥" active={false} targeted={false} backWidth={30} maxBacks={7} liftIndex={null} note={{ text: '다 버림', done: true }} />);
+    expect(screen.getByTestId('discard-note')).toHaveAttribute('data-done', 'true');
+
+    rerender(<OldMaidSeat player={player()} nickname="밥" active targeted={false} backWidth={30} maxBacks={7} liftIndex={null} note={{ text: '짝 버리는 중', done: false }} />);
+    expect(screen.getByTestId('discard-note')).toHaveTextContent('짝 버리는 중');
+    expect(screen.queryByTestId('turn-tag')).not.toBeInTheDocument();
   });
 });

@@ -14,13 +14,14 @@ import { TurnRibbon } from '../../table/TurnRibbon';
 import { useFinalePhase } from '../../table/useFinalePhase';
 import type { TableProps } from '../gameModule';
 import { DiscardPairs } from './DiscardPairs';
-import { oldMaidInstruction, pickCaption, useOldMaidSizes } from './layout';
+import { oldMaidInstruction, pickCaption, ribbonText, useOldMaidSizes } from './layout';
 import { OldMaidGhostLayer } from './motion/OldMaidGhostLayer';
 import { finaleDelayMs } from './motion/planOldMaidMotion';
 import { useOldMaidMotion } from './motion/useOldMaidMotion';
 import { MyHand } from './MyHand';
 import { OldMaidGameOverPanel } from './OldMaidGameOverPanel';
-import { OldMaidSeat } from './OldMaidSeat';
+import { OldMaidSeat, type SeatNote } from './OldMaidSeat';
+import { discardChoice, keepInHand, toggleSelection } from './pairPick';
 import { TargetFan } from './TargetFan';
 import { effectivePeek, usePeekSender } from './usePeek';
 import { useShuffleEffects } from './useShuffleEffects';
@@ -48,7 +49,11 @@ export function OldMaidTable({ view, room, meId, log, receivedAt, now, errorSeq,
   const sizes = useOldMaidSizes(layout);
   const { play } = useSound();
   const live = game.status === 'IN_PROGRESS';
+  const opening = live && game.stage === 'OPENING_DISCARD';
   const myTurn = live && game.currentPlayerId === meId;
+  const drawing = live && game.stage === 'DRAW';
+  // 처음 버리기 단계에는 버릴 짝이 있는 모두가, 그 밖에는 뽑는 사람이 할 일이 있다(리본·5초 경고 소리).
+  const acting = myTurn || (opening && game.canDiscard);
   const liftIndex = effectivePeek(game, signal);
 
   // 뽑기는 보낸 뒤 차례가 바뀌거나(새 판 포함) 오류가 오기 전까지 다시 보내지 않는다. 섞기는 이 잠금을 쓰지 않는다.
@@ -87,6 +92,30 @@ export function OldMaidTable({ view, room, meId, log, receivedAt, now, errorSeq,
     rawSend({ type: 'SHUFFLE' });
   };
 
+  // R36·R37 짝 고르기: 고른 카드는 단계(차례·단계)가 바뀌면 처음부터, 손에서 사라진 카드는 빠진다.
+  const hand = game.hand ?? [];
+  const pickKey = `${game.startedAt}:${game.turnSeq}:${game.stage}`;
+  const [pick, setPick] = useState<{ key: string; ids: number[] }>({ key: pickKey, ids: [] });
+  const selectedIds = pick.key === pickKey ? keepInHand(pick.ids, hand) : [];
+  const choice = discardChoice(game, selectedIds);
+  // 버리기는 보낸 뒤 내 손패·단계가 바뀌거나 오류가 오기 전까지 다시 보내지 않는다(같은 짝을 두 번 보내 오류가 뜨지 않게).
+  const lockKey = `${pickKey}:${errorSeq}:${hand.map((one) => one.id).join(',')}`;
+  const [discardLock, setDiscardLock] = useState<string | null>(null);
+  const discardLocked = discardLock === lockKey;
+  const toggle = (id: number) => setPick({ key: pickKey, ids: toggleSelection(selectedIds, id) });
+  const discard = () => {
+    if (!choice.ids || discardLocked) {
+      return;
+    }
+    setDiscardLock(lockKey);
+    setPick({ key: pickKey, ids: [] });
+    rawSend({ type: 'DISCARD', cardIds: choice.ids });
+  };
+  const picker = live && game.canDiscard ? {
+    selectedIds, glowIds: choice.glowIds, onToggle: toggle, label: game.stage === 'DISCARD' ? '짝 버리기' : '버리기',
+    ready: choice.ids !== null, hint: choice.hint, locked: discardLocked, onDiscard: discard,
+  } : undefined;
+
   // 내가 뽑는 사람이 된 새 차례마다 한 번 차례 소리.
   const myTurnKey = useRef<string | null>(null);
   useEffect(() => {
@@ -114,6 +143,16 @@ export function OldMaidTable({ view, room, meId, log, receivedAt, now, errorSeq,
   const targetPlayer = game.players.find((player) => player.playerId === game.targetId);
   const thiefId = game.result?.thiefId ?? null;
 
+  // R36: 처음 버리기 단계에는 "버리는 중"·"다 버림"(빈손·기권은 표시 없음), R37: 짝 버리기 단계의 뽑은 사람은 "짝 버리는 중".
+  const seatNote = (player: OldMaidSessionView['game']['players'][number], active: boolean): SeatNote | null => {
+    if (opening && player.cardCount > 0 && !player.forfeited) {
+      return player.openingDone ? { text: '다 버림', done: true } : { text: '버리는 중', done: false };
+    }
+    if (active && game.stage === 'DISCARD') {
+      return { text: '짝 버리는 중', done: false };
+    }
+    return null;
+  };
   const seat = (playerId: number | undefined) => {
     const player = game.players.find((candidate) => candidate.playerId === playerId);
     if (!player) {
@@ -121,14 +160,14 @@ export function OldMaidTable({ view, room, meId, log, receivedAt, now, errorSeq,
     }
     const member = room.members.find((candidate) => candidate.id === player.playerId);
     const active = live && game.currentPlayerId === player.playerId;
-    const targeted = live && game.targetId === player.playerId;
+    const targeted = drawing && game.targetId === player.playerId;
     return (
       <div key={player.playerId} className="relative z-10">
         <OldMaidSeat player={player} nickname={nicknameOf(player.playerId)} avatar={roomAvatarOf(room, player.playerId)}
           active={active} targeted={targeted} liftIndex={targeted ? liftIndex : null} backWidth={backWidth} maxBacks={maxBacks}
           timer={active && game.deadline !== null ? { deadline: game.deadline, serverNow: game.serverNow } : undefined}
           connected={member?.connected} offlineSeconds={member ? offlineSecondsNow(member, receivedAt, now) : 0}
-          shuffling={shuffling.has(player.playerId)} thief={thiefId === player.playerId} />
+          shuffling={shuffling.has(player.playerId)} thief={thiefId === player.playerId} note={seatNote(player, active)} />
       </div>
     );
   };
@@ -143,7 +182,7 @@ export function OldMaidTable({ view, room, meId, log, receivedAt, now, errorSeq,
         {showFan && targetPlayer ? (
           // 상대나 차례가 바뀌면 고르던(올린·누른) 카드 기억을 새로 시작한다.
           <TargetFan key={`${targetPlayer.playerId}:${turnKey}`} ownerName={nicknameOf(targetPlayer.playerId)} count={targetPlayer.cardCount} cardWidth={sizes.pick}
-            minVisible={sizes.pickMinVisible} liftIndex={liftIndex} layout={layout} interactive={myTurn} onPeek={sendPeek} onDraw={draw} />
+            minVisible={sizes.pickMinVisible} liftIndex={drawing ? liftIndex : null} layout={layout} interactive={myTurn && drawing} onPeek={sendPeek} onDraw={draw} />
         ) : null}
         <DiscardPairs pairs={game.recentPairs} count={game.discardCount} cardWidth={sizes.pair} discards={game.discards ?? []} nicknameOf={nicknameOf} />
       </div>
@@ -172,17 +211,18 @@ export function OldMaidTable({ view, room, meId, log, receivedAt, now, errorSeq,
       )}
     </Felt>
   );
-  // 내 차례(뽑는 사람)면 손패 위에 공통 리본으로 남은 시간을 보인다.
+  // 할 일이 있으면(내 차례·짝 버리기·처음 버리기) 손패 위에 공통 리본으로 할 일과 남은 시간을 보인다.
+  const ribbon = ribbonText(game, meId);
   const mine = game.hand === null ? <SpectatorNotice /> : (
-    <div data-testid="my-area" data-active={myTurn ? 'true' : undefined} className="relative -my-1 rounded-2xl px-1 py-1">
-      {myTurn ? <TurnRibbon deadline={game.deadline} serverNow={game.serverNow} /> : null}
-      <MyHand cards={game.hand} liftIndex={live && game.targetId === meId ? liftIndex : null} layout={layout} sizes={sizes} zoneId={meId}
-        canShuffle={game.canShuffle} shuffleLocked={shuffleLocked} onShuffle={shuffle} />
+    <div data-testid="my-area" data-active={acting ? 'true' : undefined} className="relative -my-1 rounded-2xl px-1 py-1">
+      {ribbon ? <TurnRibbon deadline={game.deadline} serverNow={game.serverNow} label={ribbon.label} showSeconds={ribbon.showSeconds} /> : null}
+      <MyHand cards={game.hand} liftIndex={drawing && game.targetId === meId ? liftIndex : null} layout={layout} sizes={sizes} zoneId={meId}
+        canShuffle={game.canShuffle} shuffleLocked={shuffleLocked} onShuffle={shuffle} picker={picker} />
     </div>
   );
   const turnBar = (
     <TurnBar instruction={oldMaidInstruction(game, meId, nicknameOf, wide)} myTurn={myTurn} log={log} nicknameOf={nicknameOf} compact={!wide}
-      stacked={layout === 'landscape'} deadline={game.deadline} serverNow={game.serverNow} onWarn={myTurn ? () => play('tick') : undefined} />
+      stacked={layout === 'landscape'} deadline={game.deadline} serverNow={game.serverNow} onWarn={acting ? () => play('tick') : undefined} />
   );
 
   if (finale === 'done' && game.status === 'GAME_OVER') {
@@ -192,9 +232,9 @@ export function OldMaidTable({ view, room, meId, log, receivedAt, now, errorSeq,
     <div ref={containerRef} inert={finale !== 'playing'} data-testid="oldmaid-table" data-layout={layout}>
       {layout === 'landscape' ? (
         // 눕힌 휴대폰(390px 높이)에 한 화면으로 들어가게 페이지 위아래 여백(24px)을 4px만 남기고 왼쪽 칸 사이 간격도 줄인다(내 차례 6명 판 기준).
-        <div data-testid="landscape-table" className="-my-5 grid grid-cols-[10.5rem_1fr] items-start gap-3">
+        <div data-testid="landscape-table" className="-my-5 grid grid-cols-[10.5rem_minmax(0,1fr)] items-start gap-3">
           <div data-testid="table-aside" className="sticky top-1 space-y-0.5">{aside}{turnBar}{asideFooter}</div>
-          <div className="space-y-2">{felt}{mine}</div>
+          <div className="min-w-0 space-y-2">{felt}{mine}</div>
         </div>
       ) : (
         <div className={wide ? 'space-y-2' : 'space-y-3'}>{turnBar}{felt}{mine}</div>

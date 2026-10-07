@@ -23,7 +23,7 @@ function table(overrides: Partial<OldMaidView> = {}, meId = 1, count = 3) {
 
 const sixPlayers = (): Partial<OldMaidView> => ({
   participantIds: [1, 2, 3, 4, 5, 6],
-  players: [1, 2, 3, 4, 5, 6].map((playerId) => ({ playerId, cardCount: 5, rank: null, forfeited: false })),
+  players: [1, 2, 3, 4, 5, 6].map((playerId) => ({ playerId, cardCount: 5, rank: null, forfeited: false, openingDone: true })),
 });
 
 beforeEach(() => setMediaMatches(true));
@@ -40,7 +40,7 @@ describe('OldMaidTable 배치', () => {
   it('PC 4명: 내 다음 사람(내가 뽑는 상대)이 왼쪽, 그다음이 위, 마지막이 오른쪽', () => {
     render(table({
       participantIds: [1, 2, 3, 4],
-      players: [1, 2, 3, 4].map((playerId) => ({ playerId, cardCount: 3, rank: null, forfeited: false })),
+      players: [1, 2, 3, 4].map((playerId) => ({ playerId, cardCount: 3, rank: null, forfeited: false, openingDone: true })),
     }, 1, 4));
 
     expect(within(screen.getByTestId('seat-left')).getByRole('group', { name: /^밥, 카드 3장/ })).toBeInTheDocument();
@@ -100,14 +100,16 @@ describe('OldMaidTable 배치', () => {
     expect(within(screen.getAllByTestId('oldmaid-seat')[0]).getAllByTestId('playing-card-back')[0]).toHaveAttribute('width', '16');
     // 페이지 위아래 여백을 줄이고(4px만 남김) 왼쪽 칸 간격을 좁힌다.
     expect(screen.getByTestId('landscape-table')).toHaveClass('-my-5');
+    // 처음 버리기 단계의 27장 손패도 오른쪽 칸 안에서 스크롤되게 칸이 내용 폭으로 늘지 않는다.
+    expect(screen.getByTestId('landscape-table')).toHaveClass('grid-cols-[10.5rem_minmax(0,1fr)]');
     expect(screen.getByTestId('table-aside')).toHaveClass('space-y-0.5');
   });
 
   it('내가 뽑는 사람이면 안내·리본·가운데 상대 부채가 보인다', () => {
     render(table({ players: [
-      { playerId: 1, cardCount: 2, rank: null, forfeited: false },
-      { playerId: 2, cardCount: 4, rank: null, forfeited: false },
-      { playerId: 3, cardCount: 2, rank: null, forfeited: false },
+      { playerId: 1, cardCount: 2, rank: null, forfeited: false, openingDone: true },
+      { playerId: 2, cardCount: 4, rank: null, forfeited: false, openingDone: true },
+      { playerId: 3, cardCount: 2, rank: null, forfeited: false, openingDone: true },
     ] }));
 
     expect(screen.getByTestId('instruction')).toHaveTextContent('밥님의 카드를 1장 고르세요.');

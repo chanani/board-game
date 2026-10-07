@@ -17,14 +17,14 @@ const room: Room = {
 };
 const nicknameOf = (id: number) => room.members.find((member) => member.id === id)?.nickname ?? '떠난 플레이어';
 const playing = oldMaidView({ participantIds: [1, 2], players: [
-  { playerId: 1, cardCount: 1, rank: null, forfeited: false },
-  { playerId: 2, cardCount: 2, rank: null, forfeited: false },
+  { playerId: 1, cardCount: 1, rank: null, forfeited: false, openingDone: true },
+  { playerId: 2, cardCount: 2, rank: null, forfeited: false, openingDone: true },
 ], events: [oldMaidEvent(5, 'SHUFFLE', { actorId: 2 })] });
 
 function ended(reason: 'NORMAL' | 'FORFEIT'): OldMaidView {
   return oldMaidView({
     status: 'GAME_OVER', currentPlayerId: null, targetId: null, peek: null, winnerId: 1, hand: [],
-    players: [{ playerId: 1, cardCount: 0, rank: 1, forfeited: false }, { playerId: 2, cardCount: 1, rank: 2, forfeited: reason === 'FORFEIT' }],
+    players: [{ playerId: 1, cardCount: 0, rank: 1, forfeited: false, openingDone: true }, { playerId: 2, cardCount: 1, rank: 2, forfeited: reason === 'FORFEIT', openingDone: true }],
     result: { reason, thiefId: reason === 'NORMAL' ? 2 : null, ranking: [
       { playerId: 1, rank: 1, placement: reason === 'NORMAL' ? 'FINISHED' : 'LAST_STANDING' },
       { playerId: 2, rank: 2, placement: reason === 'NORMAL' ? 'THIEF' : 'FORFEITED' },

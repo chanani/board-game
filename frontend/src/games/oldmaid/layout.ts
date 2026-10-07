@@ -43,13 +43,36 @@ export function scaledIndex(index: number, count: number, shown: number): number
   return Math.round((index * (shown - 1)) / (count - 1));
 }
 
-/** 스펙 6.6 차례 안내 문구. */
+/** R36 처음 버리기 단계 안내(차례 줄). 관전자(손패 없음)는 모두가 버리는 중임을, 참가자는 내 할 일을 본다. */
+function openingInstruction(game: OldMaidView, wide: boolean): string {
+  if (game.hand === null) {
+    return wide ? '모두 처음 짝을 버리는 중…' : '짝을 버리는 중…';
+  }
+  if (game.canDiscard) {
+    return wide ? '같은 숫자 두 장을 골라 버리세요.' : '짝을 골라 버리세요';
+  }
+  return wide ? '다 버렸어요. 다른 사람을 기다리는 중…' : '다른 사람을 기다리는 중…';
+}
+
+/** 스펙 6.6 차례 안내 문구(+ R36 처음 버리기, R37 짝 버리기). */
 export function oldMaidInstruction(game: OldMaidView, meId: number, nicknameOf: (id: number) => string, wide: boolean): string {
-  if (game.status === 'GAME_OVER' || game.currentPlayerId === null || game.targetId === null) {
+  if (game.status === 'GAME_OVER') {
+    return '게임이 끝났어요.';
+  }
+  if (game.stage === 'OPENING_DISCARD') {
+    return openingInstruction(game, wide);
+  }
+  if (game.currentPlayerId === null || game.targetId === null) {
     return '게임이 끝났어요.';
   }
   const drawer = nicknameOf(game.currentPlayerId);
   const target = nicknameOf(game.targetId);
+  if (game.stage === 'DISCARD') {
+    if (game.currentPlayerId === meId) {
+      return wide ? '짝이 맞았어요. 두 장을 버리세요.' : '짝을 버리세요';
+    }
+    return `${drawer}님이 짝을 버리는 중…`;
+  }
   if (game.currentPlayerId === meId) {
     return wide ? `${target}님의 카드를 1장 고르세요.` : '카드를 1장 고르세요';
   }
@@ -63,10 +86,19 @@ export function oldMaidInstruction(game: OldMaidView, meId: number, nicknameOf: 
   return wide ? `${drawer}님이 ${target}님의 카드를 고르는 중…` : `${drawer}님의 차례예요`;
 }
 
-/** 가운데 큰 부채 위 한 줄. 끝났으면 null. */
+/** 가운데(부채·버린 더미) 위 한 줄. 끝났으면 null. */
 export function pickCaption(game: OldMaidView, meId: number, nicknameOf: (id: number) => string): string | null {
-  if (game.status === 'GAME_OVER' || game.currentPlayerId === null || game.targetId === null) {
+  if (game.status === 'GAME_OVER') {
     return null;
+  }
+  if (game.stage === 'OPENING_DISCARD') {
+    return game.canDiscard ? '같은 숫자 두 장을 골라 버리세요' : '모두 처음 짝을 버리는 중';
+  }
+  if (game.currentPlayerId === null || game.targetId === null) {
+    return null;
+  }
+  if (game.stage === 'DISCARD') {
+    return game.currentPlayerId === meId ? '짝이 맞았어요! 두 장을 버리세요' : `${nicknameOf(game.currentPlayerId)}님이 짝을 버리는 중`;
   }
   if (game.currentPlayerId === meId) {
     return `${nicknameOf(game.targetId)}님의 카드를 1장 고르세요`;
@@ -75,4 +107,25 @@ export function pickCaption(game: OldMaidView, meId: number, nicknameOf: (id: nu
     return '내 카드를 고르고 있어요';
   }
   return `${nicknameOf(game.currentPlayerId)}님이 ${nicknameOf(game.targetId)}님의 카드를 고르는 중`;
+}
+
+export type RibbonText = { label: string; showSeconds: boolean };
+
+/** 내 손패 칸 위 리본(TurnRibbon) 문구. 할 일이 없으면 null. */
+export function ribbonText(game: OldMaidView, meId: number): RibbonText | null {
+  if (game.status !== 'IN_PROGRESS' || game.hand === null) {
+    return null;
+  }
+  if (game.stage === 'OPENING_DISCARD') {
+    return game.canDiscard
+      ? { label: '같은 숫자 두 장을 골라 버리세요', showSeconds: true }
+      : { label: '다 버렸어요 · 다른 사람을 기다리는 중', showSeconds: false };
+  }
+  if (game.currentPlayerId !== meId) {
+    return null;
+  }
+  if (game.stage === 'DISCARD') {
+    return { label: '짝을 버리세요', showSeconds: true };
+  }
+  return { label: '내 차례', showSeconds: true };
 }

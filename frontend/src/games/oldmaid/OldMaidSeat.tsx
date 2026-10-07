@@ -26,15 +26,19 @@ type Props = {
   /** 게임이 끝나 도둑으로 정해짐. */
   thief?: boolean;
   avatar?: AvatarKey;
+  /** 짝 버리기 표시: 처음 버리기 단계의 "버리는 중"·"다 버림"(R36), 짝 버리기 단계 뽑은 사람의 "짝 버리는 중"(R37). */
+  note?: SeatNote | null;
 };
+
+export type SeatNote = { text: string; done: boolean };
 
 const TAG = 'whitespace-nowrap rounded-full px-2 py-0.5 shadow-[0_1px_0_rgb(0_0_0/0.3)]';
 
-export function OldMaidSeat({ player, nickname, active, targeted, backWidth, maxBacks, liftIndex, timer, connected, offlineSeconds = 0, shuffling = false, thief = false, avatar }: Props) {
+export function OldMaidSeat({ player, nickname, active, targeted, backWidth, maxBacks, liftIndex, timer, connected, offlineSeconds = 0, shuffling = false, thief = false, avatar, note = null }: Props) {
   const reduced = useReducedMotion();
   const backs = Math.min(player.cardCount, maxBacks);
   const lifted = targeted && liftIndex !== null ? scaledIndex(liftIndex, player.cardCount, backs) : null;
-  const label = `${nickname}, 카드 ${player.cardCount}장${active ? ', 차례' : ''}${player.rank !== null ? `, ${player.rank}등` : ''}${player.forfeited ? ', 기권' : ''}${thief ? ', 도둑' : ''}`;
+  const label = `${nickname}, 카드 ${player.cardCount}장${active ? ', 차례' : ''}${note ? `, ${note.text}` : ''}${player.rank !== null ? `, ${player.rank}등` : ''}${player.forfeited ? ', 기권' : ''}${thief ? ', 도둑' : ''}`;
   const finished = player.rank !== null && !thief;
   return (
     <div role="group" aria-label={label} data-testid="oldmaid-seat" data-player={player.playerId}
@@ -66,7 +70,11 @@ export function OldMaidSeat({ player, nickname, active, targeted, backWidth, max
         ))}
       </div>
       <div className="flex flex-nowrap items-center gap-1 text-[11px] font-bold">
-        {active ? <span data-testid="turn-tag" className={`${TAG} bg-(--turn-tag-bg) text-(--turn-tag-ink)`}>차례</span> : null}
+        {active && !note ? <span data-testid="turn-tag" className={`${TAG} bg-(--turn-tag-bg) text-(--turn-tag-ink)`}>차례</span> : null}
+        {note ? (
+          <span data-testid="discard-note" data-done={note.done ? 'true' : undefined}
+            className={`${TAG} ${note.done ? 'bg-emerald-600 text-white' : 'bg-(--turn-tag-bg) text-(--turn-tag-ink)'}`}>{note.text}</span>
+        ) : null}
         {targeted ? <span data-testid="target-tag" className={`${TAG} bg-(--accent) text-(--accent-text)`}>뽑히는 중</span> : null}
         {player.rank === null && !player.forfeited ? <span data-testid="card-count" className={`${TAG} bg-black/35 text-cream-50`}>{player.cardCount}장</span> : null}
         {finished ? (

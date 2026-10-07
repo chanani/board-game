@@ -11,13 +11,13 @@ export function oldMaidEvent(seq: number, type: OldMaidEvent['type'], fields: Pa
 /** 기본: 3명, 나(1)가 2에게서 뽑을 차례. 내 손패 스페이드 3·하트 7, 2는 3장, 3은 2장. */
 export function oldMaidView(overrides: Partial<OldMaidView> = {}): OldMaidView {
   return {
-    viewerId: 1, status: 'IN_PROGRESS', startedAt: 1000, currentPlayerId: 1, targetId: 2, turnSeq: 1, participantIds: [1, 2, 3],
+    viewerId: 1, status: 'IN_PROGRESS', stage: 'DRAW', startedAt: 1000, currentPlayerId: 1, targetId: 2, turnSeq: 1, participantIds: [1, 2, 3],
     players: [
-      { playerId: 1, cardCount: 2, rank: null, forfeited: false },
-      { playerId: 2, cardCount: 3, rank: null, forfeited: false },
-      { playerId: 3, cardCount: 2, rank: null, forfeited: false },
+      { playerId: 1, cardCount: 2, rank: null, forfeited: false, openingDone: true },
+      { playerId: 2, cardCount: 3, rank: null, forfeited: false, openingDone: true },
+      { playerId: 3, cardCount: 2, rank: null, forfeited: false, openingDone: true },
     ],
-    hand: [card('SPADES', 'THREE'), card('HEARTS', 'SEVEN')], peek: { index: null, seq: 0 }, canShuffle: false,
+    hand: [card('SPADES', 'THREE'), card('HEARTS', 'SEVEN')], peek: { index: null, seq: 0 }, canShuffle: false, canDiscard: false,
     discardCount: 0, recentPairs: [], discards: [], result: null, winnerId: null, deadline: null, serverNow: 0,
     lastAutoActorIds: [], autoActSeq: 0, events: [],
     ...overrides,

@@ -48,6 +48,8 @@ export type GameAction = {
   color?: UnoColor;
   targetId?: number;
   index?: number | null;
+  /** 도둑잡기 DISCARD: 짝으로 버릴 서로 다른 두 장. */
+  cardIds?: number[];
 };
 
 export type CardKind = 'NUMBER' | 'ELEPHANT' | 'TARZAN' | 'FOX' | 'WILD';
@@ -142,20 +144,25 @@ export type PlayingRank = 'ACE' | 'TWO' | 'THREE' | 'FOUR' | 'FIVE' | 'SIX' | 'S
   | 'JACK' | 'QUEEN' | 'KING' | 'JOKER';
 /** 조커는 suit = null, rank = 'JOKER', id = 52. */
 export type PlayingCard = { id: number; suit: Suit | null; rank: PlayingRank };
-export type OldMaidPlayerView = { playerId: number; cardCount: number; rank: number | null; forfeited: boolean };
+/** openingDone: 처음 버리기 단계에서 손에 짝이 남지 않았는지("다 버림"). 다른 단계에서는 늘 true. */
+export type OldMaidPlayerView = { playerId: number; cardCount: number; rank: number | null; forfeited: boolean; openingDone: boolean };
 export type OldMaidPlacement = 'FINISHED' | 'THIEF' | 'LAST_STANDING' | 'FORFEITED';
 export type OldMaidRankEntry = { playerId: number; rank: number; placement: OldMaidPlacement };
 export type OldMaidResult = { reason: 'NORMAL' | 'FORFEIT'; ranking: OldMaidRankEntry[]; thiefId: number | null };
-export type OldMaidEventType = 'START' | 'DEAL_PAIRS' | 'DRAW' | 'PAIR' | 'FINISH' | 'SHUFFLE' | 'FORFEIT' | 'GAME_END';
+export type OldMaidEventType = 'DEAL' | 'START' | 'DRAW' | 'PAIR' | 'FINISH' | 'SHUFFLE' | 'FORFEIT' | 'GAME_END';
 export type OldMaidEvent = {
   seq: number; type: OldMaidEventType; actorId: number | null; targetId: number | null; cards: PlayingCard[];
   count: number | null; reason: 'NORMAL' | 'FORFEIT' | null; auto: boolean;
 };
 /** 버린 짝 한 쌍과 버린 사람(공개 정보, 버린 순서대로). */
 export type OldMaidDiscard = { playerId: number; cards: PlayingCard[] };
+/** 처음 버리기(모두 동시에) -> 뽑기 <-> 짝 버리기(뽑은 카드로 짝이 된 뽑은 사람). */
+export type OldMaidStage = 'OPENING_DISCARD' | 'DRAW' | 'DISCARD';
 export type OldMaidView = {
   viewerId: number;
   status: 'IN_PROGRESS' | 'GAME_OVER';
+  /** 게임 중 단계(끝나면 null). 처음 버리기 단계에는 currentPlayerId·targetId·peek이 null이고 turnSeq = 0. */
+  stage: OldMaidStage | null;
   startedAt: number;
   currentPlayerId: number | null;
   targetId: number | null;
@@ -165,6 +172,8 @@ export type OldMaidView = {
   hand: PlayingCard[] | null;
   peek: { index: number | null; seq: number } | null;
   canShuffle: boolean;
+  /** 내가 지금 짝을 골라 버릴 수 있는지(처음 버리기 단계에 내 손에 짝이 있거나, 짝 버리기 단계의 뽑은 사람). */
+  canDiscard: boolean;
   discardCount: number;
   recentPairs: PlayingCard[][];
   /** 처음부터 지금까지 버린 짝 전체(오래된 것부터). 버린 카드 목록 창이 쓴다. */

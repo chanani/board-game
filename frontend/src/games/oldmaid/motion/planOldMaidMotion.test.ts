@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { card, oldMaidEvent, oldMaidView } from '../oldMaidFixtures';
 import { FINALE_DELAY_MS } from '../../../table/useFinalePhase';
-import { DRAW_MS, finaleDelayMs, MAX_TRANSFER_FLIGHTS, PAIR_GAP_MS, PAIR_MS, planOldMaidMotion } from './planOldMaidMotion';
+import { DRAW_MS, FAST_PAIR_STEP_MS, finaleDelayMs, MAX_TRANSFER_FLIGHTS, PAIR_GAP_MS, PAIR_MS, planOldMaidMotion } from './planOldMaidMotion';
 
 const base = oldMaidView({ events: [oldMaidEvent(3, 'SHUFFLE', { actorId: 3 })] });
 
@@ -93,5 +93,28 @@ describe('planOldMaidMotion', () => {
     expect(finaleDelayMs(base, last, 1)).toBe(DRAW_MS + PAIR_GAP_MS + PAIR_MS + 100);
     expect(finaleDelayMs(base, drawOnly, 1)).toBe(FINALE_DELAY_MS);
     expect(finaleDelayMs(null, last, 1)).toBe(FINALE_DELAY_MS);
+  });
+
+  it('R37 짝 버리기 단계에서 내가 버린 짝은 내 손패에서 버린 더미로 앞면으로 날아가고 place 소리', () => {
+    const to = oldMaidView({ events: [oldMaidEvent(5, 'PAIR', { actorId: 1, cards: [card('SPADES', 'NINE'), card('HEARTS', 'NINE')] })] });
+
+    const plan = planOldMaidMotion(base, to, 1);
+
+    expect(plan.flights).toEqual([
+      { card: card('SPADES', 'NINE'), from: 'hand:1', to: 'discard', delay: 0, duration: PAIR_MS, flip: false },
+      { card: card('HEARTS', 'NINE'), from: 'hand:1', to: 'discard', delay: PAIR_GAP_MS, duration: PAIR_MS, flip: false },
+    ]);
+    expect(plan.sounds).toEqual([{ name: 'place', delay: 0 }]);
+  });
+
+  it('R38 처음 버리기 마감처럼 짝이 3쌍 이상이면 겹쳐 빠르게 날리고 소리는 한 번', () => {
+    const pair = (seq: number, actorId: number, rank: 'TWO' | 'NINE' | 'KING') => oldMaidEvent(seq, 'PAIR', { actorId, auto: true, cards: [card('SPADES', rank), card('HEARTS', rank)] });
+    const to = oldMaidView({ events: [pair(4, 1, 'TWO'), pair(5, 2, 'NINE'), pair(6, 3, 'KING')] });
+
+    const plan = planOldMaidMotion(base, to, 1);
+
+    expect(plan.flights.map((flight) => flight.delay)).toEqual([0, PAIR_GAP_MS, FAST_PAIR_STEP_MS, FAST_PAIR_STEP_MS + PAIR_GAP_MS, 2 * FAST_PAIR_STEP_MS, 2 * FAST_PAIR_STEP_MS + PAIR_GAP_MS]);
+    expect(plan.flights.map((flight) => flight.from)).toEqual(['hand:1', 'hand:1', 'hand:2', 'hand:2', 'hand:3', 'hand:3']);
+    expect(plan.sounds).toEqual([{ name: 'place', delay: 0 }]);
   });
 });

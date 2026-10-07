@@ -7,15 +7,38 @@ const nicknameOf = (id: number) => names[id] ?? '떠난 플레이어';
 const texts = (lines: { text: string }[]) => lines.map((line) => line.text);
 
 describe('describeOldMaid', () => {
-  it('처음 받은 화면은 시작 화면일 때만 쓰고 짝 0쌍은 쓰지 않는다', () => {
-    const start = oldMaidSession({ events: [
-      oldMaidEvent(1, 'START', { actorId: 1, targetId: 2 }),
-      oldMaidEvent(2, 'DEAL_PAIRS', { actorId: 1, count: 3 }),
-      oldMaidEvent(3, 'DEAL_PAIRS', { actorId: 2, count: 0 }),
+  it('처음 받은 화면은 막 나눈 화면(DEAL)이나 첫 차례(START)일 때만 쓴다', () => {
+    const dealt = oldMaidSession({ stage: 'OPENING_DISCARD', events: [oldMaidEvent(1, 'DEAL', { actorId: 1 })] });
+    const noPairs = oldMaidSession({ events: [oldMaidEvent(1, 'DEAL', { actorId: 1 }), oldMaidEvent(2, 'START', { actorId: 1, targetId: 2 })] });
+
+    expect(texts(describeOldMaid(null, dealt, nicknameOf))).toEqual(['카드를 나눠 줬어요. 같은 숫자 두 장을 골라 버리세요']);
+    expect(texts(describeOldMaid(null, noPairs, nicknameOf))).toEqual(['카드를 나눠 줬어요. 같은 숫자 두 장을 골라 버리세요', '앨리스님부터 밥님의 카드를 뽑아요']);
+    expect(describeOldMaid(null, oldMaidSession({ events: [oldMaidEvent(9, 'DRAW', { actorId: 1, targetId: 2 })] }), nicknameOf)).toEqual([]);
+  });
+
+  it('R36 처음 버리기: 사람이 버린 짝은 한 줄씩, 마지막 짝이 버려지면 첫 차례 줄', () => {
+    const prev = oldMaidSession({ stage: 'OPENING_DISCARD', events: [oldMaidEvent(1, 'DEAL', { actorId: 1 })] });
+    const next = oldMaidSession({ events: [
+      oldMaidEvent(2, 'PAIR', { actorId: 3, cards: [card('SPADES', 'SEVEN'), card('HEARTS', 'SEVEN')] }),
+      oldMaidEvent(3, 'FINISH', { actorId: 3, count: 1 }),
+      oldMaidEvent(4, 'START', { actorId: 1, targetId: 2 }),
     ] });
 
-    expect(texts(describeOldMaid(null, start, nicknameOf))).toEqual(['앨리스님부터 밥님의 카드를 뽑아요', '앨리스님이 처음 짝 3쌍을 버렸어요']);
-    expect(describeOldMaid(null, oldMaidSession({ events: [oldMaidEvent(9, 'DRAW', { actorId: 1, targetId: 2 })] }), nicknameOf)).toEqual([]);
+    expect(texts(describeOldMaid(prev, next, nicknameOf))).toEqual(['캐롤님이 7 짝을 버렸어요', '캐롤님이 1등으로 끝냈어요!', '앨리스님부터 밥님의 카드를 뽑아요']);
+  });
+
+  it('R38 처음 버리기 마감의 자동 버림은 사람마다 한 줄로 묶는다', () => {
+    const prev = oldMaidSession({ stage: 'OPENING_DISCARD', events: [oldMaidEvent(1, 'DEAL', { actorId: 1 })] });
+    const pair = (seq: number, actorId: number, rank: 'TWO' | 'NINE' | 'KING') => oldMaidEvent(seq, 'PAIR', { actorId, auto: true, cards: [card('SPADES', rank), card('HEARTS', rank)] });
+    const next = oldMaidSession({ autoActSeq: 1, lastAutoActorIds: [1, 2], events: [
+      pair(2, 1, 'TWO'), pair(3, 1, 'NINE'), pair(4, 2, 'KING'),
+      oldMaidEvent(5, 'START', { actorId: 1, targetId: 2, auto: true }),
+    ] });
+
+    const lines = describeOldMaid(prev, next, nicknameOf);
+
+    expect(texts(lines)).toEqual(['시간이 지나 앨리스님의 짝 2쌍을 자동으로 버렸어요', '시간이 지나 밥님의 K 짝을 자동으로 버렸어요', '앨리스님부터 밥님의 카드를 뽑아요']);
+    expect(lines.map((line) => line.kind)).toEqual(['timeout', 'timeout', 'start']);
   });
 
   it('스펙 6.7 문구', () => {
@@ -61,8 +84,8 @@ describe('describeOldMaid', () => {
       ],
     });
     const lines = describeOldMaid(prev, next, nicknameOf);
-    expect(texts(lines)).toEqual(['앨리스님이 A 짝을 버렸어요', '시간이 지나 앨리스님 대신 카드를 뽑았어요']);
-    expect(lines[1].kind).toBe('timeout');
+    expect(texts(lines)).toEqual(['시간이 지나 앨리스님 대신 카드를 뽑았어요', '시간이 지나 앨리스님의 A 짝을 자동으로 버렸어요']);
+    expect(lines.map((line) => line.kind)).toEqual(['timeout', 'timeout']);
   });
 
   it('새 게임이면 알리고 새 게임 줄을 쓴다', () => {
