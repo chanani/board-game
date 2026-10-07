@@ -6,24 +6,36 @@ import { JOKER_CARD, playingCard } from './cards';
 const CORNER_BAND = 58;
 
 /**
- * 카드 좌표 그대로 그린 요소들의 왼쪽 끝 x(rect는 x, circle은 cx − r, path는 M·L·Q 좌표에서 각각 테두리 반을 뺀다).
+ * 카드 좌표 그대로 그린 요소들의 가로 범위 [왼쪽 끝, 오른쪽 끝](rect는 x~x+width, circle은 cx ± r, path는 M·L·Q 좌표에서 각각 테두리 반을 더하고 뺀다).
  * transform으로 옮겨 그린 무늬(SuitGlyph)는 PIPS 쪽 검사에서 따로 본다.
  */
-function leftEdges(root: Element): number[] {
+function extents(root: Element): [number, number][] {
   const plain = Array.from(root.querySelectorAll('rect, circle, path')).filter((node) => !node.closest('[transform]'));
   return plain.map((node) => {
     const half = Number(node.getAttribute('stroke-width') ?? 0) / 2;
     if (node.tagName === 'rect') {
-      return Number(node.getAttribute('x')) - half;
+      const x = Number(node.getAttribute('x'));
+      return [x - half, x + Number(node.getAttribute('width')) + half];
     }
     if (node.tagName === 'circle') {
-      return Number(node.getAttribute('cx')) - Number(node.getAttribute('r')) - half;
+      const cx = Number(node.getAttribute('cx'));
+      const r = Number(node.getAttribute('r'));
+      return [cx - r - half, cx + r + half];
     }
-    const xs = (node.getAttribute('d') ?? '').match(/[MLQ][^MLQZ]*/g) ?? [];
-    return Math.min(...xs.flatMap((part) => part.slice(1).trim().split(/[\s,]+/).filter((_, i) => i % 2 === 0).map(Number))) - half;
+    const parts = (node.getAttribute('d') ?? '').match(/[MLQ][^MLQZ]*/g) ?? [];
+    const xs = parts.flatMap((part) => part.slice(1).trim().split(/[\s,]+/).filter((_, i) => i % 2 === 0).map(Number));
+    return [Math.min(...xs) - half, Math.max(...xs) + half];
   });
 }
-import { ACE_PIP_SIZE, PIP_SIZE, PIPS, PlayingCardFace, SUIT_HALF_WIDTH } from './PlayingCardFace';
+
+function leftEdges(root: Element): number[] {
+  return extents(root).map(([left]) => left);
+}
+
+function rightEdges(root: Element): number[] {
+  return extents(root).map(([, right]) => right);
+}
+import { ACE_PIP_SIZE, JOKER_LETTER_SIZE, PIP_SIZE, PIPS, PlayingCardFace, SUIT_HALF_WIDTH } from './PlayingCardFace';
 
 describe('PlayingCardFace', () => {
   it('앞면·조커·뒷면에 접근성 이름이 있고 장식이면 숨긴다', () => {
@@ -91,5 +103,24 @@ describe('PlayingCardFace', () => {
     const art = joker.container.querySelector('[data-testid="joker-art"]') as Element;
     expect(Math.min(...leftEdges(frame))).toBeGreaterThan(CORNER_BAND);
     expect(Math.min(...leftEdges(art))).toBeGreaterThan(CORNER_BAND);
+    expect(Math.max(...rightEdges(art))).toBeLessThan(200 - CORNER_BAND);
+  });
+
+  it('조커는 가운데에 광대 전신 그림을 두고 모서리에 JOKER를 위에서 아래로 한 글자씩 크게 세로로 쓴다', () => {
+    const { container } = render(<PlayingCardFace card={JOKER_CARD} width={60} />);
+
+    const art = container.querySelector('[data-testid="joker-art"]') as Element;
+    expect(art.querySelectorAll('[data-part="hat"]')).toHaveLength(3);
+    const corner = container.querySelector('[data-testid="corner-index"]') as Element;
+    expect(corner).toHaveAttribute('data-corner', 'JOKER');
+    const letters = Array.from(corner.querySelectorAll('[data-testid="joker-letter"]'));
+    expect(letters.map((letter) => letter.textContent).join('')).toBe('JOKER');
+    const ys = letters.map((letter) => Number(letter.getAttribute('y')));
+    expect(ys).toEqual([...ys].sort((a, b) => a - b));
+    letters.forEach((letter) => {
+      expect(letter).toHaveAttribute('font-weight', '900');
+      expect(Number(letter.getAttribute('x')) + JOKER_LETTER_SIZE / 2).toBeLessThanOrEqual(CORNER_BAND);
+    });
+    expect(container.textContent).not.toContain('조');
   });
 });

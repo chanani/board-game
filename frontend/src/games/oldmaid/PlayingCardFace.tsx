@@ -1,6 +1,6 @@
 import { useId } from 'react';
 import type { PlayingCard, Suit } from '../../api/types';
-import { cardName, inkOf, JOKER_GOLD, JOKER_PURPLE, RANK_LABELS } from './cards';
+import { cardName, INK_RED, inkOf, JOKER_GOLD, JOKER_PURPLE, RANK_LABELS } from './cards';
 
 type Props = {
   /** null이면 뒷면. */
@@ -82,16 +82,52 @@ function Center({ card, ink }: { card: PlayingCard; ink: string }) {
   );
 }
 
+const OUTLINE = '#1F2430';
+const SKIN = '#FFE3C2';
+const line = { stroke: OUTLINE, strokeWidth: 2, strokeLinejoin: 'round' as const };
+
+/**
+ * 원카드에서 흔히 보는 트럼프 조커처럼 가운데에 광대(어릿광대) 전신을 그린다(우리 디자인).
+ * 세 갈래 방울 모자, 웃는 얼굴, 지그재그 깃, 반반 색 옷, 한 손을 들어 인사하는 자세, 끝이 말린 신발.
+ * 모든 조각은 x 62~138 안에 둬 겹친 손패의 모서리 띠(60/200)를 침범하지 않는다.
+ */
 function JokerArt() {
   return (
     <g data-testid="joker-art">
-      <path d="M62 132 L73 74 L89 116 L100 60 L111 116 L127 74 L138 132 Z" fill={JOKER_PURPLE} />
-      <rect x="62" y="128" width="76" height="12" rx="6" fill={JOKER_GOLD} />
-      <circle cx="73" cy="70" r="9" fill={JOKER_GOLD} /><circle cx="100" cy="56" r="9" fill={JOKER_GOLD} /><circle cx="127" cy="70" r="9" fill={JOKER_GOLD} />
-      <circle cx="100" cy="178" r="36" fill="#FFF4D6" stroke={JOKER_PURPLE} strokeWidth="5" />
-      <path d="M80 172 Q89 163 98 172 M102 172 Q111 163 120 172" stroke={JOKER_PURPLE} strokeWidth="5" fill="none" strokeLinecap="round" />
-      <path d="M82 188 Q100 206 118 188" stroke={JOKER_PURPLE} strokeWidth="5" fill="none" strokeLinecap="round" />
-      <path d="M64 228 L76 240 L88 228 L100 240 L112 228 L124 240 L136 228" stroke={JOKER_GOLD} strokeWidth="6" fill="none" strokeLinejoin="round" />
+      {/* 모자: 세 갈래 뿔과 끝 방울 */}
+      <path data-part="hat" d="M90 100 Q88 64 100 44 Q112 64 110 100 Z" fill={INK_RED} {...line} />
+      <path data-part="hat" d="M86 100 Q68 90 68 66 Q86 74 100 96 Z" fill={JOKER_PURPLE} {...line} />
+      <path data-part="hat" d="M114 100 Q132 90 132 66 Q114 74 100 96 Z" fill={JOKER_PURPLE} {...line} />
+      <circle cx="68" cy="64" r="5" fill={JOKER_GOLD} {...line} />
+      <circle cx="100" cy="42" r="5" fill={JOKER_GOLD} {...line} />
+      <circle cx="132" cy="64" r="5" fill={JOKER_GOLD} {...line} />
+      <rect x="80" y="96" width="40" height="9" rx="4.5" fill={JOKER_GOLD} {...line} />
+      {/* 팔: 왼팔은 허리 옆으로, 오른팔은 들어 인사 */}
+      <path d="M86 154 Q72 162 68 184 L76 186 Q80 170 92 166 Z" fill={INK_RED} {...line} />
+      <circle cx="72" cy="190" r="5" fill={SKIN} {...line} />
+      <path d="M114 154 Q128 148 130 126 L122 124 Q120 140 108 164 Z" fill={JOKER_PURPLE} {...line} />
+      <circle cx="127" cy="120" r="5" fill={SKIN} {...line} />
+      {/* 다리와 끝이 말린 신발 */}
+      <path d="M83 210 L99 210 L97 248 L87 248 Z" fill={INK_RED} {...line} />
+      <path d="M101 210 L117 210 L113 248 L103 248 Z" fill={JOKER_PURPLE} {...line} />
+      <path d="M97 246 L97 256 L80 256 Q72 254 72 246 Q78 250 87 246 Z" fill={JOKER_PURPLE} {...line} />
+      <path d="M103 246 L103 256 L120 256 Q128 254 128 246 Q122 250 113 246 Z" fill={INK_RED} {...line} />
+      <circle cx="70" cy="244" r="4" fill={JOKER_GOLD} {...line} />
+      <circle cx="130" cy="244" r="4" fill={JOKER_GOLD} {...line} />
+      {/* 몸통: 반반 색 옷, 가운데 금색 마름모 단추, 허리띠 */}
+      <path d="M100 148 L84 150 Q78 180 81 212 L100 212 Z" fill={JOKER_PURPLE} {...line} />
+      <path d="M100 148 L116 150 Q122 180 119 212 L100 212 Z" fill={INK_RED} {...line} />
+      <path d="M100 160 L104 166 L100 172 L96 166 Z M100 178 L104 184 L100 190 L96 184 Z" fill={JOKER_GOLD} />
+      <rect x="81" y="204" width="38" height="7" rx="3" fill={JOKER_GOLD} {...line} />
+      {/* 지그재그 깃 */}
+      <path d="M76 138 L124 138 L120 152 L113 144 L107 154 L100 145 L93 154 L87 144 L80 152 Z" fill={JOKER_GOLD} {...line} />
+      {/* 얼굴: 눈 감고 웃는 얼굴, 빨간 코 */}
+      <circle cx="100" cy="121" r="17" fill={SKIN} {...line} />
+      <path d="M90 117 Q93.5 112 97 117 M103 117 Q106.5 112 110 117" fill="none" stroke={OUTLINE} strokeWidth="2.5" strokeLinecap="round" />
+      <circle cx="100" cy="122" r="3" fill={INK_RED} />
+      <path d="M91 126 Q100 135 109 126" fill="none" stroke={OUTLINE} strokeWidth="2.5" strokeLinecap="round" />
+      <circle cx="89" cy="126" r="3" fill="#F49AA0" />
+      <circle cx="111" cy="126" r="3" fill="#F49AA0" />
     </g>
   );
 }
@@ -100,14 +136,20 @@ function JokerArt() {
  * 왼쪽 위 모서리의 큰 랭크 글자 + 그 아래 무늬. 카드가 겹쳐 왼쪽 CORNER_EXTENT(60/200)만 보여도 읽힌다.
  * "10"처럼 두 글자는 textLength로 같은 폭에 맞춘다.
  */
+const JOKER_LETTERS = ['J', 'O', 'K', 'E', 'R'];
+const JOKER_LETTER_TOP = 34;
+const JOKER_LETTER_STEP = 33;
+export const JOKER_LETTER_SIZE = 36;
+
 function Corner({ card, ink }: { card: PlayingCard; ink: string }) {
   if (card.rank === 'JOKER') {
     return (
       <g data-testid="corner-index" data-corner="JOKER">
-        {/* 겹친 손패에서도 읽히게 '조'·'커'를 세로로 크게 쌓는다. */}
-        <text x="32" y="38" textAnchor="middle" dominantBaseline="central" fontSize="40" fontWeight="900" fontFamily={FONT} fill={JOKER_PURPLE}>조</text>
-        <text x="32" y="80" textAnchor="middle" dominantBaseline="central" fontSize="40" fontWeight="900" fontFamily={FONT} fill={JOKER_PURPLE}>커</text>
-        <path d={STAR} transform="translate(32 116) scale(0.3) translate(-50 -50)" fill={JOKER_GOLD} />
+        {/* 트럼프 조커처럼 "JOKER"를 위에서 아래로 한 글자씩 세로로 크게 쌓아 겹친 손패에서도 읽힌다. */}
+        {JOKER_LETTERS.map((letter, index) => (
+          <text key={index} data-testid="joker-letter" x="32" y={JOKER_LETTER_TOP + index * JOKER_LETTER_STEP} textAnchor="middle" dominantBaseline="central"
+            fontSize={JOKER_LETTER_SIZE} fontWeight="900" fontFamily={FONT} fill={JOKER_PURPLE}>{letter}</text>
+        ))}
       </g>
     );
   }
