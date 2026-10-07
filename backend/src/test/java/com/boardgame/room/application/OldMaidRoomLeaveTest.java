@@ -25,6 +25,7 @@ import com.boardgame.room.domain.RoomStatus;
 import com.boardgame.support.FakeTaskScheduler;
 import com.boardgame.support.FixedRandom;
 import com.boardgame.support.MutableClock;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -47,9 +48,10 @@ class OldMaidRoomLeaveTest {
     private final RoomRegistry registry = new RoomRegistry();
     private final ApplicationEventPublisher events = mock(ApplicationEventPublisher.class);
     private final OldMaidSessionFactory factory = new OldMaidSessionFactory(clock, cards -> riggedDeck(), bound -> 0);
+    private final PresenceTracker presence = new PresenceTracker();
     private final RoomService service = new RoomService(registry, () -> ROOM_CODE,
             new GameSessionFactories(List.of(factory)), mock(RoomNotifier.class), new OutcomePublisher(events),
-            events, clock, new PresenceTracker(), new FakeRoomPasswordHasher(), new TurnTimer(new FakeTaskScheduler()),
+            events, clock, presence, new FakeRoomPasswordHasher(), new TurnTimer(new FakeTaskScheduler()),
             new FixedRandom(0), new RoomAvatars(Avatar::defaultFor));
 
     // 짝을 버린 뒤: 방장 [스페이드 5, 스페이드 6], 2번 [하트 5], 3번 [조커], 4번 [하트 6]. 나머지는 모두 같은 손 안의 짝이다.
@@ -119,5 +121,30 @@ class OldMaidRoomLeaveTest {
         assertThat(view.players().get(1).forfeited()).isFalse();
         assertThat(view.players().get(1).rank()).isEqualTo(1);
         assertThat(view.players().get(0).cardCount()).isEqualTo(1);
+    }
+
+    @Test
+    void R28_끝낸_사람은_끊긴_지_60초가_지나도_손으로_기권시킬_수_없다() {
+        service.act(CODE, HOST, new GameAction("DRAW", null, null, null, null, null, 0));
+        clock.advance(Duration.ofSeconds(61));
+
+        service.forfeitDisconnected(CODE, THIRD, TARGET);
+
+        Room room = registry.get(ROOM_CODE);
+        assertThat(room.contains(TARGET)).isTrue();
+        OldMaidPlayerView finished = viewOf(THIRD).players().get(1);
+        assertThat(finished.forfeited()).isFalse();
+        assertThat(finished.rank()).isEqualTo(1);
+    }
+
+    @Test
+    void 아직_카드를_쥔_사람은_끊긴_지_60초가_지나면_손으로_기권시킬_수_있다() {
+        service.act(CODE, HOST, new GameAction("DRAW", null, null, null, null, null, 0));
+        clock.advance(Duration.ofSeconds(61));
+
+        service.forfeitDisconnected(CODE, THIRD, FOURTH);
+
+        assertThat(registry.get(ROOM_CODE).contains(FOURTH)).isFalse();
+        assertThat(viewOf(THIRD).players().get(3).forfeited()).isTrue();
     }
 }

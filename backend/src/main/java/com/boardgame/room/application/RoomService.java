@@ -354,6 +354,10 @@ public class RoomService {
         if (!presence.isOfflineAtLeast(targetId, clock.instant(), FORFEIT_GRACE)) {
             throw new BusinessException(ErrorCode.FORFEIT_NOT_ALLOWED_YET);
         }
+        // R28: 이미 끝낸 사람은 자동 기권(room::isPlaying으로 거름)처럼 손으로도 기권시키지 않는다. 게임이 끝나면 대기실에서 내보낼 수 있다.
+        if (room.isOutOfRunningGame(targetId)) {
+            return;
+        }
         List<Long> before = room.memberIds();
         List<GameOutcome> outcomes = room.leave(targetId);
         baselineNewcomers(room, before);

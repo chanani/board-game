@@ -194,6 +194,11 @@ public class Room {
         return status() == RoomStatus.PLAYING && game.isPlaying(memberId);
     }
 
+    /** 게임은 이어지는데 이 참가자는 더 이상 게임 중이 아니다(도둑잡기 R28: 손패를 비워 등수를 받은 사람). */
+    public boolean isOutOfRunningGame(long memberId) {
+        return isGameInProgress() && !game.isPlaying(memberId);
+    }
+
     public boolean isFor(GameType type) {
         return type == null || type == gameType();
     }
