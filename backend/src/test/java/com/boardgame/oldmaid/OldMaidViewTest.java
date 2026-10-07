@@ -14,11 +14,13 @@ import static com.boardgame.oldmaid.OldMaidSessionTest.draw;
 import static com.boardgame.oldmaid.OldMaidSessionTest.peek;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.boardgame.game.GameAction;
 import com.boardgame.support.MutableClock;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -146,6 +148,51 @@ class OldMaidViewTest {
         assertThat(cardIds(spectator)).doesNotContain(2, 15, 3, 34, 52);
         assertThat(cardIds(done.at("/game/discards/0/cards"))).containsExactly(45, 32);
         assertThat(mine.at("/game/events/0/type").asText()).isEqualTo("PAIR");
+    }
+
+    @Test
+    void R39_DISCARD_ALL_뒤에도_남은_손의_카드는_주인만_보고_버린_짝만_공개된다() {
+        // A: 5·9·5·7·7, B: 3·3·조커, C: 4·8. A가 자동으로 버리기로 5 짝과 7 짝을 한 번에 버린다.
+        OldMaidGame game = opening(A, hands(
+                List.of(s(Rank.FIVE), h(Rank.NINE), d(Rank.FIVE), c(Rank.SEVEN), s(Rank.SEVEN)),
+                List.of(s(Rank.THREE), h(Rank.THREE), JOKER),
+                List.of(c(Rank.FOUR), d(Rank.EIGHT))));
+        OldMaidSession session = new OldMaidSession(List.of(1L, 2L, 3L), game, clock);
+        session.act(1L, new GameAction("DISCARD_ALL", null, null));
+
+        JsonNode mine = json(session, 1L);
+        JsonNode owner = json(session, 2L);
+        JsonNode other = json(session, 3L);
+        JsonNode spectator = json(session, 99L);
+        List<Integer> pairs = ids(s(Rank.FIVE), d(Rank.FIVE), c(Rank.SEVEN), s(Rank.SEVEN));
+        int nine = h(Rank.NINE).id().value();
+        List<Integer> hiddenOfB = ids(s(Rank.THREE), h(Rank.THREE), JOKER);
+        List<Integer> hiddenOfC = ids(c(Rank.FOUR), d(Rank.EIGHT));
+
+        assertThat(cardIds(mine.at("/game/hand"))).containsExactly(nine);
+        assertThat(mine.at("/game/canDiscard").asBoolean()).isFalse();
+        assertThat(owner.at("/game/canDiscard").asBoolean()).isTrue();
+        for (JsonNode viewer : List.of(owner, other, spectator)) {
+            assertThat(cardIds(viewer)).doesNotContain(nine);
+            assertThat(viewer.at("/game/players/0/cardCount").asInt()).isEqualTo(1);
+            assertThat(viewer.at("/game/players/0/openingDone").asBoolean()).isTrue();
+        }
+        assertThat(cardIds(mine)).doesNotContainAnyElementsOf(hiddenOfB);
+        assertThat(cardIds(mine)).doesNotContainAnyElementsOf(hiddenOfC);
+        assertThat(cardIds(spectator)).doesNotContainAnyElementsOf(hiddenOfB);
+        assertThat(cardIds(other)).doesNotContainAnyElementsOf(hiddenOfB);
+        for (JsonNode viewer : List.of(mine, owner, other, spectator)) {
+            assertThat(cardIds(viewer.at("/game/discards"))).containsExactlyElementsOf(pairs);
+            assertThat(viewer.at("/game/events").size()).isEqualTo(2);
+            assertThat(viewer.at("/game/events/0/type").asText()).isEqualTo("PAIR");
+            assertThat(viewer.at("/game/events/1/auto").asBoolean()).isFalse();
+        }
+    }
+
+    private static List<Integer> ids(PlayingCard... cards) {
+        return Arrays.stream(cards)
+                .map(card -> card.id().value())
+                .toList();
     }
 
     @Test

@@ -7,6 +7,7 @@ import java.time.Instant;
 import java.util.Arrays;
 
 // 행동 type → 게임 메서드. 모르는 type, DRAW의 index 없음, DISCARD의 cardIds가 서로 다른 두 장이 아니면 INVALID_INPUT.
+// DISCARD_ALL은 칸이 없다(R39: 지금 버릴 수 있는 내 짝을 한 번에 모두).
 public enum OldMaidCommand {
     DRAW {
         @Override
@@ -18,6 +19,12 @@ public enum OldMaidCommand {
         @Override
         void apply(OldMaidGame game, PlayerId player, GameAction action, Instant now) {
             game.discard(player, PairChoice.of(action.cardIds()));
+        }
+    },
+    DISCARD_ALL {
+        @Override
+        void apply(OldMaidGame game, PlayerId player, GameAction action, Instant now) {
+            game.discardAll(player);
         }
     },
     SHUFFLE {

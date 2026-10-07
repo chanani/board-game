@@ -60,6 +60,11 @@ public class OldMaidGame {
         run(player, OldMaidEndReason.NORMAL, batch -> round.discard(player, choice, batch));
     }
 
+    // R39: 지금 버릴 수 있는 내 짝을 한 번에 모두 버린다("자동으로 버리기").
+    public void discardAll(PlayerId player) {
+        run(player, OldMaidEndReason.NORMAL, batch -> round.discardAllMine(player, batch));
+    }
+
     // R17~R21: 신호는 기록(이벤트)을 바꾸지 않는다. 끝난 게임·남의 신호는 조용히 false.
     public boolean peek(PlayerId player, Optional<SlotIndex> slot, Instant now) {
         if (isFinished()) {

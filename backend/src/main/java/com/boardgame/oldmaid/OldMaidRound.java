@@ -42,6 +42,32 @@ public class OldMaidRound {
         passAfterDiscard(player);
     }
 
+    // R39: 내 짝을 한 번에 모두 버린다. 처음 버리기 단계면 내 손의 짝 모두(짝이 없으면 INVALID_PHASE),
+    // 짝 버리기 단계면 뽑은 사람만 그 짝을(R37과 같은 검사). 시간 초과 자동 버림(R38)과 같은 R6 방식이고 auto는 아니다.
+    void discardAllMine(PlayerId player, EventBatch batch) {
+        if (turns.isOpening()) {
+            requirePair(player);
+            discardAll(player, batch);
+            closeOpeningIfDone(batch);
+            return;
+        }
+        turns.requireDiscarder(player);
+        discardDrawnPair(player, batch);
+    }
+
+    private void requirePair(PlayerId player) {
+        if (!table.hasPair(player)) {
+            throw new BusinessException(ErrorCode.INVALID_PHASE);
+        }
+    }
+
+    // R37·R38: 뽑은 사람의 짝을 버리고, 손이 비면 끝낸 뒤, 짝이 남지 않았으면 차례를 넘긴다.
+    private void discardDrawnPair(PlayerId drawer, EventBatch batch) {
+        discardAll(drawer, batch);
+        finishIfEmpty(drawer, batch);
+        passAfterDiscard(drawer);
+    }
+
     private void discardChosen(PlayerId player, PairChoice choice, EventBatch batch) {
         CardPair pair = table.discardChosen(player, choice);
         batch.add(OldMaidEvent.pair(player, pair));
@@ -216,9 +242,7 @@ public class OldMaidRound {
             return;
         }
         PlayerId drawer = turns.current().drawer();
-        discardAll(drawer, batch);
-        finishIfEmpty(drawer, batch);
-        passAfterDiscard(drawer);
+        discardDrawnPair(drawer, batch);
     }
 
     boolean canShuffle(PlayerId player) {
