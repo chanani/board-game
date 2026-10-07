@@ -148,7 +148,7 @@ export function UnoHand({ cards, playableIds, myTurn, layout, zoneId, onPlay }: 
             </button>
             {isSelected ? (
               <button type="button" data-no-click-sound aria-label={`${cardName(card)} 내기`} onClick={() => press(card, true)}
-                className="press-3d absolute rounded-full bg-(--accent) px-3 py-1 text-xs font-bold text-(--accent-text) shadow"
+                className="press-3d absolute w-max shrink-0 whitespace-nowrap rounded-full bg-(--accent) px-3 py-1 text-xs font-bold text-(--accent-text) shadow"
                 style={{ left: inset + index * step + sizes.hand / 2, top: 0, zIndex: count + 1, transform: 'translateX(-50%)' }}>내기</button>
             ) : null}
             </Fragment>
