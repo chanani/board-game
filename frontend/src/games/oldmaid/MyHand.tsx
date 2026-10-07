@@ -1,12 +1,12 @@
 import { motion } from 'motion/react';
-import { useRef, useState } from 'react';
+import { useRef } from 'react';
 import type { PlayingCard } from '../../api/types';
 import { ShuffleIcon } from '../../components/icons';
 import type { TableLayout } from '../../lib/useTableLayout';
-import { EDGE_FADE, FAN_RADIUS, fanAngle, fanDrop, fanOverhang, fanSpacing, fixedFanRoom } from '../../table/fan';
+import { EDGE_FADE, FAN_RADIUS, fanAngle, fanDrop, fanSpacing, fixedFanRoom } from '../../table/fan';
 import { useElementWidth } from '../../table/useElementWidth';
 import { useFreshIds } from '../../table/useFreshIds';
-import { handMinVisible, LIFT_RATIO, shuffleSide, type OldMaidSizes } from './layout';
+import { handMinVisible, LIFT_RATIO, type OldMaidSizes } from './layout';
 import { PlayingCardFace } from './PlayingCardFace';
 
 type Props = {
@@ -23,14 +23,13 @@ type Props = {
 };
 
 const BOTTOM_GAP = 4;
+/** 섞기 버튼 자리 높이(px). */
+const SHUFFLE_SLOT_HEIGHT = 28;
 
 /** 내 손패: 앞면 부채꼴, 서버 순서 그대로(D13). 섞으면 카드가 새 자리로 미끄러진다(layout 애니메이션). */
 export function MyHand({ cards, liftIndex, layout, sizes, zoneId, canShuffle, shuffleLocked, onShuffle }: Props) {
   const boxRef = useRef<HTMLDivElement>(null);
   const width = useElementWidth(boxRef);
-  const shuffleRef = useRef<HTMLDivElement>(null);
-  const shuffleWidth = useElementWidth(shuffleRef);
-  const [scrollLeft, setScrollLeft] = useState(0);
   const fresh = useFreshIds(cards);
   const count = cards.length;
   const radius = FAN_RADIUS[layout];
@@ -42,30 +41,28 @@ export function MyHand({ cards, liftIndex, layout, sizes, zoneId, canShuffle, sh
   const rowHeight = top + sizes.hand * 1.5 + BOTTOM_GAP + room;
   const { step, scroll, inset } = fanSpacing(count, width, sizes.hand, handMinVisible(sizes), edgeAngle);
   const innerWidth = count === 0 ? 0 : (count - 1) * step + sizes.hand + inset * 2;
-  // 들린 카드가 손패 칸 안에서 차지하는 가로 범위(가운데 맞춤 또는 스크롤 위치 반영, 기울어 삐져나온 폭 포함).
-  const offset = scroll ? -scrollLeft : Math.max(0, (width - innerWidth) / 2);
-  const lifted = liftIndex === null || liftIndex >= count ? null : liftedSpan(offset + inset + liftIndex * step, sizes.hand, angles[liftIndex]);
-  const side = shuffleSide(lifted, width, shuffleWidth);
   const shuffle = canShuffle ? (
     <button type="button" data-no-click-sound aria-label="내 손패 섞기" disabled={shuffleLocked} onClick={onShuffle}
       className="press-3d inline-flex items-center gap-1 rounded-full bg-cream-50 px-3 py-1 text-xs font-bold text-wood-800 shadow-[0_3px_0_var(--color-cream-300)] disabled:opacity-50">
       <ShuffleIcon className="h-3.5 w-3.5" />섞기
     </button>
   ) : null;
+  // 섞기 버튼 자리는 늘 따로 남겨 둔다(PC·세로는 손패 위 줄, 눕힌 화면은 높이가 모자라 오른쪽 칸). 손패 위에 띄우면 남이 고르는
+  // 들린 카드를 가리지 않으려고 좌우로 자꾸 옮겨 다녀 눈에 거슬렸다(Task 13 브라우저 확인). 섞을 수 없을 때도 자리는 남겨 높이가 그대로다.
+  const beside = layout === 'landscape';
   if (count === 0) {
     return (
-      <div data-testid="hand-empty" className="flex items-center justify-center" style={{ height: rowHeight }}>
+      <div data-testid="hand-empty" className="flex items-center justify-center" style={{ height: rowHeight + (beside ? 0 : SHUFFLE_SLOT_HEIGHT) }}>
         <p className="felt-ink text-center text-sm font-bold">손패를 모두 비웠어요</p>
       </div>
     );
   }
   return (
-    // 섞기 버튼은 따로 줄을 두지 않고 손패 칸 위 여백에 띄워 높이를 아낀다(눕힌 휴대폰 한 화면). 들린 카드를 가리면 반대쪽으로 옮긴다.
-    <div className="relative">
-      <div ref={shuffleRef} data-testid="shuffle-slot" data-side={side} className={`absolute top-0 z-20 ${side === 'left' ? 'left-0' : 'right-0'}`}>{shuffle}</div>
+    <div className={beside ? 'flex items-start gap-2' : undefined}>
+      <div data-testid="shuffle-slot" data-placement={beside ? 'beside' : 'above'}
+        className={`flex justify-end ${beside ? 'order-last w-[4.5rem] shrink-0' : ''}`} style={{ height: SHUFFLE_SLOT_HEIGHT }}>{shuffle}</div>
       <div ref={boxRef} role="group" aria-label={`내 카드 ${count}장`} data-testid="my-hand" data-oldmaid-zone={`hand:${zoneId}`}
-        className={scroll ? 'overflow-x-auto' : 'overflow-x-clip'} style={scroll ? { maskImage: EDGE_FADE, WebkitMaskImage: EDGE_FADE } : undefined}
-        onScroll={scroll ? (event) => setScrollLeft(event.currentTarget.scrollLeft) : undefined}>
+        className={`${beside ? 'min-w-0 flex-1 ' : ''}${scroll ? 'overflow-x-auto' : 'overflow-x-clip'}`} style={scroll ? { maskImage: EDGE_FADE, WebkitMaskImage: EDGE_FADE } : undefined}>
         <div data-testid="my-hand-row" className="relative" style={{ width: innerWidth, height: rowHeight, margin: scroll ? undefined : '0 auto' }}>
           {cards.map((card, index) => {
             const lifted = index === liftIndex;
@@ -86,10 +83,4 @@ export function MyHand({ cards, liftIndex, layout, sizes, zoneId, canShuffle, sh
       </div>
     </div>
   );
-}
-
-/** 왼쪽 끝이 left인 카드(폭 width)가 angle도 기울었을 때 차지하는 가로 범위. */
-function liftedSpan(left: number, width: number, angle: number): { left: number; right: number } {
-  const over = fanOverhang(width, angle);
-  return { left: left - over, right: left + width + over };
 }

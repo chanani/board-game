@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { handMinVisible, OLD_MAID_SIZES, oldMaidInstruction, oldMaidSizes, pickCaption, scaledIndex, shuffleSide } from './layout';
+import { handMinVisible, OLD_MAID_SIZES, oldMaidInstruction, oldMaidSizes, pickCaption, scaledIndex } from './layout';
 import { oldMaidView } from './oldMaidFixtures';
 
 const names: Record<number, string> = { 1: '앨리스', 2: '밥', 3: '캐롤' };
@@ -16,13 +16,6 @@ describe('도둑잡기 배치', () => {
   it('R10 14장이면 세로 360px에서 가운데 부채가 스크롤 없이 들어간다', () => {
     const { pick, pickMinVisible } = OLD_MAID_SIZES.portrait;
     expect(13 * pickMinVisible + pick).toBeLessThanOrEqual(328);
-  });
-
-  it('섞기 버튼은 오른쪽 위가 기본이고 들린 카드가 그 자리에 닿으면 왼쪽으로 옮긴다', () => {
-    expect(shuffleSide(null, 600, 70)).toBe('right');
-    expect(shuffleSide({ left: 100, right: 190 }, 600, 70)).toBe('right');
-    expect(shuffleSide({ left: 450, right: 540 }, 600, 70)).toBe('left');
-    expect(shuffleSide({ left: 450, right: 540 }, 0, 0)).toBe('right');
   });
 
   it('그린 뒷면이 장수보다 적으면 들린 자리를 비율로 옮긴다', () => {

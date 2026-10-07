@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { PlayingCard } from '../../api/types';
 import { OLD_MAID_SIZES } from './layout';
 import { MyHand } from './MyHand';
@@ -9,20 +9,6 @@ import { card, JOKER } from './oldMaidFixtures';
 const sizes = OLD_MAID_SIZES.pc;
 const RANKS = ['TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT', 'NINE', 'TEN', 'JACK', 'QUEEN', 'KING', 'ACE'] as const;
 const hand = (count: number): PlayingCard[] => Array.from({ length: count }, (_, index) => card(index % 2 === 0 ? 'SPADES' : 'HEARTS', RANKS[index % RANKS.length]));
-
-/** 손패 칸 600px, 섞기 버튼 자리 70px로 재는 ResizeObserver. */
-function stubWidths() {
-  vi.stubGlobal('ResizeObserver', class {
-    constructor(private readonly callback: ResizeObserverCallback) {}
-    observe(element: Element) {
-      const width = element.getAttribute('data-testid') === 'my-hand' ? 600 : 70;
-      this.callback([{ contentRect: { width } } as ResizeObserverEntry], this as unknown as ResizeObserver);
-    }
-    disconnect() {}
-  });
-}
-
-afterEach(() => vi.unstubAllGlobals());
 
 describe('MyHand', () => {
   it('D13 서버 순서 그대로(정렬하지 않음) 앞면으로 보인다', () => {
@@ -65,27 +51,36 @@ describe('MyHand', () => {
   it('스펙 6.4 손패 줄 높이는 장수와 상관없이 같고 빈 손패도 같은 높이다', () => {
     const heightOf = (count: number) => {
       const { unmount } = render(<MyHand cards={hand(count)} liftIndex={null} layout="pc" sizes={sizes} zoneId={1} canShuffle={false} shuffleLocked={false} onShuffle={vi.fn()} />);
-      const height = screen.getByTestId(count === 0 ? 'hand-empty' : 'my-hand-row').style.height;
+      const px = (testId: string) => parseFloat(screen.getByTestId(testId).style.height);
+      // 손패가 있으면 섞기 버튼 자리 줄 + 손패 줄, 비면 그 둘을 합친 높이 하나.
+      const height = count === 0 ? px('hand-empty') : px('shuffle-slot') + px('my-hand-row');
       unmount();
       return height;
     };
 
     const one = heightOf(1);
-    expect(one).toMatch(/px$/);
+    expect(one).toBeGreaterThan(0);
     expect([heightOf(2), heightOf(5), heightOf(14), heightOf(0)]).toEqual([one, one, one, one]);
   });
 
-  it('섞기 버튼은 오른쪽 위에 있다가 남이 고르는 들린 카드에 닿으면 왼쪽으로 비킨다', () => {
-    stubWidths();
-    const props = { cards: hand(7), layout: 'pc' as const, sizes, zoneId: 1, canShuffle: true, shuffleLocked: false, onShuffle: vi.fn() };
-    const { rerender } = render(<MyHand {...props} liftIndex={null} />);
-    expect(screen.getByTestId('shuffle-slot')).toHaveAttribute('data-side', 'right');
+  it('섞기 버튼은 손패와 겹치지 않게 따로 둔 자리(PC·세로는 위 줄, 눕힌 화면은 오른쪽 칸)에 있어 남이 카드를 들어도 움직이지 않는다', () => {
+    const props = { cards: hand(7), sizes, zoneId: 1, shuffleLocked: false, onShuffle: vi.fn() };
+    const { rerender } = render(<MyHand {...props} layout="pc" canShuffle liftIndex={null} />);
+    const slot = screen.getByTestId('shuffle-slot');
+    expect(slot).toHaveAttribute('data-placement', 'above');
+    expect(slot.className).not.toContain('absolute');
 
-    rerender(<MyHand {...props} liftIndex={6} />);
-    expect(screen.getByTestId('shuffle-slot')).toHaveAttribute('data-side', 'left');
+    rerender(<MyHand {...props} layout="pc" canShuffle liftIndex={6} />);
+    expect(screen.getByTestId('shuffle-slot')).toBe(slot);
+    expect(within(slot).getByRole('button', { name: '내 손패 섞기' })).toBeInTheDocument();
 
-    rerender(<MyHand {...props} liftIndex={0} />);
-    expect(screen.getByTestId('shuffle-slot')).toHaveAttribute('data-side', 'right');
+    // 섞을 수 없을 때(내 차례)도 자리는 남겨 손패 줄 높이가 바뀌지 않는다.
+    rerender(<MyHand {...props} layout="pc" canShuffle={false} liftIndex={null} />);
+    expect(screen.getByTestId('shuffle-slot')).toBe(slot);
+    expect(within(slot).queryByRole('button')).not.toBeInTheDocument();
+
+    rerender(<MyHand {...props} layout="landscape" canShuffle liftIndex={6} />);
+    expect(screen.getByTestId('shuffle-slot')).toHaveAttribute('data-placement', 'beside');
   });
 });
 
