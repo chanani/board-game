@@ -1,12 +1,12 @@
 import { motion } from 'motion/react';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import type { PlayingCard } from '../../api/types';
 import { ShuffleIcon } from '../../components/icons';
 import type { TableLayout } from '../../lib/useTableLayout';
-import { EDGE_FADE, FAN_RADIUS, fanAngle, fanDrop, fanSpacing, fixedFanRoom } from '../../table/fan';
+import { EDGE_FADE, FAN_RADIUS, fanAngle, fanDrop, fanOverhang, fanSpacing, fixedFanRoom } from '../../table/fan';
 import { useElementWidth } from '../../table/useElementWidth';
 import { useFreshIds } from '../../table/useFreshIds';
-import { handMinVisible, LIFT_RATIO, type OldMaidSizes } from './layout';
+import { handMinVisible, LIFT_RATIO, shuffleSide, type OldMaidSizes } from './layout';
 import { PlayingCardFace } from './PlayingCardFace';
 
 type Props = {
@@ -28,6 +28,9 @@ const BOTTOM_GAP = 4;
 export function MyHand({ cards, liftIndex, layout, sizes, zoneId, canShuffle, shuffleLocked, onShuffle }: Props) {
   const boxRef = useRef<HTMLDivElement>(null);
   const width = useElementWidth(boxRef);
+  const shuffleRef = useRef<HTMLDivElement>(null);
+  const shuffleWidth = useElementWidth(shuffleRef);
+  const [scrollLeft, setScrollLeft] = useState(0);
   const fresh = useFreshIds(cards);
   const count = cards.length;
   const radius = FAN_RADIUS[layout];
@@ -39,6 +42,10 @@ export function MyHand({ cards, liftIndex, layout, sizes, zoneId, canShuffle, sh
   const rowHeight = top + sizes.hand * 1.5 + BOTTOM_GAP + room;
   const { step, scroll, inset } = fanSpacing(count, width, sizes.hand, handMinVisible(sizes), edgeAngle);
   const innerWidth = count === 0 ? 0 : (count - 1) * step + sizes.hand + inset * 2;
+  // 들린 카드가 손패 칸 안에서 차지하는 가로 범위(가운데 맞춤 또는 스크롤 위치 반영, 기울어 삐져나온 폭 포함).
+  const offset = scroll ? -scrollLeft : Math.max(0, (width - innerWidth) / 2);
+  const lifted = liftIndex === null || liftIndex >= count ? null : liftedSpan(offset + inset + liftIndex * step, sizes.hand, angles[liftIndex]);
+  const side = shuffleSide(lifted, width, shuffleWidth);
   const shuffle = canShuffle ? (
     <button type="button" data-no-click-sound aria-label="내 손패 섞기" disabled={shuffleLocked} onClick={onShuffle}
       className="press-3d inline-flex items-center gap-1 rounded-full bg-cream-50 px-3 py-1 text-xs font-bold text-wood-800 shadow-[0_3px_0_var(--color-cream-300)] disabled:opacity-50">
@@ -53,11 +60,12 @@ export function MyHand({ cards, liftIndex, layout, sizes, zoneId, canShuffle, sh
     );
   }
   return (
-    // 섞기 버튼은 따로 줄을 두지 않고 손패 칸 오른쪽 위(들림 여백)에 띄워 높이를 아낀다(눕힌 휴대폰 한 화면).
+    // 섞기 버튼은 따로 줄을 두지 않고 손패 칸 위 여백에 띄워 높이를 아낀다(눕힌 휴대폰 한 화면). 들린 카드를 가리면 반대쪽으로 옮긴다.
     <div className="relative">
-      {shuffle ? <div className="absolute right-0 top-0 z-20">{shuffle}</div> : null}
+      <div ref={shuffleRef} data-testid="shuffle-slot" data-side={side} className={`absolute top-0 z-20 ${side === 'left' ? 'left-0' : 'right-0'}`}>{shuffle}</div>
       <div ref={boxRef} role="group" aria-label={`내 카드 ${count}장`} data-testid="my-hand" data-oldmaid-zone={`hand:${zoneId}`}
-        className={scroll ? 'overflow-x-auto' : 'overflow-x-clip'} style={scroll ? { maskImage: EDGE_FADE, WebkitMaskImage: EDGE_FADE } : undefined}>
+        className={scroll ? 'overflow-x-auto' : 'overflow-x-clip'} style={scroll ? { maskImage: EDGE_FADE, WebkitMaskImage: EDGE_FADE } : undefined}
+        onScroll={scroll ? (event) => setScrollLeft(event.currentTarget.scrollLeft) : undefined}>
         <div data-testid="my-hand-row" className="relative" style={{ width: innerWidth, height: rowHeight, margin: scroll ? undefined : '0 auto' }}>
           {cards.map((card, index) => {
             const lifted = index === liftIndex;
@@ -78,4 +86,10 @@ export function MyHand({ cards, liftIndex, layout, sizes, zoneId, canShuffle, sh
       </div>
     </div>
   );
+}
+
+/** 왼쪽 끝이 left인 카드(폭 width)가 angle도 기울었을 때 차지하는 가로 범위. */
+function liftedSpan(left: number, width: number, angle: number): { left: number; right: number } {
+  const over = fanOverhang(width, angle);
+  return { left: left - over, right: left + width + over };
 }

@@ -76,3 +76,17 @@ export function pickCaption(game: OldMaidView, meId: number, nicknameOf: (id: nu
   }
   return `${nicknameOf(game.currentPlayerId)}님이 ${nicknameOf(game.targetId)}님의 카드를 고르는 중`;
 }
+
+/** 들린 카드 강조 테두리(ring-4) 폭. 섞기 버튼과 겹치는지 잴 때 카드 폭에 더한다. */
+const LIFT_RING = 4;
+
+/**
+ * 섞기 버튼을 둘 쪽. 기본은 손패 위 오른쪽(스펙 6.4)이고, 남이 고르는 내 카드(들린 카드)의 가로 범위가 그 자리와 겹치면 왼쪽으로 옮긴다
+ * (버튼이 들린 카드를 가리지 않게, Task 10 판정). lifted는 손패 칸 왼쪽 끝 기준의 들린 카드 [왼쪽, 오른쪽](px), 칸 폭을 모르면 오른쪽.
+ */
+export function shuffleSide(lifted: { left: number; right: number } | null, boxWidth: number, buttonWidth: number): 'left' | 'right' {
+  if (lifted === null || boxWidth <= 0) {
+    return 'right';
+  }
+  return lifted.right + LIFT_RING > boxWidth - buttonWidth ? 'left' : 'right';
+}

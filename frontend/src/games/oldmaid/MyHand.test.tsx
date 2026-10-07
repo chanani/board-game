@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { PlayingCard } from '../../api/types';
 import { OLD_MAID_SIZES } from './layout';
 import { MyHand } from './MyHand';
@@ -9,6 +9,20 @@ import { card, JOKER } from './oldMaidFixtures';
 const sizes = OLD_MAID_SIZES.pc;
 const RANKS = ['TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT', 'NINE', 'TEN', 'JACK', 'QUEEN', 'KING', 'ACE'] as const;
 const hand = (count: number): PlayingCard[] => Array.from({ length: count }, (_, index) => card(index % 2 === 0 ? 'SPADES' : 'HEARTS', RANKS[index % RANKS.length]));
+
+/** 손패 칸 600px, 섞기 버튼 자리 70px로 재는 ResizeObserver. */
+function stubWidths() {
+  vi.stubGlobal('ResizeObserver', class {
+    constructor(private readonly callback: ResizeObserverCallback) {}
+    observe(element: Element) {
+      const width = element.getAttribute('data-testid') === 'my-hand' ? 600 : 70;
+      this.callback([{ contentRect: { width } } as ResizeObserverEntry], this as unknown as ResizeObserver);
+    }
+    disconnect() {}
+  });
+}
+
+afterEach(() => vi.unstubAllGlobals());
 
 describe('MyHand', () => {
   it('D13 서버 순서 그대로(정렬하지 않음) 앞면으로 보인다', () => {
@@ -60,4 +74,18 @@ describe('MyHand', () => {
     expect(one).toMatch(/px$/);
     expect([heightOf(2), heightOf(5), heightOf(14), heightOf(0)]).toEqual([one, one, one, one]);
   });
+
+  it('섞기 버튼은 오른쪽 위에 있다가 남이 고르는 들린 카드에 닿으면 왼쪽으로 비킨다', () => {
+    stubWidths();
+    const props = { cards: hand(7), layout: 'pc' as const, sizes, zoneId: 1, canShuffle: true, shuffleLocked: false, onShuffle: vi.fn() };
+    const { rerender } = render(<MyHand {...props} liftIndex={null} />);
+    expect(screen.getByTestId('shuffle-slot')).toHaveAttribute('data-side', 'right');
+
+    rerender(<MyHand {...props} liftIndex={6} />);
+    expect(screen.getByTestId('shuffle-slot')).toHaveAttribute('data-side', 'left');
+
+    rerender(<MyHand {...props} liftIndex={0} />);
+    expect(screen.getByTestId('shuffle-slot')).toHaveAttribute('data-side', 'right');
+  });
 });
+
