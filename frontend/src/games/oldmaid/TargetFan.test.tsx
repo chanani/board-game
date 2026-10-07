@@ -56,6 +56,25 @@ describe('TargetFan', () => {
 
     expect(onPeek).toHaveBeenLastCalledWith(null);
     expect(screen.queryByRole('button', { name: /뽑기$/ })).not.toBeInTheDocument();
+    // F-b11: 첫 탭의 초점으로 들린 카드도 내려간다.
+    expect(screen.getAllByTestId('target-card').filter((card) => card.hasAttribute('data-lifted'))).toHaveLength(0);
+  });
+
+  it('키보드 초점이 부채 밖으로 나가면 고르지 않음을 보내고 들림을 내린다', async () => {
+    const onPeek = vi.fn();
+    render(<><button type="button">앞</button>{fan({ onPeek })}</>);
+
+    await userEvent.tab();
+    await userEvent.tab();
+    expect(onPeek).toHaveBeenLastCalledWith(0);
+    await userEvent.tab();
+    expect(onPeek).toHaveBeenLastCalledWith(1);
+    await userEvent.tab({ shift: true });
+    await userEvent.tab({ shift: true });
+
+    expect(screen.getByRole('button', { name: '앞' })).toHaveFocus();
+    expect(onPeek).toHaveBeenLastCalledWith(null);
+    expect(screen.getAllByTestId('target-card').filter((card) => card.hasAttribute('data-lifted'))).toHaveLength(0);
   });
 
   it('키보드: 초점이 가면 신호, Enter로 뽑기', async () => {

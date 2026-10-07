@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import { Fragment, useCallback, useEffect, useRef, useState, type FocusEvent, type KeyboardEvent } from 'react';
 import { useMediaQuery } from '../../lib/useMediaQuery';
 import type { TableLayout } from '../../lib/useTableLayout';
 import { EDGE_FADE, FAN_RADIUS, fanAngle, fanDrop, fanSpacing, fixedFanRoom } from '../../table/fan';
@@ -23,6 +23,7 @@ type Props = {
 /**
  * 뽑히는 상대의 손패를 가운데에 크게 펼친 뒷면 부채(D17: 모두에게 보인다).
  * 정밀 포인터는 올리면 신호·누르면 뽑기, 터치는 첫 탭에 고르고(신호) 다시 탭하거나 "뽑기"로 뽑는다, 키보드는 초점에 신호·Enter/Space로 뽑기.
+ * 부채 밖을 누르거나 초점이 부채 밖으로 나가면 고르기를 풀고 null 신호를 보낸다(들림이 남지 않게, F-b11).
  */
 export function TargetFan({ ownerName, count, cardWidth, minVisible, liftIndex, layout, interactive = false, onPeek, onDraw }: Props) {
   const fine = useMediaQuery('(pointer: fine)');
@@ -39,26 +40,31 @@ export function TargetFan({ ownerName, count, cardWidth, minVisible, liftIndex, 
   const { step, scroll, inset } = fanSpacing(count, width, cardWidth, minVisible, edgeAngle);
   const innerWidth = count === 0 ? 0 : (count - 1) * step + cardWidth + inset * 2;
   const shown = interactive ? (selected ?? hovered) : liftIndex;
+  const picking = interactive && (selected !== null || hovered !== null);
 
   useEffect(() => {
     setSelected(null);
     setHovered(null);
   }, [count, interactive]);
 
-  // 터치로 고른 뒤 부채 밖을 누르면 고르기를 취소한다.
+  const release = useCallback(() => {
+    setSelected(null);
+    setHovered(null);
+    onPeek?.(null);
+  }, [onPeek]);
+  // 고른(터치)·초점 둔(키보드) 카드가 있을 때 부채 밖을 누르면 고르기를 취소한다.
   useEffect(() => {
-    if (!interactive || selected === null) {
+    if (!picking) {
       return undefined;
     }
     const clear = (event: PointerEvent) => {
       if (!boxRef.current?.contains(event.target as Node)) {
-        setSelected(null);
-        onPeek?.(null);
+        release();
       }
     };
     document.addEventListener('pointerdown', clear);
     return () => document.removeEventListener('pointerdown', clear);
-  }, [interactive, selected, onPeek]);
+  }, [picking, release]);
 
   const point = (index: number) => {
     setHovered(index);
@@ -88,11 +94,17 @@ export function TargetFan({ ownerName, count, cardWidth, minVisible, liftIndex, 
     setHovered(null);
     onPeek?.(null);
   };
+  const blur = (event: FocusEvent) => {
+    if (!picking || boxRef.current?.contains(event.relatedTarget as Node | null)) {
+      return;
+    }
+    release();
+  };
 
   return (
     <div ref={boxRef} role="group" aria-label={`${ownerName}님의 카드 ${count}장`} data-testid="target-fan" data-oldmaid-zone="target"
       className={`w-full min-w-0 ${scroll ? 'overflow-x-auto' : 'overflow-x-clip'}`}
-      style={scroll ? { maskImage: EDGE_FADE, WebkitMaskImage: EDGE_FADE } : undefined} onPointerLeave={leave}>
+      style={scroll ? { maskImage: EDGE_FADE, WebkitMaskImage: EDGE_FADE } : undefined} onPointerLeave={leave} onBlur={blur}>
       <div className="relative" style={{ width: innerWidth, height: top + cardWidth * 1.5 + room, margin: scroll ? undefined : '0 auto' }}>
         {angles.map((angle, index) => {
           const lifted = index === shown;
