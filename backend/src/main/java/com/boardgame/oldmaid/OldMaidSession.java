@@ -31,7 +31,7 @@ public class OldMaidSession implements GameSession {
     OldMaidSession(List<Long> memberIds, OldMaidGame game, Clock clock) {
         this.game = game;
         this.match = new OldMaidMatch(playerIds(memberIds), clock.instant());
-        this.timer = new OldMaidTimer(clock, game.turnSeq());
+        this.timer = new OldMaidTimer(clock, game.step());
     }
 
     private static List<PlayerId> playerIds(List<Long> memberIds) {
@@ -44,7 +44,7 @@ public class OldMaidSession implements GameSession {
     public List<GameOutcome> act(long memberId, GameAction action) {
         OldMaidCommand command = OldMaidCommand.of(action.type());
         command.apply(game, new PlayerId(memberId), action, timer.now());
-        timer.humanActed(game.turnSeq());
+        timer.humanActed(game.step());
         return outcomesIfFinished();
     }
 
@@ -66,15 +66,15 @@ public class OldMaidSession implements GameSession {
             return List.of();
         }
         game.forfeit(player);
-        timer.follow(game.turnSeq());
+        timer.follow(game.step());
         return outcomesIfFinished();
     }
 
-    // R35
+    // R35·R38
     @Override
     public List<GameOutcome> autoAct(Random random) {
-        PlayerId actor = game.autoAct(random);
-        timer.autoActed(actor, game.turnSeq());
+        List<PlayerId> actors = game.autoAct(random);
+        timer.autoActed(actors, game.step());
         return outcomesIfFinished();
     }
 

@@ -68,7 +68,9 @@ public enum ErrorCode {
     OLD_MAID_INVALID_PLAYER_COUNT(HttpStatus.BAD_REQUEST, "도둑잡기는 2~6명이 플레이할 수 있습니다."),
     OLD_MAID_INVALID_SLOT(HttpStatus.BAD_REQUEST, "고를 수 없는 카드 자리예요."),
     OLD_MAID_SHUFFLE_NOT_ALLOWED(HttpStatus.CONFLICT, "지금은 손패를 섞을 수 없어요."),
-    OLD_MAID_SHUFFLE_TOO_FAST(HttpStatus.TOO_MANY_REQUESTS, "조금 뒤에 다시 섞을 수 있어요.");
+    OLD_MAID_SHUFFLE_TOO_FAST(HttpStatus.TOO_MANY_REQUESTS, "조금 뒤에 다시 섞을 수 있어요."),
+    OLD_MAID_NOT_A_PAIR(HttpStatus.BAD_REQUEST, "같은 숫자 두 장을 골라 주세요."),
+    OLD_MAID_CARD_NOT_IN_HAND(HttpStatus.BAD_REQUEST, "내 손에 없는 카드예요.");
 
     private final HttpStatus status;
     private final String message;

@@ -1,7 +1,6 @@
 package com.boardgame.oldmaid;
 
 import java.util.List;
-import java.util.Optional;
 
 // 손패·버린 짝·무작위 묶음.
 public class OldMaidTable {
@@ -32,8 +31,26 @@ public class OldMaidTable {
         return hands.cardsOf(player);
     }
 
-    void discard(PlayerId owner, List<CardPair> pairs) {
+    boolean hasPair(PlayerId player) {
+        return hands.hasPair(player);
+    }
+
+    boolean anyPair() {
+        return hands.anyPair();
+    }
+
+    // R36·R37: 사람이 고른 두 장을 버린 더미로.
+    CardPair discardChosen(PlayerId owner, PairChoice choice) {
+        CardPair pair = hands.of(owner).takePair(choice);
+        discard.addAll(owner, List.of(pair));
+        return pair;
+    }
+
+    // R38: 시간이 지나 그 사람 손의 짝을 모두 버린다(R6과 같은 방식: 손패 순서로 앞에서부터).
+    List<CardPair> discardAllPairs(PlayerId owner) {
+        List<CardPair> pairs = hands.of(owner).discardPairs();
         discard.addAll(owner, pairs);
+        return pairs;
     }
 
     int discardCount() {
@@ -52,11 +69,11 @@ public class OldMaidTable {
         return hands.of(player).takeAt(slot);
     }
 
-    // R13·D6
-    Optional<CardPair> giveDrawn(PlayerId player, PlayingCard card) {
-        Optional<CardPair> pair = hands.of(player).receive(card, dice.picker());
-        pair.ifPresent(found -> discard.addAll(player, List.of(found)));
-        return pair;
+    // R13·D6: 뽑은 카드를 무작위 자리에 끼우고, 그 카드로 짝이 되었는지 돌려준다(버리는 것은 R37).
+    boolean giveDrawn(PlayerId player, PlayingCard card) {
+        Hand hand = hands.of(player);
+        hand.insert(card, dice.picker());
+        return hand.hasPair();
     }
 
     // R24

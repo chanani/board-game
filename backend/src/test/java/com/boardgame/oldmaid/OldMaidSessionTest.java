@@ -41,6 +41,11 @@ class OldMaidSessionTest {
         return new GameAction("DRAW", null, null, null, null, null, index);
     }
 
+    static GameAction discard(PlayingCard first, PlayingCard second) {
+        return new GameAction("DISCARD", null, null, null, null, null, null,
+                List.of(first.id().value(), second.id().value()));
+    }
+
     static GameAction peek(Integer index) {
         return new GameAction("PEEK", null, null, null, null, null, index);
     }
@@ -62,9 +67,12 @@ class OldMaidSessionTest {
     void R32_끝나면_등수를_라운드_점수와_경기_tokens로_내고_1등만_WIN이다() {
         OldMaidSession session = threePlayers();
 
-        List<GameOutcome> first = session.act(1L, draw(0));
-        List<GameOutcome> last = session.act(2L, draw(1));
+        List<GameOutcome> drawn = session.act(1L, draw(0));
+        List<GameOutcome> first = session.act(1L, discard(s(Rank.FIVE), h(Rank.FIVE)));
+        session.act(2L, draw(1));
+        List<GameOutcome> last = session.act(2L, discard(d(Rank.SIX), c(Rank.SIX)));
 
+        assertThat(drawn).isEmpty();
         assertThat(first).isEmpty();
         assertThat(session.isFinished()).isTrue();
         assertThat(last).containsExactly(
@@ -97,6 +105,8 @@ class OldMaidSessionTest {
         OldMaidSession session = threePlayers();
 
         session.act(1L, draw(0));
+        assertThat(session.isPlaying(1L)).isTrue();
+        session.act(1L, discard(s(Rank.FIVE), h(Rank.FIVE)));
 
         assertThat(session.isPlaying(1L)).isFalse();
         assertThat(session.isPlaying(2L)).isTrue();
@@ -113,6 +123,9 @@ class OldMaidSessionTest {
         assertError(() -> session.act(1L, peek(0)), ErrorCode.INVALID_INPUT);
         assertError(() -> session.act(1L, draw(-1)), ErrorCode.OLD_MAID_INVALID_SLOT);
         assertError(() -> session.signal(1L, draw(0)), ErrorCode.INVALID_INPUT);
+        assertError(() -> session.act(1L, new GameAction("DISCARD", null, null)), ErrorCode.INVALID_INPUT);
+        assertError(() -> session.act(1L, new GameAction("DISCARD", null, null, null, null, null, null, List.of(0))),
+                ErrorCode.INVALID_INPUT);
     }
 
     @Test
@@ -147,6 +160,7 @@ class OldMaidSessionTest {
     void R28_끝낸_사람이_나가도_기권이_아니고_오류도_없다() {
         OldMaidSession session = threePlayers();
         session.act(1L, draw(0));
+        session.act(1L, discard(s(Rank.FIVE), h(Rank.FIVE)));
         clock.advance(Duration.ofSeconds(3));
 
         List<GameOutcome> outcomes = session.forfeit(1L);
@@ -155,6 +169,7 @@ class OldMaidSessionTest {
         assertThat(session.isFinished()).isFalse();
         assertThat(session.deadline()).contains(T0.plusSeconds(15));
         OldMaidSessionView view = (OldMaidSessionView) session.viewFor(3L);
+        assertThat(view.game().currentPlayerId()).isEqualTo(2L);
         assertThat(view.game().players().get(0).forfeited()).isFalse();
         assertThat(view.game().players().get(0).rank()).isEqualTo(1);
     }

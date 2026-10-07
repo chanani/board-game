@@ -60,6 +60,26 @@ public class Hands {
         return hand.cards();
     }
 
+    // R7: 짝을 모두 버렸다면 카드가 남는 사람 수(손패는 그대로 둔다).
+    public long holderCountAfterPairs() {
+        return hands.values()
+                .stream()
+                .filter(Hand::keepsCardsAfterPairs)
+                .count();
+    }
+
+    // R36: 누구의 손에든 짝이 남았는지.
+    public boolean anyPair() {
+        return hands.values()
+                .stream()
+                .anyMatch(Hand::hasPair);
+    }
+
+    public boolean hasPair(PlayerId player) {
+        Hand hand = hands.get(player);
+        return hand != null && hand.hasPair();
+    }
+
     public long holderCount() {
         return hands.values()
                 .stream()

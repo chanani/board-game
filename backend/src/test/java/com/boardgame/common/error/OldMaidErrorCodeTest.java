@@ -17,6 +17,10 @@ class OldMaidErrorCodeTest {
         assertThat(ErrorCode.OLD_MAID_SHUFFLE_NOT_ALLOWED.message()).isEqualTo("지금은 손패를 섞을 수 없어요.");
         assertThat(ErrorCode.OLD_MAID_SHUFFLE_TOO_FAST.status()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
         assertThat(ErrorCode.OLD_MAID_SHUFFLE_TOO_FAST.message()).isEqualTo("조금 뒤에 다시 섞을 수 있어요.");
+        assertThat(ErrorCode.OLD_MAID_NOT_A_PAIR.status()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(ErrorCode.OLD_MAID_NOT_A_PAIR.message()).isEqualTo("같은 숫자 두 장을 골라 주세요.");
+        assertThat(ErrorCode.OLD_MAID_CARD_NOT_IN_HAND.status()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(ErrorCode.OLD_MAID_CARD_NOT_IN_HAND.message()).isEqualTo("내 손에 없는 카드예요.");
     }
 
     @Test

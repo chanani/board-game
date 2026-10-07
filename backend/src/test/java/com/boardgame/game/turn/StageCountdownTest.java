@@ -46,4 +46,15 @@ class StageCountdownTest {
         assertThat(idle.deadline()).isNull();
         assertThat(idle.serverNow()).isEqualTo(T0.toEpochMilli());
     }
+
+    @Test
+    void 키마다_시간이_다르면_지금_키의_시간으로_잰다() {
+        StageCountdown<Integer> countdown = new StageCountdown<>(clock, key -> Duration.ofSeconds(key * 10L), 3);
+        assertThat(countdown.deadline()).isEqualTo(T0.plusSeconds(30));
+        clock.advance(Duration.ofSeconds(5));
+
+        countdown.follow(1);
+
+        assertThat(countdown.deadline()).isEqualTo(T0.plusSeconds(15));
+    }
 }

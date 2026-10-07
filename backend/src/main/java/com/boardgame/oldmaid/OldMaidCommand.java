@@ -6,12 +6,18 @@ import com.boardgame.game.GameAction;
 import java.time.Instant;
 import java.util.Arrays;
 
-// 행동 type → 게임 메서드. 모르는 type, DRAW의 index 없음은 INVALID_INPUT.
+// 행동 type → 게임 메서드. 모르는 type, DRAW의 index 없음, DISCARD의 cardIds가 서로 다른 두 장이 아니면 INVALID_INPUT.
 public enum OldMaidCommand {
     DRAW {
         @Override
         void apply(OldMaidGame game, PlayerId player, GameAction action, Instant now) {
             game.draw(player, slotOf(action));
+        }
+    },
+    DISCARD {
+        @Override
+        void apply(OldMaidGame game, PlayerId player, GameAction action, Instant now) {
+            game.discard(player, PairChoice.of(action.cardIds()));
         }
     },
     SHUFFLE {

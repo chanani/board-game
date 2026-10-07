@@ -12,7 +12,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.boardgame.common.error.BusinessException;
 import com.boardgame.common.error.ErrorCode;
 import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 class HandTest {
@@ -38,15 +37,16 @@ class HandTest {
     }
 
     @Test
-    void R13_받은_카드가_짝이면_두_장을_내보내고_아니면_고른_자리에_끼운다() {
+    void R13_뽑은_카드는_짝이_되어도_고른_자리에_끼우고_짝이_생겼는지_알려준다() {
         Hand hand = new Hand(List.of(s(Rank.ACE), h(Rank.KING), d(Rank.TWO)));
+        assertThat(hand.hasPair()).isFalse();
 
-        Optional<CardPair> pair = hand.receive(c(Rank.KING), bound -> 0);
-        Optional<CardPair> none = hand.receive(JOKER, bound -> bound - 1);
+        hand.insert(JOKER, bound -> bound - 1);
+        assertThat(hand.hasPair()).isFalse();
+        hand.insert(c(Rank.KING), bound -> 0);
 
-        assertThat(pair).contains(new CardPair(h(Rank.KING), c(Rank.KING)));
-        assertThat(none).isEmpty();
-        assertThat(hand.cards()).containsExactly(s(Rank.ACE), d(Rank.TWO), JOKER);
+        assertThat(hand.cards()).containsExactly(c(Rank.KING), s(Rank.ACE), h(Rank.KING), d(Rank.TWO), JOKER);
+        assertThat(hand.hasPair()).isTrue();
     }
 
     @Test
@@ -54,13 +54,49 @@ class HandTest {
         Hand hand = new Hand(List.of(s(Rank.ACE), h(Rank.KING)));
         int[] seen = new int[1];
 
-        hand.receive(JOKER, bound -> {
+        hand.insert(JOKER, bound -> {
             seen[0] = bound;
             return 1;
         });
 
         assertThat(seen[0]).isEqualTo(3);
         assertThat(hand.cards()).containsExactly(s(Rank.ACE), JOKER, h(Rank.KING));
+    }
+
+    @Test
+    void R36_고른_두_장이_같은_숫자면_짝으로_꺼낸다() {
+        Hand hand = new Hand(List.of(s(Rank.FIVE), h(Rank.TWO), d(Rank.FIVE), c(Rank.FIVE)));
+
+        CardPair pair = hand.takePair(new PairChoice(c(Rank.FIVE).id(), s(Rank.FIVE).id()));
+
+        assertThat(pair).isEqualTo(new CardPair(c(Rank.FIVE), s(Rank.FIVE)));
+        assertThat(hand.cards()).containsExactly(h(Rank.TWO), d(Rank.FIVE));
+    }
+
+    @Test
+    void R36_같은_숫자가_아니거나_조커면_OLD_MAID_NOT_A_PAIR이고_내_손에_없으면_OLD_MAID_CARD_NOT_IN_HAND() {
+        Hand hand = new Hand(List.of(s(Rank.FIVE), h(Rank.TWO), JOKER));
+
+        assertThatThrownBy(() -> hand.takePair(new PairChoice(s(Rank.FIVE).id(), h(Rank.TWO).id())))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        error -> assertThat(error.errorCode()).isEqualTo(ErrorCode.OLD_MAID_NOT_A_PAIR));
+        assertThatThrownBy(() -> hand.takePair(new PairChoice(JOKER.id(), h(Rank.TWO).id())))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        error -> assertThat(error.errorCode()).isEqualTo(ErrorCode.OLD_MAID_NOT_A_PAIR));
+        assertThatThrownBy(() -> hand.takePair(new PairChoice(s(Rank.FIVE).id(), d(Rank.FIVE).id())))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        error -> assertThat(error.errorCode()).isEqualTo(ErrorCode.OLD_MAID_CARD_NOT_IN_HAND));
+        assertThat(hand.cards()).containsExactly(s(Rank.FIVE), h(Rank.TWO), JOKER);
+    }
+
+    @Test
+    void R7_짝을_다_버렸다면_카드가_남는지_손패를_바꾸지_않고_셈한다() {
+        Hand empties = new Hand(List.of(s(Rank.FIVE), h(Rank.FIVE), d(Rank.NINE), c(Rank.NINE)));
+        Hand keeps = new Hand(List.of(s(Rank.FIVE), h(Rank.FIVE), d(Rank.FIVE)));
+
+        assertThat(empties.keepsCardsAfterPairs()).isFalse();
+        assertThat(keeps.keepsCardsAfterPairs()).isTrue();
+        assertThat(empties.size()).isEqualTo(4);
     }
 
     @Test

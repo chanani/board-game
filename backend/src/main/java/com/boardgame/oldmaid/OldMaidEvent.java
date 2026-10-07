@@ -20,11 +20,9 @@ public record OldMaidEvent(long seq, OldMaidEventType type, PlayerId actor, Play
         return draft(OldMaidEventType.START, drawer, target, List.of(), null);
     }
 
-    public static OldMaidEvent dealPairs(PlayerId player, List<CardPair> pairs) {
-        List<PlayingCard> cards = pairs.stream()
-                .flatMap(pair -> pair.cards().stream())
-                .toList();
-        return draft(OldMaidEventType.DEAL_PAIRS, player, null, cards, pairs.size());
+    // R5·R36: 카드를 나눠 처음 버리기 단계를 연다. actor = 처음 나눠 받은 사람.
+    public static OldMaidEvent deal(PlayerId first) {
+        return draft(OldMaidEventType.DEAL, first, null, List.of(), null);
     }
 
     public static OldMaidEvent draw(PlayerId drawer, PlayerId from) {

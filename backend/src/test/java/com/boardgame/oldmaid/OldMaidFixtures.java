@@ -66,13 +66,36 @@ final class OldMaidFixtures {
         return game(first, hands, fixedDice());
     }
 
-    /** 자리 순서 = hands의 키 순서. 손패의 짝은 Deal.of가 버린다(R6). */
+    /** 자리 순서 = hands의 키 순서. 처음 버리기 단계(R36)에서 모두가 짝을 다 버리고 첫 차례가 시작된 게임. */
     static OldMaidGame game(PlayerId first, Map<PlayerId, List<PlayingCard>> hands, OldMaidDice dice) {
+        OldMaidGame game = opening(first, hands, dice);
+        discardAllPairs(game);
+        return game;
+    }
+
+    /** 나눈 그대로, 처음 버리기 단계(R36)의 게임. 짝이 하나도 없으면 곧바로 첫 차례다. */
+    static OldMaidGame opening(PlayerId first, Map<PlayerId, List<PlayingCard>> hands) {
+        return opening(first, hands, fixedDice());
+    }
+
+    static OldMaidGame opening(PlayerId first, Map<PlayerId, List<PlayingCard>> hands, OldMaidDice dice) {
         List<PlayerId> players = List.copyOf(hands.keySet());
         Map<PlayerId, Hand> made = new LinkedHashMap<>();
         hands.forEach((player, cards) -> made.put(player, new Hand(cards)));
-        Seats seats = new Seats(players);
-        Deal deal = Deal.of(first, seats.inOrderFrom(first), new Hands(made));
-        return OldMaidGame.begin(players, deal, dice);
+        return OldMaidGame.begin(players, new Deal(first, new Hands(made)), dice);
+    }
+
+    /** 자리 순서대로 사람마다 손패 순서로 앞에서부터 짝을 직접 버린다(옛 R6 자동 버림과 같은 결과). */
+    static void discardAllPairs(OldMaidGame game) {
+        game.seats().forEach(player -> pairsIn(game.handOf(player))
+                .forEach(pair -> game.discard(player, choice(pair.first(), pair.second()))));
+    }
+
+    static List<CardPair> pairsIn(List<PlayingCard> cards) {
+        return new Hand(cards).discardPairs();
+    }
+
+    static PairChoice choice(PlayingCard first, PlayingCard second) {
+        return new PairChoice(first.id(), second.id());
     }
 }

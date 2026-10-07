@@ -1,23 +1,12 @@
 package com.boardgame.oldmaid;
 
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-
-// 나눈 직후: 첫 사람, 짝을 버린 손패, 사람마다 버린 짝(첫 사람부터 순서).
-public record Deal(PlayerId first, Hands hands, Map<PlayerId, List<CardPair>> pairs) {
+// 나눈 직후: 첫 사람과 손패(짝은 아직 버리지 않았다, R36).
+public record Deal(PlayerId first, Hands hands) {
 
     private static final int MIN_HOLDERS = 2;
 
-    // R6
-    public static Deal of(PlayerId first, List<PlayerId> order, Hands hands) {
-        Map<PlayerId, List<CardPair>> pairs = new LinkedHashMap<>();
-        order.forEach(player -> pairs.put(player, hands.of(player).discardPairs()));
-        return new Deal(first, hands, pairs);
-    }
-
-    // R7
+    // R7·D18: 모두가 짝을 다 버렸다고 미리 셈해 카드를 가진 사람이 2명 이상이어야 이 나눔으로 시작한다.
     public boolean isPlayable() {
-        return hands.holderCount() >= MIN_HOLDERS;
+        return hands.holderCountAfterPairs() >= MIN_HOLDERS;
     }
 }

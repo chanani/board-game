@@ -2,7 +2,7 @@ package com.boardgame.oldmaid;
 
 import java.util.List;
 
-// R5~R7: 섞어 나누고, 짝을 버린 뒤 카드 가진 사람이 2명 미만이면 다시 나눈다.
+// R5·R7: 섞어 나누고, 모두가 짝을 다 버렸다고 셈했을 때 카드 가진 사람이 2명 미만이면 다시 나눈다(D18).
 public class OldMaidRoundFactory {
 
     private final OldMaidDice dice;
@@ -26,8 +26,7 @@ public class OldMaidRoundFactory {
 
     private Deal deal(Seats seats) {
         PlayerId first = seats.at(dice.picker().pick(seats.size()));
-        List<PlayerId> order = seats.inOrderFrom(first);
-        Hands hands = Hands.dealt(order, dice.shuffler().shuffle(StandardOldMaidDeck.cards()));
-        return Deal.of(first, order, hands);
+        Hands hands = Hands.dealt(seats.inOrderFrom(first), dice.shuffler().shuffle(StandardOldMaidDeck.cards()));
+        return new Deal(first, hands);
     }
 }

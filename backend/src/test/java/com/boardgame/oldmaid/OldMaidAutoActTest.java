@@ -32,9 +32,9 @@ class OldMaidAutoActTest {
     void R35_시간이_지나면_무작위_자리_1장을_대신_뽑고_자동으로_표시한다() {
         OldMaidGame game = threePlayers();
 
-        PlayerId actor = game.autoAct(new FixedRandom(1));
+        List<PlayerId> actors = game.autoAct(new FixedRandom(1));
 
-        assertThat(actor).isEqualTo(A);
+        assertThat(actors).containsExactly(A);
         assertThat(game.handOf(A)).containsExactly(JOKER, s(Rank.TWO), s(Rank.THREE));
         assertThat(game.latestEvents()).extracting(OldMaidEvent::type).containsExactly(OldMaidEventType.DRAW);
         assertThat(game.latestEvents()).allMatch(OldMaidEvent::auto);
@@ -42,7 +42,7 @@ class OldMaidAutoActTest {
     }
 
     @Test
-    void R35_자동으로_뽑은_카드도_짝이면_버린다() {
+    void R35_D20_자동으로_뽑은_카드가_짝이면_짝_버리기_단계를_기다리지_않고_그_짝도_버리고_넘긴다() {
         OldMaidGame game = threePlayers();
 
         game.autoAct(new FixedRandom(5));
@@ -50,12 +50,33 @@ class OldMaidAutoActTest {
         assertThat(game.handOf(A)).containsExactly(s(Rank.THREE));
         assertThat(game.latestEvents()).extracting(OldMaidEvent::type)
                 .containsExactly(OldMaidEventType.DRAW, OldMaidEventType.PAIR);
+        assertThat(game.latestEvents()).allMatch(OldMaidEvent::auto);
+        assertThat(game.stage()).isEqualTo(OldMaidStage.DRAW);
+        assertThat(game.drawer()).isEqualTo(B);
+    }
+
+    @Test
+    void R38_짝_버리기_단계에서_시간이_지나면_뽑은_사람의_짝을_대신_버리고_넘긴다() {
+        OldMaidGame game = threePlayers();
+        game.draw(A, new SlotIndex(2));
+
+        List<PlayerId> actors = game.autoAct(new FixedRandom(0));
+
+        assertThat(actors).containsExactly(A);
+        assertThat(game.handOf(A)).containsExactly(s(Rank.THREE));
+        assertThat(game.discards()).containsExactly(new DiscardedPair(A, new CardPair(d(Rank.TWO), s(Rank.TWO))));
+        assertThat(game.latestEvents()).extracting(OldMaidEvent::type).containsExactly(OldMaidEventType.PAIR);
+        assertThat(game.latestEvents()).allMatch(OldMaidEvent::auto);
+        assertThat(game.drawer()).isEqualTo(B);
+        assertThat(game.target()).isEqualTo(C);
     }
 
     @Test
     void 끝난_게임은_자동_행동을_하지_않는다() {
         OldMaidGame game = game(A, hands(List.of(s(Rank.FIVE)), List.of(h(Rank.FIVE), JOKER)));
         game.draw(A, new SlotIndex(0));
+        game.autoAct(new FixedRandom(0));
+        assertThat(game.isFinished()).isTrue();
 
         assertThatThrownBy(() -> game.autoAct(new FixedRandom(0)))
                 .isInstanceOfSatisfying(BusinessException.class,

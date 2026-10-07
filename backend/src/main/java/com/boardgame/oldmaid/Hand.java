@@ -46,14 +46,38 @@ public class Hand {
         return cards.remove(slot.value());
     }
 
-    // R13·D6: 짝이 있으면 두 장을 내보내고, 없으면 picker가 고른 자리(0..장수)에 끼운다.
-    public Optional<CardPair> receive(PlayingCard card, SlotPicker picker) {
-        Optional<PlayingCard> partner = partnerOf(card);
-        if (partner.isPresent()) {
-            return Optional.of(remove(new CardPair(partner.get(), card)));
-        }
+    // R13·D6: 뽑은 카드는 짝이 되든 안 되든 picker가 고른 자리(0..장수)에 끼운다. 짝은 사람이 버린다(R37).
+    public void insert(PlayingCard card, SlotPicker picker) {
         cards.add(picker.pick(cards.size() + 1), card);
-        return Optional.empty();
+    }
+
+    // R3: 손에 같은 숫자 두 장이 있는지.
+    public boolean hasPair() {
+        return firstPair().isPresent();
+    }
+
+    // R7: 짝을 모두 버렸다면 카드가 남는지(손패는 그대로 둔다).
+    public boolean keepsCardsAfterPairs() {
+        Hand copy = new Hand(cards);
+        copy.discardPairs();
+        return !copy.isEmpty();
+    }
+
+    // R36·R37: 사람이 고른 두 장을 짝으로 버린다. 내 손에 없으면 OLD_MAID_CARD_NOT_IN_HAND, 같은 숫자가 아니면 OLD_MAID_NOT_A_PAIR.
+    public CardPair takePair(PairChoice choice) {
+        PlayingCard first = find(choice.first());
+        PlayingCard second = find(choice.second());
+        if (!first.pairsWith(second)) {
+            throw new BusinessException(ErrorCode.OLD_MAID_NOT_A_PAIR);
+        }
+        return remove(new CardPair(first, second));
+    }
+
+    private PlayingCard find(CardId id) {
+        return cards.stream()
+                .filter(card -> card.id().equals(id))
+                .findFirst()
+                .orElseThrow(() -> new BusinessException(ErrorCode.OLD_MAID_CARD_NOT_IN_HAND));
     }
 
     public List<PlayingCard> takeAll() {
@@ -84,7 +108,6 @@ public class Hand {
                 .findFirst();
     }
 
-    // 받은 카드는 아직 손에 없으므로 remove가 아무것도 지우지 않아도 된다.
     private CardPair remove(CardPair pair) {
         cards.remove(pair.first());
         cards.remove(pair.second());

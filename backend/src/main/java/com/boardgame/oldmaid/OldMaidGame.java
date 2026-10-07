@@ -4,6 +4,7 @@ import com.boardgame.common.error.BusinessException;
 import com.boardgame.common.error.ErrorCode;
 import com.boardgame.oldmaid.view.OldMaidView;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
@@ -54,6 +55,11 @@ public class OldMaidGame {
         run(player, OldMaidEndReason.NORMAL, batch -> round.draw(player, slot, batch));
     }
 
+    // R36·R37: 고른 두 장을 짝으로 버린다.
+    public void discard(PlayerId player, PairChoice choice) {
+        run(player, OldMaidEndReason.NORMAL, batch -> round.discard(player, choice, batch));
+    }
+
     // R17~R21: 신호는 기록(이벤트)을 바꾸지 않는다. 끝난 게임·남의 신호는 조용히 false.
     public boolean peek(PlayerId player, Optional<SlotIndex> slot, Instant now) {
         if (isFinished()) {
@@ -71,16 +77,36 @@ public class OldMaidGame {
         run(player, OldMaidEndReason.FORFEIT, batch -> round.forfeit(player, batch));
     }
 
-    // R35: 시간 초과. 대신 뽑은 사람을 돌려준다.
-    public PlayerId autoAct(Random random) {
+    // R35·R38: 시간 초과. 대신 행동한 사람들(처음 버리기면 짝이 남았던 모두, 아니면 뽑는 사람)을 돌려준다.
+    public List<PlayerId> autoAct(Random random) {
         requireInProgress();
-        PlayerId drawer = round.drawer();
-        apply(true, OldMaidEndReason.NORMAL, batch -> round.autoDraw(random, batch));
-        return drawer;
+        List<PlayerId> actors = new ArrayList<>();
+        apply(true, OldMaidEndReason.NORMAL, batch -> actors.addAll(round.autoAct(random, batch)));
+        return List.copyOf(actors);
     }
 
     public boolean canShuffle(PlayerId player) {
         return !isFinished() && round.canShuffle(player);
+    }
+
+    public boolean canDiscard(PlayerId player) {
+        return !isFinished() && round.canDiscard(player);
+    }
+
+    public boolean openingDone(PlayerId player) {
+        return round.openingDone(player);
+    }
+
+    public boolean isOpening() {
+        return !isFinished() && round.isOpening();
+    }
+
+    public OldMaidStage stage() {
+        return round.stage();
+    }
+
+    public TurnStep step() {
+        return round.step();
     }
 
     public Optional<SlotIndex> peekSlot() {

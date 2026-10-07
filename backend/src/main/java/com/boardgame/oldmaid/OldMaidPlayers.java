@@ -4,14 +4,25 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
 
-// 자리와 등수 묶음.
+// 자리, 처음 나눠 받은 사람, 등수 묶음.
 public class OldMaidPlayers {
 
     private final Seats seats;
+    private final PlayerId first;
     private final Standings standings = new Standings();
 
-    public OldMaidPlayers(Seats seats) {
+    public OldMaidPlayers(Seats seats, PlayerId first) {
         this.seats = seats;
+        this.first = first;
+    }
+
+    // R5: 처음 나눠 받은 사람. 처음 버리기가 끝날 때 빈 손 등수(R8)와 첫 차례(R9)를 이 사람부터 센다.
+    PlayerId first() {
+        return first;
+    }
+
+    List<PlayerId> inOrderFromFirst() {
+        return seats.inOrderFrom(first);
     }
 
     List<PlayerId> seats() {
@@ -20,10 +31,6 @@ public class OldMaidPlayers {
 
     PlayerId firstSeat() {
         return seats.first();
-    }
-
-    List<PlayerId> inOrderFrom(PlayerId start) {
-        return seats.inOrderFrom(start);
     }
 
     boolean isSeated(PlayerId player) {

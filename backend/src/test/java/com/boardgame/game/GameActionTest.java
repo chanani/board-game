@@ -47,4 +47,13 @@ class GameActionTest {
         assertThat(new GameAction("PLAY", null, null, 104, "GREEN", null))
                 .isEqualTo(new GameAction("PLAY", null, null, 104, "GREEN", null, null));
     }
+
+    @Test
+    void JSON의_cardIds_칸을_읽고_예전_생성자는_cardIds를_비워_둔다() throws Exception {
+        GameAction discard = mapper.readValue("{\"type\":\"DISCARD\",\"cardIds\":[4,17]}", GameAction.class);
+
+        assertThat(discard.cardIds()).containsExactly(4, 17);
+        assertThat(new GameAction("DRAW", null, null, null, null, null, 3).cardIds()).isNull();
+        assertThat(new GameAction("FLIP", 0, 1).cardIds()).isNull();
+    }
 }
