@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fanAngle, fanSpacing } from './fan';
+import { EDGE_FADE, fanAngle, fanSpacing } from './fan';
 
 describe('fan', () => {
   it('폭이 넉넉하면 카드 폭 + 6px 간격', () => {
@@ -19,5 +19,9 @@ describe('fan', () => {
     expect(fanAngle(0, 1)).toBe(0);
     expect(fanAngle(0, 5)).toBe(-fanAngle(4, 5));
     expect(fanAngle(2, 5)).toBe(0);
+  });
+
+  it('스크롤 줄 양끝 흐림은 16px', () => {
+    expect(EDGE_FADE).toBe('linear-gradient(to right, transparent, black 16px, black calc(100% - 16px), transparent)');
   });
 });

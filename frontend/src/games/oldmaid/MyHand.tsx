@@ -3,7 +3,7 @@ import { useRef } from 'react';
 import type { PlayingCard } from '../../api/types';
 import { ShuffleIcon } from '../../components/icons';
 import type { TableLayout } from '../../lib/useTableLayout';
-import { FAN_RADIUS, fanAngle, fanDrop, fanRoom, fanSpacing, handHeadroom } from '../../table/fan';
+import { EDGE_FADE, FAN_RADIUS, fanAngle, fanDrop, fanRoom, fanSpacing, handHeadroom } from '../../table/fan';
 import { useElementWidth } from '../../table/useElementWidth';
 import { useFreshIds } from '../../table/useFreshIds';
 import { handMinVisible, LIFT_RATIO, type OldMaidSizes } from './layout';
@@ -23,7 +23,6 @@ type Props = {
 };
 
 const BOTTOM_GAP = 4;
-const EDGE_FADE = 'linear-gradient(to right, transparent, black 16px, black calc(100% - 16px), transparent)';
 
 /** 내 손패: 앞면 부채꼴, 서버 순서 그대로(D13). 섞으면 카드가 새 자리로 미끄러진다(layout 애니메이션). */
 export function MyHand({ cards, liftIndex, layout, sizes, zoneId, canShuffle, shuffleLocked, onShuffle }: Props) {

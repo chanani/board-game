@@ -2,6 +2,7 @@ import { Fragment, useEffect, useRef, useState, type KeyboardEvent } from 'react
 import type { UnoCard } from '../../api/types';
 import { useMediaQuery } from '../../lib/useMediaQuery';
 import type { TableLayout } from '../../lib/useTableLayout';
+import { EDGE_FADE } from '../../table/fan';
 import { useElementWidth } from '../../table/useElementWidth';
 import { useFreshIds } from '../../table/useFreshIds';
 import { cardName, sortHand } from './cards';
@@ -23,7 +24,6 @@ const SELECT_LIFT: Record<TableLayout, number> = { pc: 24, portrait: 24, landsca
 const PLAYABLE_LIFT = 10;
 // 줄 맨 아래 남기는 여유.
 const BOTTOM_GAP = 4;
-const EDGE_FADE = 'linear-gradient(to right, transparent, black 16px, black calc(100% - 16px), transparent)';
 
 export function UnoHand({ cards, playableIds, myTurn, layout, zoneId, onPlay }: Props) {
   const fine = useMediaQuery('(pointer: fine)');

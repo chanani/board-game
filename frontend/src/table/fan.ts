@@ -59,6 +59,8 @@ const GAP = 6;
 const GLOW_ROOM = 6;
 // 가로 스크롤 줄은 양끝 16px을 흐리게 하므로 끝 카드를 그 밖으로 민다.
 const FADE_ROOM = 16;
+/** 가로 스크롤 줄의 양끝 FADE_ROOM(16px)을 흐리게 하는 마스크. */
+export const EDGE_FADE = `linear-gradient(to right, transparent, black ${FADE_ROOM}px, black calc(100% - ${FADE_ROOM}px), transparent)`;
 
 /**
  * 부채 카드 왼쪽 끝 사이 간격과 양끝 여백. 폭에 맞춰 겹치다가 최소 보이는 폭보다 좁아지면 그 폭으로 두고 가로 스크롤.

@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import type { TableLayout } from '../../lib/useTableLayout';
-import { FAN_RADIUS, fanAngle, fanDrop, fanRoom, fanSpacing, handHeadroom } from '../../table/fan';
+import { EDGE_FADE, FAN_RADIUS, fanAngle, fanDrop, fanRoom, fanSpacing, handHeadroom } from '../../table/fan';
 import { useElementWidth } from '../../table/useElementWidth';
 import { LIFT_RATIO } from './layout';
 import { PlayingCardFace } from './PlayingCardFace';
@@ -13,8 +13,6 @@ type Props = {
   liftIndex: number | null;
   layout: TableLayout;
 };
-
-const EDGE_FADE = 'linear-gradient(to right, transparent, black 16px, black calc(100% - 16px), transparent)';
 
 /** 뽑히는 상대의 손패를 가운데에 크게 펼친 뒷면 부채(D17: 모두에게 보인다). */
 export function TargetFan({ ownerName, count, cardWidth, minVisible, liftIndex, layout }: Props) {
