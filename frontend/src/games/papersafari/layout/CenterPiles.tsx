@@ -31,7 +31,7 @@ export function CenterPiles({ deckSize, discardTop, drawable, onDrawDeck, onDraw
               <CardBack />
             </span>
           ))}
-          <button type="button" aria-label="덱에서 뽑기" disabled={!drawable} onClick={onDrawDeck}
+          <button type="button" aria-label="덱에서 뽑기" data-no-click-sound disabled={!drawable} onClick={onDrawDeck}
             className={`press-3d card-thick relative block overflow-hidden rounded-[10%/7%] transition-transform duration-150 ${SIZE_CLASS[size]} ${drawable ? DRAWABLE : 'cursor-default'}`}>
             <CardBack />
           </button>

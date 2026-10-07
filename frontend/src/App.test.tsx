@@ -8,6 +8,7 @@ const { passThrough } = vi.hoisted(() => ({ passThrough: ({ children }: { childr
 vi.mock('./auth/AuthContext', () => ({ AuthProvider: passThrough }));
 vi.mock('./components/Toast', () => ({ ToastProvider: passThrough }));
 vi.mock('./lib/sound', () => ({ SoundProvider: passThrough }));
+vi.mock('./lib/clickSound', () => ({ ClickSound: () => null }));
 vi.mock('./auth/RequireAuth', () => ({ RequireAuth: () => <Outlet /> }));
 vi.mock('./components/Layout', () => ({ Layout: () => <Outlet /> }));
 vi.mock('./pages/GameShelfPage', () => ({ GameShelfPage: () => <p>게임 목록 화면</p> }));

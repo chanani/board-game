@@ -18,12 +18,12 @@ export function SoundSettings() {
       </div>
       <div className="flex flex-col gap-1.5">
         <span id={drawLabelId} className="text-sm font-semibold text-wood-700">카드 가져오는 소리</span>
-        {/* 고르면 바로 그 소리를 한 번 들려준다(setDrawSound). */}
+        {/* 고르면 바로 그 소리를 한 번 들려준다(setDrawSound). 그래서 사이트 공통 누름 소리는 끈다. */}
         <div role="radiogroup" aria-labelledby={drawLabelId} className="grid grid-cols-4 gap-1.5">
           {DRAW_SOUNDS.map((sound) => {
             const selected = sound.id === drawSound;
             return (
-              <button key={sound.id} type="button" role="radio" aria-checked={selected} disabled={muted}
+              <button key={sound.id} type="button" role="radio" data-no-click-sound aria-checked={selected} disabled={muted}
                 onClick={() => setDrawSound(sound.id)}
                 className={`press-3d rounded-[10px] border py-1.5 text-sm font-extrabold disabled:opacity-40 ${
                   selected ? 'border-mustard-600 bg-mustard-400 text-wood-800' : 'border-cream-200 bg-cream text-wood-700 hover:bg-cream-200/60'}`}>
@@ -33,7 +33,7 @@ export function SoundSettings() {
           })}
         </div>
       </div>
-      <Button variant="secondary" onClick={() => play('myTurn')}>소리 들어보기</Button>
+      <Button variant="secondary" data-no-click-sound onClick={() => play('myTurn')}>소리 들어보기</Button>
     </section>
   );
 }

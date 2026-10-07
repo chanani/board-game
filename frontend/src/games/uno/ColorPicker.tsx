@@ -22,7 +22,7 @@ export function ColorPicker({ open, mode, risky, counts, onPick, onCancel }: Pro
       {risky ? <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm font-bold text-red-700">지금 색 카드가 있어서, 도전받으면 내가 4장을 뽑아요.</p> : null}
       <div className="grid grid-cols-2 gap-3">
         {COLOR_ORDER.map((color) => (
-          <button key={color} type="button" aria-label={`${COLOR_NAMES[color]}, 내 카드 ${counts[color]}장`} onClick={() => onPick(color)}
+          <button key={color} type="button" data-no-click-sound aria-label={`${COLOR_NAMES[color]}, 내 카드 ${counts[color]}장`} onClick={() => onPick(color)}
             className={`press-3d flex h-24 flex-col items-center justify-center rounded-2xl shadow-[0_4px_0_rgb(0_0_0/0.25)] ${color === 'YELLOW' ? 'text-wood-900' : 'text-white'}`}
             style={{ backgroundColor: COLOR_HEX[color] }}>
             <span className="text-lg font-black">{COLOR_NAMES[color]}</span>

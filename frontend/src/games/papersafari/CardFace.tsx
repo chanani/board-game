@@ -44,6 +44,7 @@ export function CardFace({ card, faceUp, known, size = 'md', highlight = false, 
       aria-label={labelOf(card, faceUp, known)}
       data-side={sideOf(showFront, peeked)}
       disabled={!onClick}
+      data-no-click-sound
       onClick={onClick}
       className={`card-3d relative block select-none rounded-[10%/7%] transition-transform duration-150 focus-visible:ring-4 focus-visible:ring-mustard-300 ${SIZES[size]} ${clickable} ${pulse ? 'float-hint' : ''} ${peekRing}`}
     >

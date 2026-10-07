@@ -4,6 +4,7 @@ import { AuthProvider } from './auth/AuthContext';
 import { RequireAuth } from './auth/RequireAuth';
 import { Layout } from './components/Layout';
 import { ToastProvider } from './components/Toast';
+import { ClickSound } from './lib/clickSound';
 import { SoundProvider } from './lib/sound';
 import { GameLobbyPage } from './pages/GameLobbyPage';
 import { GameShelfPage } from './pages/GameShelfPage';
@@ -16,6 +17,7 @@ export default function App() {
   return (
     <MotionConfig reducedMotion="user">
       <SoundProvider>
+        <ClickSound />
         <ToastProvider>
           <AuthProvider>
             <Routes>

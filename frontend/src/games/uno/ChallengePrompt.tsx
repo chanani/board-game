@@ -32,8 +32,8 @@ export function ChallengePrompt({ open, byName, previousColor, deadline, serverN
         직전 색({colorName})을 낸 사람이 갖고 있었으면 도전 성공
       </p>
       <div className="mt-4 flex justify-end gap-2">
-        <Button variant="secondary" onClick={onAccept}>4장 받기</Button>
-        <Button variant="danger" onClick={onChallenge}>도전하기</Button>
+        <Button variant="secondary" data-no-click-sound onClick={onAccept}>4장 받기</Button>
+        <Button variant="danger" data-no-click-sound onClick={onChallenge}>도전하기</Button>
       </div>
     </Modal>
   );

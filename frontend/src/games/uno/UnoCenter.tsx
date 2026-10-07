@@ -63,7 +63,7 @@ export function UnoCenter({ drawPileCount, discardTop, discardCount, currentColo
         <div className="flex flex-col items-center gap-1">
           {/* 뽑을 차례 강조는 버튼 사각 테두리가 아니라 카드 더미 자체가 떠오르며 카드 모양을 따라 빛나게 한다.
               키보드로 왔을 때(focus-visible)만 카드 모서리에 맞춘 둥근 링을 그린다. */}
-          <button type="button" aria-label={`카드 뽑기, 남은 ${drawPileCount}장`} data-uno-zone="draw" data-ready={canDraw ? 'true' : undefined}
+          <button type="button" aria-label={`카드 뽑기, 남은 ${drawPileCount}장`} data-uno-zone="draw" data-no-click-sound data-ready={canDraw ? 'true' : undefined}
             disabled={!canDraw} onClick={onDraw}
             className="group relative flex flex-col items-center rounded-lg outline-none focus-visible:outline-none disabled:cursor-not-allowed">
             <span aria-hidden="true" data-testid="draw-stack"

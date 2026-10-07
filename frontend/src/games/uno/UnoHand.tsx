@@ -132,7 +132,7 @@ export function UnoHand({ cards, playableIds, myTurn, layout, zoneId, onPlay }: 
           const isFresh = fresh.has(card.id);
           return (
             <Fragment key={card.id}>
-            <button type="button" data-testid="hand-card" data-card-id={card.id} data-angle={angle}
+            <button type="button" data-testid="hand-card" data-no-click-sound data-card-id={card.id} data-angle={angle}
               data-lifted={playable ? 'true' : undefined} aria-pressed={isSelected} data-selected={isSelected ? 'true' : undefined} data-fresh={isFresh ? 'true' : undefined}
               aria-disabled={blocked ? 'true' : undefined}
               aria-label={`${cardName(card)}${playable ? ', 낼 수 있어요' : ''}`}
@@ -147,7 +147,7 @@ export function UnoHand({ cards, playableIds, myTurn, layout, zoneId, onPlay }: 
               <UnoCardFace card={card} width={sizes.hand} decorative />
             </button>
             {isSelected ? (
-              <button type="button" aria-label={`${cardName(card)} 내기`} onClick={() => press(card, true)}
+              <button type="button" data-no-click-sound aria-label={`${cardName(card)} 내기`} onClick={() => press(card, true)}
                 className="press-3d absolute rounded-full bg-(--accent) px-3 py-1 text-xs font-bold text-(--accent-text) shadow"
                 style={{ left: inset + index * step + sizes.hand / 2, top: 0, zIndex: count + 1, transform: 'translateX(-50%)' }}>내기</button>
             ) : null}
