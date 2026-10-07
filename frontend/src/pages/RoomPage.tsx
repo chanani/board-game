@@ -103,7 +103,10 @@ export function RoomPage() {
   const wasPlayer = gameView !== null && game.wasParticipant(gameView, meId);
   // 관전자(게임이 끝나 자동으로 앉은 사람 포함)도 누가 이겼는지 볼 수 있게 결과 창을 띄운다.
   const showGameOver = !playing && gameView !== null && game.isGameOver(gameView) && (wasPlayer || spectating || watched) && !gameOver.dismissed;
-  const showGame = gameView !== null && (playing || showGameOver);
+  // 서버는 게임이 끝나면 방(대기 중)을 끝 화면보다 먼저 보낸다. 그 사이 테이블을 내렸다 다시 올리면 마지막 카드 비행이 끊기고
+  // 대기실이 한 번 비치므로, 받은 화면이 아직 진행 중이면 끝 화면이 올 때까지 테이블을 그대로 둔다.
+  const endingGame = !playing && gameView !== null && !game.isGameOver(gameView) && (wasPlayer || spectating || watched);
+  const showGame = gameView !== null && (playing || showGameOver || endingGame);
   const Table = game.Table;
 
   const run = async (action: () => Promise<unknown>) => {

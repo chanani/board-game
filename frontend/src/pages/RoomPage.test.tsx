@@ -288,6 +288,24 @@ describe('RoomPage 결과 모달', () => {
     expect(screen.getByRole('dialog', { name: '게임 결과' })).toBeInTheDocument();
   });
 
+  it('게임이 끝날 때 방(대기 중)이 끝 화면보다 먼저 와도 테이블을 내리지 않는다(마지막 비행이 끊기지 않게)', async () => {
+    const meAsPlayer = { ...waitingWithMe, status: 'PLAYING' as const };
+    const playingView: PaperSafariSessionView = { ...finished, game: { ...finished.game, status: 'IN_ROUND', winnerId: null } };
+    setChannel({ room: meAsPlayer, view: playingView });
+    const page = renderRoom();
+    const table = await screen.findByTestId('turn-bar');
+
+    // 서버는 방 방송을 먼저, 게임 화면을 나중에 보낸다.
+    setChannel({ room: waitingWithMe, view: playingView });
+    page.rerender(roomTree());
+    expect(screen.getByTestId('turn-bar')).toBe(table);
+    expect(screen.queryByRole('button', { name: /준비/ })).not.toBeInTheDocument();
+
+    setChannel({ room: waitingWithMe, view: finished });
+    page.rerender(roomTree());
+    expect(screen.getByTestId('turn-bar')).toBe(table);
+  });
+
   it('다른 방에서 닫은 결과 기록은 지우지 않는다', async () => {
     window.sessionStorage.setItem('bg.dismissedGameOver', JSON.stringify(['XYZ789:1:{}']));
     setChannel({ room: { ...waitingWithMe, status: 'PLAYING' }, view: null });
