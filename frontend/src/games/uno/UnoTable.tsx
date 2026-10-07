@@ -1,4 +1,5 @@
 import { motion, useReducedMotion } from 'motion/react';
+import { roomAvatarOf } from '../../lib/avatars';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { GameEndBanner } from '../../table/GameEndBanner';
 import { Felt } from '../../components/Felt';
@@ -152,7 +153,7 @@ export function UnoTable({ view, room, meId, log, receivedAt, now, errorSeq, nic
     const active = game.status === 'IN_PROGRESS' && game.currentPlayerId === player.playerId;
     return (
       <div key={player.playerId} data-testid="opponent-seat" className="relative z-10">
-        <UnoSeat player={player} nickname={nicknameOf(player.playerId)} active={active} backWidth={sizes.back} maxBacks={maxBacks}
+        <UnoSeat player={player} nickname={nicknameOf(player.playerId)} avatar={roomAvatarOf(room, player.playerId)} active={active} backWidth={sizes.back} maxBacks={maxBacks}
           timer={active && game.deadline !== null ? { deadline: game.deadline, serverNow: game.serverNow } : undefined}
           connected={member?.connected} offlineSeconds={member ? offlineSecondsNow(member, receivedAt, now) : 0}
           catchable={game.unoCatch?.playerId === player.playerId}

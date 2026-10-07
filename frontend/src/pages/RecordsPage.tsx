@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { MemberAvatar } from '../components/Avatar';
 import { useParams } from 'react-router-dom';
 import { messageOf } from '../api/http';
 import { recordsApi } from '../api/records';
@@ -79,7 +80,10 @@ export function RecordsPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-black text-cream-50 drop-shadow">{isMe ? '내 전적' : `${stats?.nickname ?? ''}님의 전적`}</h1>
+        <h1 className="flex min-w-0 items-center gap-2 text-xl font-black text-cream-50 drop-shadow">
+          {stats ? <MemberAvatar memberId={stats.memberId} avatar={stats.avatar} size={32} /> : null}
+          <span className="min-w-0 truncate">{isMe ? '내 전적' : `${stats?.nickname ?? ''}님의 전적`}</span>
+        </h1>
         <div className="flex gap-2">
           <button type="button" className={tabClass('records')} onClick={() => setTab('records')}>전적</button>
           <button type="button" className={tabClass('ranking')} onClick={() => setTab('ranking')}>순위표</button>

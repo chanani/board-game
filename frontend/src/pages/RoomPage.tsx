@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { messageOf } from '../api/http';
 import { roomsApi } from '../api/rooms';
@@ -19,6 +19,7 @@ import { WaitingRoom } from '../room/WaitingRoom';
 import { RoomBackdrop, RoomThemeProvider } from '../room/roomTheme';
 import { PC_QUERY, useMediaQuery } from '../lib/useMediaQuery';
 import { useTableLayout } from '../lib/useTableLayout';
+import { withChatAvatars, withMyAvatar } from '../lib/avatars';
 import { ChatColorProvider, chatOrderOf } from '../room/chatColors';
 
 function isPresent(room: Room, meId: number): boolean {
@@ -35,7 +36,9 @@ export function RoomPage() {
   // 게임이 끝나면 관전자는 자동으로 자리에 앉으므로, 게임을 지켜봤는지 따로 기억해 결과 창을 보여 준다.
   const [watched, setWatched] = useState(false);
   // 관전자는 마지막 참가자가 나가 방이 사라져도 알림을 받지 못하므로 주기적으로 방을 확인한다.
-  const { room, receivedAt, view, transition, log, missing, send, nicknameOf, errorSeq } = useRoomChannel(code, { poll: spectating, meId });
+  const { room: channelRoom, receivedAt, view, transition, log, missing, send, nicknameOf, errorSeq } = useRoomChannel(code, { poll: spectating, meId });
+  // 방금 바꾼 내 프로필 그림은 다음 방 갱신을 기다리지 않고 바로 보인다.
+  const room = useMemo(() => withMyAvatar(channelRoom, meId, member?.avatar), [channelRoom, meId, member?.avatar]);
   const [now, setNow] = useState(() => Date.now());
   const [confirmLeave, setConfirmLeave] = useState(false);
   const [editingSettings, setEditingSettings] = useState(false);
@@ -47,7 +50,10 @@ export function RoomPage() {
   const overKey = game && gameView ? game.gameOverKey(code, gameView) : null;
   const gameOver = useGameOverDismissal(code, overKey, room?.status === 'PLAYING');
   // 이 화면은 REST 입장(참가·관전) 뒤에만 오므로 채팅도 방 채널과 같은 시점에 시작한다.
-  const chat = useRoomChat(code, room !== null && !missing, meId);
+  const roomChat = useRoomChat(code, room !== null && !missing, meId);
+  // 채팅 머리줄 그림은 방 정보(참가자·관전자)에서 찾는다.
+  const chatMessages = useMemo(() => withChatAvatars(roomChat.messages, room), [roomChat.messages, room]);
+  const chat = { ...roomChat, messages: chatMessages };
 
   useEffect(() => {
     const watching = Boolean(room?.spectators.some((spectator) => spectator.id === meId));

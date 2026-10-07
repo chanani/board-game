@@ -9,6 +9,8 @@ type AuthState = {
   login: (loginId: string, password: string) => Promise<void>;
   signup: (loginId: string, nickname: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  /** 프로필 그림을 바로 저장하고, 저장된 내 정보로 화면(헤더·방)을 바꾼다. */
+  changeAvatar: (avatar: string) => Promise<void>;
   /** 로그인 화면으로 보낼 때 함께 보여 줄 안내. 다른 곳에서 로그인해서 끊겼을 때만 있다. */
   notice: string | null;
   /** 웹소켓이 4001(다른 곳에서 로그인)로 닫혔을 때 부른다. */
@@ -72,9 +74,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setMember(null);
   }, []);
 
+  const changeAvatar = useCallback(async (avatar: string) => {
+    const next = await authApi.changeAvatar(avatar);
+    setMember(next);
+  }, []);
+
   const value = useMemo(
-    () => ({ member, loading, login, signup, logout, notice, sessionReplaced }),
-    [member, loading, login, signup, logout, notice, sessionReplaced],
+    () => ({ member, loading, login, signup, logout, changeAvatar, notice, sessionReplaced }),
+    [member, loading, login, signup, logout, changeAvatar, notice, sessionReplaced],
   );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

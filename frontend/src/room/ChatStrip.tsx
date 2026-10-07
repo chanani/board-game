@@ -1,4 +1,5 @@
 import type { ChatMessage } from '../api/chat';
+import { MemberAvatar } from '../components/Avatar';
 import { SpectatorBadge } from './ChatPanel';
 import { ChatInput } from './ChatInput';
 import { useChatTone } from './chatColors';
@@ -41,6 +42,7 @@ export function ChatStrip({ messages, meId, onSend, onExpand, compact = false }:
             return (
               <span key={message.id} data-testid="chat-strip-line" data-mine="false"
                 className={`block h-6 max-w-[85%] shrink-0 self-start truncate rounded-xl rounded-bl-sm px-2.5 text-xs leading-6 text-wood-800 ${tone.bubble}`}>
+                <MemberAvatar memberId={message.memberId} avatar={message.avatar} size={16} className="mr-1 align-[-4px]" />
                 <b className={tone.name}>{message.nickname}</b>{' '}
                 {message.spectator ? <><SpectatorBadge />{' '}</> : null}
                 {message.text}

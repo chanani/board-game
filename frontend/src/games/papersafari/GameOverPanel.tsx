@@ -9,6 +9,7 @@ import { resultLabel } from '../../lib/format';
 import { FooterButton, HeadlineIcon, ReadyChips, useResultSound } from '../../table/gameOver';
 import { PlayerBoard, type BoardResult } from './PlayerBoard';
 import { resolveBoard } from './score';
+import { roomAvatarOf } from '../../lib/avatars';
 
 type Props = {
   game: PaperSafariView;
@@ -114,7 +115,7 @@ export function GameOverPanel({ game, room, meId, nicknameOf, onReady, onClose }
           <div data-testid="result-boards" className={`${FELT_GRID} ${forfeited ? 'justify-center' : 'sm:grid-cols-2'}`}>
             {boards.map((board, boardIndex) => (
               <Felt key={board.playerId} className="p-3">
-                <PlayerBoard board={staged(board, boardIndex)} nickname={labelOf(board.playerId)} active={false} size="sm"
+                <PlayerBoard board={staged(board, boardIndex)} nickname={labelOf(board.playerId)} avatar={roomAvatarOf(room, board.playerId)} active={false} size="sm"
                   result={forfeited ? undefined : resultFor(board, done, game.winnerId, labelOf, outcomeOf(board.playerId))} />
               </Felt>
             ))}

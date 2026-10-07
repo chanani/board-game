@@ -3,6 +3,8 @@ import type { UnoPlayerView } from '../../api/types';
 import { Countdown } from '../../components/Countdown';
 import { AlertIcon, SkipIcon, StarIcon } from '../../components/icons';
 import { UnoCardFace } from './UnoCardFace';
+import { AvatarFace } from '../../components/Avatar';
+import type { AvatarKey } from '../../lib/avatars';
 
 type Props = {
   player: UnoPlayerView;
@@ -18,9 +20,11 @@ type Props = {
   bubble?: boolean;
   shaking?: boolean;
   skipped?: boolean;
+  /** 이름표 앞 프로필 그림. 이름표 높이를 늘리지 않게 위아래를 살짝 넘친다. */
+  avatar?: AvatarKey;
 };
 
-export function UnoSeat({ player, nickname, active, backWidth, maxBacks, timer, connected, offlineSeconds = 0, catchable, bubble = false, shaking = false, skipped = false }: Props) {
+export function UnoSeat({ player, nickname, active, backWidth, maxBacks, timer, connected, offlineSeconds = 0, catchable, bubble = false, shaking = false, skipped = false, avatar }: Props) {
   const reduced = useReducedMotion();
   const shake = shaking && !reduced;
   const backs = Math.min(player.cardCount, maxBacks);
@@ -43,7 +47,10 @@ export function UnoSeat({ player, nickname, active, backWidth, maxBacks, timer, 
       ) : null}
       <div className="flex items-center gap-1.5">
         {connected !== undefined ? <span aria-hidden="true" className={`inline-block h-2 w-2 rounded-full ${connected ? 'bg-green-500' : 'bg-stone-400'}`} /> : null}
-        <span className={`max-w-[5.5rem] truncate md:max-w-[7rem] rounded-full px-2.5 py-0.5 text-xs font-bold shadow-[0_2px_0_rgb(0_0_0/0.3)] ${active ? 'turn-glow bg-(--turn-tag-bg) text-(--turn-tag-ink)' : 'bg-cream-50 text-wood-800'}`}>{nickname}</span>
+        <span data-testid="seat-tag" className={`inline-flex max-w-[5.5rem] items-center md:max-w-[7rem] rounded-full px-2.5 py-0.5 text-xs font-bold shadow-[0_2px_0_rgb(0_0_0/0.3)] ${active ? 'turn-glow bg-(--turn-tag-bg) text-(--turn-tag-ink)' : 'bg-cream-50 text-wood-800'}`}>
+          {avatar ? <AvatarFace avatar={avatar} size={18} className="-my-0.5 -ml-1.5 mr-1" /> : null}
+          <span className="min-w-0 truncate">{nickname}</span>
+        </span>
         {catchable ? <span data-testid="catch-badge" role="img" aria-label="우노를 안 외쳤어요" className="rounded-full bg-red-600 p-0.5 text-white"><AlertIcon className="h-3 w-3" /></span> : null}
         {timer ? <Countdown size="sm" deadline={timer.deadline} serverNow={timer.serverNow} /> : null}
       </div>

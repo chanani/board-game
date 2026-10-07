@@ -7,6 +7,7 @@ import java.net.URI;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -32,5 +33,11 @@ public class MemberController {
     @GetMapping("/me")
     public MemberResponse me(@AuthenticationPrincipal LoginMember loginMember) {
         return MemberResponse.from(memberService.find(loginMember.id()));
+    }
+
+    @PatchMapping("/me/avatar")
+    public MemberResponse changeAvatar(@AuthenticationPrincipal LoginMember loginMember,
+                                       @RequestBody ChangeAvatarRequest request) {
+        return MemberResponse.from(memberService.changeAvatar(loginMember.id(), request));
     }
 }

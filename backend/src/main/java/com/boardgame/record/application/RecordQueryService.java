@@ -3,6 +3,7 @@ package com.boardgame.record.application;
 import com.boardgame.common.error.BusinessException;
 import com.boardgame.common.error.ErrorCode;
 import com.boardgame.game.GameType;
+import com.boardgame.member.domain.AvatarBook;
 import com.boardgame.member.domain.Member;
 import com.boardgame.member.domain.MemberRepository;
 import com.boardgame.record.api.GameStatResponse;
@@ -61,7 +62,7 @@ public class RecordQueryService {
         List<GameStatResponse> responses = Arrays.stream(GameType.values())
                 .map(type -> GameStatResponse.from(stats.getOrDefault(type, MemberGameStat.empty(memberId, type))))
                 .toList();
-        return new MemberStatsResponse(memberId, member.nicknameValue(), responses);
+        return new MemberStatsResponse(memberId, member.nicknameValue(), member.avatar().key(), responses);
     }
 
     public List<RecentMatchResponse> recentMatches(long memberId, GameType gameType, int limit) {
@@ -95,9 +96,11 @@ public class RecordQueryService {
                         .thenComparing(stat -> stat.matches().total(), Comparator.reverseOrder())
                         .thenComparing(MemberGameStat::memberId))
                 .toList();
-        Map<Long, String> nicknames = nicknames(ranked.stream().map(MemberGameStat::memberId).toList());
+        List<Member> members = memberRepository.findAllById(ranked.stream().map(MemberGameStat::memberId).toList());
+        Map<Long, String> nicknames = members.stream().collect(Collectors.toMap(Member::id, Member::nicknameValue));
+        AvatarBook avatars = AvatarBook.of(members);
         return IntStream.range(0, ranked.size())
-                .mapToObj(index -> ranking(index + 1, ranked.get(index), nicknames))
+                .mapToObj(index -> ranking(index + 1, ranked.get(index), nicknames, avatars))
                 .toList();
     }
 
@@ -115,9 +118,11 @@ public class RecordQueryService {
                 mine.result(), mine.tokens(), playerResponses, roundResponses);
     }
 
-    private RankingResponse ranking(int rank, MemberGameStat stat, Map<Long, String> nicknames) {
+    private RankingResponse ranking(int rank, MemberGameStat stat, Map<Long, String> nicknames, AvatarBook avatars) {
         ResultCounts matches = stat.matches();
-        return new RankingResponse(rank, stat.memberId(), nicknameOf(nicknames, stat.memberId()), matches.total(),
+        long memberId = stat.memberId();
+        return new RankingResponse(rank, memberId, nicknameOf(nicknames, memberId), avatars.keyOf(memberId),
+                matches.total(),
                 matches.wins(), matches.draws(), matches.losses(), matches.winRate());
     }
 

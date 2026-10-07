@@ -17,6 +17,7 @@ public enum ErrorCode {
     INVALID_NICKNAME(HttpStatus.BAD_REQUEST, "닉네임은 2~10자로 입력해 주세요."),
     INVALID_PASSWORD(HttpStatus.BAD_REQUEST, "비밀번호는 8~64자로 입력해 주세요. 한글은 24자까지 쓸 수 있습니다."),
     INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED, "아이디 또는 비밀번호가 올바르지 않습니다."),
+    INVALID_AVATAR(HttpStatus.BAD_REQUEST, "고를 수 없는 프로필 사진이에요."),
 
     ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "방을 찾을 수 없습니다."),
     ROOM_FULL(HttpStatus.CONFLICT, "방이 가득 찼습니다."),

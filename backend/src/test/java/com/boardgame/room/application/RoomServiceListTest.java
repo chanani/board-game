@@ -1,5 +1,6 @@
 package com.boardgame.room.application;
 
+import com.boardgame.member.domain.AvatarBook;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
@@ -24,7 +25,7 @@ class RoomServiceListTest {
 
     private final RoomRegistry registry = new RoomRegistry();
     private final RoomService service = new RoomService(registry, null, null, mock(RoomNotifier.class), null,
-            null, Clock.systemUTC(), null, null, null, null);
+            null, Clock.systemUTC(), null, null, null, null, ids -> AvatarBook.empty());
 
     private Room open(String code, long hostId) {
         RoomSettings settings = new RoomSettings(GameType.PAPER_SAFARI, Capacity.max(GameType.PAPER_SAFARI),

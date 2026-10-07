@@ -89,4 +89,11 @@ describe('ChatStrip', () => {
     rerender(<ChatStrip messages={[]} meId={1} onSend={() => true} onExpand={vi.fn()} compact />);
     expect(screen.getByRole('textbox', { name: '채팅 입력' })).toHaveAttribute('placeholder', '메시지');
   });
+
+  it('다른 사람 줄에는 이름 앞에 작은 프로필 그림이 있고 내 줄에는 없다', () => {
+    render(<ChatStrip messages={[{ ...msg(1, 2, '밥', '하나'), avatar: 'BEAR' }, msg(2, 1, '앨리스', '둘')]} meId={1} onSend={() => true} onExpand={vi.fn()} />);
+    const [other, mine] = screen.getAllByTestId('chat-strip-line');
+    expect(other.querySelector('[data-testid="avatar"]')).toHaveAttribute('data-avatar', 'BEAR');
+    expect(mine.querySelector('[data-testid="avatar"]')).toBeNull();
+  });
 });

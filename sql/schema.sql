@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS members (
     login_id      VARCHAR(20)  NOT NULL,
     nickname      VARCHAR(10)  NOT NULL,
     password_hash VARCHAR(100) NOT NULL,
+    avatar        VARCHAR(20),
     created_at    DATETIME(6)  NOT NULL,
     PRIMARY KEY (id),
     CONSTRAINT UKlq5wej6688i1bd6b5c11neptj UNIQUE (login_id),
@@ -84,3 +85,8 @@ CREATE TABLE IF NOT EXISTS member_game_stat (
     PRIMARY KEY (member_id, game_type),
     INDEX idx_member_game_stat_game_type (game_type)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
+
+-- ───────── 이미 만든 DB에 나중에 더한 컬럼 ─────────
+-- 운영은 ddl-auto: update라 서버가 뜰 때 자동으로 더해진다. 손으로 맞출 때만 아래를 실행한다.
+-- 프로필 사진(동물 얼굴 그림 키: CAT, DOG, ... PENGUIN). 비어 있으면 회원 id로 정한 기본 그림.
+-- ALTER TABLE members ADD COLUMN avatar VARCHAR(20) NULL AFTER password_hash;

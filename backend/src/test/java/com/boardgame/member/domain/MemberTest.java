@@ -36,4 +36,13 @@ class MemberTest {
         assertError(() -> member.authenticate(RawPassword.unchecked("wrong-password"), encryptor),
                 ErrorCode.INVALID_CREDENTIALS);
     }
+
+    @Test
+    void 프로필_그림을_고르면_그_그림이_된다() {
+        Member member = alice();
+
+        member.changeAvatar(Avatar.KOALA);
+
+        assertThat(member.avatar()).isEqualTo(Avatar.KOALA);
+    }
 }

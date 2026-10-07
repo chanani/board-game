@@ -125,7 +125,9 @@ class RoomSpectatorApiTest {
                 .andExpect(jsonPath("$.members.length()").value(2))
                 .andExpect(jsonPath("$.spectators.length()").value(1))
                 .andExpect(jsonPath("$.spectators[0].id").value(watcher.id()))
-                .andExpect(jsonPath("$.spectators[0].nickname").value(watcher.nickname()));
+                .andExpect(jsonPath("$.spectators[0].nickname").value(watcher.nickname()))
+                .andExpect(jsonPath("$.spectators[0].avatar")
+                        .value(com.boardgame.member.domain.Avatar.defaultFor(watcher.id()).key()));
         watch(watcher, code).andExpect(status().isOk())
                 .andExpect(jsonPath("$.spectators.length()").value(1));
     }

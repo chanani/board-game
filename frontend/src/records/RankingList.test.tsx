@@ -57,4 +57,11 @@ describe('RankingList', () => {
 
     expect(screen.getByText('아직 5판 이상 플레이한 사람이 없어요.')).toBeInTheDocument();
   });
+
+  it('닉네임 앞에 프로필 그림을 둔다(키가 없으면 id로 정한 기본 그림)', () => {
+    const rows = renderList([{ ...rankings[0], avatar: 'CHICK' }, rankings[1]]);
+    expect(within(rows[0]).getByTestId('avatar')).toHaveAttribute('data-avatar', 'CHICK');
+    expect(within(rows[1]).getByTestId('avatar')).toHaveAttribute('data-avatar', 'BEAR');
+    expect(within(rows[0]).getByRole('link', { name: '밥' })).toBeInTheDocument();
+  });
 });

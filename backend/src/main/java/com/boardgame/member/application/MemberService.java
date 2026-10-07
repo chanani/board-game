@@ -2,8 +2,10 @@ package com.boardgame.member.application;
 
 import com.boardgame.common.error.BusinessException;
 import com.boardgame.common.error.ErrorCode;
+import com.boardgame.member.api.ChangeAvatarRequest;
 import com.boardgame.member.api.LoginRequest;
 import com.boardgame.member.api.SignUpRequest;
+import com.boardgame.member.domain.Avatar;
 import com.boardgame.member.domain.LoginId;
 import com.boardgame.member.domain.Member;
 import com.boardgame.member.domain.MemberRepository;
@@ -47,6 +49,21 @@ public class MemberService {
     public Member find(long id) {
         return memberRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHORIZED));
+    }
+
+    @Transactional
+    public Member changeAvatar(long memberId, ChangeAvatarRequest request) {
+        Avatar chosen = Avatar.parse(avatarKeyOf(request));
+        Member member = find(memberId);
+        member.changeAvatar(chosen);
+        return member;
+    }
+
+    private String avatarKeyOf(ChangeAvatarRequest request) {
+        if (request == null) {
+            return null;
+        }
+        return request.avatar();
     }
 
     private void validateUnique(LoginId loginId, Nickname nickname) {

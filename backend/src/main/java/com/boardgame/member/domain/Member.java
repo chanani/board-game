@@ -22,12 +22,16 @@ public class Member extends BaseTimeEntity {
     @Embedded
     private Nickname nickname;
 
+    @Embedded
+    private AvatarChoice avatar;
+
     protected Member() {
     }
 
     private Member(Credentials credentials, Nickname nickname) {
         this.credentials = credentials;
         this.nickname = nickname;
+        this.avatar = AvatarChoice.none();
     }
 
     public static Member register(LoginId loginId, Nickname nickname, RawPassword password,
@@ -50,5 +54,17 @@ public class Member extends BaseTimeEntity {
 
     public String nicknameValue() {
         return nickname.value();
+    }
+
+    public void changeAvatar(Avatar chosen) {
+        this.avatar = AvatarChoice.of(chosen);
+    }
+
+    /** 고른 그림, 고르지 않았으면 id로 정한 기본 그림. */
+    public Avatar avatar() {
+        if (avatar == null) {
+            return Avatar.defaultFor(id);
+        }
+        return avatar.resolve(id);
     }
 }

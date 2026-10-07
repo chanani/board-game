@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { MemberAvatar } from '../components/Avatar';
 import type { Ranking } from '../api/types';
 import { percent } from '../lib/format';
 
@@ -49,7 +50,10 @@ function RankingRow({ ranking }: { ranking: Ranking }) {
         <Medal rank={ranking.rank} />
         <span className="sr-only">{ranking.rank}위</span>
       </span>
-      <Link to={`/records/${ranking.memberId}`} className="col-start-2 row-start-1 truncate font-bold text-wood-800 hover:underline">{ranking.nickname}</Link>
+      <Link to={`/records/${ranking.memberId}`} className="col-start-2 row-start-1 flex min-w-0 items-center gap-2 font-bold text-wood-800 hover:underline">
+        <MemberAvatar memberId={ranking.memberId} avatar={ranking.avatar} size={24} className="-my-1" />
+        <span className="min-w-0 truncate">{ranking.nickname}</span>
+      </Link>
       <span className="col-[2/4] row-start-2 @sm:col-[3/4] @sm:row-start-1">
         <RecordBar ranking={ranking} />
       </span>

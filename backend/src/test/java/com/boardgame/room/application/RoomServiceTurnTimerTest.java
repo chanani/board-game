@@ -1,5 +1,6 @@
 package com.boardgame.room.application;
 
+import com.boardgame.member.domain.AvatarBook;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -52,7 +53,7 @@ class RoomServiceTurnTimerTest {
     private final RoomService service = new RoomService(registry, () -> ROOM_CODE,
             new GameSessionFactories(List.of(new PaperSafariSessionFactory(clock))), notifier,
             new OutcomePublisher(events), events, clock, new PresenceTracker(), new FakeRoomPasswordHasher(),
-            timer, new FixedRandom(0));
+            timer, new FixedRandom(0), ids -> AvatarBook.empty());
 
     @BeforeEach
     void startGame() {

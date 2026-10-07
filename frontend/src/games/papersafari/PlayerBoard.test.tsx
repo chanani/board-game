@@ -38,4 +38,14 @@ describe('PlayerBoard', () => {
       unmount();
     }
   });
+
+  it('이름표 앞에 프로필 그림을 두고, 가장 작은 판은 더 작은 그림을 쓴다', () => {
+    const { rerender } = render(<PlayerBoard board={board} nickname="밥" avatar="PIG" active={false} />);
+    expect(screen.getByTestId('avatar')).toHaveAttribute('data-avatar', 'PIG');
+    expect(screen.getByTestId('avatar')).toHaveAttribute('height', '18');
+
+    rerender(<PlayerBoard board={board} nickname="밥" avatar="PIG" active={false} size="mini" />);
+    expect(screen.getByTestId('avatar')).toHaveAttribute('height', '14');
+    expect(screen.getByText('밥')).toHaveClass('truncate');
+  });
 });

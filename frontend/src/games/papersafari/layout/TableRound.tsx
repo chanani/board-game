@@ -67,7 +67,7 @@ export function TableRound({ density = 'pc', ...props }: Props) {
   };
   const mySeat = myBoard ? (
     <Seat board={myBoard} nickname={`${nicknameOf(meId)} (나)`} active={myTurn} turnRing={myTurn} hand="none" timer={timerFor(meId)}
-      held={round.held} size={style.me} presence={{}} handLabel="들고 있는 카드" onSlotClick={clickSlot} canClick={canClickSlot} pulseSlots={myTurn} />
+      held={round.held} size={style.me} presence={{ avatar: presenceOf(meId).avatar }} handLabel="들고 있는 카드" onSlotClick={clickSlot} canClick={canClickSlot} pulseSlots={myTurn} />
   ) : null;
   const mySide = myBoard ? (
     <MySide canDiscard={canDiscard} canUndo={canUndo} estimate={estimate}

@@ -6,6 +6,8 @@ import { KickBadge } from '../components/KickBadge';
 import { PC_QUERY, useMediaQuery } from '../lib/useMediaQuery';
 import { CheckIcon, CrownIcon } from '../components/icons';
 import { SeatBubble, type SeatBubbles } from './useSeatBubbles';
+import { AvatarFace } from '../components/Avatar';
+import { avatarOf } from '../lib/avatars';
 
 type Props = {
   members: RoomMember[];
@@ -63,7 +65,7 @@ export function MemberList({ members, maxPlayers, meId, receivedAt, now, onForfe
                 <motion.div key="taken" initial={{ scale: 0, y: -20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0 }}
                   transition={{ type: 'spring', bounce: 0.5 }}
                   className="relative flex h-12 w-12 items-center justify-center rounded-full bg-cream-50 text-xl font-black text-wood-800 shadow-[0_4px_0_var(--color-cream-300),0_10px_16px_rgb(0_0_0/0.4)] sm:h-14 sm:w-14 sm:text-2xl">
-                  {member.nickname.slice(0, 1)}
+                  <AvatarFace avatar={avatarOf(member.avatar, member.id)} />
                   <span aria-hidden="true" className={`absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full ring-2 ring-cream-50 ${member.connected ? 'bg-green-500' : 'bg-stone-400'}`} />
                   {remove && !pc ? <KickBadge label={`${member.nickname}님 내보내기`} onClick={remove} className="absolute -right-2 -top-2" /> : null}
                 </motion.div>

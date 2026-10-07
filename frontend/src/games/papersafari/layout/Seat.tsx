@@ -9,7 +9,10 @@ export type SeatSize = CardSize;
 /** 들고 있는 카드 자리 크기: 큰 판은 md 카드, 작은 판(mini·xs)은 판과 같은 카드, 나머지는 sm 카드. */
 const HAND = { mini: { box: 'min-h-10 w-7', card: 'mini' }, xs: { box: 'min-h-14 w-10', card: 'xs' }, sm: { box: 'min-h-[67px] w-12', card: 'sm' }, md: { box: 'min-h-[67px] w-12', card: 'sm' }, lg: { box: 'min-h-[90px] w-16', card: 'md' } } as const;
 
-export type Presence = { connected?: boolean; offlineSeconds?: number };
+import type { AvatarKey } from '../../../lib/avatars';
+
+/** avatar: 이름표 앞 프로필 그림. */
+export type Presence = { connected?: boolean; offlineSeconds?: number; avatar?: AvatarKey };
 
 type Props = {
   board: BoardView;

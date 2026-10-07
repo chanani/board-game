@@ -6,6 +6,8 @@ import { ZoneAnchor } from './motion/ZoneAnchor';
 import { slotZone } from './motion/zones';
 import { CrownIcon } from '../../components/icons';
 import { zeroPairColumns } from './score';
+import { AvatarFace } from '../../components/Avatar';
+import type { AvatarKey } from '../../lib/avatars';
 
 /** 결과 화면용: 이름표 글, 합계, 열 점수 배지(없으면 '…'), 승자 강조. */
 /** 이 사람의 행동을 기다리는 마감(서버 시계). 5초 이하부터 이름표 옆에 작게 보인다. */
@@ -31,6 +33,8 @@ type Props = {
   zoomLabel?: string;
   onZoom?: () => void;
   timer?: SeatTimer;
+  /** 이름표 앞 프로필 그림(이름표 높이를 늘리지 않게 위아래를 살짝 넘친다). */
+  avatar?: AvatarKey;
 };
 
 /** 작은 판(mini·xs)은 카드 격자 폭에 맞춰(w-min) 연결 끊김 같은 글씨가 판을 넓히지 않고 줄바꿈되게 한다.
@@ -40,7 +44,7 @@ const PAD = { mini: 'p-1 w-min', xs: 'p-2 w-min', sm: 'p-2', md: 'p-2', lg: 'p-2
 const COLUMNS = { mini: 'grid-cols-[repeat(3,auto)]', xs: 'grid-cols-[repeat(3,auto)]', sm: 'grid-cols-3', md: 'grid-cols-3', lg: 'grid-cols-3' };
 const GAP = { mini: 'gap-0.5', xs: 'gap-1', sm: 'gap-1.5', md: 'gap-2.5', lg: 'gap-2.5' };
 
-export function PlayerBoard({ result, board, nickname, active, turnRing = false, size = 'md', pulseSlots = false, onSlotClick, canClick, connected, offlineSeconds = 0, zoomLabel, onZoom, timer }: Props) {
+export function PlayerBoard({ result, board, nickname, active, turnRing = false, size = 'md', pulseSlots = false, onSlotClick, canClick, connected, offlineSeconds = 0, zoomLabel, onZoom, timer, avatar }: Props) {
   const ordered = [...board.slots].sort((a, b) => a.row - b.row || a.column - b.column);
   const zeroColumns = new Set(zeroPairColumns(board));
   const previousZero = useRef<Set<number>>(zeroColumns);
@@ -62,11 +66,15 @@ export function PlayerBoard({ result, board, nickname, active, turnRing = false,
             <span data-testid="board-tag" title={`${result.tag}${result.suffix ?? ''}`}
               className="flex min-w-0 items-center rounded-full bg-cream-50 px-2.5 py-0.5 text-xs font-bold text-wood-800 shadow-[0_2px_0_rgb(0_0_0/0.3)]">
               {result.winner ? <CrownIcon className="mr-1 h-3.5 w-3.5 shrink-0" testId="winner-crown" /> : null}
+              {avatar ? <AvatarFace avatar={avatar} size={18} className="-my-0.5 -ml-1.5 mr-1" /> : null}
               <span data-testid="board-tag-name" className="min-w-0 truncate">{result.tag}</span>
               {result.suffix ? <span className="shrink-0 whitespace-pre">{result.suffix}</span> : null}
             </span>
           ) : (
-            <span className={`rounded-full py-0.5 font-bold ${size === 'mini' ? 'inline-block max-w-[5.5rem] truncate px-1.5 align-middle text-[10px]' : 'px-2.5 text-xs'} shadow-[0_2px_0_rgb(0_0_0/0.3)] ${active ? 'turn-glow bg-(--turn-tag-bg) text-(--turn-tag-ink)' : 'bg-cream-50 text-wood-800'}`}>{nickname}</span>
+            <span data-testid="board-tag" className={`inline-flex min-w-0 items-center rounded-full py-0.5 font-bold ${size === 'mini' ? 'max-w-[5.5rem] px-1.5 align-middle text-[10px]' : 'px-2.5 text-xs'} shadow-[0_2px_0_rgb(0_0_0/0.3)] ${active ? 'turn-glow bg-(--turn-tag-bg) text-(--turn-tag-ink)' : 'bg-cream-50 text-wood-800'}`}>
+              {avatar ? <AvatarFace avatar={avatar} size={size === 'mini' ? 14 : 18} className={size === 'mini' ? '-my-0.5 -ml-1 mr-0.5' : '-my-0.5 -ml-1.5 mr-1'} /> : null}
+              <span className={size === 'mini' ? 'min-w-0 truncate' : 'min-w-0'}>{nickname}</span>
+            </span>
           )}
           {timer ? <Countdown size="sm" deadline={timer.deadline} serverNow={timer.serverNow} /> : null}
           {connected === false ? <span className="felt-ink text-xs">연결 끊김 {offlineSeconds}초</span> : null}

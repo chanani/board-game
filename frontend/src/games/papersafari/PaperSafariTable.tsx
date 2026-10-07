@@ -1,4 +1,5 @@
 import { useEffect, useRef, type ReactNode } from 'react';
+import { roomAvatarOf } from '../../lib/avatars';
 import type { BoardView, GameAction, PaperSafariSessionView, Room, SlotView } from '../../api/types';
 import { GameOverPanel } from './GameOverPanel';
 import type { SeatTimer } from './PlayerBoard';
@@ -151,10 +152,12 @@ export function PaperSafariTable({ view: rawView, room, meId, log, receivedAt, n
   const memberOf = (memberId: number) => room.members.find((member) => member.id === memberId);
   const presenceOf = (memberId: number): Presence => {
     const member = memberOf(memberId);
+    const avatar = roomAvatarOf(room, memberId);
     if (!member) {
-      return {};
+      return { avatar };
     }
     return {
+      avatar,
       connected: member.connected,
       offlineSeconds: offlineSecondsNow(member, receivedAt, now),
     };

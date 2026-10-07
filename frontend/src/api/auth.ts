@@ -16,5 +16,6 @@ export const authApi = {
     request<Member>('/api/auth/login', { method: 'POST', body: { loginId, password } }),
   signup: (loginId: string, nickname: string, password: string) =>
     request<Member>('/api/members', { method: 'POST', body: { loginId, nickname, password } }),
+  changeAvatar: (avatar: string) => request<Member>('/api/members/me/avatar', { method: 'PATCH', body: { avatar } }),
   logout: () => request<void>('/api/auth/logout', { method: 'POST' }),
 };

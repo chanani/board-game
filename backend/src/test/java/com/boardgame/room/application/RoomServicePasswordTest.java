@@ -1,5 +1,6 @@
 package com.boardgame.room.application;
 
+import com.boardgame.member.domain.AvatarBook;
 import static com.boardgame.common.error.ErrorAssertions.assertError;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -28,7 +29,7 @@ class RoomServicePasswordTest {
     private final LockSpyHasher hasher = new LockSpyHasher();
     private final RoomService service = new RoomService(registry, () -> new RoomCode("ABCDEF"), null,
             mock(RoomNotifier.class), null, null, Clock.systemUTC(), new PresenceTracker(), hasher,
-            new TurnTimer(new FakeTaskScheduler()), new FixedRandom(0));
+            new TurnTimer(new FakeTaskScheduler()), new FixedRandom(0), ids -> AvatarBook.empty());
 
     private final class LockSpyHasher implements RoomPasswordHasher {
 

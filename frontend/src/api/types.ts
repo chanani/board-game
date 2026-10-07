@@ -1,13 +1,14 @@
 export type ApiErrorBody = { status: number; code: string; message: string };
 
-export type Member = { id: number; loginId: string; nickname: string };
+/** avatar: 프로필 그림 키(CAT 등). 서버가 늘 채워 주지만 예전 응답·테스트를 위해 없을 수 있고, 그때는 id로 정한 기본 그림. */
+export type Member = { id: number; loginId: string; nickname: string; avatar?: string };
 
 export type GameType = 'PAPER_SAFARI' | 'UNO';
 export type ResultType = 'WIN' | 'DRAW' | 'LOSE';
 
 export type RoomStatus = 'WAITING' | 'PLAYING';
 export type RoomTheme = 'WOOD' | 'SUNSET' | 'MOONLIT' | 'AURORA' | 'BEACH';
-export type RoomMember = { id: number; nickname: string; host: boolean; connected: boolean; offlineSeconds: number; ready: boolean };
+export type RoomMember = { id: number; nickname: string; avatar?: string; host: boolean; connected: boolean; offlineSeconds: number; ready: boolean };
 export type Room = {
   code: string;
   name: string;
@@ -18,7 +19,7 @@ export type Room = {
   maxPlayers: number;
   locked: boolean;
   members: RoomMember[];
-  spectators: { id: number; nickname: string }[];
+  spectators: { id: number; nickname: string; avatar?: string }[];
   theme: RoomTheme;
 };
 export type RoomSummary = {
@@ -151,7 +152,7 @@ export type GameStat = {
   roundWinRate: number | null;
   averageRoundScore: number | null;
 };
-export type MemberStats = { memberId: number; nickname: string; stats: GameStat[] };
+export type MemberStats = { memberId: number; nickname: string; avatar?: string; stats: GameStat[] };
 export type MatchPlayer = { memberId: number; nickname: string; result: ResultType | null; tokens: number };
 export type RoundResult = { roundNumber: number; result: ResultType; score: number };
 export type RecentMatch = {
@@ -168,6 +169,7 @@ export type Ranking = {
   rank: number;
   memberId: number;
   nickname: string;
+  avatar?: string;
   matches: number;
   wins: number;
   draws: number;

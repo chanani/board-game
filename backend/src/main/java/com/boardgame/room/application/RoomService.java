@@ -8,6 +8,7 @@ import com.boardgame.game.GameOutcome;
 import com.boardgame.game.GameSessionFactories;
 import com.boardgame.game.GameType;
 import com.boardgame.game.event.GameStartedEvent;
+import com.boardgame.member.application.AvatarLookup;
 import com.boardgame.room.api.CreateRoomRequest;
 import com.boardgame.room.domain.RoomClosedEvent;
 import com.boardgame.room.domain.RoomTheme;
@@ -65,12 +66,13 @@ public class RoomService {
     private final RoomPasswordHasher hasher;
     private final TurnTimer turnTimer;
     private final Random random;
+    private final AvatarLookup avatars;
 
     public RoomService(RoomRegistry registry, RoomCodeGenerator codeGenerator, GameSessionFactories sessionFactories,
                        RoomNotifier notifier, OutcomePublisher outcomePublisher,
                        ApplicationEventPublisher eventPublisher, Clock clock, PresenceTracker presence,
                        RoomPasswordHasher hasher, TurnTimer turnTimer,
-                       @Qualifier(TurnTimerConfig.RANDOM) Random random) {
+                       @Qualifier(TurnTimerConfig.RANDOM) Random random, AvatarLookup avatars) {
         this.registry = registry;
         this.codeGenerator = codeGenerator;
         this.sessionFactories = sessionFactories;
@@ -82,6 +84,7 @@ public class RoomService {
         this.hasher = hasher;
         this.turnTimer = turnTimer;
         this.random = random;
+        this.avatars = avatars;
     }
 
     // 비밀번호 해시(BCrypt)는 느리므로 서비스 전체 잠금 밖에서 먼저 만든다.
@@ -409,7 +412,7 @@ public class RoomService {
     }
 
     private RoomResponse response(Room room) {
-        return RoomResponse.from(room, presence, clock.instant());
+        return RoomResponse.from(room, presence, clock.instant(), avatars.avatarsOf(room.occupantIds()));
     }
 
     private RoomResponse broadcast(Room room) {

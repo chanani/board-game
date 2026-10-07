@@ -307,4 +307,12 @@ describe('WaitingRoom', () => {
       expect(screen.queryByTestId('seat-bubble-2')).not.toBeInTheDocument();
     });
   });
+
+  it('의자에는 첫 글자 대신 각자의 프로필 그림이 앉고, 키가 없으면 id로 정한 기본 그림이다', () => {
+    renderRoom({ room: { ...room, members: [{ ...room.members[0], avatar: 'TIGER' }, room.members[1]] } });
+
+    const chairs = screen.getAllByTestId('chair');
+    expect(within(chairs[0]).getByTestId('avatar')).toHaveAttribute('data-avatar', 'TIGER');
+    expect(within(chairs[1]).getByTestId('avatar')).toHaveAttribute('data-avatar', 'RABBIT');
+  });
 });

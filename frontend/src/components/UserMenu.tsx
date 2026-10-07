@@ -2,6 +2,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
+import { avatarOf } from '../lib/avatars';
+import { AvatarFace } from './Avatar';
+import { AvatarPickerModal } from './AvatarPickerModal';
 import { ChevronDownIcon } from './icons';
 import { LogoutConfirmModal } from './LogoutConfirmModal';
 import { SoundSettings } from './SoundSettings';
@@ -50,9 +53,15 @@ export function UserMenu() {
   const reduceMotion = useReducedMotion();
   const { askLogout, modalProps } = useLogoutFlow();
   const [open, setOpen] = useState(false);
+  const [picking, setPicking] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const close = useCallback(() => setOpen(false), []);
   useDismiss(open, close, rootRef);
+
+  const pickAvatar = () => {
+    close();
+    setPicking(true);
+  };
 
   const logout = () => {
     close();
@@ -63,6 +72,7 @@ export function UserMenu() {
     <div ref={rootRef} className="relative min-w-0">
       <button type="button" aria-expanded={open} aria-controls={open ? 'user-menu' : undefined} onClick={() => setOpen((value) => !value)}
         className="flex min-w-0 items-center gap-1 rounded-lg px-1.5 py-1 font-bold text-cream-50 hover:bg-black/15">
+        {member ? <AvatarFace avatar={avatarOf(member.avatar, member.id)} size={24} className="-my-1 mr-0.5" /> : null}
         <span className="min-w-0 max-w-[4.5rem] truncate sm:max-w-none">{member?.nickname}</span>
         <ChevronDownIcon />
       </button>
@@ -72,10 +82,14 @@ export function UserMenu() {
             initial={{ opacity: 0, y: reduceMotion ? 0 : -8, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: reduceMotion ? 0 : -8, scale: 0.97 }} transition={{ duration: 0.18 }}
             className="paper absolute right-1 top-full z-50 mt-2 flex w-[260px] max-w-[calc(100vw-2rem)] flex-col gap-3 p-3 sm:right-0">
-            <div className="flex flex-col">
-              <span className="text-xs text-stone-500">{member?.loginId}</span>
-              <span className="font-black text-wood-800">{member?.nickname}</span>
+            <div className="flex items-center gap-2.5">
+              {member ? <AvatarFace avatar={avatarOf(member.avatar, member.id)} size={40} /> : null}
+              <div className="flex min-w-0 flex-col">
+                <span className="text-xs text-stone-500">{member?.loginId}</span>
+                <span className="truncate font-black text-wood-800">{member?.nickname}</span>
+              </div>
             </div>
+            <Button variant="secondary" className="w-full" onClick={pickAvatar}>프로필 사진</Button>
             <SoundSettings />
             <hr className="border-wood-700/20" />
             <Button variant="danger" className="w-full" onClick={logout}>로그아웃</Button>
@@ -83,6 +97,7 @@ export function UserMenu() {
         ) : null}
       </AnimatePresence>
       <LogoutConfirmModal {...modalProps} />
+      <AvatarPickerModal open={picking} onClose={() => setPicking(false)} />
     </div>
   );
 }

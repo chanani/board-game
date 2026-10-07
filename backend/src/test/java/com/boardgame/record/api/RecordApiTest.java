@@ -159,6 +159,9 @@ class RecordApiTest {
         org.assertj.core.api.Assertions.assertThat(aliceRank.get(0)).isLessThan(bobRank.get(0));
         org.assertj.core.api.Assertions.assertThat(aliceRate.get(0)).isEqualTo(0.8);
         org.assertj.core.api.Assertions.assertThat(carolRank).isEmpty();
+        List<String> aliceAvatar = JsonPath.read(body, "$[?(@.memberId == %d)].avatar".formatted(alice.id()));
+        org.assertj.core.api.Assertions.assertThat(aliceAvatar)
+                .containsExactly(com.boardgame.member.domain.Avatar.defaultFor(alice.id()).key());
     }
 
     @Test

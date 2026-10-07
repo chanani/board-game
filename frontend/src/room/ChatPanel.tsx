@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef } from 'react';
+import { MemberAvatar } from '../components/Avatar';
 import type { ChatMessage } from '../api/chat';
 import { BinocularsIcon } from '../components/icons';
 import { chatTime } from '../lib/format';
@@ -81,6 +82,7 @@ function ChatLine({ message, mine, showTime }: { message: ChatMessage; mine: boo
   return (
     <li data-mine="false" className="flex flex-col items-start gap-0.5">
       <span className="flex h-[18px] items-center gap-1 px-1">
+        <MemberAvatar memberId={message.memberId} avatar={message.avatar} size={18} />
         <span className={`text-xs font-bold ${tone.name}`}>{message.nickname}</span>
         {message.spectator ? <SpectatorBadge /> : null}
       </span>

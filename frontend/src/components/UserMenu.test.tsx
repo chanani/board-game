@@ -6,9 +6,9 @@ import { SILENT_SOUND, SoundContext } from '../lib/sound';
 import { ChatSheet } from '../room/ChatSheet';
 import { UserMenu } from './UserMenu';
 
-const auth = vi.hoisted(() => ({ logout: vi.fn(() => Promise.resolve()) }));
+const auth = vi.hoisted(() => ({ logout: vi.fn(() => Promise.resolve()), changeAvatar: vi.fn(() => Promise.resolve()) }));
 const rooms = vi.hoisted(() => ({ mine: vi.fn() }));
-vi.mock('../auth/AuthContext', () => ({ useAuth: () => ({ member: { id: 1, loginId: 'alice01', nickname: '앨리스' }, logout: auth.logout }) }));
+vi.mock('../auth/AuthContext', () => ({ useAuth: () => ({ member: { id: 1, loginId: 'alice01', nickname: '앨리스', avatar: 'PANDA' }, logout: auth.logout, changeAvatar: auth.changeAvatar }) }));
 vi.mock('../api/rooms', () => ({ roomsApi: { mine: rooms.mine } }));
 vi.mock('./Toast', () => ({ useToast: () => ({ show: vi.fn() }) }));
 
@@ -205,5 +205,37 @@ describe('닉네임 메뉴', () => {
     await screen.findByRole('dialog', { name: '로그아웃할까요?' });
     await waitFor(() => expect(screen.queryByTestId('user-menu')).not.toBeInTheDocument());
     expect(screen.getByRole('dialog', { name: '로그아웃할까요?' })).toBeInTheDocument();
+  });
+
+  describe('프로필 사진', () => {
+    it('닉네임 버튼에 내 프로필 그림이 보인다', () => {
+      render(ui());
+      expect(trigger().querySelector('[data-testid="avatar"]')).toHaveAttribute('data-avatar', 'PANDA');
+    });
+
+    it('메뉴의 프로필 사진을 누르면 12종 격자가 뜨고 지금 그림이 선택되어 있다', async () => {
+      render(ui());
+      const panel = await openMenu();
+      await userEvent.click(within(panel).getByRole('button', { name: '프로필 사진' }));
+
+      const dialog = await screen.findByRole('dialog', { name: '프로필 사진' });
+      const grid = within(dialog).getByRole('list', { name: '프로필 사진 고르기' });
+      expect(within(grid).getAllByRole('button')).toHaveLength(12);
+      expect(within(grid).getByRole('button', { name: '판다' })).toHaveAttribute('aria-pressed', 'true');
+      expect(within(grid).getByRole('button', { name: '고양이' })).toHaveAttribute('aria-pressed', 'false');
+    });
+
+    it('그림을 누르면 바로 저장하고 저장했다고 알린다', async () => {
+      auth.changeAvatar.mockClear();
+      render(ui());
+      const panel = await openMenu();
+      await userEvent.click(within(panel).getByRole('button', { name: '프로필 사진' }));
+      const dialog = await screen.findByRole('dialog', { name: '프로필 사진' });
+
+      await userEvent.click(within(dialog).getByRole('button', { name: '펭귄' }));
+
+      expect(auth.changeAvatar).toHaveBeenCalledWith('PENGUIN');
+      expect(await within(dialog).findByText('저장했어요')).toBeInTheDocument();
+    });
   });
 });
