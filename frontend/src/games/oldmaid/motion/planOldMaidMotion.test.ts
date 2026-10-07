@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { card, oldMaidEvent, oldMaidView } from '../oldMaidFixtures';
-import { DRAW_MS, MAX_TRANSFER_FLIGHTS, PAIR_GAP_MS, planOldMaidMotion } from './planOldMaidMotion';
+import { FINALE_DELAY_MS } from '../../../table/useFinalePhase';
+import { DRAW_MS, finaleDelayMs, MAX_TRANSFER_FLIGHTS, PAIR_GAP_MS, PAIR_MS, planOldMaidMotion } from './planOldMaidMotion';
 
 const base = oldMaidView({ events: [oldMaidEvent(3, 'SHUFFLE', { actorId: 3 })] });
 
@@ -49,5 +50,18 @@ describe('planOldMaidMotion', () => {
     expect(planOldMaidMotion(null, base, 1)).toEqual({ flights: [], sounds: [] });
     expect(planOldMaidMotion(base, oldMaidView({ startedAt: 2, events: [oldMaidEvent(9, 'DRAW', { actorId: 1, targetId: 2 })] }), 1).flights).toEqual([]);
     expect(planOldMaidMotion(base, base, 1)).toEqual({ flights: [], sounds: [] });
+  });
+
+  it('게임 끝 배너는 마지막 비행이 내려앉고 100ms 뒤(우노처럼), 짧으면 기본 450ms', () => {
+    const last = oldMaidView({ status: 'GAME_OVER', events: [
+      oldMaidEvent(4, 'DRAW', { actorId: 3, targetId: 2, count: 1 }),
+      oldMaidEvent(5, 'PAIR', { actorId: 3, cards: [card('SPADES', 'NINE'), card('HEARTS', 'NINE')] }),
+      oldMaidEvent(6, 'GAME_END', { actorId: 2, count: 2, reason: 'NORMAL' }),
+    ] });
+    const drawOnly = oldMaidView({ status: 'GAME_OVER', events: [oldMaidEvent(4, 'DRAW', { actorId: 3, targetId: 2, count: 1 })] });
+
+    expect(finaleDelayMs(base, last, 1)).toBe(DRAW_MS + PAIR_GAP_MS + PAIR_MS + 100);
+    expect(finaleDelayMs(base, drawOnly, 1)).toBe(FINALE_DELAY_MS);
+    expect(finaleDelayMs(null, last, 1)).toBe(FINALE_DELAY_MS);
   });
 });

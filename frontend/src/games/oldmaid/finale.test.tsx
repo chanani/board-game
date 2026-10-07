@@ -5,7 +5,7 @@ import { SILENT_SOUND, SoundContext } from '../../lib/sound';
 import { setMediaMatches } from '../../test/media';
 import { BANNER_MS, FINALE_DELAY_MS } from '../../table/useFinalePhase';
 import { OldMaidTable } from './OldMaidTable';
-import { oldMaidEvent, oldMaidView } from './oldMaidFixtures';
+import { card, oldMaidEvent, oldMaidView } from './oldMaidFixtures';
 
 const room: Room = {
   code: 'OLDMAD', name: '방', gameType: 'OLD_MAID', gameTypeName: '도둑잡기', status: 'PLAYING', hostId: 1, maxPlayers: 6,
@@ -60,6 +60,22 @@ describe('도둑잡기 게임 끝 연출', () => {
     act(() => vi.advanceTimersByTime(BANNER_MS));
     expect(screen.getByText('내가 1등이에요!')).toBeInTheDocument();
     expect(play.mock.calls.filter(([name]) => name === 'gameOverWin')).toHaveLength(1);
+  });
+
+  it('마지막 뽑기에 짝 버리기까지 있으면 그 비행이 내려앉은 뒤에 배너', () => {
+    vi.useFakeTimers();
+    const base = ended('NORMAL');
+    const withPair = { ...base, events: [
+      oldMaidEvent(6, 'DRAW', { actorId: 1, targetId: 2 }),
+      oldMaidEvent(7, 'PAIR', { actorId: 1, cards: [card('SPADES', 'NINE'), card('HEARTS', 'NINE')] }),
+      oldMaidEvent(8, 'GAME_END', { actorId: 2, count: 2, reason: 'NORMAL' }),
+    ] };
+    render(table(withPair));
+
+    act(() => vi.advanceTimersByTime(FINALE_DELAY_MS));
+    expect(screen.queryByTestId('game-end-banner')).not.toBeInTheDocument();
+    act(() => vi.advanceTimersByTime(810 - FINALE_DELAY_MS));
+    expect(screen.getByTestId('game-end-banner')).toBeInTheDocument();
   });
 
   it('기권으로 끝나면 연출 없이 바로 결과 창', () => {

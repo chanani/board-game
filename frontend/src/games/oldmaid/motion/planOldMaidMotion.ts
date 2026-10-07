@@ -1,4 +1,5 @@
 import type { OldMaidEvent, OldMaidView, PlayingCard } from '../../../api/types';
+import { FINALE_DELAY_MS } from '../../../table/useFinalePhase';
 import type { FlightPlan } from '../../../table/useGhostFlights';
 import { latestSeq } from '../describe';
 
@@ -11,6 +12,8 @@ export const PAIR_GAP_MS = 60;
 export const TRANSFER_MS = 400;
 export const TRANSFER_GAP_MS = 80;
 export const MAX_TRANSFER_FLIGHTS = 4;
+/** 마지막 비행이 내려앉고 배너까지의 여유(우노: 낼 카드 350ms 비행 + 100ms = 450ms). */
+export const FINALE_GAP_MS = 100;
 
 const empty = (): OldMaidPlan => ({ flights: [], sounds: [] });
 
@@ -59,4 +62,11 @@ export function planOldMaidMotion(from: OldMaidView | null, to: OldMaidView, meI
     .filter((event) => event.seq > lastSeq)
     .reduce((clock, event) => add(plan, event, clock, from, meId), 0);
   return plan;
+}
+
+/** "게임 끝!" 배너까지 기다리는 시간. 마지막 비행(뽑기+짝 버리기 약 710ms)이 내려앉은 뒤, 짧으면 공통 450ms. */
+export function finaleDelayMs(from: OldMaidView | null, to: OldMaidView, meId: number): number {
+  const landed = planOldMaidMotion(from, to, meId).flights
+    .reduce((end, flight) => Math.max(end, flight.delay + flight.duration), 0);
+  return Math.max(FINALE_DELAY_MS, landed + FINALE_GAP_MS);
 }

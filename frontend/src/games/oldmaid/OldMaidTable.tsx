@@ -16,6 +16,7 @@ import type { TableProps } from '../gameModule';
 import { DiscardPairs } from './DiscardPairs';
 import { oldMaidInstruction, pickCaption, useOldMaidSizes } from './layout';
 import { OldMaidGhostLayer } from './motion/OldMaidGhostLayer';
+import { finaleDelayMs } from './motion/planOldMaidMotion';
 import { useOldMaidMotion } from './motion/useOldMaidMotion';
 import { MyHand } from './MyHand';
 import { OldMaidGameOverPanel } from './OldMaidGameOverPanel';
@@ -94,8 +95,9 @@ export function OldMaidTable({ view, room, meId, log, receivedAt, now, errorSeq,
   const maxBacks = layout === 'portrait' && opponentIds.length >= 3 ? 4 : 7;
   const containerRef = useRef<HTMLDivElement>(null);
   const { ghosts } = useOldMaidMotion(containerRef, transition, meId, sizes.pick);
-  // 기권으로 끝나면(마지막 비행 없음) 연출 없이 바로 결과 창.
-  const finale = useFinalePhase(game, transition, game.result?.reason === 'FORFEIT');
+  // 기권으로 끝나면(마지막 비행 없음) 연출 없이 바로 결과 창. 배너는 마지막 비행이 내려앉은 뒤에.
+  const finaleDelay = transition ? finaleDelayMs(transition.from, transition.to, meId) : undefined;
+  const finale = useFinalePhase(game, transition, game.result?.reason === 'FORFEIT', finaleDelay);
   // 마지막 카드가 날아가면 "게임 끝!" 배너와 함께 한 번 울린다. 연출이 없으면(기권·동작 줄이기) 결과 창과 함께 울린다.
   useGameOverCue(liveGameEnd(game, transition), finale === 'banner' || finale === 'done', game.winnerId === meId);
   const shuffling = useShuffleEffects(game.events);
