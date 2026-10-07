@@ -31,4 +31,11 @@ class PairChoiceTest {
         assertError(List.of(4, 53), ErrorCode.OLD_MAID_CARD_NOT_IN_HAND);
         assertError(List.of(-1, 4), ErrorCode.OLD_MAID_CARD_NOT_IN_HAND);
     }
+
+    @Test
+    void 같은_번호는_값으로_비교하고_빈_번호는_자리에_상관없이_INVALID_INPUT이다() {
+        assertError(List.of(Integer.valueOf(200), Integer.valueOf(200)), ErrorCode.INVALID_INPUT);
+        assertError(Arrays.asList(null, 4), ErrorCode.INVALID_INPUT);
+        assertError(Arrays.asList(null, null), ErrorCode.INVALID_INPUT);
+    }
 }
