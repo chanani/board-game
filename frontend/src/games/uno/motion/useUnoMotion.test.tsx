@@ -4,6 +4,7 @@ import { act, renderHook } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { SILENT_SOUND, SoundContext } from '../../../lib/sound';
+import { CLEANUP_PAD_MS } from '../../../table/useGhostFlights';
 import { num, unoEvent, unoView } from '../unoFixtures';
 import { DRAW_GAP_MS, DRAW_MS, PLAY_MS } from './planUnoMotion';
 import { useUnoMotion } from './useUnoMotion';
@@ -85,6 +86,8 @@ describe('useUnoMotion', () => {
 
     expect(result.current.ghosts.map((ghost) => ghost.card === null)).toEqual([false, true, true]);
     act(() => vi.advanceTimersByTime(PLAY_MS));
+    expect(result.current.ghosts).toHaveLength(3);
+    act(() => vi.advanceTimersByTime(CLEANUP_PAD_MS));
     expect(result.current.ghosts.map((ghost) => ghost.card === null)).toEqual([true, true]);
     act(() => vi.advanceTimersByTime(DRAW_MS));
     expect(result.current.ghosts).toHaveLength(1);

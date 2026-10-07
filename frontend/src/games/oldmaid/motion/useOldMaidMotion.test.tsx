@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { SILENT_SOUND, SoundContext } from '../../../lib/sound';
+import { CLEANUP_PAD_MS } from '../../../table/useGhostFlights';
 import { card, oldMaidEvent, oldMaidView } from '../oldMaidFixtures';
 import { DRAW_MS, PAIR_GAP_MS, PAIR_MS } from './planOldMaidMotion';
 import { useOldMaidMotion } from './useOldMaidMotion';
@@ -33,7 +34,10 @@ describe('useOldMaidMotion', () => {
     const { result } = renderHook(() => useOldMaidMotion({ current: root }, { seq: 1, from, to, animate: true }, 1, 40), { wrapper });
 
     expect(result.current.ghosts.map((ghost) => ghost.card)).toEqual([null, card('SPADES', 'NINE'), card('HEARTS', 'NINE')]);
+    // 비행이 끝나는 순간에는 아직 남아 마지막 프레임이 자리에 닿고, 여유 시간 뒤에 지워진다.
     act(() => vi.advanceTimersByTime(DRAW_MS));
+    expect(result.current.ghosts).toHaveLength(3);
+    act(() => vi.advanceTimersByTime(CLEANUP_PAD_MS));
     expect(result.current.ghosts.map((ghost) => ghost.card)).toEqual([card('SPADES', 'NINE'), card('HEARTS', 'NINE')]);
     act(() => vi.advanceTimersByTime(PAIR_MS));
     expect(result.current.ghosts.map((ghost) => ghost.card)).toEqual([card('HEARTS', 'NINE')]);

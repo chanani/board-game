@@ -8,7 +8,8 @@ export type Flight<Z extends string, C> = { card: C; from: Z; to: Z; delay: numb
 export type FlightPlan<Z extends string, C> = { flights: Flight<Z, C>[]; sounds: { name: SoundName; delay: number }[] };
 export type Ghost<C> = { id: number; width: number; card: C; from: Rect; to: Rect; delay: number; duration: number; flip: boolean };
 
-const CLEANUP_PAD_MS = 50;
+/** 고스트를 비행이 끝난 뒤 조금 더 두었다가 지운다(마지막 프레임이 자리에 닿기 전에 몇 픽셀 앞에서 사라지지 않게). */
+export const CLEANUP_PAD_MS = 50;
 
 function measure(root: HTMLElement | null, attr: string, zone: string): Rect | null {
   const el = root?.querySelector<HTMLElement>(`[${attr}="${zone}"]`);
@@ -40,7 +41,7 @@ export function useGhostFlights<V, Z extends string, C>(
   plan: (from: V | null, to: V) => FlightPlan<Z, C>,
   attr: string,
   cardWidth: number,
-  /** true면 고스트마다 제 비행이 끝나는 순간 지운다(내려앉은 카드가 다음 비행이 끝날 때까지 남아 보이지 않게). */
+  /** true면 고스트마다 제 비행이 끝나면(CLEANUP_PAD_MS 뒤) 바로 지운다(내려앉은 카드가 다음 비행이 끝날 때까지 남아 보이지 않게). */
   dropLanded = false,
 ): { ghosts: Ghost<C>[] } {
   const { play } = useSound();
@@ -76,7 +77,7 @@ export function useGhostFlights<V, Z extends string, C>(
     setGhosts(flying);
     if (dropLanded) {
       flying.forEach((ghost) => {
-        timers.current.push(window.setTimeout(() => setGhosts((current) => current.filter((one) => one.id !== ghost.id)), ghost.delay + ghost.duration));
+        timers.current.push(window.setTimeout(() => setGhosts((current) => current.filter((one) => one.id !== ghost.id)), ghost.delay + ghost.duration + CLEANUP_PAD_MS));
       });
     }
     const end = Math.max(...flying.map((ghost) => ghost.delay + ghost.duration)) + CLEANUP_PAD_MS;
