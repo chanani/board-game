@@ -5,7 +5,7 @@ import type { GameSignal, OldMaidView, Room } from '../../api/types';
 import { SILENT_SOUND, SoundContext, type SoundName } from '../../lib/sound';
 import { setMediaMatches } from '../../test/media';
 import { OldMaidTable } from './OldMaidTable';
-import { oldMaidSession, peekSignal } from './oldMaidFixtures';
+import { oldMaidEvent, oldMaidSession, peekSignal } from './oldMaidFixtures';
 
 const room: Room = {
   code: 'OLDMAD', name: '도둑잡기 방', gameType: 'OLD_MAID', gameTypeName: '도둑잡기', status: 'PLAYING', hostId: 1, maxPlayers: 6,
@@ -51,6 +51,28 @@ describe('OldMaidTable 고르기', () => {
     await userEvent.click(screen.getByRole('button', { name: '밥님의 2번째 카드' }));
 
     expect(send).toHaveBeenCalledTimes(1);
+  });
+
+  it('같은 차례에 남의 섞기 같은 다른 화면 갱신이 와도 뽑기 잠금은 풀리지 않는다(차례가 바뀌거나 오류가 오면 풀린다)', async () => {
+    const send = vi.fn();
+    const at = (overrides: Partial<OldMaidView>, errorSeq = 0) => (
+      <OldMaidTable view={oldMaidSession(overrides)} room={room} meId={1} log={[]} receivedAt={0} now={0} errorSeq={errorSeq}
+        nicknameOf={nicknameOf} send={send} sendSignal={vi.fn()} signal={null} onCloseGameOver={vi.fn()} onReadyNext={vi.fn()} />
+    );
+    const { rerender } = render(at({}));
+    await userEvent.click(screen.getByRole('button', { name: '밥님의 1번째 카드' }));
+
+    rerender(at({ events: [oldMaidEvent(1, 'SHUFFLE', { actorId: 3 })] }));
+    await userEvent.click(screen.getByRole('button', { name: '밥님의 2번째 카드' }));
+    expect(send).toHaveBeenCalledTimes(1);
+
+    rerender(at({ events: [oldMaidEvent(1, 'SHUFFLE', { actorId: 3 })] }, 1));
+    await userEvent.click(screen.getByRole('button', { name: '밥님의 2번째 카드' }));
+    expect(send).toHaveBeenCalledTimes(2);
+
+    rerender(at({ turnSeq: 2, events: [oldMaidEvent(1, 'SHUFFLE', { actorId: 3 })] }, 1));
+    await userEvent.click(screen.getByRole('button', { name: '밥님의 3번째 카드' }));
+    expect(send).toHaveBeenCalledTimes(3);
   });
 
   it('받은 신호로 내 손패의 그 자리 카드가 들린다(이전 차례 신호는 무시)', () => {

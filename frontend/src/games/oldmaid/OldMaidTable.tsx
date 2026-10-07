@@ -34,7 +34,7 @@ const FELT: Record<TableLayout, string> = {
 /** 눕힌 화면에 상대가 5명이면 옆 칸에 세 줄로 쌓여 손패가 화면 밖으로 밀리므로, 상대를 위 줄에 두고 가운데를 그 아래에 둔다. */
 const LANDSCAPE_TOP_SEATS = 5;
 const FELT_LANDSCAPE_TOP = 'flex-col items-center justify-center gap-2 px-[4%] py-2';
-/** 뽑기를 보낸 뒤 화면이 바뀌거나 오류가 오기 전까지 다시 보내지 않는 시간(우노와 같다). */
+/** 뽑기를 보낸 뒤 차례가 바뀌거나 오류가 오기 전까지 다시 보내지 않는 시간(우노와 같다). */
 const PENDING_MS = 3000;
 /** R23: 섞기 버튼 잠금 시간(서버 쿨다운과 같다). */
 const SHUFFLE_LOCK_MS = 1000;
@@ -49,11 +49,12 @@ export function OldMaidTable({ view, room, meId, log, receivedAt, now, errorSeq,
   const myTurn = live && game.currentPlayerId === meId;
   const liftIndex = effectivePeek(game, signal);
 
-  // 뽑기는 보낸 뒤 화면이 바뀌거나 오류가 오기 전까지 다시 보내지 않는다(우노와 같은 패턴). 섞기는 이 잠금을 쓰지 않는다.
+  // 뽑기는 보낸 뒤 차례가 바뀌거나(새 판 포함) 오류가 오기 전까지 다시 보내지 않는다. 섞기는 이 잠금을 쓰지 않는다.
+  // 남의 섞기처럼 같은 차례 안의 화면 갱신으로는 풀지 않는다(풀면 두 번 눌러 DRAW가 두 번 가고 NOT_YOUR_TURN이 뜬다).
   const pendingUntil = useRef(0);
   useEffect(() => {
     pendingUntil.current = 0;
-  }, [view, errorSeq]);
+  }, [game.turnSeq, game.startedAt, errorSeq]);
   const send = (action: GameAction) => {
     if (Date.now() < pendingUntil.current) {
       return;
