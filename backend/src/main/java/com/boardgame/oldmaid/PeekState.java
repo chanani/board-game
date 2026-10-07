@@ -34,6 +34,12 @@ public class PeekState {
         seq++;
     }
 
+    // R21: 새 차례에서는 신호를 지우고 간격 시계도 되돌려, 새로 뽑는 사람의 첫 신호를 50ms 간격으로 버리지 않는다.
+    void restart() {
+        clear();
+        lastAt = Instant.EPOCH;
+    }
+
     Optional<SlotIndex> slot() {
         return Optional.ofNullable(slot);
     }

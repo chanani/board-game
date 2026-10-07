@@ -105,6 +105,16 @@ class OldMaidPeekShuffleTest {
     }
 
     @Test
+    void R21_차례가_바뀌면_새로_뽑는_사람의_첫_신호는_50ms_안이어도_받는다() {
+        OldMaidGame game = threePlayers();
+        game.peek(A, slot(2), T0);
+        game.draw(A, new SlotIndex(0));
+
+        assertThat(game.peek(B, slot(0), at(10))).isTrue();
+        assertThat(game.peekSlot()).contains(new SlotIndex(0));
+    }
+
+    @Test
     void 끝난_게임의_신호는_버린다() {
         OldMaidGame game = game(A, hands(List.of(s(Rank.FIVE)), List.of(h(Rank.FIVE), JOKER)));
         game.draw(A, new SlotIndex(0));

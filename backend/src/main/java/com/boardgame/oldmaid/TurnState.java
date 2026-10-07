@@ -30,7 +30,7 @@ public class TurnState {
     // R21: 새 차례는 순번을 올리고 신호를 지운다.
     public void begin(PlayerId drawer, PlayerId target) {
         turn = new Turn(drawer, target, turn.seq().next());
-        peek.clear();
+        peek.restart();
     }
 
     // R27: 같은 뽑는 사람의 상대를 다시 정한다. 상대가 그대로면 순번(마감)은 그대로 두고 신호만 지운다.

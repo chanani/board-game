@@ -5,6 +5,7 @@ import com.boardgame.common.error.ErrorCode;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.Random;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -62,6 +63,19 @@ public class OldMaidGame {
 
     public void shuffle(PlayerId player, Instant now) {
         run(player, OldMaidEndReason.NORMAL, batch -> round.shuffle(player, now, batch));
+    }
+
+    // R25~R29: 기권으로 카드 가진 사람이 1명이 되면 끝난 이유는 FORFEIT.
+    public void forfeit(PlayerId player) {
+        run(player, OldMaidEndReason.FORFEIT, batch -> round.forfeit(player, batch));
+    }
+
+    // R35: 시간 초과. 대신 뽑은 사람을 돌려준다.
+    public PlayerId autoAct(Random random) {
+        requireInProgress();
+        PlayerId drawer = round.drawer();
+        apply(true, OldMaidEndReason.NORMAL, batch -> round.autoDraw(random, batch));
+        return drawer;
     }
 
     public boolean canShuffle(PlayerId player) {

@@ -5,6 +5,7 @@ import com.boardgame.common.error.ErrorCode;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.Random;
 
 // 한 판의 애그리거트. 차례 규칙은 모두 여기 있다.
 public class OldMaidRound {
@@ -79,6 +80,46 @@ public class OldMaidRound {
         turns.useShuffle(player, now);
         table.shuffle(player);
         batch.add(OldMaidEvent.shuffle(player));
+    }
+
+    // R25~R27: 손패를 다음 카드 가진 사람에게 넘기고(짝 버림·섞음), 비면 끝내고, 차례를 다시 정한다.
+    void forfeit(PlayerId leaver, EventBatch batch) {
+        if (!table.holds(leaver)) {
+            throw new BusinessException(ErrorCode.NOT_A_PLAYER);
+        }
+        List<PlayingCard> cards = table.takeAll(leaver);
+        players.forfeit(leaver);
+        Optional<PlayerId> receiver = players.nextHolderIfAny(leaver, table::holds);
+        batch.add(OldMaidEvent.forfeit(leaver, receiver.orElse(null), cards.size()));
+        receiver.ifPresent(player -> handOver(player, cards, batch));
+        reseat();
+    }
+
+    private void handOver(PlayerId receiver, List<PlayingCard> cards, EventBatch batch) {
+        table.giveForfeited(receiver, cards)
+                .forEach(pair -> batch.add(OldMaidEvent.pair(receiver, pair)));
+        finishIfEmpty(receiver, batch);
+    }
+
+    // R27: 뽑는 사람이 카드를 갖고 있으면 상대만 다시 정하고, 아니면 그 자리 다음 사람에게 차례를 넘긴다.
+    private void reseat() {
+        if (table.holderCount() < 2) {
+            return;
+        }
+        PlayerId drawer = turns.current().drawer();
+        if (!table.holds(drawer)) {
+            advanceFrom(drawer);
+            return;
+        }
+        turns.retarget(players.nextHolder(drawer, table::holds));
+    }
+
+    // R35: 상대 손패에서 무작위 자리 1장을 대신 뽑는다. 대신 뽑은 사람을 돌려준다.
+    PlayerId autoDraw(Random random, EventBatch batch) {
+        Turn turn = turns.current();
+        SlotIndex slot = new SlotIndex(random.nextInt(table.sizeOf(turn.target())));
+        draw(turn.drawer(), slot, batch);
+        return turn.drawer();
     }
 
     boolean canShuffle(PlayerId player) {
