@@ -26,12 +26,18 @@ function startBlocker(members: RoomMember[]): string | null {
   return null;
 }
 
-/** 테이블 아래 종이 카드: 내 역할의 주 버튼만 가운데에 둔다(관전자는 안내와 함께). */
+/** 테이블 아래 주 버튼. 참가자는 감싸는 상자 없이 버튼만 가운데에 두고, 관전자는 안내와 함께 종이 카드에 둔다. */
 export function WaitingActionBar(props: Props) {
-  const layout = props.spectating ? 'justify-between' : 'justify-center';
+  if (!props.spectating) {
+    return (
+      <div data-testid="waiting-action-bar" className="flex w-full max-w-[640px] items-center justify-center">
+        <ActionContent {...props} />
+      </div>
+    );
+  }
   return (
     <div data-testid="waiting-action-bar"
-      className={`paper flex w-full max-w-[640px] items-center ${layout} gap-3 px-3 py-2.5 text-xs text-wood-800 sm:px-4 sm:text-sm`}>
+      className="paper flex w-full max-w-[640px] items-center justify-between gap-3 px-3 py-2.5 text-xs text-wood-800 sm:px-4 sm:text-sm">
       <ActionContent {...props} />
     </div>
   );

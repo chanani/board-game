@@ -105,4 +105,23 @@ describe('WaitingActionBar', () => {
     expect(start).not.toHaveAttribute('title');
     expect(start).not.toHaveAttribute('aria-describedby');
   });
+
+  it('방장의 게임 시작 버튼과 참가자의 준비 버튼은 감싸는 종이 상자 없이 버튼만 있다', () => {
+    const host = renderBar(1);
+    const bar = screen.getByTestId('waiting-action-bar');
+    expect(bar).not.toHaveClass('paper');
+    expect(bar.className).not.toMatch(/\b(border|bg-|shadow|px-|py-)/);
+    expect(bar).toContainElement(screen.getByRole('button', { name: '게임 시작' }));
+    expect(bar).toHaveTextContent(/^게임 시작$/);
+    host.unmount();
+
+    renderBar(2);
+    expect(screen.getByTestId('waiting-action-bar')).not.toHaveClass('paper');
+  });
+
+  it('관전자는 안내 문구가 있어 종이 카드 안에 둔다', () => {
+    render(<WaitingActionBar room={room} meId={9} spectating onStart={vi.fn()} onReady={vi.fn()} onSeat={vi.fn()} />);
+    expect(screen.getByTestId('waiting-action-bar')).toHaveClass('paper');
+    expect(screen.getByText('관전 중')).toBeInTheDocument();
+  });
 });
