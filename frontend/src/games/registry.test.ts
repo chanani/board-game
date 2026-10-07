@@ -45,7 +45,7 @@ describe('게임 등록부', () => {
     const uno = gameOf('UNO');
     const view = { gameType: 'UNO', game: { status: 'GAME_OVER', startedAt: 1000, participantIds: [1, 2] } } as unknown as UnoSessionView;
 
-    expect(GAME_ORDER).toEqual(['PAPER_SAFARI', 'UNO']);
+    expect(GAME_ORDER.slice(0, 2)).toEqual(['PAPER_SAFARI', 'UNO']);
     expect(uno.name).toBe('우노');
     expect(uno.slug).toBe('uno');
     expect(uno.averageScoreLabel).toBe('평균 획득 점수');
@@ -54,5 +54,15 @@ describe('게임 등록부', () => {
     expect(uno.wasParticipant(view, 2)).toBe(true);
     expect(uno.wasParticipant(view, 9)).toBe(false);
     expect(uno.gameOverKey('ABC234', view)).toBe('ABC234:UNO:1000');
+  });
+
+  it('도둑잡기를 세 번째 게임으로 등록한다', () => {
+    const game = gameOf('OLD_MAID');
+
+    expect(GAME_ORDER).toEqual(['PAPER_SAFARI', 'UNO', 'OLD_MAID']);
+    expect(game.name).toBe('도둑잡기');
+    expect(game.rules.slides).toHaveLength(8);
+    expect(sessionGameType({ gameType: 'OLD_MAID' })).toBe('OLD_MAID');
+    expect(game.gameOverKey('OLDMAD', { gameType: 'OLD_MAID', game: { startedAt: 7 } } as never)).toBe('OLDMAD:OLD_MAID:7');
   });
 });

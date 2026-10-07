@@ -87,4 +87,15 @@ describe('GameShelfPage', () => {
 
     expect(await screen.findByRole('dialog', { name: '우노 규칙' })).toBeInTheDocument();
   });
+
+  it('도둑잡기 상자와 도둑잡기 규칙을 보여 준다', async () => {
+    list.mockResolvedValue([]);
+    renderShelf();
+
+    expect(screen.getByRole('button', { name: '도둑잡기 열기' })).toBeInTheDocument();
+    expect(screen.getByText('2~6인 · 조커를 피해라!')).toBeInTheDocument();
+    await userEvent.click(screen.getAllByRole('button', { name: /규칙 보기/ })[2]);
+
+    expect(await screen.findByRole('dialog', { name: '도둑잡기 규칙' })).toBeInTheDocument();
+  });
 });

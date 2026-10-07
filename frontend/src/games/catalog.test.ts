@@ -14,6 +14,11 @@ describe('catalog', () => {
   it('우노 로비 주소와 소개', () => {
     expect(lobbyPath('UNO')).toBe('/games/uno');
     expect(entryBySlug('uno')?.gameType).toBe('UNO');
-    expect(CATALOG.map((entry) => entry.tagline)).toEqual(['2~5인 · 낮은 점수를 노려라!', '2~5인 · 손패를 먼저 비워라!']);
+    expect(CATALOG.map((entry) => entry.tagline)).toEqual(['2~5인 · 낮은 점수를 노려라!', '2~5인 · 손패를 먼저 비워라!', '2~6인 · 조커를 피해라!']);
+  });
+
+  it('도둑잡기 로비 주소', () => {
+    expect(lobbyPath('OLD_MAID')).toBe('/games/old-maid');
+    expect(entryBySlug('old-maid')?.gameType).toBe('OLD_MAID');
   });
 });

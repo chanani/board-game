@@ -31,7 +31,7 @@ describe('statLines', () => {
   it('등록된 게임 순서대로 판 수·승 수·승률을 만들고 전체 합계를 더한다', () => {
     const { games, total } = statLines([stat('UNO', 6, 3), stat('PAPER_SAFARI', 4, 3)]);
     expect(games.map((line) => [line.name, line.matches, line.wins, line.winRate])).toEqual([
-      ['페이퍼 사파리', 4, 3, 0.75], ['우노', 6, 3, 0.5],
+      ['페이퍼 사파리', 4, 3, 0.75], ['우노', 6, 3, 0.5], ['도둑잡기', 0, 0, null],
     ]);
     expect(total).toMatchObject({ name: '전체', matches: 10, wins: 6, winRate: 0.6 });
   });
@@ -81,5 +81,14 @@ describe('MemberStatsModal', () => {
     await userEvent.click(close);
     expect(onClose).toHaveBeenCalledTimes(3);
     await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument());
+  });
+
+  it('도둑잡기 전적 줄을 보인다', async () => {
+    vi.mocked(recordsApi.member).mockResolvedValue(bob([stat('PAPER_SAFARI', 4, 3), stat('UNO', 6, 3), stat('OLD_MAID', 5, 1)]));
+    renderModal();
+
+    const dialog = screen.getByRole('dialog', { name: '밥님 전적' });
+    expect(await within(dialog).findByTestId('stat-OLD_MAID')).toHaveTextContent('도둑잡기5판1승20.0%');
+    expect(within(dialog).getByTestId('stat-TOTAL')).toHaveTextContent('전체15판7승46.7%');
   });
 });

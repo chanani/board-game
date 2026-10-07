@@ -1,15 +1,17 @@
 import type { GameType } from '../api/types';
 import type { GameModule } from './gameModule';
+import { oldMaidModule } from './oldmaid/module';
 import { paperSafariModule } from './papersafari/module';
 import { unoModule } from './uno/module';
 
 // 게임 모듈과 그 하위 파일은 catalog.ts를 import하지 않는다(catalog.ts가 이 파일을 쓰므로 순환을 피한다).
-export const GAME_ORDER: GameType[] = ['PAPER_SAFARI', 'UNO'];
+export const GAME_ORDER: GameType[] = ['PAPER_SAFARI', 'UNO', 'OLD_MAID'];
 
 // 모듈마다 화면 타입이 달라 any로 모은다(스펙 5.2).
 export const GAMES: Partial<Record<GameType, GameModule<any>>> = {
   PAPER_SAFARI: paperSafariModule,
   UNO: unoModule,
+  OLD_MAID: oldMaidModule,
 };
 
 export function findGame(type: string): GameModule<any> | undefined {

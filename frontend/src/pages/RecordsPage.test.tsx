@@ -214,4 +214,38 @@ describe('RecordsPage', () => {
 
     expect(await screen.findByText('평균 획득 점수')).toBeInTheDocument();
   });
+
+  it('게임 탭으로 도둑잡기 최근 경기와 순위표를 본다', async () => {
+    renderPage();
+    await screen.findByText('2승 0무 1패');
+
+    await userEvent.click(screen.getByRole('tab', { name: '도둑잡기' }));
+
+    expect(screen.getByRole('tab', { name: '도둑잡기' })).toHaveAttribute('aria-selected', 'true');
+    await waitFor(() => expect(recordsApi.matches).toHaveBeenLastCalledWith(1, 'OLD_MAID', 10));
+    await waitFor(() => expect(recordsApi.rankings).toHaveBeenLastCalledWith('OLD_MAID'));
+    await userEvent.click(screen.getByRole('button', { name: '순위표' }));
+    expect(screen.getByRole('heading', { name: '도둑잡기 순위표 (5판 이상)' })).toBeInTheDocument();
+  });
+
+  it('도둑잡기 통계는 평균 순위로, 최근 경기는 N등으로 보여 준다', async () => {
+    vi.mocked(recordsApi.me).mockResolvedValue({
+      memberId: 1, nickname: '앨리스', stats: [{
+        gameType: 'OLD_MAID', gameTypeName: '도둑잡기', matches: 5, wins: 1, draws: 0, losses: 4, winRate: 0.2,
+        rounds: 5, roundWins: 1, roundDraws: 0, roundLosses: 4, roundWinRate: 0.2, averageRoundScore: 2.4,
+      }],
+    });
+    vi.mocked(recordsApi.matches).mockResolvedValue([{
+      matchId: 11, gameType: 'OLD_MAID', startedAt: '2026-10-07T10:00:00Z', endedAt: '2026-10-07T10:05:00Z', result: 'LOSE', tokens: 3,
+      players: [{ memberId: 1, nickname: '앨리스', result: 'LOSE', tokens: 3 }, { memberId: 2, nickname: '밥', result: 'WIN', tokens: 1 }],
+      rounds: [{ roundNumber: 1, result: 'LOSE', score: 3 }],
+    }]);
+    renderPage();
+    await userEvent.click(await screen.findByRole('tab', { name: '도둑잡기' }));
+
+    expect(await screen.findByText('평균 순위')).toBeInTheDocument();
+    expect(screen.getByText('평균 순위').nextElementSibling).toHaveTextContent('2.4');
+    expect(await screen.findByText('3등')).toBeInTheDocument();
+    expect(screen.queryByText('3점')).not.toBeInTheDocument();
+  });
 });
