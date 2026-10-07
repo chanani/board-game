@@ -381,7 +381,7 @@ describe('RoomPage 준비와 채팅', () => {
 
     expect(roomsApi.ready).toHaveBeenCalledWith('ABC234', true);
     expect(screen.getByText('잘 부탁해요')).toBeInTheDocument();
-    expect(chat.args).toEqual(['ABC234', true]);
+    expect(chat.args).toEqual(['ABC234', true, 3]);
     expect(screen.getByTestId('room-chips')).toHaveTextContent('대기 중');
     expect(screen.getByTestId('room-chips')).toHaveTextContent('2/4명');
   });

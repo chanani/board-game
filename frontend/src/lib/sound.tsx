@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
-export type SoundName = 'draw' | 'place' | 'flip' | 'myTurn' | 'roundWin' | 'roundLose' | 'click' | 'tick' | 'uno';
+export type SoundName = 'draw' | 'place' | 'flip' | 'myTurn' | 'roundWin' | 'roundLose' | 'click' | 'tick' | 'uno' | 'chat';
 /** 덱·버린 카드에서 카드를 가져올 때 나는 소리. 닉네임 메뉴에서 고른다. */
 export type DrawSound = 'swish' | 'pop' | 'tock' | 'chime';
 export type SoundApi = {
@@ -184,6 +184,8 @@ const RECIPES: Record<Exclude<SoundName, 'draw'>, Recipe> = {
   // 우노 외침·잡힘: 밝은 두 음(C6 → G6, 삼각파, 0.25초).
   uno: (ctx, out) => { tone(ctx, out, 1047, 0, 0.12, 'triangle', 0.22); tone(ctx, out, 1568, 0.1, 0.15, 'triangle', 0.22); },
   tick: (ctx, out) => { tone(ctx, out, 660, 0, 0.09, 'square', 0.06); tone(ctx, out, 660, 0.16, 0.09, 'square', 0.06); },
+  // 남의 채팅 도착: 짧고 부드러운 '톡'(사인파가 살짝 올라가며 0.08초에 사라지고, 위에 아주 작은 맑은 음을 얹는다).
+  chat: (ctx, out) => { glide(ctx, out, 988, 1319, 0, 0.08, 0.11); tone(ctx, out, 2637, 0.01, 0.04, 'sine', 0.025); },
 };
 
 function recipeOf(name: SoundName, drawSound: DrawSound): Recipe {

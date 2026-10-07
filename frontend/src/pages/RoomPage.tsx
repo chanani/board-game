@@ -47,7 +47,7 @@ export function RoomPage() {
   const overKey = game && gameView ? game.gameOverKey(code, gameView) : null;
   const gameOver = useGameOverDismissal(code, overKey, room?.status === 'PLAYING');
   // 이 화면은 REST 입장(참가·관전) 뒤에만 오므로 채팅도 방 채널과 같은 시점에 시작한다.
-  const chat = useRoomChat(code, room !== null && !missing);
+  const chat = useRoomChat(code, room !== null && !missing, meId);
 
   useEffect(() => {
     const watching = Boolean(room?.spectators.some((spectator) => spectator.id === meId));

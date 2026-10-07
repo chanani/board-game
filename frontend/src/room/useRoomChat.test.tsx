@@ -1,6 +1,8 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ReactNode } from 'react';
 import { chatApi, type ChatMessage } from '../api/chat';
+import { SILENT_SOUND, SoundContext } from '../lib/sound';
 import { useRoomChat } from './useRoomChat';
 
 type Handler = (body: unknown) => void;
@@ -110,5 +112,70 @@ describe('useRoomChat', () => {
     expect(result.current.latest).toMatchObject({ id: 3, memberId: 2, text: '안녕하세요', spectator: true });
     push({ ...message(4, 2), roomCode: 'ZZZ999' });
     expect(result.current.latest?.id).toBe(3);
+  });
+
+  describe('남의 채팅 알림음', () => {
+    const play = vi.fn();
+    const withSound = ({ children }: { children: ReactNode }) => (
+      <SoundContext.Provider value={{ ...SILENT_SOUND, play }}>{children}</SoundContext.Provider>
+    );
+    const renderWithSound = (meId = 1) => renderHook(() => useRoomChat('ABC234', true, meId), { wrapper: withSound });
+
+    beforeEach(() => {
+      play.mockReset();
+      vi.spyOn(Date, 'now').mockReturnValue(1_000_000);
+    });
+    afterEach(() => vi.mocked(Date.now).mockRestore());
+
+    it('기록 불러오기로 받은 메시지에는 울리지 않고, 실시간으로 온 남의 메시지에는 chat 소리를 한 번 낸다', async () => {
+      const { result } = renderWithSound();
+      await waitFor(() => expect(result.current.messages).toHaveLength(2));
+      expect(play).not.toHaveBeenCalled();
+
+      push({ ...message(3, 2), roomCode: 'ABC234' });
+      expect(play).toHaveBeenCalledTimes(1);
+      expect(play).toHaveBeenCalledWith('chat');
+    });
+
+    it('내 메시지와 다른 방 메시지, 같은 메시지 재수신에는 울리지 않는다', async () => {
+      const { result } = renderWithSound(1);
+      await waitFor(() => expect(result.current.messages).toHaveLength(2));
+
+      push({ ...message(3, 1), roomCode: 'ABC234' });
+      push({ ...message(4, 2), roomCode: 'ZZZ999' });
+      expect(play).not.toHaveBeenCalled();
+
+      push({ ...message(5, 2), roomCode: 'ABC234' });
+      vi.mocked(Date.now).mockReturnValue(1_000_000 + 5_000);
+      push({ ...message(5, 2), roomCode: 'ABC234' });
+      expect(play).toHaveBeenCalledTimes(1);
+    });
+
+    it('400ms 안에 잇달아 온 메시지는 한 번만 울리고, 그 뒤에 온 것은 다시 울린다', async () => {
+      const { result } = renderWithSound();
+      await waitFor(() => expect(result.current.messages).toHaveLength(2));
+
+      push({ ...message(3, 2), roomCode: 'ABC234' });
+      vi.mocked(Date.now).mockReturnValue(1_000_000 + 399);
+      push({ ...message(4, 3), roomCode: 'ABC234' });
+      expect(play).toHaveBeenCalledTimes(1);
+
+      vi.mocked(Date.now).mockReturnValue(1_000_000 + 400);
+      push({ ...message(5, 2), roomCode: 'ABC234' });
+      expect(play).toHaveBeenCalledTimes(2);
+    });
+
+    it('다시 연결되어 기록으로 채운 메시지에는 울리지 않는다', async () => {
+      vi.mocked(chatApi.history).mockResolvedValue([]);
+      const { result, rerender } = renderWithSound();
+      await waitFor(() => expect(chatApi.history).toHaveBeenCalledTimes(1));
+      vi.mocked(chatApi.history).mockResolvedValue([message(7, 2), message(8, 3)]);
+      state.connected = false;
+      rerender();
+      state.connected = true;
+      rerender();
+      await waitFor(() => expect(result.current.messages.map((item) => item.id)).toEqual([7, 8]));
+      expect(play).not.toHaveBeenCalled();
+    });
   });
 });
