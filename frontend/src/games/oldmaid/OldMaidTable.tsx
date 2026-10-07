@@ -21,7 +21,7 @@ import { useOldMaidMotion } from './motion/useOldMaidMotion';
 import { MyHand } from './MyHand';
 import { OldMaidGameOverPanel } from './OldMaidGameOverPanel';
 import { OldMaidSeat, type SeatNote } from './OldMaidSeat';
-import { discardChoice, keepInHand, toggleSelection } from './pairPick';
+import { drawnPairIds, keepInHand, pickCard } from './pairPick';
 import { TargetFan } from './TargetFan';
 import { effectivePeek, usePeekSender } from './usePeek';
 import { useShuffleEffects } from './useShuffleEffects';
@@ -41,6 +41,12 @@ const LANDSCAPE_TOP_BACK = 16;
 const PENDING_MS = 3000;
 /** R23: 섞기 버튼 잠금 시간(서버 쿨다운과 같다). */
 const SHUFFLE_LOCK_MS = 1000;
+/** 다른 숫자를 골랐을 때 안내가 보이는 시간. */
+const HINT_MS = 2000;
+
+type PickState = { key: string; ids: number[]; hint: string | null };
+/** 보낸 버리기: 보낸 짝의 카드(누를 수 없음)와 자동으로 버리기를 보냈는지. key가 지금 잠금 열쇠와 같을 때만 유효하다. */
+type Sent = { key: string; ids: number[]; all: boolean };
 
 export function OldMaidTable({ view, room, meId, log, receivedAt, now, errorSeq, nicknameOf, send: rawSend, signal, sendSignal, aside, asideFooter, transition, onCloseGameOver, onReadyNext }: TableProps<OldMaidSessionView>) {
   const game = view.game;
@@ -92,28 +98,50 @@ export function OldMaidTable({ view, room, meId, log, receivedAt, now, errorSeq,
     rawSend({ type: 'SHUFFLE' });
   };
 
-  // R36·R37 짝 고르기: 고른 카드는 단계(차례·단계)가 바뀌면 처음부터, 손에서 사라진 카드는 빠진다.
+  // R36·R37 짝 고르기: 같은 숫자 두 장째를 누르면 바로 DISCARD, 다른 숫자면 새 카드만 고른 채 잠깐 안내.
+  // 고른 카드는 단계(차례·단계)가 바뀌면 처음부터, 손에서 사라진 카드는 빠진다.
   const hand = game.hand ?? [];
   const pickKey = `${game.startedAt}:${game.turnSeq}:${game.stage}`;
-  const [pick, setPick] = useState<{ key: string; ids: number[] }>({ key: pickKey, ids: [] });
-  const selectedIds = pick.key === pickKey ? keepInHand(pick.ids, hand) : [];
-  const choice = discardChoice(game, selectedIds);
-  // 버리기는 보낸 뒤 내 손패·단계가 바뀌거나 오류가 오기 전까지 다시 보내지 않는다(같은 짝을 두 번 보내 오류가 뜨지 않게).
+  const [pick, setPick] = useState<PickState>({ key: pickKey, ids: [], hint: null });
+  const current = pick.key === pickKey ? pick : null;
+  const selectedIds = current ? keepInHand(current.ids, hand) : [];
+  const hint = current?.hint ?? null;
+  useEffect(() => {
+    if (!pick.hint) {
+      return undefined;
+    }
+    const timer = window.setTimeout(() => setPick((before) => (before === pick ? { ...before, hint: null } : before)), HINT_MS);
+    return () => window.clearTimeout(timer);
+  }, [pick]);
+  // 보낸 짝(또는 자동으로 버리기)은 내 손패·단계가 바뀌거나 오류가 오기 전까지 다시 보내지 않는다(같은 짝을 두 번 보내 오류가 뜨지 않게).
   const lockKey = `${pickKey}:${errorSeq}:${hand.map((one) => one.id).join(',')}`;
-  const [discardLock, setDiscardLock] = useState<string | null>(null);
-  const discardLocked = discardLock === lockKey;
-  const toggle = (id: number) => setPick({ key: pickKey, ids: toggleSelection(selectedIds, id) });
-  const discard = () => {
-    if (!choice.ids || discardLocked) {
+  const [sent, setSent] = useState<Sent>({ key: '', ids: [], all: false });
+  const pending = sent.key === lockKey ? sent : null;
+  const pendingIds = pending?.ids ?? [];
+  const allPending = pending?.all ?? false;
+  const choose = (id: number) => {
+    if (allPending || pendingIds.includes(id)) {
       return;
     }
-    setDiscardLock(lockKey);
-    setPick({ key: pickKey, ids: [] });
-    rawSend({ type: 'DISCARD', cardIds: choice.ids });
+    const step = pickCard(hand, selectedIds, id);
+    setPick({ key: pickKey, ids: step.ids, hint: step.hint });
+    if (!step.send) {
+      return;
+    }
+    setSent({ key: lockKey, ids: [...pendingIds, ...step.send], all: false });
+    rawSend({ type: 'DISCARD', cardIds: step.send });
+  };
+  // R39: 지금 버릴 수 있는 내 짝을 한 번에(처음 버리기는 손의 짝 모두, 짝 버리기는 뽑은 짝).
+  const discardAll = () => {
+    if (allPending) {
+      return;
+    }
+    setSent({ key: lockKey, ids: pendingIds, all: true });
+    setPick({ key: pickKey, ids: [], hint: null });
+    rawSend({ type: 'DISCARD_ALL' });
   };
   const picker = live && game.canDiscard ? {
-    selectedIds, glowIds: choice.glowIds, onToggle: toggle, label: game.stage === 'DISCARD' ? '짝 버리기' : '버리기',
-    ready: choice.ids !== null, hint: choice.hint, locked: discardLocked, onDiscard: discard,
+    selectedIds, glowIds: drawnPairIds(game), pendingIds, onPick: choose, hint, locked: allPending, onDiscardAll: discardAll,
   } : undefined;
 
   // 내가 뽑는 사람이 된 새 차례마다 한 번 차례 소리.

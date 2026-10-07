@@ -40,4 +40,15 @@ describe('isStaleDiscard', () => {
     expect(isStaleDiscard(discard, openingSent, after, 'OLD_MAID_NOT_A_PAIR')).toBe(false);
     expect(isStaleDiscard({ type: 'DRAW', index: 0 }, openingSent, after, 'NOT_YOUR_TURN')).toBe(false);
   });
+
+  it('R39 자동으로 버리기: 단계가 바뀌었거나 버릴 짝이 없어졌으면 지나간 버리기, 화면이 그대로면 알린다', () => {
+    const all = { type: 'DISCARD_ALL' as const };
+    const moved = oldMaidSession({ stage: 'DRAW', turnSeq: 1, hand: [other] });
+    const noPair = oldMaidSession({ stage: 'OPENING_DISCARD', turnSeq: 0, currentPlayerId: null, targetId: null, hand: [other], canDiscard: false });
+
+    expect(isStaleDiscard(all, openingSent, moved, 'NOT_YOUR_TURN')).toBe(true);
+    expect(isStaleDiscard(all, openingSent, noPair, 'INVALID_PHASE')).toBe(true);
+    expect(isStaleDiscard(all, openingSent, openingSent, 'INVALID_PHASE')).toBe(false);
+    expect(isStaleDiscard(all, openingSent, moved, 'GAME_ALREADY_OVER')).toBe(false);
+  });
 });

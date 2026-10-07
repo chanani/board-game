@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import type { PlayingCard } from '../../api/types';
 import { OLD_MAID_SIZES } from './layout';
-import { MyHand } from './MyHand';
+import { MyHand, type HandPicker } from './MyHand';
 import { card, JOKER } from './oldMaidFixtures';
 
 const sizes = OLD_MAID_SIZES.pc;
@@ -83,49 +83,57 @@ describe('MyHand', () => {
     expect(screen.getByTestId('shuffle-slot')).toHaveAttribute('data-placement', 'beside');
   });
 
-  it('R36 고를 수 있으면 카드가 버튼이고, 고른 카드는 들리며, 버리기 버튼은 준비됐을 때만 눌린다', async () => {
-    const onToggle = vi.fn();
-    const onDiscard = vi.fn();
-    const picker = { selectedIds: [], glowIds: [], onToggle, label: '버리기', ready: false, hint: null, locked: false, onDiscard };
+  it('R36 고를 수 있으면 카드가 버튼(마우스·키보드)이고, 고른 카드와 보낸 짝은 들리며, 자동으로 버리기 버튼이 섞기 칸에 있다', async () => {
+    const onPick = vi.fn();
+    const onDiscardAll = vi.fn();
+    const picker: HandPicker = { selectedIds: [], glowIds: [], pendingIds: [], onPick, hint: null, locked: false, onDiscardAll };
     const cards = [card('HEARTS', 'SEVEN'), JOKER, card('SPADES', 'SEVEN')];
-    const { rerender } = render(<MyHand cards={cards} liftIndex={null} layout="pc" sizes={sizes} zoneId={1} canShuffle shuffleLocked={false} onShuffle={vi.fn()} picker={picker} />);
+    const at = (over: Partial<HandPicker>) => (
+      <MyHand cards={cards} liftIndex={null} layout="pc" sizes={sizes} zoneId={1} canShuffle shuffleLocked={false} onShuffle={vi.fn()} picker={{ ...picker, ...over }} />
+    );
+    const { rerender } = render(at({}));
 
     await userEvent.click(screen.getByRole('button', { name: '하트 7 고르기' }));
-    expect(onToggle).toHaveBeenCalledWith(cards[0].id);
-    expect(screen.getByTestId('discard-button')).toBeDisabled();
+    expect(onPick).toHaveBeenCalledWith(cards[0].id);
 
-    rerender(<MyHand cards={cards} liftIndex={null} layout="pc" sizes={sizes} zoneId={1} canShuffle shuffleLocked={false} onShuffle={vi.fn()}
-      picker={{ ...picker, selectedIds: [cards[0].id, cards[2].id], ready: true }} />);
+    rerender(at({ selectedIds: [cards[0].id] }));
     expect(screen.getByRole('button', { name: '하트 7 고름' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getAllByTestId('my-card')[0]).toHaveAttribute('data-selected', 'true');
     expect(screen.getAllByTestId('my-card')[0]).toHaveAttribute('data-lifted', 'true');
-    screen.getByRole('button', { name: '스페이드 7 고름' }).focus();
+    screen.getByRole('button', { name: '스페이드 7 고르기' }).focus();
     await userEvent.keyboard('{Enter}');
-    expect(onToggle).toHaveBeenLastCalledWith(cards[2].id);
-    await userEvent.click(screen.getByTestId('discard-button'));
-    expect(onDiscard).toHaveBeenCalledTimes(1);
-    expect(screen.getByTestId('discard-button')).toHaveAttribute('data-no-click-sound');
-    expect(screen.getByTestId('shuffle-slot')).toContainElement(screen.getByTestId('discard-button'));
+    expect(onPick).toHaveBeenLastCalledWith(cards[2].id);
 
-    rerender(<MyHand cards={cards} liftIndex={null} layout="pc" sizes={sizes} zoneId={1} canShuffle shuffleLocked={false} onShuffle={vi.fn()}
-      picker={{ ...picker, ready: true, locked: true }} />);
-    expect(screen.getByTestId('discard-button')).toBeDisabled();
+    const button = screen.getByTestId('discard-all-button');
+    expect(button).toHaveTextContent('자동으로 버리기');
+    expect(button).toBeEnabled();
+    await userEvent.click(button);
+    expect(onDiscardAll).toHaveBeenCalledTimes(1);
+    expect(button).toHaveAttribute('data-no-click-sound');
+    expect(screen.getByTestId('shuffle-slot')).toContainElement(button);
+
+    rerender(at({ pendingIds: [cards[0].id, cards[2].id], locked: true }));
+    expect(screen.getByTestId('discard-all-button')).toBeDisabled();
+    expect(screen.getAllByTestId('my-card')[2]).toHaveAttribute('data-lifted', 'true');
+    expect(screen.getByRole('button', { name: '스페이드 7 고르기' })).toHaveAttribute('aria-disabled', 'true');
   });
 
-  it('R36 짝이 아닌 두 장이면 짧은 안내, R37 뽑은 짝은 은은하게 빛난다', () => {
+  it('R36 다른 숫자를 고르면 짧은 안내, R37 뽑은 짝은 은은하게 빛난다', () => {
     const cards = [card('HEARTS', 'SEVEN'), JOKER, card('SPADES', 'SEVEN')];
-    const picker = { selectedIds: [], glowIds: [cards[0].id, cards[2].id], onToggle: vi.fn(), label: '짝 버리기', ready: true, hint: '같은 숫자 두 장을 골라 주세요', locked: false, onDiscard: vi.fn() };
-    render(<MyHand cards={cards} liftIndex={null} layout="pc" sizes={sizes} zoneId={1} canShuffle={false} shuffleLocked={false} onShuffle={vi.fn()} picker={picker} />);
+    const picker = { selectedIds: [], glowIds: [cards[0].id, cards[2].id], pendingIds: [], onPick: vi.fn(), hint: '같은 숫자 두 장을 고르세요', locked: false, onDiscardAll: vi.fn() };
+    const { rerender } = render(<MyHand cards={cards} liftIndex={null} layout="pc" sizes={sizes} zoneId={1} canShuffle={false} shuffleLocked={false} onShuffle={vi.fn()} picker={picker} />);
 
-    expect(screen.getByTestId('discard-hint')).toHaveTextContent('같은 숫자 두 장을 골라 주세요');
-    expect(screen.getByTestId('discard-button')).toHaveTextContent('짝 버리기');
+    expect(screen.getByTestId('discard-hint')).toHaveTextContent('같은 숫자 두 장을 고르세요');
     expect(screen.getAllByTestId('my-card').map((one) => one.getAttribute('data-glow'))).toEqual(['true', null, 'true']);
+
+    rerender(<MyHand cards={cards} liftIndex={null} layout="landscape" sizes={sizes} zoneId={1} canShuffle shuffleLocked={false} onShuffle={vi.fn()} picker={picker} />);
+    expect(screen.getByTestId('shuffle-slot')).toContainElement(screen.getByTestId('discard-all-button'));
   });
 
   it('고를 수 없으면 카드는 버튼이 아니고 버리기 버튼도 없다', () => {
     render(<MyHand cards={[JOKER]} liftIndex={null} layout="pc" sizes={sizes} zoneId={1} canShuffle={false} shuffleLocked={false} onShuffle={vi.fn()} />);
 
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('discard-button')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('discard-all-button')).not.toBeInTheDocument();
   });
 });

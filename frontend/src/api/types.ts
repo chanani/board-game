@@ -39,7 +39,7 @@ export type RoomSummary = {
 
 export type GameActionType = 'FLIP' | 'DRAW_DECK' | 'DRAW_DISCARD' | 'SWAP' | 'DISCARD' | 'PEEK' | 'CANCEL_DRAW';
 export type UnoActionType = 'PLAY' | 'DRAW' | 'KEEP' | 'CHOOSE_COLOR' | 'CHALLENGE' | 'ACCEPT' | 'CALL_UNO' | 'CATCH_UNO';
-export type OldMaidActionType = 'SHUFFLE' | 'PEEK';
+export type OldMaidActionType = 'SHUFFLE' | 'PEEK' | 'DISCARD_ALL';
 export type GameAction = {
   type: GameActionType | UnoActionType | OldMaidActionType;
   column?: number;

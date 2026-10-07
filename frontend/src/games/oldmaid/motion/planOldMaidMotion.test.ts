@@ -117,4 +117,18 @@ describe('planOldMaidMotion', () => {
     expect(plan.flights.map((flight) => flight.from)).toEqual(['hand:1', 'hand:1', 'hand:2', 'hand:2', 'hand:3', 'hand:3']);
     expect(plan.sounds).toEqual([{ name: 'place', delay: 0 }]);
   });
+
+  it('R39 자동으로 버리기로 내 짝 여럿이 한 번에 버려지면 내 손패에서 차례로 날아가고, 3쌍 이상이면 겹쳐 소리는 한 번', () => {
+    const pair = (seq: number, rank: 'TWO' | 'NINE' | 'KING' | 'ACE') => oldMaidEvent(seq, 'PAIR', { actorId: 1, cards: [card('SPADES', rank), card('HEARTS', rank)] });
+
+    const two = planOldMaidMotion(base, oldMaidView({ events: [pair(4, 'TWO'), pair(5, 'NINE')] }), 1);
+    expect(two.flights.map((flight) => flight.delay)).toEqual([0, PAIR_GAP_MS, PAIR_MS + PAIR_GAP_MS, PAIR_MS + 2 * PAIR_GAP_MS]);
+    expect(two.flights.every((flight) => flight.from === 'hand:1' && flight.to === 'discard' && flight.card !== null)).toBe(true);
+    expect(two.sounds).toEqual([{ name: 'place', delay: 0 }, { name: 'place', delay: PAIR_MS + PAIR_GAP_MS }]);
+
+    const four = planOldMaidMotion(base, oldMaidView({ events: [pair(4, 'TWO'), pair(5, 'NINE'), pair(6, 'KING'), pair(7, 'ACE')] }), 1);
+    expect(four.flights).toHaveLength(8);
+    expect(four.flights[6].delay).toBe(3 * FAST_PAIR_STEP_MS);
+    expect(four.sounds).toEqual([{ name: 'place', delay: 0 }]);
+  });
 });

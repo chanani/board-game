@@ -26,6 +26,9 @@ describe('도둑잡기 규칙', () => {
     await userEvent.click(screen.getByRole('button', { name: '3번째 설명' }));
     expect(await screen.findAllByRole('img', { name: '카드 뒷면' })).toHaveLength(3);
     expect(screen.getByText(/처음 30초 동안 모두 함께 내 손의 같은 숫자 두 장을 골라 버려요/)).toBeInTheDocument();
+    expect(screen.getByText(/자동으로 버리기/)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: '5번째 설명' }));
+    expect(await screen.findByText(/같은 숫자 두 장을 차례로 눌러 바로 버려요/)).toBeInTheDocument();
   });
 
   it('모듈 등록 값', () => {

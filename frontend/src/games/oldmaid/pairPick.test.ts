@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { discardChoice, firstPair, isPair, keepInHand, toggleSelection } from './pairPick';
+import { drawnPairIds, firstPair, isPair, keepInHand, NOT_A_PAIR_HINT, pickCard } from './pairPick';
 import { card, JOKER } from './oldMaidFixtures';
 
 const S7 = card('SPADES', 'SEVEN');
@@ -14,29 +14,27 @@ describe('pairPick', () => {
     expect(isPair(S7, S7)).toBe(false);
   });
 
-  it('최대 두 장: 다시 누르면 풀고, 세 번째를 누르면 먼저 고른 카드를 놓는다', () => {
-    expect(toggleSelection([], 1)).toEqual([1]);
-    expect(toggleSelection([1], 1)).toEqual([]);
-    expect(toggleSelection([1, 2], 3)).toEqual([2, 3]);
+  it('누르기: 첫 장은 고르고 다시 누르면 풀며, 같은 숫자 두 번째 장은 두 장을 바로 보낸다', () => {
+    const hand = [S7, D2, H7];
+
+    expect(pickCard(hand, [], S7.id)).toEqual({ ids: [S7.id], send: null, hint: null });
+    expect(pickCard(hand, [S7.id], S7.id)).toEqual({ ids: [], send: null, hint: null });
+    expect(pickCard(hand, [S7.id], H7.id)).toEqual({ ids: [], send: [S7.id, H7.id], hint: null });
     expect(keepInHand([S7.id, 99], [S7, H7])).toEqual([S7.id]);
   });
 
-  it('처음 버리기 단계: 고른 두 장이 짝일 때만 버리기가 켜지고, 짝이 아니면 안내', () => {
-    const game = { stage: 'OPENING_DISCARD' as const, canDiscard: true, hand: [S7, D2, H7] };
-
-    expect(discardChoice(game, [])).toEqual({ ids: null, hint: null, glowIds: [] });
-    expect(discardChoice(game, [S7.id])).toEqual({ ids: null, hint: null, glowIds: [] });
-    expect(discardChoice(game, [H7.id, S7.id])).toEqual({ ids: [H7.id, S7.id], hint: null, glowIds: [] });
-    expect(discardChoice(game, [S7.id, D2.id])).toEqual({ ids: null, hint: '같은 숫자 두 장을 골라 주세요', glowIds: [] });
-    expect(discardChoice({ ...game, canDiscard: false }, [H7.id, S7.id]).ids).toBeNull();
+  it('누르기: 두 번째 장이 다른 숫자(조커 포함)면 보내지 않고 새로 누른 카드만 고른 채 안내', () => {
+    expect(NOT_A_PAIR_HINT).toBe('같은 숫자 두 장을 고르세요');
+    expect(pickCard([S7, D2, H7], [S7.id], D2.id)).toEqual({ ids: [D2.id], send: null, hint: NOT_A_PAIR_HINT });
+    expect(pickCard([S7, JOKER], [JOKER.id], S7.id)).toEqual({ ids: [S7.id], send: null, hint: NOT_A_PAIR_HINT });
   });
 
-  it('짝 버리기 단계: 뽑은 짝을 빛내고, 덜 골랐으면 그 짝을 버린다', () => {
+  it('R37 짝 버리기 단계에서만 뽑은 짝을 빛낸다', () => {
     const game = { stage: 'DISCARD' as const, canDiscard: true, hand: [D2, H7, JOKER, S7] };
 
     expect(firstPair(game.hand)).toEqual([H7, S7]);
-    expect(discardChoice(game, [])).toEqual({ ids: [H7.id, S7.id], hint: null, glowIds: [H7.id, S7.id] });
-    expect(discardChoice(game, [S7.id, H7.id]).ids).toEqual([S7.id, H7.id]);
-    expect(discardChoice(game, [S7.id, D2.id])).toMatchObject({ ids: null, hint: '같은 숫자 두 장을 골라 주세요' });
+    expect(drawnPairIds(game)).toEqual([H7.id, S7.id]);
+    expect(drawnPairIds({ ...game, stage: 'OPENING_DISCARD' })).toEqual([]);
+    expect(drawnPairIds({ ...game, canDiscard: false })).toEqual([]);
   });
 });

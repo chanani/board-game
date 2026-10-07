@@ -136,27 +136,52 @@ describe('OldMaidTable 고르기', () => {
       hand: [S7, D2, H7], deadline: 30000, serverNow: 0,
     };
 
-    it('R36 처음 버리기: 두 장을 골라 같은 숫자면 버리기가 켜지고 DISCARD를 보낸다(짝이 아니면 안내)', async () => {
+    it('R36 처음 버리기: 같은 숫자 두 장째를 누르면 버튼 없이 바로 DISCARD를 보낸다', async () => {
       const send = vi.fn();
       render(table(opening, { send }));
-      const button = screen.getByTestId('discard-button');
-      expect(button).toBeDisabled();
       expect(screen.getByTestId('my-turn-ribbon')).toHaveTextContent('같은 숫자 두 장을 골라 버리세요');
 
       await userEvent.click(screen.getByRole('button', { name: '스페이드 7 고르기' }));
-      await userEvent.click(screen.getByRole('button', { name: '다이아몬드 2 고르기' }));
-      expect(button).toBeDisabled();
-      expect(screen.getByTestId('discard-hint')).toHaveTextContent('같은 숫자 두 장을 골라 주세요');
-
-      await userEvent.click(screen.getByRole('button', { name: '다이아몬드 2 고름' }));
+      expect(send).not.toHaveBeenCalled();
       await userEvent.click(screen.getByRole('button', { name: '하트 7 고르기' }));
-      await userEvent.click(button);
 
+      expect(send).toHaveBeenCalledTimes(1);
       expect(send).toHaveBeenCalledWith({ type: 'DISCARD', cardIds: [S7.id, H7.id] });
       expect(screen.getAllByTestId('my-card').some((one) => one.hasAttribute('data-selected'))).toBe(false);
+      expect(screen.queryByTestId('discard-hint')).not.toBeInTheDocument();
     });
 
-    it('R36 보낸 뒤 손패가 바뀌거나 오류가 오기 전까지 다시 보내지 않는다', async () => {
+    it('R36 두 번째 장이 다른 숫자면 보내지 않고 새로 누른 카드만 고른 채 잠깐 안내한다', async () => {
+      const send = vi.fn();
+      render(table(opening, { send }));
+
+      await userEvent.click(screen.getByRole('button', { name: '스페이드 7 고르기' }));
+      await userEvent.click(screen.getByRole('button', { name: '다이아몬드 2 고르기' }));
+
+      expect(send).not.toHaveBeenCalled();
+      expect(screen.getByTestId('discard-hint')).toHaveTextContent('같은 숫자 두 장을 고르세요');
+      expect(screen.getAllByTestId('my-card').map((one) => one.getAttribute('data-selected'))).toEqual([null, 'true', null]);
+      await waitFor(() => expect(screen.queryByTestId('discard-hint')).not.toBeInTheDocument(), { timeout: 3000 });
+    });
+
+    it('R36 키보드(Enter·Space)와 터치로도 두 장을 고르면 바로 버린다', async () => {
+      const send = vi.fn();
+      const { unmount } = render(table(opening, { send }));
+      screen.getByRole('button', { name: '스페이드 7 고르기' }).focus();
+      await userEvent.keyboard('{Enter}');
+      screen.getByRole('button', { name: '하트 7 고르기' }).focus();
+      await userEvent.keyboard(' ');
+      expect(send).toHaveBeenLastCalledWith({ type: 'DISCARD', cardIds: [S7.id, H7.id] });
+      unmount();
+
+      render(table(opening, { send }));
+      await userEvent.pointer({ keys: '[TouchA]', target: screen.getByRole('button', { name: '하트 7 고르기' }) });
+      await userEvent.pointer({ keys: '[TouchA]', target: screen.getByRole('button', { name: '스페이드 7 고르기' }) });
+      expect(send).toHaveBeenLastCalledWith({ type: 'DISCARD', cardIds: [H7.id, S7.id] });
+      expect(send).toHaveBeenCalledTimes(2);
+    });
+
+    it('R36 보낸 짝은 손패가 바뀌거나 오류가 오기 전까지 다시 보내지 않는다', async () => {
       const send = vi.fn();
       const at = (overrides: Partial<OldMaidView>, errorSeq = 0) => (
         <OldMaidTable view={oldMaidSession({ ...opening, ...overrides })} room={room} meId={1} log={[]} receivedAt={0} now={0} errorSeq={errorSeq}
@@ -168,14 +193,27 @@ describe('OldMaidTable 고르기', () => {
       };
       const { rerender } = render(at({}));
       await pickPair();
-      await userEvent.click(screen.getByTestId('discard-button'));
+      expect(screen.getAllByTestId('my-card').map((one) => one.getAttribute('data-lifted'))).toEqual(['true', null, 'true']);
       await pickPair();
-      expect(screen.getByTestId('discard-button')).toBeDisabled();
+      expect(send).toHaveBeenCalledTimes(1);
 
       rerender(at({}, 1));
-      expect(screen.getByTestId('discard-button')).toBeEnabled();
-      await userEvent.click(screen.getByTestId('discard-button'));
+      await pickPair();
       expect(send).toHaveBeenCalledTimes(2);
+    });
+
+    it('R39 자동으로 버리기를 누르면 DISCARD_ALL을 한 번 보내고 화면이 바뀌기 전까지 잠근다', async () => {
+      const send = vi.fn();
+      render(table(opening, { send }));
+      const button = screen.getByRole('button', { name: '자동으로 버리기' });
+
+      await userEvent.click(button);
+      await userEvent.click(button);
+
+      expect(send).toHaveBeenCalledTimes(1);
+      expect(send).toHaveBeenCalledWith({ type: 'DISCARD_ALL' });
+      expect(button).toBeDisabled();
+      expect(button).toHaveAttribute('data-no-click-sound');
     });
 
     it('R36 처음 버리기에 내 짝이 없으면 기다린다는 리본, 상대 자리에는 버리는 중·다 버림', () => {
@@ -186,7 +224,8 @@ describe('OldMaidTable 고르기', () => {
       ];
       render(table({ ...opening, canDiscard: false, hand: [D2], players }));
 
-      expect(screen.queryByTestId('discard-button')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('discard-all-button')).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: '하트 7 고르기' })).not.toBeInTheDocument();
       expect(screen.getByTestId('my-turn-ribbon')).toHaveTextContent('다 버렸어요 · 다른 사람을 기다리는 중');
       expect(screen.getByTestId('my-turn-ribbon')).not.toHaveTextContent('초');
       expect(screen.getByRole('group', { name: '밥, 카드 9장, 버리는 중' })).toBeInTheDocument();
@@ -206,7 +245,7 @@ describe('OldMaidTable 고르기', () => {
       expect(screen.getByRole('group', { name: '캐롤, 카드 4장, 기권' })).toBeInTheDocument();
     });
 
-    it('R37 짝 버리기 단계: 뽑은 짝이 빛나고 짝 버리기를 누르면 그 두 장을 보낸다. 가운데 부채는 누를 수 없다', async () => {
+    it('R37·R39 짝 버리기 단계: 뽑은 짝이 빛나고 자동으로 버리기를 누르면 DISCARD_ALL을 보낸다. 가운데 부채는 누를 수 없다', async () => {
       const send = vi.fn();
       render(table({ stage: 'DISCARD', canDiscard: true, hand: [H7, D2, S7], deadline: 15000, serverNow: 0 }, { send }));
 
@@ -214,9 +253,9 @@ describe('OldMaidTable 고르기', () => {
       expect(screen.getAllByTestId('my-card').map((one) => one.getAttribute('data-glow'))).toEqual(['true', null, 'true']);
       expect(screen.queryByRole('button', { name: /번째 카드$/ })).not.toBeInTheDocument();
 
-      await userEvent.click(screen.getByRole('button', { name: '짝 버리기' }));
+      await userEvent.click(screen.getByRole('button', { name: '자동으로 버리기' }));
 
-      expect(send).toHaveBeenCalledWith({ type: 'DISCARD', cardIds: [H7.id, S7.id] });
+      expect(send).toHaveBeenCalledWith({ type: 'DISCARD_ALL' });
     });
 
     it('R37 짝 버리기 단계에 상대의 마지막 카드를 뽑았으면 가운데에 빈 부채를 그리지 않는다', () => {
@@ -237,7 +276,7 @@ describe('OldMaidTable 고르기', () => {
       render(table({ stage: 'DISCARD', currentPlayerId: 2, targetId: 3, canDiscard: false }));
 
       expect(screen.getByRole('group', { name: '밥, 카드 3장, 차례, 짝 버리는 중' })).toBeInTheDocument();
-      expect(screen.queryByTestId('discard-button')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('discard-all-button')).not.toBeInTheDocument();
       expect(screen.queryByTestId('target-tag')).not.toBeInTheDocument();
     });
 

@@ -26,19 +26,18 @@ type Props = {
 };
 
 export type HandPicker = {
+  /** 골라 둔 카드(0~1장). 같은 숫자 두 장째를 누르면 바로 버린다. */
   selectedIds: number[];
   /** 은은하게 빛낼 카드(짝 버리기 단계의 뽑은 짝). */
   glowIds: number[];
-  onToggle: (id: number) => void;
-  /** 버리기 버튼 문구. */
-  label: string;
-  /** 버리기 버튼을 누를 수 있는지(고른 두 장이 짝이거나 뽑은 짝이 있음). */
-  ready: boolean;
-  /** 두 장을 골랐는데 짝이 아닐 때 짧은 안내. */
+  /** 보낸 짝의 카드(화면이 바뀌기 전까지 누를 수 없다). */
+  pendingIds: number[];
+  onPick: (id: number) => void;
+  /** 두 번째 카드가 다른 숫자일 때 잠깐 보이는 안내. */
   hint: string | null;
-  /** 보낸 뒤 화면이 바뀌거나 오류가 오기 전까지 잠금. */
+  /** 자동으로 버리기를 보낸 뒤 화면이 바뀌거나 오류가 오기 전까지 잠금. */
   locked: boolean;
-  onDiscard: () => void;
+  onDiscardAll: () => void;
 };
 
 const BOTTOM_GAP = 4;
@@ -67,14 +66,17 @@ export function MyHand({ cards, liftIndex, layout, sizes, zoneId, canShuffle, sh
     </button>
   ) : null;
   const beside = layout === 'landscape';
-  // 버리기 버튼은 섞기와 같은 칸에 둔다(새 줄을 만들어 배치 높이를 늘리지 않는다). 짝이 날아가는 소리(place)가 따로 나므로 클릭 소리는 끈다.
+  // 자동으로 버리기 버튼은 섞기와 같은 칸에 둔다(새 줄을 만들어 배치 높이를 늘리지 않는다). 짝이 날아가는 소리(place)가 따로 나므로 클릭 소리는 끈다.
   const discard = picker ? (
     <>
-      {picker.hint ? <span data-testid="discard-hint" role="status" className="felt-ink min-w-0 truncate text-[11px] font-bold">{picker.hint}</span> : null}
-      <button type="button" data-no-click-sound data-testid="discard-button" disabled={!picker.ready || picker.locked} onClick={picker.onDiscard}
-        className={`press-3d inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-(--accent) py-1 font-extrabold text-(--accent-text) shadow-[0_3px_0_var(--accent-shadow)] disabled:opacity-50 ${beside ? 'px-2 text-[11px]' : 'px-3 text-xs'}`}>
-        {/* 눕힌 화면의 좁은 옆 칸(4.5rem)에서는 아이콘을 빼 한 줄에 들어가게 한다. */}
-        {beside ? null : <PairIcon className="h-3.5 w-3.5" />}{picker.label}
+      {picker.hint ? (
+        <span data-testid="discard-hint" role="status"
+          className={`felt-ink min-w-0 text-[11px] font-bold ${beside ? 'break-keep text-right leading-tight' : 'truncate'}`}>{picker.hint}</span>
+      ) : null}
+      <button type="button" data-no-click-sound data-testid="discard-all-button" disabled={picker.locked} onClick={picker.onDiscardAll}
+        className={`press-3d inline-flex shrink-0 items-center gap-1 rounded-full bg-(--accent) py-1 font-extrabold text-(--accent-text) shadow-[0_3px_0_var(--accent-shadow)] disabled:opacity-50 ${beside ? 'break-keep px-2 text-center text-[11px] leading-tight' : 'whitespace-nowrap px-3 text-xs'}`}>
+        {/* 눕힌 화면의 좁은 옆 칸(4.5rem)에서는 아이콘을 빼고 두 줄로 접는다. */}
+        {beside ? null : <PairIcon className="h-3.5 w-3.5" />}자동으로 버리기
       </button>
     </>
   ) : null;
@@ -96,7 +98,9 @@ export function MyHand({ cards, liftIndex, layout, sizes, zoneId, canShuffle, sh
         <div data-testid="my-hand-row" className="relative" style={{ width: innerWidth, height: rowHeight, margin: scroll ? undefined : '0 auto' }}>
           {cards.map((card, index) => {
             const selected = picker?.selectedIds.includes(card.id) ?? false;
-            const lifted = index === liftIndex || selected;
+            const pending = picker?.pendingIds.includes(card.id) ?? false;
+            // 보낸 짝은 날아갈 때까지 들린 채로 둔다.
+            const lifted = index === liftIndex || selected || pending;
             const glowing = picker?.glowIds.includes(card.id) ?? false;
             const angle = angles[index];
             const face = <PlayingCardFace card={card} width={sizes.hand} />;
@@ -109,10 +113,11 @@ export function MyHand({ cards, liftIndex, layout, sizes, zoneId, canShuffle, sh
                 <div className={`rounded-lg transition-transform duration-150 motion-reduce:transition-none ${fresh.has(card.id) ? 'ring-4 ring-yellow-300' : ''} ${lifted ? 'ring-4 ring-(--accent)' : ''} ${glowing && !selected ? 'shadow-[0_0_14px_5px_rgb(253_230_138/0.75)]' : ''}`}
                   style={{ transform: `translateY(${fanDrop(sizes.hand, angle, radius) - (lifted ? lift : 0)}px) rotate(${angle}deg)` }}>
                   {picker ? (
-                    // 고를 수 있으면 카드가 버튼이다(터치·마우스·키보드 Enter/Space). 들림이 고른 표시다.
+                    // 고를 수 있으면 카드가 버튼이다(터치·마우스·키보드 Enter/Space). 들림이 고른 표시, 같은 숫자 두 장째를 누르면 바로 버린다.
+                    // 보낸 짝은 disabled 대신 aria-disabled로 막는다(키보드 초점을 잃지 않게, 누름은 부르는 쪽이 무시한다).
                     <button type="button" data-no-click-sound aria-pressed={selected} aria-label={`${cardName(card)} ${selected ? '고름' : '고르기'}`}
-                      onClick={() => picker.onToggle(card.id)}
-                      className="block cursor-pointer rounded-lg focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-(--accent)">{face}</button>
+                      aria-disabled={pending || undefined} onClick={() => picker.onPick(card.id)}
+                      className="block cursor-pointer rounded-lg aria-disabled:cursor-default focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-(--accent)">{face}</button>
                   ) : face}
                 </div>
               </motion.div>

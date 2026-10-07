@@ -92,6 +92,7 @@
 - **R36 처음 버리기 단계(`OPENING_DISCARD`)**: 나눈 뒤 서버는 짝을 버리지 않는다. 모든 참가자가 동시에 자기 손에서 같은 숫자 두 장을 골라 `DISCARD`(`cardIds` 2개)로 버린다. 같은 숫자가 아니면(조커 포함) `OLD_MAID_NOT_A_PAIR`, 내 손에 없는 카드면 `OLD_MAID_CARD_NOT_IN_HAND`, 서로 다른 두 장이 아니면 `INVALID_INPUT`. 이 단계에는 차례가 없어(`currentPlayerId`·`targetId`·`peek` = null, `turnSeq` = 0) 뽑기는 `INVALID_PHASE`, 신호는 버리고, 섞기는 카드를 가진 누구나 할 수 있다. 아무 손에도 짝이 없으면(나눈 직후 포함) 곧바로, 또는 기권으로 카드 가진 사람이 2명보다 적어지면 단계가 끝난다: 빈 손 등수(R8) → 첫 차례(R9, `START` 이벤트). 단계 중 기권은 R25 그대로(받는 사람 손패의 짝을 서버가 모두 버린다).
 - **R37 짝 버리기 단계(`DISCARD`)**: 뽑은 카드로 짝이 되면 차례가 넘어가지 않고 같은 차례(`turnSeq` 그대로)에서 뽑은 사람에게 짝 버리기 단계가 생긴다(마감 15초 새로). 뽑은 사람이 그 짝을 `DISCARD`로 버리면 끝냄(R14)을 본 뒤 차례가 넘어간다(R15). 이 단계에 다시 `DRAW`하면 `INVALID_PHASE`, 남의 `DISCARD`는 `NOT_YOUR_TURN`, 뽑기 단계에서 뽑는 사람의 `DISCARD`는 `INVALID_PHASE`. 처음 버리기에서 짝을 다 버렸으므로 이 단계의 짝은 뽑은 카드와 그 짝뿐이다. 이 단계에 상대가 나가면 상대만 바뀌고 단계·마감은 그대로, 뽑은 사람이 기권 손패를 넘겨받으며 그 짝이 버려지면 차례가 넘어간다.
 - **R38 마감과 자동 버림**: 처음 버리기 단계는 30초(이 단계 전용), 짝 버리기 단계는 15초. 마감이 지나면 서버가 처음 버리기면 짝이 남은 모두의 짝을(첫 사람부터), 짝 버리기면 뽑은 사람의 짝을 R6 방식으로 대신 버린다. 대신 행동한 사람들이 `lastAutoActorIds`, 이벤트에 `auto: true`.
+- **R39 자동으로 버리기(`DISCARD_ALL`)**: 지금 짝을 버릴 수 있는 사람(`canDiscard`)은 `DISCARD_ALL`(칸 없음) 한 번으로 내 짝을 모두 버린다. 처음 버리기 단계면 내 손의 짝 모두, 짝 버리기 단계면 뽑은 짝이다. 버리는 방식은 R6(손패 순서로 앞에서부터)으로 R38 자동 버림과 같지만 그 사람에게만, 사람의 행동이라 이벤트는 `auto: false`이고 마감은 `TurnStep`이 바뀔 때만 다시 잰다. 뒤따름은 `DISCARD`와 같다: 처음 버리기면 단계가 끝났는지(R36), 짝 버리기면 끝냄(R14) → 차례 넘김(R15). 처음 버리기 단계에 내 손에 짝이 없으면(카드가 없는 사람 포함) `INVALID_PHASE`, 짝 버리기 단계의 남은 `NOT_YOUR_TURN`, 뽑기 단계의 뽑는 사람은 `INVALID_PHASE`(R37과 같은 검사). (D22)
 
 ## 3. 상태 기계
 
@@ -142,6 +143,7 @@ public record GameAction(String type, Integer column, Integer row, Integer cardI
 | `/app/rooms/{code}/actions` | `DRAW` | `index`(필수) | 상대 손패 `index`번 카드 뽑기 |
 | `/app/rooms/{code}/actions` | `SHUFFLE` | - | 내 손패 섞기 |
 | `/app/rooms/{code}/actions` | `DISCARD` | `cardIds`(서로 다른 두 장) | 짝 버리기(R36·R37) |
+| `/app/rooms/{code}/actions` | `DISCARD_ALL` | - | 지금 버릴 수 있는 내 짝 모두 버리기(R39) |
 | `/app/rooms/{code}/signals` | `PEEK` | `index`(없으면 `null` = 가리키지 않음) | 고르는 카드 신호 |
 
 - 모르는 type, `DRAW`의 `index` 없음은 `INVALID_INPUT`. `DRAW`의 음수 `index`는 `OLD_MAID_INVALID_SLOT`.
@@ -187,12 +189,12 @@ public record GameAction(String type, Integer column, Integer row, Integer cardI
 | `OldMaidEventType`, `OldMaidEndReason`, `OldMaidEvent`, `EventBatch`, `OldMaidEvents` | 이벤트(전역 seq) |
 | `OldMaidResult` | 끝난 이유 + `Ranking` |
 | `OldMaidGame` | 게임: 행동 검사 순서, 끝 판정(R16·R29) |
-| `OldMaidCommand`(enum `DRAW`, `SHUFFLE`), `OldMaidSignal`(enum `PEEK`) | type → 게임 메서드 |
+| `OldMaidCommand`(enum `DRAW`, `DISCARD`, `DISCARD_ALL`, `SHUFFLE`), `OldMaidSignal`(enum `PEEK`) | type → 게임 메서드 |
 | `OldMaidMatch`, `OldMaidTimer`, `OldMaidViewContext`, `OldMaidViewAssembler` | 처음 참가자·마감·화면 조립 |
 | `OldMaidSession implements GameSession`, `OldMaidSessionFactory`(`@Component`), `OldMaidConfig` | 세션·등록 |
 | `view/*` | 4.7의 JSON record |
 
-- 검사 순서: 게임 끝남(`GAME_ALREADY_OVER`) → 참가자 아님·기권함(`NOT_A_PLAYER`) → `DRAW`: 차례 아님(`NOT_YOUR_TURN`) → 자리(`OLD_MAID_INVALID_SLOT`); `SHUFFLE`: 끝냈거나 내 차례(`OLD_MAID_SHUFFLE_NOT_ALLOWED`) → 쿨다운(`OLD_MAID_SHUFFLE_TOO_FAST`).
+- 검사 순서: 게임 끝남(`GAME_ALREADY_OVER`) → 참가자 아님·기권함(`NOT_A_PLAYER`) → `DRAW`: 차례 아님(`NOT_YOUR_TURN`) → 자리(`OLD_MAID_INVALID_SLOT`); `SHUFFLE`: 끝냈거나 내 차례(`OLD_MAID_SHUFFLE_NOT_ALLOWED`) → 쿨다운(`OLD_MAID_SHUFFLE_TOO_FAST`); `DISCARD_ALL`: 처음 버리기면 내 짝 없음(`INVALID_PHASE`), 아니면 차례 아님(`NOT_YOUR_TURN`) → 단계 아님(`INVALID_PHASE`).
 
 ### 4.6 `OldMaidSession` 계약
 
@@ -266,7 +268,7 @@ public record GameAction(String type, Integer column, Integer row, Integer cardI
 | `DEAL` | 나눔, 처음 버리기 단계 시작 | `actorId`(처음 나눠 받은 사람) |
 | `START` | 첫 차례 시작(처음 버리기 단계 끝) | `actorId`(처음 뽑는 사람), `targetId`(그 상대) |
 | `DRAW` | 1장 뽑음 | `actorId`(뽑은 사람), `targetId`(뺏긴 사람), `count` = 1 |
-| `PAIR` | 짝을 버림(사람의 `DISCARD`, 기권 손패 넘겨받기, 시간 초과 자동 버림) | `actorId`, `cards`(2장) |
+| `PAIR` | 짝을 버림(사람의 `DISCARD`·`DISCARD_ALL`(짝마다 하나), 기권 손패 넘겨받기, 시간 초과 자동 버림) | `actorId`, `cards`(2장) |
 | `FINISH` | 손패를 비워 등수를 받음 | `actorId`, `count`(등수) |
 | `SHUFFLE` | 손패를 섞음 | `actorId` |
 | `FORFEIT` | 기권, 손패를 넘김 | `actorId`(나간 사람), `targetId`(받는 사람), `count`(넘긴 장수) |
@@ -298,7 +300,7 @@ public record GameAction(String type, Integer column, Integer row, Integer cardI
 
 | 파일 | 바꿀 점 |
 |---|---|
-| `api/types.ts` | `GameType`에 `'OLD_MAID'`. `GameAction`에 `index?: number \| null`, type에 `'SHUFFLE' \| 'PEEK'`. 도둑잡기 타입(6.1). `SessionView`에 `OldMaidSessionView`. `GameSignal = OldMaidPeekSignal` |
+| `api/types.ts` | `GameType`에 `'OLD_MAID'`. `GameAction`에 `index?: number \| null`, type에 `'SHUFFLE' \| 'PEEK' \| 'DISCARD_ALL'`. 도둑잡기 타입(6.1). `SessionView`에 `OldMaidSessionView`. `GameSignal = OldMaidPeekSignal` |
 | `room/useRoomChannel.ts` | `/user/queue/signal` 구독 → `signal` 상태, `sendSignal(action)`(`/app/rooms/{code}/signals`, 끊겨 있으면 조용히 버림). `QUIET_ERROR_CODES`에 `OLD_MAID_SHUFFLE_TOO_FAST` |
 | `games/gameModule.ts` | `TableProps`에 `signal?: GameSignal \| null`, `sendSignal?: (action) => void`. `GameModule`에 `roundScoreText?: (score: number) => string` |
 | `pages/RoomPage.tsx` | `signal`, `sendSignal`를 테이블에 넘긴다 |
@@ -371,11 +373,12 @@ public record GameAction(String type, Integer column, Integer row, Integer cardI
 
 ### 6.5.1 짝 고르기(R36·R37)
 
-- 내가 버릴 수 있으면(`canDiscard`) 내 손패 카드가 버튼이 된다(터치·마우스·키보드 Enter/Space). 누르면 고르고(최대 2장, 세 번째를 누르면 먼저 고른 카드를 놓는다) 고른 카드는 들어 올린다. 다시 누르면 푼다.
-- 섞기 칸(손패 위 오른쪽, 눕힌 화면은 옆 칸)에 "버리기"(짝 버리기 단계는 "짝 버리기") 버튼. 고른 두 장이 같은 숫자일 때 켜지고, 두 장이 짝이 아니면 꺼지고 "같은 숫자 두 장을 골라 주세요". 짝 버리기 단계에서는 뽑은 짝이 은은하게 빛나고, 덜 골랐으면 버튼이 그 짝을 보낸다. 새 줄을 만들지 않아 배치 높이는 그대로다.
-- 보낸 뒤 내 손패·단계가 바뀌거나 오류가 오기 전까지 잠근다. 고른 카드는 차례·단계가 바뀌면 처음부터. 버튼은 `data-no-click-sound`(짝이 날아가는 `place` 소리가 따로 난다).
+- 내가 버릴 수 있으면(`canDiscard`) 내 손패 카드가 버튼이 된다(터치·마우스·키보드 Enter/Space). 누르면 고르고 들어 올린다. 다시 누르면 푼다. 한 장을 골라 둔 채 같은 숫자 카드를 누르면 버튼 없이 그 두 장을 바로 `DISCARD`로 보낸다(누른 순서). 다른 숫자(조커 포함)면 보내지 않고 새로 누른 카드만 고른 채 "같은 숫자 두 장을 고르세요"를 2초 띄운다. 짝 버리기 단계에서는 뽑은 짝이 은은하게 빛난다.
+- 섞기 칸(손패 위 오른쪽, 눕힌 화면은 옆 칸에서 두 줄로 접어)에 "자동으로 버리기" 버튼(R39, `DISCARD_ALL`). `canDiscard`일 때만 보인다. 새 줄을 만들지 않아 배치 높이는 그대로다.
+- 보낸 짝의 카드는 날아갈 때까지 들린 채 다시 누를 수 없고(`aria-disabled`, 키보드 초점은 그대로), 자동으로 버리기는 보낸 뒤 버튼을 잠근다. 둘 다 내 손패·단계가 바뀌거나 오류가 오기 전까지다. 고른 카드는 차례·단계가 바뀌면 처음부터. 카드와 버튼은 `data-no-click-sound`(짝이 날아가는 `place` 소리가 따로 난다).
+- 마감 경합: 보낸 `DISCARD`·`DISCARD_ALL`이 `NOT_YOUR_TURN`·`INVALID_PHASE`·`OLD_MAID_CARD_NOT_IN_HAND`로 거절됐는데 화면이 이미 지나갔으면(단계·차례가 바뀜, `DISCARD`는 고른 카드가 손에 없음, `DISCARD_ALL`은 `canDiscard`가 false) 알리지 않는다(`isStaleRejection`).
 - 리본: "같은 숫자 두 장을 골라 버리세요 · N초", 내 짝이 없으면 "다 버렸어요 · 다른 사람을 기다리는 중", 짝 버리기 단계 "짝을 버리세요 · N초". 상대 자리: 처음 버리기 단계에 "버리는 중"/"다 버림", 짝 버리기 단계의 뽑은 사람 "짝 버리는 중"(차례 배지 대신). 가운데 부채는 뽑기 단계에서만 누를 수 있다.
-- 짝이 한 화면에 3쌍 이상 버려지면(처음 버리기 마감, 기권 넘겨받기) 짝마다 120ms 간격으로 겹쳐 날리고 `place` 소리는 한 번.
+- 짝이 한 화면에 3쌍 이상 버려지면(처음 버리기 마감, 기권 넘겨받기, 자동으로 버리기) 짝마다 120ms 간격으로 겹쳐 날리고 `place` 소리는 한 번.
 
 ### 6.6 차례 안내 문구(TurnBar)
 
@@ -395,7 +398,7 @@ public record GameAction(String type, Integer column, Integer row, Integer cardI
 ### 6.7 진행 기록 문구(`describe.ts`)
 
 - 처음 받은 화면은 `START`가 있을 때만 쓴다. 그 밖에는 `seq`가 이전 화면보다 큰 이벤트만. 새 게임이면 "새 게임을 시작해요" 다음 줄들.
-- `auto: true`인 `DRAW`는 "시간이 지나 {닉네임}님 대신 카드를 뽑았어요", `auto: true`인 `PAIR`는 사람마다 한 줄 "시간이 지나 {닉네임}님의 {랭크} 짝을(짝 {N}쌍을) 자동으로 버렸어요"로 쓴다(뒤따르는 `FINISH`·`START`는 쓴다). 처음 받은 화면은 `DEAL` 또는 `START`가 있을 때만 쓴다.
+- `auto: true`인 `DRAW`는 "시간이 지나 {닉네임}님 대신 카드를 뽑았어요", `auto: true`인 `PAIR`는 사람마다 한 줄 "시간이 지나 {닉네임}님의 {랭크} 짝을(짝 {N}쌍을) 자동으로 버렸어요"로 쓴다(뒤따르는 `FINISH`·`START`는 쓴다). 사람이 한 번에 짝 여럿을 버리면(`auto: false`인 같은 사람의 `PAIR` 2개 이상: 자동으로 버리기 R39, 기권 손패 넘겨받기) "{닉네임}님이 짝 {N}개를 버렸어요" 한 줄로 묶는다. 처음 받은 화면은 `DEAL` 또는 `START`가 있을 때만 쓴다.
 
 | 이벤트 | 기록 종류 | 문구 |
 |---|---|---|
@@ -434,9 +437,9 @@ public record GameAction(String type, Integer column, Integer row, Integer cardI
 
 1. **목표** — "같은 숫자 카드 두 장을 짝지어 버려요.", "손패를 먼저 비울수록 높은 등수예요. 조커를 마지막까지 쥔 사람이 도둑이에요." (A 두 장, 조커)
 2. **카드** — "트럼프 52장에 조커 1장을 더해 53장을 써요.", "무늬와 색은 상관없이 숫자(랭크)만 같으면 짝이에요." (하트 7, 클로버 7)
-3. **준비** — "카드를 모두 한 장씩 나눠 줘요.", "처음 30초 동안 모두 함께 내 손의 같은 숫자 두 장을 골라 버려요. 시간이 지나면 남은 짝은 자동으로 버려져요." (뒷면 3장)
+3. **준비** — "카드를 모두 한 장씩 나눠 줘요.", "처음 30초 동안 모두 함께 내 손의 같은 숫자 두 장을 골라 버려요('자동으로 버리기'로 내 짝을 한 번에 버릴 수도 있어요). 시간이 지나면 남은 짝은 자동으로 버려져요." (뒷면 3장)
 4. **내 차례** — "왼쪽 사람(다음 차례 사람)의 뒷면 카드 중 1장을 골라 가져와요.", "카드에 마우스를 올리거나 한 번 누르면 모두에게 그 카드가 살짝 들려 보여요." (뒷면 3장)
-5. **짝 버리기** — "가져온 카드가 내 카드와 짝이면 두 장을 골라(또는 '짝 버리기'로) 직접 버려요. 버려야 차례가 넘어가요.", "짝이 없으면 내 손패 어딘가에 들어가고 바로 다음 사람 차례예요." (스페이드 Q, 다이아몬드 Q)
+5. **짝 버리기** — "가져온 카드가 내 카드와 짝이면 같은 숫자 두 장을 차례로 눌러 바로 버려요(또는 '자동으로 버리기'). 버려야 차례가 넘어가요.", "짝이 없으면 내 손패 어딘가에 들어가고 바로 다음 사람 차례예요." (스페이드 Q, 다이아몬드 Q)
 6. **섞기** — "내가 뽑을 차례가 아닐 때(처음 짝을 버리는 동안에도) '섞기'로 손패 순서를 바꿀 수 있어요.", "남은 섞는 모습만 보고, 카드는 볼 수 없어요."
 7. **끝** — "손패를 다 비우면 비운 순서대로 1등, 2등…이에요.", "마지막까지 조커를 쥔 한 사람이 도둑이에요. 1등만 승리로 기록돼요." (조커)
 8. **시간과 기권** — "카드를 고를 시간과 짝을 버릴 시간은 15초예요. 지나면 무작위로 1장을 뽑고, 짝은 자동으로 버려요.", "게임 중에 나가면 손패가 다음 사람에게 넘어가 짝이 자동으로 버려지고, 나간 사람은 맨 아래 등수가 돼요."
@@ -537,3 +540,4 @@ public record GameAction(String type, Integer column, Integer row, Integer cardI
 | D19 | 처음 버리기 단계에 남에게는 장수와 "버리는 중/다 버림"(손에 짝이 남았는지)만 보인다. 짝 버리기 단계 진입(뽑은 카드가 짝이 되었다는 사실)도 모두에게 보인다 | 실제 놀이에서도 누가 아직 짝을 고르는지, 뽑은 사람이 짝을 내려놓는지는 모두가 본다. 카드 얼굴·조커 위치는 여전히 주인만 본다(버린 짝은 원래 공개). |
 | D20 | 시간 초과 자동 뽑기로 짝이 되면 짝 버리기 단계를 기다리지 않고 그 짝도 함께 버린다 | 자리를 비운 사람에게 15초를 한 번 더 주면 한 차례에 30초가 걸린다. 사람이 뽑았을 때만 직접 버리는 단계를 준다. |
 | D21 | 내 손에 없는 카드는 새 오류 `OLD_MAID_CARD_NOT_IN_HAND`(우노 `UNO_CARD_NOT_IN_HAND`와 같은 문구), 단계에 맞지 않는 행동은 기존 `INVALID_PHASE` | 오류 코드 이름이 게임을 말하도록. `INVALID_PHASE`("지금은 할 수 없는 행동입니다.")는 차례 아님(`NOT_YOUR_TURN`)과 구별된다. 처음 버리기 단계 중 기권하면 받는 사람 손패의 짝을 모두 서버가 버린다(R25 그대로, 받는 사람 자신의 짝도 함께). |
+| D22 | 두 장째를 누르면 바로 버리고, "버리기" 버튼 자리는 "자동으로 버리기"(`DISCARD_ALL`, R39)로 바꾼다. 자동으로 버리기는 화면이 `DISCARD`를 여러 번 보내지 않고 서버 행동 하나로 한다 | 짝을 고르는 데 누름이 한 번 줄고, 짝이 많은 처음 버리기에서 한 번에 끝낼 수 있다. 한 행동이라 화면 갱신·기록·마감 처리가 한 번이고, 손패 순서로 짝을 짓는 R6 방식을 서버 한 곳에서만 쓴다. 사람의 행동이라 `auto: false`이고 자동 행동 표시(`lastAutoActorIds`)도 남기지 않는다. 버릴 짝이 없을 때는 새 오류 대신 `INVALID_PHASE`(D21)로, 마감 경합은 `DISCARD`와 같은 조용한 처리로 다룬다. |

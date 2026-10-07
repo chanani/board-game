@@ -55,6 +55,20 @@ function autoPairLine(events: OldMaidEvent[], event: OldMaidEvent, nicknameOf: N
   return [{ kind: 'timeout', actorId: actor, text: `시간이 지나 ${nicknameOf(actor)}님의 ${what} 자동으로 버렸어요` }];
 }
 
+// R39 자동으로 버리기(그리고 기권 손패 넘겨받기)처럼 한 사람이 한 번에 짝 여럿을 버리면 "짝 N개를 버렸어요" 한 줄로 묶는다.
+// 한 쌍이면 늘 쓰던 "{랭크} 짝을 버렸어요".
+function humanPairLine(events: OldMaidEvent[], event: OldMaidEvent, nicknameOf: Nickname): LogDraft[] {
+  const mine = events.filter((one) => !one.auto && one.type === 'PAIR' && one.actorId === event.actorId);
+  if (mine.length < 2) {
+    return describeOldMaidEvent(event, nicknameOf);
+  }
+  if (mine[0] !== event) {
+    return [];
+  }
+  const actor = event.actorId ?? 0;
+  return [{ kind: 'pair', actorId: actor, text: `${nicknameOf(actor)}님이 짝 ${mine.length}개를 버렸어요` }];
+}
+
 function lineOf(events: OldMaidEvent[], event: OldMaidEvent, nicknameOf: Nickname): LogDraft[] {
   if (event.auto && event.type === 'DRAW') {
     const actor = event.actorId ?? 0;
@@ -62,6 +76,9 @@ function lineOf(events: OldMaidEvent[], event: OldMaidEvent, nicknameOf: Nicknam
   }
   if (event.auto && event.type === 'PAIR' && event.cards.length > 0) {
     return autoPairLine(events, event, nicknameOf);
+  }
+  if (event.type === 'PAIR' && event.cards.length > 0) {
+    return humanPairLine(events, event, nicknameOf);
   }
   return describeOldMaidEvent(event, nicknameOf);
 }
