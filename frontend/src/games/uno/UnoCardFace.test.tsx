@@ -61,10 +61,10 @@ describe('UnoCardFace', () => {
     expect(shapes).toEqual(['circle', 'triangle', 'square', 'diamond']);
   });
 
-  it('뒷면은 우노 글자를 쓰고 장식이면 스크린 리더에서 숨긴다', () => {
+  it('뒷면은 영어 UNO 글자를 쓰고 장식이면 스크린 리더에서 숨긴다', () => {
     const { rerender, container } = render(<UnoCardFace card={null} width={36} />);
 
-    expect(screen.getByRole('img', { name: '우노 카드 뒷면' })).toHaveTextContent('우노');
+    expect(screen.getByRole('img', { name: '우노 카드 뒷면' })).toHaveTextContent('UNO');
     rerender(<UnoCardFace card={null} width={36} decorative />);
     expect(screen.queryByRole('img')).not.toBeInTheDocument();
     expect(container.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
@@ -89,13 +89,13 @@ describe('UnoCardFace', () => {
     expect(seven).toHaveAttribute('font-weight', '900');
   });
 
-  it('뒷면은 비스듬한 빨강 타원 위에 윤곽선 두른 굵은 우노 글자를 기울여 쓰고 잔무늬는 두지 않는다', () => {
+  it('뒷면은 비스듬한 빨강 타원 위에 윤곽선 두른 굵은 영어 UNO 글자를 기울여 쓰고 잔무늬는 두지 않는다', () => {
     render(<UnoCardFace card={null} width={22} />);
 
     const back = screen.getByTestId('uno-card-back');
     expect(back.querySelector('[data-testid="back-oval"]')?.parentElement).toHaveAttribute('transform', expect.stringMatching(/^rotate\(-60 /));
     const word = back.querySelector('[data-testid="back-word"]');
-    expect(word).toHaveTextContent('우노');
+    expect(word?.textContent).toBe('UNO');
     expect(word).toHaveAttribute('font-weight', '900');
     expect(word).toHaveAttribute('paint-order', 'stroke');
     expect(word?.getAttribute('transform')).toMatch(/rotate\(-22 100 150\) skewX/);

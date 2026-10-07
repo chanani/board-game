@@ -173,15 +173,15 @@ function Back({ width, decorative, className }: { width: number; decorative: boo
       </defs>
       <rect width="200" height="300" rx="20" fill="#fff" />
       <rect x="12" y="12" width="176" height="276" rx="14" fill={`url(#${gradient})`} />
-      {/* 카드 뒷면 무늬: 비스듬한 빨강 타원 위에 굵은 '우노'. 작은 크기에서도 뭉개지지 않게 잔무늬 없이 큰 모양만 둔다. */}
+      {/* 카드 뒷면 무늬: 비스듬한 빨강 타원 위에 굵은 영어 'UNO'(상표 로고 글꼴이 아닌 굵은 일반 글꼴). 작은 크기에서도 뭉개지지 않게 잔무늬 없이 큰 모양만 둔다. */}
       <g data-testid="back-emblem">
         <g transform={`rotate(${BACK_OVAL_TILT} 100 150)`}>
           <ellipse cx="100" cy="150" rx="118" ry="62" fill="#fff" />
           <ellipse data-testid="back-oval" cx="100" cy="150" rx="110" ry="54" fill={BACK_RED} />
         </g>
-        <text data-testid="back-word" x="100" y="150" textAnchor="middle" dominantBaseline="central" fontSize="64" fontWeight="900" fontFamily={FONT}
+        <text data-testid="back-word" x="100" y="150" textAnchor="middle" dominantBaseline="central" fontSize="60" fontWeight="900" fontFamily={FONT}
           letterSpacing="-1" fill={BACK_INK} stroke="#1F2430" strokeWidth="10" strokeLinejoin="round" paintOrder="stroke"
-          transform={`rotate(${BACK_WORD_TILT} 100 150) skewX(-10) translate(26 0)`}>우노</text>
+          transform={`rotate(${BACK_WORD_TILT} 100 150) skewX(-10) translate(26 0)`}>UNO</text>
       </g>
     </svg>
   );
