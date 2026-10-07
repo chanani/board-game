@@ -18,6 +18,11 @@ public class Seats {
         return seats.size();
     }
 
+    // R30: 처음 자리 순서의 첫 사람.
+    public PlayerId first() {
+        return seats.get(0);
+    }
+
     public PlayerId at(int index) {
         return seats.get(index);
     }

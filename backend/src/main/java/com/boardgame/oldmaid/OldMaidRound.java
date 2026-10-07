@@ -42,6 +42,33 @@ public class OldMaidRound {
         batch.add(OldMaidEvent.finish(player, players.finish(player)));
     }
 
+    // R12~R15: 상대의 index번 카드를 가져와 짝이면 버리고, 빈 사람을 끝내고(상대 먼저, D5), 차례를 넘긴다.
+    void draw(PlayerId drawer, SlotIndex slot, EventBatch batch) {
+        Turn turn = turns.requireDrawer(drawer);
+        PlayingCard card = table.takeFrom(turn.target(), slot);
+        batch.add(OldMaidEvent.draw(drawer, turn.target()));
+        table.giveDrawn(drawer, card)
+                .ifPresent(pair -> batch.add(OldMaidEvent.pair(drawer, pair)));
+        finishIfEmpty(turn.target(), batch);
+        finishIfEmpty(drawer, batch);
+        advanceFrom(drawer);
+    }
+
+    // R15·R16: 카드 가진 사람이 2명 이상일 때만 from 다음 사람에게 차례를 넘긴다(아니면 게임이 끝난다).
+    void advanceFrom(PlayerId from) {
+        if (table.holderCount() < 2) {
+            return;
+        }
+        PlayerId next = players.nextHolder(from, table::holds);
+        turns.begin(next, players.nextHolder(next, table::holds));
+    }
+
+    // R30: 마지막까지 카드를 쥔 한 사람을 넣어 최종 등수를 만든다.
+    Ranking ranking() {
+        PlayerId lastHolder = players.firstHolderFrom(players.firstSeat(), table::holds);
+        return players.rank(lastHolder);
+    }
+
     PlayerId drawer() {
         return turns.current().drawer();
     }

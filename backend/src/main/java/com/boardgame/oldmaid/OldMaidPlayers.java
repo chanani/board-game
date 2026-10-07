@@ -18,6 +18,10 @@ public class OldMaidPlayers {
         return seats.all();
     }
 
+    PlayerId firstSeat() {
+        return seats.first();
+    }
+
     List<PlayerId> inOrderFrom(PlayerId start) {
         return seats.inOrderFrom(start);
     }
