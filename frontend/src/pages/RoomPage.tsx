@@ -37,7 +37,7 @@ export function RoomPage() {
   // 게임이 끝나면 관전자는 자동으로 자리에 앉으므로, 게임을 지켜봤는지 따로 기억해 결과 창을 보여 준다.
   const [watched, setWatched] = useState(false);
   // 관전자는 마지막 참가자가 나가 방이 사라져도 알림을 받지 못하므로 주기적으로 방을 확인한다.
-  const { room: channelRoom, receivedAt, view, transition, log, missing, send, nicknameOf, errorSeq } = useRoomChannel(code, { poll: spectating, meId });
+  const { room: channelRoom, receivedAt, view, transition, log, missing, send, sendSignal, signal, nicknameOf, errorSeq } = useRoomChannel(code, { poll: spectating, meId });
   // 방금 바꾼 내 프로필 그림은 다음 방 갱신을 기다리지 않고 바로 보인다.
   const room = useMemo(() => withMyAvatar(channelRoom, meId, member?.avatar), [channelRoom, meId, member?.avatar]);
   const [now, setNow] = useState(() => Date.now());
@@ -166,6 +166,8 @@ export function RoomPage() {
               errorSeq={errorSeq}
               nicknameOf={nicknameOf}
               send={send}
+              signal={signal}
+              sendSignal={sendSignal}
               onCloseGameOver={gameOver.dismiss}
               onReadyNext={() => run(async () => {
                 await roomsApi.ready(code, true);

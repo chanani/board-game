@@ -1,6 +1,9 @@
 import { Link } from 'react-router-dom';
 import type { RecentMatch } from '../api/types';
+import { findGame } from '../games/registry';
 import { dateTime, resultLabel } from '../lib/format';
+
+const pointsText = (score: number) => `${score}점`;
 
 export function RecentMatches({ matches, ownerId }: { matches: RecentMatch[]; ownerId: number }) {
   if (matches.length === 0) {
@@ -22,7 +25,7 @@ export function RecentMatches({ matches, ownerId }: { matches: RecentMatch[]; ow
               ))}
           </span>
           <span className={`w-10 font-bold ${match.result === 'WIN' ? 'text-safari-700' : 'text-stone-600'}`}>{resultLabel(match.result)}</span>
-          <span className="w-28 text-xs text-stone-400">{match.rounds.map((round) => `${round.score}점`).join(' ')}</span>
+          <span className="w-28 text-xs text-stone-400">{match.rounds.map((round) => (findGame(match.gameType)?.roundScoreText ?? pointsText)(round.score)).join(' ')}</span>
         </li>
       ))}
     </ul>

@@ -2,7 +2,7 @@ import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from '../api/http';
 import { roomsApi } from '../api/rooms';
-import type { PaperSafariSessionView, PaperSafariView, Room } from '../api/types';
+import type { OldMaidPeekSignal, PaperSafariSessionView, PaperSafariView, Room } from '../api/types';
 import { useRoomChannel } from './useRoomChannel';
 
 type Handler = (body: unknown) => void;
@@ -353,5 +353,37 @@ describe('useRoomChannel', () => {
 
     expect(result.current.view).toEqual({ gameType: 'CHESS', game: { status: 'GAME_OVER' } });
     expect(result.current.log).toEqual([]);
+  });
+  it('도둑잡기 신호를 받아 signal로 내보낸다', async () => {
+    vi.spyOn(roomsApi, 'get').mockResolvedValue(room('방'));
+    const { result } = renderHook(() => useRoomChannel('ABCDEF'));
+    const peek: OldMaidPeekSignal = { gameType: 'OLD_MAID', type: 'PEEK', startedAt: 1, turnSeq: 2, drawerId: 1, targetId: 2, index: 3, seq: 4 };
+
+    act(() => state.handlers.get('/user/queue/signal')?.(peek));
+
+    expect(result.current.signal).toEqual(peek);
+  });
+
+  it('신호는 signals 경로로 보내고 끊겨 있어도 알림을 띄우지 않는다', async () => {
+    vi.spyOn(roomsApi, 'get').mockResolvedValue(room('방'));
+    const { result } = renderHook(() => useRoomChannel('ABCDEF'));
+    state.publish.mockReturnValueOnce(false);
+    toast.show.mockClear();
+
+    act(() => result.current.sendSignal({ type: 'PEEK', index: 2 }));
+
+    expect(state.publish).toHaveBeenCalledWith('/app/rooms/ABCDEF/signals', { type: 'PEEK', index: 2 });
+    expect(toast.show).not.toHaveBeenCalled();
+  });
+
+  it('섞기 쿨다운 오류는 알림 없이 보내기 잠금만 푼다', async () => {
+    vi.spyOn(roomsApi, 'get').mockResolvedValue(room('방'));
+    toast.show.mockClear();
+    const { result } = renderHook(() => useRoomChannel('ABCDEF'));
+
+    act(() => state.handlers.get('/user/queue/errors')?.({ status: 429, code: 'OLD_MAID_SHUFFLE_TOO_FAST', message: '조금 뒤에 다시 섞을 수 있어요.' }));
+
+    expect(toast.show).not.toHaveBeenCalled();
+    expect(result.current.errorSeq).toBe(1);
   });
 });

@@ -28,4 +28,9 @@ describe('seats', () => {
   ])('상대 %i명은 위 줄과 가운데 양옆으로 나눠 앉는다', (count, expected) => {
     expect(seatRows(count)).toEqual(expected);
   });
+
+  it('상대 5명은 왼쪽·위 셋·오른쪽', () => {
+    expect(seatPositions(5)).toEqual(['left', 'top-left', 'top', 'top-right', 'right']);
+    expect(seatRows(5)).toEqual({ top: [1, 2, 3], left: 0, right: 4 });
+  });
 });

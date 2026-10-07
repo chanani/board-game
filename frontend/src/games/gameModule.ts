@@ -1,5 +1,5 @@
 import type { ComponentType, ReactNode } from 'react';
-import type { GameAction, GameType, PaperSafariView, Room, SessionView } from '../api/types';
+import type { GameAction, GameSignal, GameType, PaperSafariView, Room, SessionView } from '../api/types';
 import type { LogDraft, LogEntry } from '../lib/eventLog';
 
 export type Nickname = (memberId: number) => string;
@@ -24,6 +24,9 @@ export type TableProps<V extends SessionView> = {
   onCloseGameOver: () => void;
   onReadyNext: () => void;
   transition?: ViewTransition<V['game']> | null;
+  /** 상태를 바꾸지 않는 가벼운 신호(도둑잡기 고르는 카드). 쓰지 않는 게임은 무시한다. */
+  signal?: GameSignal | null;
+  sendSignal?: (action: GameAction) => void;
   aside?: ReactNode;
   asideFooter?: ReactNode;
 };
@@ -52,4 +55,6 @@ export type GameModule<V extends SessionView> = {
   rules: GameRules;
   BoxArt: ComponentType;
   averageScoreLabel: string;
+  /** 전적의 라운드 점수 글자. 없으면 "N점". */
+  roundScoreText?: (score: number) => string;
 };

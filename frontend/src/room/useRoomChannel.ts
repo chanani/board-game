@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError, messageOf } from '../api/http';
 import { roomsApi } from '../api/rooms';
-import type { ApiErrorBody, GameAction, Room, SessionView } from '../api/types';
+import type { ApiErrorBody, GameAction, GameSignal, Room, SessionView } from '../api/types';
 import { useToast } from '../components/Toast';
 import { departures } from '../lib/departures';
 import type { ViewTransition } from '../games/gameModule';
@@ -10,7 +10,8 @@ import { prependLog, type LogDraft, type LogEntry } from '../lib/eventLog';
 import { useRealtime } from '../realtime/RealtimeContext';
 
 // 여러 명이 동시에 잡기를 누르면 늦은 사람은 이 오류를 받는다. 정상 상황이라 알림을 띄우지 않는다(D25).
-const QUIET_ERROR_CODES = new Set(['UNO_CATCH_CLOSED']);
+// 섞기를 빠르게 거듭 누르면 쿨다운 오류가 온다. 이것도 알림 없이 보내기 잠금만 푼다.
+const QUIET_ERROR_CODES = new Set(['UNO_CATCH_CLOSED', 'OLD_MAID_SHUFFLE_TOO_FAST']);
 const CHAT_ERROR_CODES = new Set(['INVALID_CHAT_MESSAGE', 'CHAT_TOO_FAST']);
 
 const SYNC_RETRY_MS = 1000;
@@ -36,6 +37,7 @@ export function useRoomChannel(code: string, { poll = false, meId = 0 }: Options
   const [log, setLog] = useState<LogEntry[]>([]);
   const [missing, setMissing] = useState(false);
   const [errorSeq, setErrorSeq] = useState(0);
+  const [signal, setSignal] = useState<GameSignal | null>(null);
   const [transition, setTransition] = useState<ViewTransition<SessionView['game']> | null>(null);
   const viewRef = useRef<SessionView | null>(null);
   const syncPendingRef = useRef(false);
@@ -164,6 +166,7 @@ export function useRoomChannel(code: string, { poll = false, meId = 0 }: Options
         acceptRoom(body as Room, { live: true });
       }),
       realtime.subscribe('/user/queue/game', (body) => acceptView(body as SessionView)),
+      realtime.subscribe('/user/queue/signal', (body) => setSignal(body as GameSignal)),
       realtime.subscribe('/user/queue/errors', (body) => {
         const error = body as ApiErrorBody;
         // 채팅 오류는 게임 행동과 무관하므로 카드 이동·중복 전송 방지를 풀지 않는다.
@@ -251,5 +254,13 @@ export function useRoomChannel(code: string, { poll = false, meId = 0 }: Options
     [code, realtime, toast],
   );
 
-  return { room, receivedAt, view, transition, log, missing, send, nicknameOf, errorSeq };
+  // 신호는 마우스 움직임마다 오가므로 끊겨 있으면 알림 없이 버린다(D15).
+  const sendSignal = useCallback(
+    (action: GameAction) => {
+      realtime.publish(`/app/rooms/${code}/signals`, action);
+    },
+    [code, realtime],
+  );
+
+  return { room, receivedAt, view, transition, log, missing, send, sendSignal, signal, nicknameOf, errorSeq };
 }

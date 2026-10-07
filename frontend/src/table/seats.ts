@@ -6,6 +6,7 @@ const POSITIONS: Record<number, SeatPosition[]> = {
   2: ['top-left', 'top-right'],
   3: ['left', 'top', 'right'],
   4: ['left', 'top-left', 'top-right', 'right'],
+  5: ['left', 'top-left', 'top', 'top-right', 'right'],
 };
 
 export function seatOrder(playerIds: number[], meId: number): number[] {
@@ -17,7 +18,7 @@ export function seatOrder(playerIds: number[], meId: number): number[] {
 }
 
 export function seatPositions(count: number): SeatPosition[] {
-  return POSITIONS[count] ?? POSITIONS[4];
+  return POSITIONS[count] ?? POSITIONS[5];
 }
 
 export type SeatRows = { top: number[]; left: number | null; right: number | null };

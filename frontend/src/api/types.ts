@@ -3,7 +3,7 @@ export type ApiErrorBody = { status: number; code: string; message: string };
 /** avatar: 프로필 그림 키(CAT 등). 서버가 늘 채워 주지만 예전 응답·테스트를 위해 없을 수 있고, 그때는 id로 정한 기본 그림. */
 export type Member = { id: number; loginId: string; nickname: string; avatar?: string };
 
-export type GameType = 'PAPER_SAFARI' | 'UNO';
+export type GameType = 'PAPER_SAFARI' | 'UNO' | 'OLD_MAID';
 export type ResultType = 'WIN' | 'DRAW' | 'LOSE';
 
 export type RoomStatus = 'WAITING' | 'PLAYING';
@@ -39,13 +39,15 @@ export type RoomSummary = {
 
 export type GameActionType = 'FLIP' | 'DRAW_DECK' | 'DRAW_DISCARD' | 'SWAP' | 'DISCARD' | 'PEEK' | 'CANCEL_DRAW';
 export type UnoActionType = 'PLAY' | 'DRAW' | 'KEEP' | 'CHOOSE_COLOR' | 'CHALLENGE' | 'ACCEPT' | 'CALL_UNO' | 'CATCH_UNO';
+export type OldMaidActionType = 'SHUFFLE' | 'PEEK';
 export type GameAction = {
-  type: GameActionType | UnoActionType;
+  type: GameActionType | UnoActionType | OldMaidActionType;
   column?: number;
   row?: number;
   cardId?: number;
   color?: UnoColor;
   targetId?: number;
+  index?: number | null;
 };
 
 export type CardKind = 'NUMBER' | 'ELEPHANT' | 'TARZAN' | 'FOX' | 'WILD';
@@ -134,8 +136,52 @@ export type UnoView = {
   events: UnoEvent[];
 };
 export type UnoSessionView = { gameType: 'UNO'; game: UnoView };
+
+export type Suit = 'SPADES' | 'HEARTS' | 'DIAMONDS' | 'CLUBS';
+export type PlayingRank = 'ACE' | 'TWO' | 'THREE' | 'FOUR' | 'FIVE' | 'SIX' | 'SEVEN' | 'EIGHT' | 'NINE' | 'TEN'
+  | 'JACK' | 'QUEEN' | 'KING' | 'JOKER';
+/** 조커는 suit = null, rank = 'JOKER', id = 52. */
+export type PlayingCard = { id: number; suit: Suit | null; rank: PlayingRank };
+export type OldMaidPlayerView = { playerId: number; cardCount: number; rank: number | null; forfeited: boolean };
+export type OldMaidPlacement = 'FINISHED' | 'THIEF' | 'LAST_STANDING' | 'FORFEITED';
+export type OldMaidRankEntry = { playerId: number; rank: number; placement: OldMaidPlacement };
+export type OldMaidResult = { reason: 'NORMAL' | 'FORFEIT'; ranking: OldMaidRankEntry[]; thiefId: number | null };
+export type OldMaidEventType = 'START' | 'DEAL_PAIRS' | 'DRAW' | 'PAIR' | 'FINISH' | 'SHUFFLE' | 'FORFEIT' | 'GAME_END';
+export type OldMaidEvent = {
+  seq: number; type: OldMaidEventType; actorId: number | null; targetId: number | null; cards: PlayingCard[];
+  count: number | null; reason: 'NORMAL' | 'FORFEIT' | null; auto: boolean;
+};
+export type OldMaidView = {
+  viewerId: number;
+  status: 'IN_PROGRESS' | 'GAME_OVER';
+  startedAt: number;
+  currentPlayerId: number | null;
+  targetId: number | null;
+  turnSeq: number;
+  participantIds: number[];
+  players: OldMaidPlayerView[];
+  hand: PlayingCard[] | null;
+  peek: { index: number | null; seq: number } | null;
+  canShuffle: boolean;
+  discardCount: number;
+  recentPairs: PlayingCard[][];
+  result: OldMaidResult | null;
+  winnerId: number | null;
+  deadline: number | null;
+  serverNow: number;
+  lastAutoActorIds: number[];
+  autoActSeq: number;
+  events: OldMaidEvent[];
+};
+export type OldMaidSessionView = { gameType: 'OLD_MAID'; game: OldMaidView };
+/** /user/queue/signal: 뽑는 사람이 고르는 카드(스펙 4.3). index = null이면 고르지 않음. */
+export type OldMaidPeekSignal = {
+  gameType: 'OLD_MAID'; type: 'PEEK'; startedAt: number; turnSeq: number; drawerId: number; targetId: number;
+  index: number | null; seq: number;
+};
+export type GameSignal = OldMaidPeekSignal;
 /** /user/queue/game으로 오는 세션 화면. */
-export type SessionView = PaperSafariSessionView | UnoSessionView;
+export type SessionView = PaperSafariSessionView | UnoSessionView | OldMaidSessionView;
 
 export type GameStat = {
   gameType: GameType;

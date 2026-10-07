@@ -1,5 +1,5 @@
 import { motion, useReducedMotion } from 'motion/react';
-import { useRemaining } from '../../components/Countdown';
+import { useRemaining } from '../components/Countdown';
 
 type Props = {
   deadline: number | null | undefined;
@@ -11,7 +11,7 @@ type Props = {
  * 손패 칸 위로 띄워(absolute) 배치 높이를 바꾸지 않고, 행동 줄 버튼·들어 올린 카드·"내기" 말풍선을 가리지 않는다.
  * 차례 안내 바가 이미 "내 차례"와 문구를 읽어 주므로 화면 읽기 프로그램에는 숨긴다.
  */
-export function UnoTurnRibbon({ deadline, serverNow }: Props) {
+export function TurnRibbon({ deadline, serverNow }: Props) {
   const reduced = useReducedMotion();
   const remaining = useRemaining(deadline, serverNow);
   const seconds = remaining === null ? null : Math.ceil(remaining / 1000);

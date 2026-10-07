@@ -22,7 +22,7 @@ import { UnoActionBar } from './UnoActionBar';
 import { UnoCenter } from './UnoCenter';
 import { UnoHand } from './UnoHand';
 import { UnoSeat } from './UnoSeat';
-import { UnoTurnRibbon } from './UnoTurnRibbon';
+import { TurnRibbon } from '../../table/TurnRibbon';
 import { UnoGameOverPanel } from './UnoGameOverPanel';
 import { UnoGhostLayer } from './motion/UnoGhostLayer';
 import { useUnoMotion } from './motion/useUnoMotion';
@@ -195,7 +195,7 @@ export function UnoTable({ view, room, meId, log, receivedAt, now, errorSeq, nic
   // 내 차례면(낼 카드·뽑은 카드·색 고르기·도전 결정 모두) 손패 위에 강조색 리본으로 남은 시간과 함께 알린다.
   const mine = game.hand === null ? <SpectatorNotice /> : (
     <div data-testid="my-area" data-active={myTurn ? 'true' : undefined} className="relative -my-1 space-y-1 rounded-2xl px-1 py-1">
-      {myTurn ? <UnoTurnRibbon deadline={game.deadline} serverNow={game.serverNow} /> : null}
+      {myTurn ? <TurnRibbon deadline={game.deadline} serverNow={game.serverNow} /> : null}
       {effects[meId]?.bubble ? (
         <motion.span data-testid="my-uno-bubble" initial={reduced ? false : { scale: 0.6 }} animate={{ scale: 1 }}
           className="pointer-events-none absolute -top-3 left-1/2 z-20 w-max -translate-x-1/2 whitespace-nowrap rounded-full bg-yellow-300 px-2.5 py-0.5 text-xs font-black leading-tight text-wood-900 shadow">우노!</motion.span>

@@ -1,7 +1,9 @@
-import { Fragment, useEffect, useRef, useState, type KeyboardEvent, type RefObject } from 'react';
+import { Fragment, useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import type { UnoCard } from '../../api/types';
 import { useMediaQuery } from '../../lib/useMediaQuery';
 import type { TableLayout } from '../../lib/useTableLayout';
+import { useElementWidth } from '../../table/useElementWidth';
+import { useFreshIds } from '../../table/useFreshIds';
 import { cardName, sortHand } from './cards';
 import { FAN_RADIUS, fanAngle, fanDrop, fanRoom, handHeadroom, handSpacing, useUnoSizes } from './layout';
 import { UnoCardFace } from './UnoCardFace';
@@ -16,7 +18,6 @@ type Props = {
   onPlay: (card: UnoCard) => void;
 };
 
-const FRESH_MS = 1200;
 // 터치로 고른 카드를 더 들어 올리는 높이. 눕힌 휴대폰은 한 화면 높이(약 390px)에 손패가 들어가도록 덜 올린다.
 const SELECT_LIFT: Record<TableLayout, number> = { pc: 24, portrait: 24, landscape: 16 };
 const PLAYABLE_LIFT = 10;
@@ -24,51 +25,12 @@ const PLAYABLE_LIFT = 10;
 const BOTTOM_GAP = 4;
 const EDGE_FADE = 'linear-gradient(to right, transparent, black 16px, black calc(100% - 16px), transparent)';
 
-function useWidth(ref: RefObject<HTMLElement | null>): number {
-  const [width, setWidth] = useState(0);
-  useEffect(() => {
-    const element = ref.current;
-    if (!element || typeof ResizeObserver === 'undefined') {
-      return;
-    }
-    const observer = new ResizeObserver((entries) => setWidth(entries[0].contentRect.width));
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, [ref]);
-  return width;
-}
-
-/** 이전 렌더에 없던 카드 id를 1.2초 동안 돌려준다(첫 렌더는 표시하지 않는다). */
-function useFreshIds(cards: UnoCard[]): Set<number> {
-  const known = useRef<Set<number> | null>(null);
-  const [fresh, setFresh] = useState<Set<number>>(new Set());
-  const key = cards.map((card) => card.id).join(',');
-  useEffect(() => {
-    const ids = new Set(cards.map((card) => card.id));
-    const previous = known.current;
-    known.current = ids;
-    if (previous === null) {
-      return;
-    }
-    const added = new Set([...ids].filter((id) => !previous.has(id)));
-    if (added.size === 0) {
-      setFresh((current) => (current.size === 0 ? current : new Set()));
-      return;
-    }
-    setFresh(added);
-    const timer = setTimeout(() => setFresh(new Set()), FRESH_MS);
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key]);
-  return fresh;
-}
-
 export function UnoHand({ cards, playableIds, myTurn, layout, zoneId, onPlay }: Props) {
   const fine = useMediaQuery('(pointer: fine)');
   const sizes = useUnoSizes(layout);
   const sorted = sortHand(cards);
   const boxRef = useRef<HTMLDivElement>(null);
-  const width = useWidth(boxRef);
+  const width = useElementWidth(boxRef);
   // PC·휴대폰 모두 부채꼴로 편다. 가장자리 각도로 양끝 여백과 아래 여백을 정해 끝 카드가 잘리지 않게 한다.
   const edgeAngle = Math.abs(fanAngle(0, sorted.length));
   const radius = FAN_RADIUS[layout];
