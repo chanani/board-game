@@ -10,7 +10,7 @@ describe('도둑잡기 규칙', () => {
     expect(OLD_MAID_RULE_SLIDES.map((slide) => slide.title)).toEqual(['목표', '카드', '준비', '내 차례', '짝 버리기', '섞기', '끝', '시간과 기권']);
     expect(OLD_MAID_RULE_SUMMARY).toEqual([
       '왼쪽 사람의 카드를 1장씩 뽑아요.',
-      '같은 숫자 두 장은 짝지어 버려요.',
+      '같은 숫자 두 장은 직접 골라 버려요.',
       '손패를 먼저 비울수록 높은 등수예요.',
       '조커를 마지막까지 쥐면 도둑이에요.',
     ]);
@@ -25,6 +25,7 @@ describe('도둑잡기 규칙', () => {
     expect(screen.getByRole('img', { name: '조커' })).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: '3번째 설명' }));
     expect(await screen.findAllByRole('img', { name: '카드 뒷면' })).toHaveLength(3);
+    expect(screen.getByText(/처음 30초 동안 모두 함께 내 손의 같은 숫자 두 장을 골라 버려요/)).toBeInTheDocument();
   });
 
   it('모듈 등록 값', () => {
