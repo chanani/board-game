@@ -40,6 +40,8 @@ export function useGhostFlights<V, Z extends string, C>(
   plan: (from: V | null, to: V) => FlightPlan<Z, C>,
   attr: string,
   cardWidth: number,
+  /** true면 고스트마다 제 비행이 끝나는 순간 지운다(내려앉은 카드가 다음 비행이 끝날 때까지 남아 보이지 않게). */
+  dropLanded = false,
 ): { ghosts: Ghost<C>[] } {
   const { play } = useSound();
   const reduced = useReducedMotion() ?? false;
@@ -72,9 +74,14 @@ export function useGhostFlights<V, Z extends string, C>(
       return;
     }
     setGhosts(flying);
+    if (dropLanded) {
+      flying.forEach((ghost) => {
+        timers.current.push(window.setTimeout(() => setGhosts((current) => current.filter((one) => one.id !== ghost.id)), ghost.delay + ghost.duration));
+      });
+    }
     const end = Math.max(...flying.map((ghost) => ghost.delay + ghost.duration)) + CLEANUP_PAD_MS;
     timers.current.push(window.setTimeout(() => setGhosts([]), end));
-  }, [transition, plan, attr, reduced, rootRef, cardWidth]);
+  }, [transition, plan, attr, reduced, rootRef, cardWidth, dropLanded]);
 
   useLayoutEffect(() => () => timers.current.forEach((timer) => window.clearTimeout(timer)), []);
 
