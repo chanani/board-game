@@ -4,6 +4,7 @@ import { describeOldMaid } from './describe';
 import { OldMaidBoxArt } from './OldMaidBoxArt';
 import { OldMaidTable } from './OldMaidTable';
 import { PlayingCardFace } from './PlayingCardFace';
+import { isStaleDiscard } from './staleDiscard';
 import { OLD_MAID_RULE_SLIDES, OLD_MAID_RULE_SUMMARY, type OldMaidRuleSlide } from './rules';
 
 function renderArt(slide: RuleSlideBase) {
@@ -32,4 +33,5 @@ export const oldMaidModule: GameModule<OldMaidSessionView> = {
   // D10: 라운드 점수 = 등수.
   averageScoreLabel: '평균 순위',
   roundScoreText: (score) => `${score}등`,
+  isStaleRejection: isStaleDiscard,
 };

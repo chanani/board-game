@@ -57,4 +57,9 @@ export type GameModule<V extends SessionView> = {
   averageScoreLabel: string;
   /** 전적의 라운드 점수 글자. 없으면 "N점". */
   roundScoreText?: (score: number) => string;
+  /**
+   * 보낸 행동(action, 보낼 때 화면 sent)이 code로 거절됐는데 지금 화면(current)이 이미 그 행동을 지나쳤으면 true.
+   * 마감 자동 처리와 겹친 늦은 요청처럼 정상 경합이라 알림을 띄우지 않는다. 없으면 늘 알린다.
+   */
+  isStaleRejection?: (action: GameAction, sent: V, current: V, code: string) => boolean;
 };

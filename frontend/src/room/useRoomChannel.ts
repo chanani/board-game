@@ -11,6 +11,7 @@ import { useRealtime } from '../realtime/RealtimeContext';
 
 // 여러 명이 동시에 잡기를 누르면 늦은 사람은 이 오류를 받는다. 정상 상황이라 알림을 띄우지 않는다(D25).
 // 섞기를 빠르게 거듭 누르면 쿨다운 오류가, 차례가 바뀌는 순간 누르면 섞을 수 없다는 오류가 온다. 이것도 알림 없이 보내기 잠금만 푼다.
+// 화면이 이미 지나친 행동의 거절(도둑잡기 마감 직전 버리기 등)은 게임 모듈의 isStaleRejection이 가린다.
 const QUIET_ERROR_CODES = new Set(['UNO_CATCH_CLOSED', 'OLD_MAID_SHUFFLE_TOO_FAST', 'OLD_MAID_SHUFFLE_NOT_ALLOWED']);
 const CHAT_ERROR_CODES = new Set(['INVALID_CHAT_MESSAGE', 'CHAT_TOO_FAST']);
 
@@ -54,6 +55,8 @@ export function useRoomChannel(code: string, { poll = false, meId = 0 }: Options
   const roomRef = useRef<Room | null>(null);
   const topicSeenRef = useRef(0);
   const namesRef = useRef(new Map<number, string>());
+  // 마지막으로 보낸 행동과 그때의 화면. 그 행동이 거절됐을 때 화면이 이미 지나쳤는지 게임 모듈에 묻는다.
+  const lastSentRef = useRef<{ action: GameAction; view: SessionView } | null>(null);
 
   const appendLog = useCallback((lines: LogDraft[]) => {
     if (lines.length === 0) {
@@ -138,6 +141,7 @@ export function useRoomChannel(code: string, { poll = false, meId = 0 }: Options
     setMissing(false);
     setTransition(null);
     syncPendingRef.current = false;
+    lastSentRef.current = null;
   }, [code]);
 
   useEffect(() => {
@@ -167,6 +171,17 @@ export function useRoomChannel(code: string, { poll = false, meId = 0 }: Options
     };
   }, [code, connected, acceptRoom, showFailure]);
 
+  // 마감 자동 처리 등에 밀려 이미 지나간 행동의 거절이면 알리지 않는다. 한 번 물은 행동은 지운다(다음 오류는 따로 본다).
+  const isStaleRejection = useCallback((errorCode: string) => {
+    const sent = lastSentRef.current;
+    const current = viewRef.current;
+    lastSentRef.current = null;
+    if (!sent || !current || sessionGameType(sent.view) !== sessionGameType(current)) {
+      return false;
+    }
+    return findGame(sessionGameType(current))?.isStaleRejection?.(sent.action, sent.view, current, errorCode) ?? false;
+  }, []);
+
   useEffect(() => {
     const offs = [
       realtime.subscribe(`/topic/rooms/${code}`, (body) => {
@@ -186,7 +201,7 @@ export function useRoomChannel(code: string, { poll = false, meId = 0 }: Options
           setMissing(true);
           return;
         }
-        if (!QUIET_ERROR_CODES.has(error.code)) {
+        if (!QUIET_ERROR_CODES.has(error.code) && !isStaleRejection(error.code)) {
           toast.show(error.message);
         }
         if (error.code === 'ROOM_NOT_FOUND') {
@@ -195,7 +210,7 @@ export function useRoomChannel(code: string, { poll = false, meId = 0 }: Options
       }),
     ];
     return () => offs.forEach((off) => off());
-  }, [code, realtime, acceptRoom, acceptView, toast]);
+  }, [code, realtime, acceptRoom, acceptView, toast, isStaleRejection]);
 
   useEffect(() => {
     if (!connected) {
@@ -271,6 +286,7 @@ export function useRoomChannel(code: string, { poll = false, meId = 0 }: Options
 
   const send = useCallback(
     (action: GameAction) => {
+      lastSentRef.current = viewRef.current ? { action, view: viewRef.current } : null;
       if (!realtime.publish(`/app/rooms/${code}/actions`, action)) {
         toast.show('연결이 끊겨 있어요. 잠시 후 다시 시도해 주세요.');
       }

@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from '../api/http';
 import { roomsApi } from '../api/rooms';
 import type { OldMaidPeekSignal, PaperSafariSessionView, PaperSafariView, Room } from '../api/types';
+import { card, oldMaidSession } from '../games/oldmaid/oldMaidFixtures';
 import { useRoomChannel } from './useRoomChannel';
 
 type Handler = (body: unknown) => void;
@@ -444,5 +445,43 @@ describe('useRoomChannel', () => {
 
     expect(toast.show).not.toHaveBeenCalled();
     expect(result.current.errorSeq).toBe(1);
+  });
+
+  describe('도둑잡기 버리기 마감 경합', () => {
+    const pairA = card('SPADES', 'THREE');
+    const pairB = card('HEARTS', 'THREE');
+    const other = card('CLUBS', 'NINE');
+    const opening = oldMaidSession({ stage: 'OPENING_DISCARD', turnSeq: 0, currentPlayerId: null, targetId: null, hand: [pairA, pairB, other], canDiscard: true });
+    const rejected = { status: 409, code: 'INVALID_PHASE', message: '지금은 할 수 없는 행동이에요.' };
+
+    it('보낸 버리기를 서버 자동 버림이 앞질러 화면이 이미 넘어갔으면 거절을 알리지 않는다', () => {
+      vi.spyOn(roomsApi, 'get').mockReturnValue(new Promise<Room>(() => {}));
+      const { result } = renderHook(() => useRoomChannel('ABCDEF'));
+      act(() => state.handlers.get('/user/queue/game')?.(opening));
+      toast.show.mockClear();
+
+      act(() => result.current.send({ type: 'DISCARD', cardIds: [pairA.id, pairB.id] }));
+      act(() => state.handlers.get('/user/queue/game')?.(oldMaidSession({ stage: 'DRAW', turnSeq: 1, hand: [other] })));
+      act(() => state.handlers.get('/user/queue/errors')?.(rejected));
+
+      expect(toast.show).not.toHaveBeenCalled();
+      expect(result.current.errorSeq).toBe(1);
+    });
+
+    it('화면이 그대로인 버리기 거절과 그 다음 오류는 알린다', () => {
+      vi.spyOn(roomsApi, 'get').mockReturnValue(new Promise<Room>(() => {}));
+      const { result } = renderHook(() => useRoomChannel('ABCDEF'));
+      act(() => state.handlers.get('/user/queue/game')?.(opening));
+      toast.show.mockClear();
+
+      act(() => result.current.send({ type: 'DISCARD', cardIds: [pairA.id, pairB.id] }));
+      act(() => state.handlers.get('/user/queue/errors')?.(rejected));
+      expect(toast.show).toHaveBeenCalledWith('지금은 할 수 없는 행동이에요.');
+
+      toast.show.mockClear();
+      act(() => state.handlers.get('/user/queue/game')?.(oldMaidSession({ stage: 'DRAW', turnSeq: 1, hand: [other] })));
+      act(() => state.handlers.get('/user/queue/errors')?.(rejected));
+      expect(toast.show).toHaveBeenCalledWith('지금은 할 수 없는 행동이에요.');
+    });
   });
 });
