@@ -56,7 +56,8 @@ export function PlayerBoard({ result, board, nickname, active, turnRing = false,
   return (
     <div data-testid={`board-${board.playerId}`} data-winner={result ? result.winner : undefined}
       className={`rounded-2xl bg-black/15 ${PAD[size]} backdrop-blur-[1px] ${result ? 'mx-auto w-fit' : ''} ${turnRing ? 'ring-[3px] ring-inset ring-(--turn-ring) turn-ring' : ''} ${result?.winner ? 'ring-[3px] ring-mustard-400 shadow-[0_0_18px_rgb(242_179_61/0.7)]' : ''}`}>
-      <div className={`flex items-center justify-between gap-2 text-sm ${size === 'mini' ? 'mb-1' : 'mb-2'}`}>
+      {/* 결과 화면의 좁은 휴대폰에서는 이름표 줄이 판 폭을 넓히지 않게(inline-size 격리) 카드 격자 폭에 맞추고, 넘치는 닉네임만 말줄임한다. */}
+      <div data-testid="board-header" className={`flex items-center justify-between gap-2 text-sm ${size === 'mini' ? 'mb-1' : 'mb-2'} ${result ? 'max-sm:[contain:inline-size]' : ''}`}>
         <span className={`flex min-w-0 items-center gap-1.5 ${result ? '' : 'flex-wrap'}`}>
           {connected !== undefined ? (
             <span aria-hidden="true" className={`inline-block h-2 w-2 shrink-0 rounded-full ${connected ? 'bg-green-500' : 'bg-stone-400'}`} />
@@ -81,7 +82,7 @@ export function PlayerBoard({ result, board, nickname, active, turnRing = false,
         </span>
         {result ? <b data-testid="board-total" className="felt-ink shrink-0 whitespace-nowrap text-xs">{result.total}</b> : null}
       </div>
-      <div data-testid="board-grid" className={`relative grid ${result ? 'grid-cols-[repeat(3,auto)] justify-center gap-x-4 gap-y-2' : `${COLUMNS[size]} ${GAP[size]}`}`}>
+      <div data-testid="board-grid" className={`relative grid ${result ? 'grid-cols-[repeat(3,auto)] justify-center gap-x-2.5 gap-y-2 sm:gap-x-4' : `${COLUMNS[size]} ${GAP[size]}`}`}>
         {onZoom ? (
           <button type="button" aria-label={zoomLabel} onClick={onZoom}
             className="absolute inset-0 z-[5] cursor-zoom-in rounded-xl focus-visible:outline-2 focus-visible:outline-mustard-400" />

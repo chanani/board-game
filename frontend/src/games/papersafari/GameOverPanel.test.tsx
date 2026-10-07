@@ -148,9 +148,9 @@ describe('GameOverPanel 단판 결과', () => {
     expect(within(screen.getByTestId('board-2')).queryAllByTestId('wild-note')).toHaveLength(0);
   });
 
-  it('결과 판은 열 배지 사이 간격을 넓게 둔다', () => {
+  it('결과 판은 열 배지 사이 간격을 넓게 두고, 좁은 휴대폰에서만 모달 폭에 맞게 줄인다', () => {
     renderPanel();
-    expect(within(screen.getByTestId('board-1')).getByTestId('board-grid')).toHaveClass('gap-x-4');
+    expect(within(screen.getByTestId('board-1')).getByTestId('board-grid')).toHaveClass('sm:gap-x-4', 'gap-x-2.5');
   });
 
   it('승리면 메달 아이콘을, 무승부면 무승부 아이콘만 보여 준다', () => {
@@ -339,6 +339,10 @@ describe('GameOverPanel 단판 결과', () => {
     expect(name.nextElementSibling).toHaveTextContent(/^· \S+$/);
     // 앞 공백이 접히지 않게 whitespace-pre(줄바꿈도 하지 않는다)
     expect(name.nextElementSibling).toHaveClass('shrink-0', 'whitespace-pre');
+
+    // 좁은 휴대폰에서는 이름표 줄이 판 폭을 넓혀 오른쪽 합계가 모달 밖으로 잘려 나가지 않게, 줄 폭을 카드 격자에 맞춘다.
+    expect(board.getByTestId('board-header')).toHaveClass('max-sm:[contain:inline-size]');
+    expect(board.getByTestId('board-grid')).toHaveClass('gap-x-2.5', 'sm:gap-x-4');
 
     const row = screen.getAllByTestId('score-row')[0];
     expect(within(row).getByTestId('score-name')).toHaveClass('min-w-0', 'truncate');
