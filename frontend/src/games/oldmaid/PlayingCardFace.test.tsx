@@ -1,7 +1,29 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { JOKER_CARD, playingCard } from './cards';
-import { PlayingCardFace } from './PlayingCardFace';
+
+/** 모서리 표시가 차지하는 띠(카드 그림 폭 200 기준). 가운데 그림은 이 오른쪽에만 있어야 한다(F-c8). */
+const CORNER_BAND = 58;
+
+/**
+ * 카드 좌표 그대로 그린 요소들의 왼쪽 끝 x(rect는 x, circle은 cx − r, path는 M·L·Q 좌표에서 각각 테두리 반을 뺀다).
+ * transform으로 옮겨 그린 무늬(SuitGlyph)는 PIPS 쪽 검사에서 따로 본다.
+ */
+function leftEdges(root: Element): number[] {
+  const plain = Array.from(root.querySelectorAll('rect, circle, path')).filter((node) => !node.closest('[transform]'));
+  return plain.map((node) => {
+    const half = Number(node.getAttribute('stroke-width') ?? 0) / 2;
+    if (node.tagName === 'rect') {
+      return Number(node.getAttribute('x')) - half;
+    }
+    if (node.tagName === 'circle') {
+      return Number(node.getAttribute('cx')) - Number(node.getAttribute('r')) - half;
+    }
+    const xs = (node.getAttribute('d') ?? '').match(/[MLQ][^MLQZ]*/g) ?? [];
+    return Math.min(...xs.flatMap((part) => part.slice(1).trim().split(/[\s,]+/).filter((_, i) => i % 2 === 0).map(Number))) - half;
+  });
+}
+import { ACE_PIP_SIZE, PIP_SIZE, PIPS, PlayingCardFace, SUIT_HALF_WIDTH } from './PlayingCardFace';
 
 describe('PlayingCardFace', () => {
   it('앞면·조커·뒷면에 접근성 이름이 있고 장식이면 숨긴다', () => {
@@ -56,5 +78,18 @@ describe('PlayingCardFace', () => {
     const { container } = render(<PlayingCardFace card={null} width={60} />);
 
     expect(container.innerHTML).toContain('var(--card-back-from, #23305A)');
+  });
+
+  it('F-c8 가운데 그림은 겹친 손패에서 보이는 모서리 띠(x 58) 안으로 들어오지 않는다', () => {
+    const pipColumns = Object.values(PIPS).flat().map(([x]) => x);
+    expect(Math.min(...pipColumns) - SUIT_HALF_WIDTH * PIP_SIZE).toBeGreaterThan(CORNER_BAND);
+    expect(100 - SUIT_HALF_WIDTH * ACE_PIP_SIZE).toBeGreaterThan(CORNER_BAND);
+
+    const king = render(<PlayingCardFace card={playingCard('CLUBS', 'KING')} width={60} />);
+    const frame = king.container.querySelector('[data-testid="face-frame"]') as Element;
+    const joker = render(<PlayingCardFace card={JOKER_CARD} width={60} />);
+    const art = joker.container.querySelector('[data-testid="joker-art"]') as Element;
+    expect(Math.min(...leftEdges(frame))).toBeGreaterThan(CORNER_BAND);
+    expect(Math.min(...leftEdges(art))).toBeGreaterThan(CORNER_BAND);
   });
 });

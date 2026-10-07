@@ -55,14 +55,17 @@ export const PIPS: Record<number, [number, number][]> = {
   9: [...SIDES8, [C, 150]],
   10: [...SIDES8, [C, 102], [C, 198]],
 };
-const PIP_SIZE = 26;
+export const PIP_SIZE = 26;
+/** A의 큰 무늬 크기. F-c8: 왼쪽 끝 100 − SUIT_HALF_WIDTH × 84 ≈ 61.4가 모서리 띠 밖이다. */
+export const ACE_PIP_SIZE = 84;
+/** 무늬 그림의 가장 넓은 반폭(하트·스페이드가 100 상자에서 x 4~96)을 무늬 크기에 대한 비율로. */
+export const SUIT_HALF_WIDTH = 0.46;
 const NUMBER_OF: Partial<Record<PlayingCard['rank'], number>> = { TWO: 2, THREE: 3, FOUR: 4, FIVE: 5, SIX: 6, SEVEN: 7, EIGHT: 8, NINE: 9, TEN: 10 };
 
 function Center({ card, ink }: { card: PlayingCard; ink: string }) {
   const suit = card.suit as Suit;
   if (card.rank === 'ACE') {
-    // F-c8: 84면 가장 넓은 무늬(하트·스페이드)의 왼쪽 끝이 x≈61.4라 겹친 손패에서 보이는 모서리 띠(60) 밖에 머문다.
-    return <SuitGlyph testId="pip" suit={suit} x={100} y={150} size={84} fill={ink} />;
+    return <SuitGlyph testId="pip" suit={suit} x={100} y={150} size={ACE_PIP_SIZE} fill={ink} />;
   }
   const count = NUMBER_OF[card.rank];
   if (count !== undefined) {
@@ -73,7 +76,7 @@ function Center({ card, ink }: { card: PlayingCard; ink: string }) {
     <g data-testid="face-frame">
       <rect x="64" y="62" width="72" height="176" rx="8" fill="none" stroke={ink} strokeWidth="4" />
       <rect x="71" y="69" width="58" height="162" rx="5" fill={ink} fillOpacity="0.08" />
-      <text x="100" y="136" textAnchor="middle" dominantBaseline="central" fontSize="92" fontWeight="900" fontFamily={FONT} fill={ink}>{RANK_LABELS[card.rank]}</text>
+      <text x="100" y="136" textAnchor="middle" dominantBaseline="central" fontSize="80" fontWeight="900" fontFamily={FONT} fill={ink}>{RANK_LABELS[card.rank]}</text>
       <SuitGlyph suit={suit} x={100} y={204} size={40} fill={ink} />
     </g>
   );
