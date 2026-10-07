@@ -22,7 +22,7 @@ const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 type Anchor = { deadline: number | null | undefined; serverNow: number | undefined; at: number };
 
 /** 받은 시점의 로컬 시각을 기준으로, 남은 시간 = (deadline - serverNow) - 받은 뒤 흐른 시간. */
-function useRemaining(deadline: number | null | undefined, serverNow: number | undefined): number | null {
+export function useRemaining(deadline: number | null | undefined, serverNow: number | undefined): number | null {
   const [anchor, setAnchor] = useState<Anchor>(() => ({ deadline, serverNow, at: Date.now() }));
   const [now, setNow] = useState(() => Date.now());
   const changed = anchor.deadline !== deadline || anchor.serverNow !== serverNow;

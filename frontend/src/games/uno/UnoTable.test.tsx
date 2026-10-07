@@ -226,14 +226,26 @@ describe('UnoTable 배치', () => {
     expect(screen.getByTestId('instruction')).toHaveTextContent('낼 카드를 고르거나 카드를 뽑으세요.');
   });
 
-  it('내 차례면 안내 바에 "내 차례" 표시가 붙고 내 손패 칸을 강조 테두리로 두른다', () => {
-    renderTable();
+  it('내 차례면 안내 바에 "내 차례" 표시가 붙고 손패 위에 남은 초를 담은 리본이 뜬다(손패 칸 테두리는 없다)', () => {
+    renderTable({ deadline: 12_000, serverNow: 0 });
 
     expect(within(screen.getByTestId('turn-bar')).getByTestId('my-turn-badge')).toHaveTextContent('내 차례');
     const mine = screen.getByTestId('my-area');
     expect(mine).toHaveAttribute('data-active', 'true');
-    expect(mine).toHaveClass('turn-ring');
+    expect(mine).not.toHaveClass('turn-ring');
+    expect(mine.className).not.toMatch(/ring-/);
+    const ribbon = within(mine).getByTestId('my-turn-ribbon');
+    expect(ribbon).toHaveTextContent('내 차례 · 12초');
+    expect(ribbon).toHaveClass('whitespace-nowrap');
+    expect(ribbon.closest('[aria-hidden="true"]')).not.toBeNull();
+    expect(within(ribbon).getByTestId('my-turn-ribbon-dot')).toHaveClass('live-dot');
     expect(screen.queryByTestId('turn-tag')).not.toBeInTheDocument();
+  });
+
+  it.each(['DRAWN', 'CHOOSE_COLOR', 'CHALLENGE'] as const)('%s 단계에서도 내가 결정할 차례면 리본이 뜬다', (stage) => {
+    renderTable({ stage, deadline: 8_000, serverNow: 0 });
+
+    expect(screen.getByTestId('my-turn-ribbon')).toHaveTextContent('내 차례 · 8초');
   });
 
   it('상대 차례면 그 상대 자리만 강조 테두리와 "차례" 표시로 돋보이고 내 칸은 강조하지 않는다', () => {
@@ -246,5 +258,6 @@ describe('UnoTable 배치', () => {
     expect(screen.getByRole('group', { name: '캐롤, 카드 7장' })).not.toHaveAttribute('data-active');
     expect(screen.getByTestId('my-area')).not.toHaveClass('turn-ring');
     expect(screen.queryByTestId('my-turn-badge')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('my-turn-ribbon')).not.toBeInTheDocument();
   });
 });
