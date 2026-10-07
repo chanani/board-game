@@ -61,4 +61,20 @@ describe('usePeekSender', () => {
 
     expect(send).toHaveBeenCalledTimes(2);
   });
+
+  it('들자마자 고르기를 풀면 간격이 지난 뒤 null을 꼭 보낸다(서버가 50ms 안 신호를 버려도 마지막 상태가 닿는다)', () => {
+    vi.useFakeTimers();
+    const send = vi.fn();
+    const { result } = renderHook(() => usePeekSender(send, '1000:1'));
+
+    act(() => result.current(1));
+    act(() => vi.advanceTimersByTime(30));
+    act(() => result.current(null));
+    expect(send).toHaveBeenCalledTimes(1);
+
+    act(() => vi.advanceTimersByTime(PEEK_THROTTLE_MS));
+    expect(send).toHaveBeenCalledTimes(2);
+    expect(send).toHaveBeenLastCalledWith({ type: 'PEEK', index: null });
+  });
 });
+
