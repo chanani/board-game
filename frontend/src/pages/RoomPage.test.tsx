@@ -1,6 +1,7 @@
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { useRef } from 'react';
+import { MemoryRouter, Route, Routes, useLocation, useOutlet } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { PaperSafariSessionView, Room } from '../api/types';
 import { RoomPage } from './RoomPage';
@@ -124,6 +125,42 @@ describe('RoomPage 관전자', () => {
 
     expect(await screen.findByText('로비 화면')).toBeInTheDocument();
     expect(toast.show).toHaveBeenCalledWith('방에서 나왔어요.', 'info');
+  });
+
+  it('나간 뒤 페이지 전환 동안 방 화면이 잠깐 남아 다시 그려져도 방에서 나왔다는 알림은 한 번만 뜬다', async () => {
+    // Layout의 페이지 전환(AnimatePresence mode="wait")처럼 주소가 바뀐 뒤에도 나가는 방 화면을 잠깐 그대로 둔다.
+    // 주소가 바뀌면 navigate가 새로 만들어져 효과가 다시 돌므로, 전에는 알림이 두 번 떴다.
+    function KeepLeavingPage() {
+      const outlet = useOutlet();
+      const kept = useRef(outlet);
+      const location = useLocation();
+      return <>{kept.current}<p data-testid="where">{location.pathname}</p></>;
+    }
+    setChannel({ room: { ...baseRoom, spectators: [] } });
+    render(
+      <MemoryRouter initialEntries={['/rooms/ABC234']}>
+        <Routes>
+          <Route element={<KeepLeavingPage />}>
+            <Route path="/rooms/:code" element={<RoomPage />} />
+            <Route path="/games/:slug" element={<p>로비 화면</p>} />
+          </Route>
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => expect(screen.getByTestId('where')).toHaveTextContent('/games/'));
+    await act(async () => {});
+    expect(toast.show.mock.calls.filter(([message]) => message === '방에서 나왔어요.')).toHaveLength(1);
+  });
+
+  it('나간 방 방송이 거듭 와도 방에서 나왔다는 알림은 한 번만 뜬다', async () => {
+    setChannel({ room: { ...baseRoom, spectators: [] } });
+    const { rerender } = render(roomTree());
+    setChannel({ room: { ...baseRoom, spectators: [], members: [members[0]] } });
+    rerender(roomTree());
+    await act(async () => {});
+
+    expect(toast.show.mock.calls.filter(([message]) => message === '방에서 나왔어요.')).toHaveLength(1);
   });
 
   it('보던 방이 사라지면(missing) 그 게임 로비로 간다', async () => {

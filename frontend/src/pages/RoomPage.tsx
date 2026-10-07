@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { messageOf } from '../api/http';
 import { roomsApi } from '../api/rooms';
@@ -73,11 +73,20 @@ export function RoomPage() {
     setConfirmLeave(false);
   }, [room?.status]);
 
+  // 나간 방 화면은 페이지 전환(Layout의 AnimatePresence) 동안 잠깐 남아 다시 그려진다. 주소가 바뀌면 navigate가 새로 만들어져
+  // 이 효과가 다시 돌므로, 방마다 한 번만 알리고 로비로 보낸다(전에는 '방에서 나왔어요' 알림이 두 번 떴다).
+  const leftNotified = useRef<string | null>(null);
   useEffect(() => {
-    if (room && !missing && !isPresent(room, meId)) {
-      toast.show('방에서 나왔어요.', 'info');
-      navigate(lobbyPath(room.gameType), { replace: true });
+    if (room && isPresent(room, meId)) {
+      leftNotified.current = null;
+      return;
     }
+    if (!room || missing || leftNotified.current === room.code) {
+      return;
+    }
+    leftNotified.current = room.code;
+    toast.show('방에서 나왔어요.', 'info');
+    navigate(lobbyPath(room.gameType), { replace: true });
   }, [room, missing, meId, navigate, toast]);
 
   if (missing) {
