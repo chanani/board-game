@@ -42,6 +42,7 @@ class OldMaidTurnTest {
         assertThat(game.handOf(A)).containsExactly(s(Rank.FOUR));
         assertThat(game.handOf(B)).containsExactly(JOKER);
         assertThat(game.recentPairs(6)).containsExactly(new CardPair(s(Rank.THREE), h(Rank.THREE)));
+        assertThat(game.discards()).containsExactly(new DiscardedPair(A, new CardPair(s(Rank.THREE), h(Rank.THREE))));
         assertThat(game.latestEvents()).extracting(OldMaidEvent::type)
                 .containsExactly(OldMaidEventType.DRAW, OldMaidEventType.PAIR);
         OldMaidEvent draw = game.latestEvents().get(0);

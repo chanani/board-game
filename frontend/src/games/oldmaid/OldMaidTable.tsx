@@ -145,7 +145,7 @@ export function OldMaidTable({ view, room, meId, log, receivedAt, now, errorSeq,
           <TargetFan key={`${targetPlayer.playerId}:${turnKey}`} ownerName={nicknameOf(targetPlayer.playerId)} count={targetPlayer.cardCount} cardWidth={sizes.pick}
             minVisible={sizes.pickMinVisible} liftIndex={liftIndex} layout={layout} interactive={myTurn} onPeek={sendPeek} onDraw={draw} />
         ) : null}
-        <DiscardPairs pairs={game.recentPairs} count={game.discardCount} cardWidth={sizes.pair} />
+        <DiscardPairs pairs={game.recentPairs} count={game.discardCount} cardWidth={sizes.pair} discards={game.discards ?? []} nicknameOf={nicknameOf} />
       </div>
     </div>
   );

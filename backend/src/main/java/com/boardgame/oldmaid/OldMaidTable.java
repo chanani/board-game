@@ -32,8 +32,8 @@ public class OldMaidTable {
         return hands.cardsOf(player);
     }
 
-    void discard(List<CardPair> pairs) {
-        discard.addAll(pairs);
+    void discard(PlayerId owner, List<CardPair> pairs) {
+        discard.addAll(owner, pairs);
     }
 
     int discardCount() {
@@ -44,6 +44,10 @@ public class OldMaidTable {
         return discard.recent(limit);
     }
 
+    List<DiscardedPair> discards() {
+        return discard.all();
+    }
+
     PlayingCard takeFrom(PlayerId player, SlotIndex slot) {
         return hands.of(player).takeAt(slot);
     }
@@ -51,7 +55,7 @@ public class OldMaidTable {
     // R13·D6
     Optional<CardPair> giveDrawn(PlayerId player, PlayingCard card) {
         Optional<CardPair> pair = hands.of(player).receive(card, dice.picker());
-        pair.ifPresent(found -> discard.addAll(List.of(found)));
+        pair.ifPresent(found -> discard.addAll(player, List.of(found)));
         return pair;
     }
 
@@ -70,7 +74,7 @@ public class OldMaidTable {
         hand.addAll(cards);
         List<CardPair> pairs = hand.discardPairs();
         hand.shuffle(dice.shuffler());
-        discard.addAll(pairs);
+        discard.addAll(receiver, pairs);
         return pairs;
     }
 }

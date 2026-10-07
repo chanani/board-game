@@ -192,6 +192,10 @@ public class OldMaidGame {
         return round.recentPairs(limit);
     }
 
+    public List<DiscardedPair> discards() {
+        return round.discards();
+    }
+
     public List<OldMaidEvent> latestEvents() {
         return events.latest();
     }

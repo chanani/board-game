@@ -65,6 +65,7 @@ class OldMaidSetupTest {
         assertThat(game.handOf(A)).containsExactly(s(Rank.TWO));
         assertThat(game.discardCount()).isEqualTo(2);
         assertThat(game.recentPairs(6)).containsExactly(new CardPair(s(Rank.ACE), h(Rank.ACE)));
+        assertThat(game.discards()).containsExactly(new DiscardedPair(A, new CardPair(s(Rank.ACE), h(Rank.ACE))));
         assertThat(game.drawer()).isEqualTo(A);
         assertThat(game.target()).isEqualTo(B);
         assertThat(game.turnSeq()).isEqualTo(TurnSeq.first());

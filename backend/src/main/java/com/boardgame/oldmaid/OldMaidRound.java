@@ -34,7 +34,7 @@ public class OldMaidRound {
     }
 
     private void revealDealt(PlayerId player, List<CardPair> pairs, EventBatch batch) {
-        table.discard(pairs);
+        table.discard(player, pairs);
         batch.add(OldMaidEvent.dealPairs(player, pairs));
     }
 
@@ -199,5 +199,9 @@ public class OldMaidRound {
 
     List<CardPair> recentPairs(int limit) {
         return table.recentPairs(limit);
+    }
+
+    List<DiscardedPair> discards() {
+        return table.discards();
     }
 }

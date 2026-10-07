@@ -1,6 +1,7 @@
 package com.boardgame.oldmaid;
 
 import com.boardgame.oldmaid.view.OldMaidCardView;
+import com.boardgame.oldmaid.view.OldMaidDiscardView;
 import com.boardgame.oldmaid.view.OldMaidEventView;
 import com.boardgame.oldmaid.view.OldMaidPeekSignal;
 import com.boardgame.oldmaid.view.OldMaidPeekView;
@@ -33,6 +34,7 @@ final class OldMaidViewAssembler {
                 game.canShuffle(viewer),
                 game.discardCount(),
                 pairs(game),
+                discards(game),
                 resultOf(game),
                 winnerIdOf(game),
                 context.timing().deadline(),
@@ -98,6 +100,14 @@ final class OldMaidViewAssembler {
         return game.recentPairs(RECENT_PAIRS)
                 .stream()
                 .map(pair -> OldMaidCardView.listOf(pair.cards()))
+                .toList();
+    }
+
+    // 버린 짝 전체(공개 정보, 버린 순서대로). 버린 카드 목록 창이 쓴다.
+    private static List<OldMaidDiscardView> discards(OldMaidGame game) {
+        return game.discards()
+                .stream()
+                .map(OldMaidDiscardView::of)
                 .toList();
     }
 

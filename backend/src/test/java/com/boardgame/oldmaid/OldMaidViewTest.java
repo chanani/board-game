@@ -71,6 +71,12 @@ class OldMaidViewTest {
         assertThat(cardIds(spectator)).doesNotContain(52, 3, 45, 33);
         assertThat(cardIds(drawer.at("/game/recentPairs"))).containsExactly(2, 15);
         assertThat(cardIds(spectator.at("/game/recentPairs"))).containsExactly(2, 15);
+        // 버린 짝 전체 목록(공개 정보): 누가 버렸는지와 두 장.
+        for (JsonNode viewer : List.of(owner, other, drawer, spectator)) {
+            assertThat(viewer.at("/game/discards").size()).isEqualTo(1);
+            assertThat(viewer.at("/game/discards/0/playerId").asLong()).isEqualTo(1L);
+            assertThat(cardIds(viewer.at("/game/discards/0/cards"))).containsExactly(2, 15);
+        }
         assertThat(other.toString()).doesNotContain("JOKER");
         assertThat(drawer.at("/game/events/0/type").asText()).isEqualTo("DRAW");
         assertThat(drawer.at("/game/events/0/cards").size()).isZero();

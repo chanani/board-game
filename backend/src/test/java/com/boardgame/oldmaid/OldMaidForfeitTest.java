@@ -47,6 +47,8 @@ class OldMaidForfeitTest {
         assertThat(forfeit.count()).isEqualTo(2);
         assertThat(forfeit.cards()).isEmpty();
         assertThat(game.latestEvents().get(1).cards()).containsExactly(s(Rank.TWO), c(Rank.TWO));
+        // 넘겨받아 짝을 맞춘 사람(A)이 버린 사람으로 기록된다.
+        assertThat(game.discards()).containsExactly(new DiscardedPair(A, new CardPair(s(Rank.TWO), c(Rank.TWO))));
     }
 
     @Test

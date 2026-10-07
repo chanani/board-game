@@ -18,6 +18,7 @@ public record OldMaidView(
         boolean canShuffle,
         int discardCount,
         List<List<OldMaidCardView>> recentPairs,
+        List<OldMaidDiscardView> discards,
         OldMaidResultView result,
         Long winnerId,
         Long deadline,

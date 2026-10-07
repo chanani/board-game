@@ -216,6 +216,7 @@ public record GameAction(String type, Integer column, Integer row, Integer cardI
   "canShuffle": false,
   "discardCount": 40,
   "recentPairs": [ [ { "id": 9, "suit": "SPADES", "rank": "TEN" }, { "id": 35, "suit": "DIAMONDS", "rank": "TEN" } ] ],
+  "discards": [ { "playerId": 2, "cards": [ { "id": 9, "suit": "SPADES", "rank": "TEN" }, { "id": 35, "suit": "DIAMONDS", "rank": "TEN" } ] } ],
   "result": null,
   "winnerId": null,
   "deadline": 1791400015000,
@@ -235,6 +236,7 @@ public record GameAction(String type, Integer column, Integer row, Integer cardI
 | `peek` | 게임 중이면 `{ index: int \| null, seq }`, 끝나면 `null` |
 | `canShuffle` | 보는 사람이 지금 섞을 수 있는지(R22, 쿨다운은 넣지 않는다) |
 | `discardCount`, `recentPairs` | 버린 카드 장수와 최근 6쌍(오래된 것부터) |
+| `discards` | 처음부터 지금까지 버린 짝 전체(오래된 것부터): 버린 사람 `playerId`와 카드 2장. 나눌 때 버린 짝은 그 사람, 기권으로 넘겨받아 맞춘 짝은 받은 사람. 버린 짝은 모두에게 공개된 정보다. 가운데 버린 더미("버린 카드 보기" 버튼)를 누르면 이 목록을 창으로 보인다 |
 | `result` | 끝났을 때만: `{ "reason": "NORMAL" \| "FORFEIT", "ranking": [ { "playerId", "rank", "placement" } ], "thiefId": 12 \| null }` |
 | `winnerId` | 끝났을 때 1등 |
 | `deadline`, `serverNow`, `lastAutoActorIds`, `autoActSeq` | 우노와 같은 계약 |

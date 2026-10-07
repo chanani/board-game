@@ -151,6 +151,8 @@ export type OldMaidEvent = {
   seq: number; type: OldMaidEventType; actorId: number | null; targetId: number | null; cards: PlayingCard[];
   count: number | null; reason: 'NORMAL' | 'FORFEIT' | null; auto: boolean;
 };
+/** 버린 짝 한 쌍과 버린 사람(공개 정보, 버린 순서대로). */
+export type OldMaidDiscard = { playerId: number; cards: PlayingCard[] };
 export type OldMaidView = {
   viewerId: number;
   status: 'IN_PROGRESS' | 'GAME_OVER';
@@ -165,6 +167,8 @@ export type OldMaidView = {
   canShuffle: boolean;
   discardCount: number;
   recentPairs: PlayingCard[][];
+  /** 처음부터 지금까지 버린 짝 전체(오래된 것부터). 버린 카드 목록 창이 쓴다. */
+  discards: OldMaidDiscard[];
   result: OldMaidResult | null;
   winnerId: number | null;
   deadline: number | null;
