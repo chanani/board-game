@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CARD_ART_WIDTH, CORNER_EXTENT } from './cards';
-import { fanAngle, fanDrop, fanOverhang, fanRoom, fanUnderhang, handSpacing, minVisibleOf, UNO_PC_SHORT_SIZES, UNO_SIZES, unoInstruction, unoSizes } from './layout';
+import { FAN_RADIUS, fanAngle, fanDrop, fanOverhang, fanRoom, fanUnderhang, HAND_GLOW, handHeadroom, handSpacing, minVisibleOf, UNO_PC_SHORT_SIZES, UNO_SIZES, unoInstruction, unoSizes } from './layout';
 import { unoView } from './unoFixtures';
 
 const nick = (id: number) => ({ 1: '앨리스', 2: '밥', 3: '캐롤' })[id] ?? '떠난 플레이어';
@@ -105,3 +105,16 @@ describe('차례 안내 문구', () => {
     expect(unoInstruction(unoView({ status: 'GAME_OVER', stage: null, currentPlayerId: null }), 1, nick, true)).toBe('게임이 끝났어요.');
   });
 });
+
+describe('손패 위 여백', () => {
+  it('눕힌 화면(터치, 들어 올림 10+16)은 2~20장 모두 34px 안이라 한 화면 맞춤을 지키고, 정밀 포인터 PC는 더 낮다', () => {
+    for (let count = 2; count <= 20; count += 1) {
+      const angles = Array.from({ length: count }, (_, index) => fanAngle(index, count));
+      const landscape = handHeadroom(UNO_SIZES.landscape.hand, angles, FAN_RADIUS.landscape, 26);
+      expect(landscape).toBeLessThanOrEqual(34);
+      expect(landscape).toBeGreaterThanOrEqual(26 + HAND_GLOW);
+      expect(handHeadroom(UNO_PC_SHORT_SIZES.hand, angles, FAN_RADIUS.pc, 10)).toBeLessThan(34);
+    }
+  });
+});
+

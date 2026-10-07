@@ -93,6 +93,18 @@ export function fanRoom(width: number, edgeAngle: number, radius = FAN_RADIUS.pc
   return Math.ceil(fanDrop(width, edgeAngle, radius) + fanUnderhang(width, edgeAngle)) + FAN_BOTTOM_ROOM;
 }
 
+/** 낼 수 있는 카드의 빛(drop-shadow 6px)이 위로 번지는 폭. */
+export const HAND_GLOW = 6;
+
+/**
+ * 손패 줄 위쪽 여백: 가장 많이 들어 올린 카드의 진짜 윗끝(호를 따라 내려앉은 만큼 빼고, 기울어 모서리가 올라간 만큼 더하고,
+ * 빛까지 더한 값)이 줄 위로 넘치지 않는 최소 높이. 스크롤 줄(overflow-x-auto)은 세로도 잘라 내므로 넉넉히 잡아야 한다.
+ */
+export function handHeadroom(width: number, angles: number[], radius: number, maxLift: number): number {
+  const need = angles.map((angle) => maxLift + HAND_GLOW + fanUnderhang(width, angle) - fanDrop(width, angle, radius));
+  return Math.ceil(Math.max(maxLift + HAND_GLOW, ...need));
+}
+
 /** 모든 배치의 손패 부채꼴: 카드마다 최대 ±15° 안에서 고르게 기울인다(장수가 적으면 덜 벌린다). */
 export function fanAngle(index: number, count: number): number {
   if (count <= 1) {

@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { UnoCard } from '../../api/types';
 import { setMediaMatches } from '../../test/media';
-import { fanOverhang, fanUnderhang, handSpacing, PC_TALL_QUERY, UNO_PC_SHORT_SIZES, UNO_SIZES } from './layout';
+import { fanOverhang, fanUnderhang, HAND_GLOW, handSpacing, PC_TALL_QUERY, UNO_PC_SHORT_SIZES, UNO_SIZES } from './layout';
 import { UnoHand } from './UnoHand';
 import { drawTwo, num, skip, wild } from './unoFixtures';
 
@@ -126,12 +126,35 @@ describe('UnoHand', () => {
     expect(cards[0].style.transform).toContain('rotate(-7.5deg)');
   });
 
-  it.each(['pc', 'portrait', 'landscape'] as const)('%s 부채꼴에서도 고르고 들어 올린 카드가 줄 위로 넘치지 않는다', (layout) => {
-    render(<UnoHand cards={CARDS} playableIds={[3, 19, 100]} myTurn layout={layout} zoneId={1} onPlay={vi.fn()} />);
+  // 카드의 진짜 윗끝: top + translateY(호를 따라 내려앉음 - 들어 올림) - 기울어 올라간 모서리 - 빛(낼 수 있는 카드).
+  const realTop = (card: HTMLElement, extraLift: number) => {
+    const translate = Number(/translateY\((-?[\d.]+)px\)/.exec(card.style.transform)?.[1] ?? 0);
+    const angle = Number(card.getAttribute('data-angle'));
+    const glow = card.getAttribute('data-lifted') === 'true' ? HAND_GLOW : 0;
+    return parseFloat(card.style.top) + translate - extraLift - fanUnderhang(parseFloat(card.style.width), angle) - glow;
+  };
+  const MANY: UnoCard[] = [...CARDS, num('GREEN', 1, 51), num('GREEN', 2, 52), num('YELLOW', 3, 27), drawTwo('BLUE', 98)];
+
+  it.each([['pc', 24], ['portrait', 24], ['landscape', 16]] as const)('터치 %s: 고른 카드까지 들어 올려도 기운 모서리와 빛이 줄 위로 넘치지 않는다', async (layout, selectLift) => {
+    setMediaMatches((query) => query !== '(pointer: fine)');
+    render(<UnoHand cards={MANY} playableIds={MANY.map((card) => card.id)} myTurn layout={layout} zoneId={1} onPlay={vi.fn()} />);
+    const cards = screen.getAllByTestId('hand-card');
+    await userEvent.click(cards[3]);
 
     screen.getAllByTestId('hand-card').forEach((card) => {
-      expect(parseFloat(card.style.top) - 24 - 10).toBeGreaterThanOrEqual(0);
+      // 고른 카드는 이미 들어 올려져 있고, 나머지는 골랐을 때를 가정해 더 올린다.
+      const extra = card.getAttribute('data-selected') === 'true' ? 0 : selectLift;
+      expect(realTop(card, extra)).toBeGreaterThanOrEqual(0);
     });
+  });
+
+  it('정밀 포인터(PC)는 고르기 들어 올림이 없으니 낼 수 있는 카드의 빛까지만 위 여백을 둔다', () => {
+    setMediaMatches(true);
+    render(<UnoHand cards={MANY} playableIds={MANY.map((card) => card.id)} myTurn layout="pc" zoneId={1} onPlay={vi.fn()} />);
+
+    const cards = screen.getAllByTestId('hand-card');
+    cards.forEach((card) => expect(realTop(card, 0)).toBeGreaterThanOrEqual(0));
+    expect(Math.min(...cards.map((card) => realTop(card, 0)))).toBeLessThan(2);
   });
 
   it('첫 카드와 마지막 카드가 줄 양끝 여백 안에 들어 잘리지 않는다', () => {

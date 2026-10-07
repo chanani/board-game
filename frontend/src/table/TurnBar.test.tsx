@@ -28,10 +28,18 @@ describe('차례 안내 바', () => {
     expect(screen.queryByTestId('my-turn-badge')).not.toBeInTheDocument();
   });
 
-  it('좁은 화면에서 넘치면 차례 문구보다 최근 진행부터 줄인다', () => {
-    render(<TurnBar instruction="안내" myTurn log={log} nicknameOf={nick} deadline={null} serverNow={0} compact />);
-    expect(screen.getByTestId('instruction')).toHaveClass('shrink-0', 'max-w-[75%]');
-    expect(screen.getByTestId('last-log')).toHaveClass('shrink-[3]');
+  it('좁은 화면에서 넘쳐도 양쪽이 잘리지 않게 safe 가운데 정렬이고, 최근 진행부터 줄인 뒤 차례 문구를 말줄임한다', () => {
+    render(<TurnBar instruction="바꿀 카드를 눌러 주세요 (버리기 불가)" myTurn log={log} nicknameOf={nick} deadline={null} serverNow={0} compact />);
+    const bar = screen.getByTestId('turn-bar');
+    expect(bar).toHaveClass('justify-center-safe', 'overflow-hidden');
+    expect(bar).not.toHaveClass('justify-center');
+    const instruction = screen.getByTestId('instruction');
+    expect(instruction).toHaveClass('min-w-[4.5rem]', 'shrink');
+    expect(instruction).not.toHaveClass('min-w-0');
+    expect(instruction).not.toHaveClass('shrink-0');
+    expect(instruction.firstElementChild).toHaveClass('truncate');
+    expect(screen.getByTestId('last-log')).toHaveClass('min-w-0', 'shrink-[1000]');
+    expect(screen.getByTestId('my-turn-badge')).toHaveClass('shrink-0');
   });
 
   it('기록이 없으면 마지막 기록 칸은 비어 있다', () => {
