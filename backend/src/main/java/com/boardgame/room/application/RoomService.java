@@ -267,9 +267,13 @@ public class RoomService {
         outcomePublisher.publish(room, outcomes, clock.instant());
     }
 
-    // D3: 신호는 방 정보·화면을 다시 보내지 않고, 타이머도 다시 걸지 않는다.
+    // D3: 신호는 방 정보·화면을 다시 보내지 않고, 타이머도 다시 걸지 않는다. D15: 방이 이미 없으면 조용히 버린다.
     public synchronized void signal(String rawCode, long memberId, GameAction action) {
-        Room room = find(rawCode);
+        registry.find(RoomCode.parse(rawCode))
+                .ifPresent(room -> signal(room, memberId, action));
+    }
+
+    private void signal(Room room, long memberId, GameAction action) {
         room.signal(memberId, action)
                 .ifPresent(payload -> sendSignal(room, payload));
     }

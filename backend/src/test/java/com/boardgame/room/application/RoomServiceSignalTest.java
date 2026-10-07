@@ -113,6 +113,17 @@ class RoomServiceSignalTest {
     }
 
     @Test
+    void D15_없는_방의_신호는_오류_없이_버린다() {
+        start();
+        session.replySignal("peek-3");
+
+        service.signal("NOROOM", HOST, PEEK);
+
+        verify(notifier, never()).gameSignal(anyLong(), any());
+        assertThat(session.signals()).isEmpty();
+    }
+
+    @Test
     void 신호를_모르는_게임은_INVALID_INPUT() {
         assertThatThrownBy(() -> session.signal(HOST, PEEK))
                 .isInstanceOfSatisfying(BusinessException.class,
