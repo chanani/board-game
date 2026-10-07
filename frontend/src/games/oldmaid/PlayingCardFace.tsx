@@ -146,7 +146,7 @@ function JokerArt() {
 }
 
 /**
- * 왼쪽 위 모서리의 큰 랭크 글자 + 그 아래 무늬. 카드가 겹쳐 왼쪽 CORNER_EXTENT(60/200)만 보여도 읽힌다.
+ * 왼쪽 위 모서리의 큰 랭크 글자(무늬 색). 아래 무늬는 그리지 않는다(가운데 무늬 수와 헷갈려 숫자보다 2개 많아 보임). 카드가 겹쳐 왼쪽 CORNER_EXTENT(60/200)만 보여도 읽힌다.
  * "10"처럼 두 글자는 textLength로 같은 폭에 맞춘다.
  */
 const JOKER_LETTERS = ['J', 'O', 'K', 'E', 'R'];
@@ -171,7 +171,6 @@ function Corner({ card, ink }: { card: PlayingCard; ink: string }) {
     <g data-testid="corner-index" data-corner={label}>
       <text x="32" y="44" textAnchor="middle" dominantBaseline="central" fontSize="56" fontWeight="900" fontFamily={FONT} fill={ink}
         textLength={label.length > 1 ? 50 : undefined} lengthAdjust={label.length > 1 ? 'spacingAndGlyphs' : undefined}>{label}</text>
-      <SuitGlyph suit={card.suit as Suit} x={32} y={92} size={28} fill={ink} />
     </g>
   );
 }

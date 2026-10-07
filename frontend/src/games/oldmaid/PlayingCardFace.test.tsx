@@ -62,6 +62,20 @@ describe('PlayingCardFace', () => {
     expect(corners[0].getAttribute('data-corner')).toBe('10');
   });
 
+  it('숫자 카드는 가운데 무늬가 정확히 숫자만큼이고 모서리에는 무늬가 없으며 랭크 글자만 무늬 색이다', () => {
+    ([['HEARTS', 'SEVEN', 7, '#C8283C'], ['SPADES', 'NINE', 9, '#1F2430'], ['CLUBS', 'ACE', 1, '#1F2430'], ['DIAMONDS', 'KING', 0, '#C8283C']] as const).forEach(([suit, rank, count, color]) => {
+      const { container } = render(<PlayingCardFace card={playingCard(suit, rank)} width={60} />);
+      expect(container.querySelectorAll('[data-testid="pip"]')).toHaveLength(count);
+      const corners = Array.from(container.querySelectorAll('[data-testid="corner-index"]'));
+      expect(corners).toHaveLength(2);
+      corners.forEach((corner) => {
+        expect(corner.querySelectorAll('[data-suit]')).toHaveLength(0);
+        expect(corner.querySelectorAll('path, circle')).toHaveLength(0);
+        expect(corner.querySelector('text')?.getAttribute('fill')).toBe(color);
+      });
+    });
+  });
+
   it('숫자 카드는 숫자만큼 무늬를, A는 큰 무늬 하나를, 그림 카드는 틀을 그린다', () => {
     const seven = render(<PlayingCardFace card={playingCard('HEARTS', 'SEVEN')} width={60} />);
     expect(seven.container.querySelectorAll('[data-testid="pip"]')).toHaveLength(7);
