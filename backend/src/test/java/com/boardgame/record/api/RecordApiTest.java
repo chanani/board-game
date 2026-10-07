@@ -165,6 +165,25 @@ class RecordApiTest {
     }
 
     @Test
+    void 다른_회원의_전적은_그림과_게임별_기록을_주고_없는_회원은_통일된_404() throws Exception {
+        User alice = ApiUsers.create(mockMvc);
+        User bob = ApiUsers.create(mockMvc);
+        playMatch(bob, alice, 0);
+
+        mockMvc.perform(get("/api/records/members/{id}", bob.id()).session(alice.session()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nickname").value(bob.nickname()))
+                .andExpect(jsonPath("$.avatar").value(com.boardgame.member.domain.Avatar.defaultFor(bob.id()).key()))
+                .andExpect(jsonPath("$.stats[0].matches").value(1))
+                .andExpect(jsonPath("$.stats[0].wins").value(1));
+        mockMvc.perform(get("/api/records/members/{id}", 999_999_999L).session(alice.session()))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.code").value("MEMBER_NOT_FOUND"))
+                .andExpect(jsonPath("$.message").value("회원을 찾을 수 없습니다."));
+    }
+
+    @Test
     void 없는_회원의_최근_경기는_404() throws Exception {
         User alice = ApiUsers.create(mockMvc);
 

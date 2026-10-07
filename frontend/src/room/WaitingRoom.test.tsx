@@ -6,6 +6,9 @@ import type { Room } from '../api/types';
 import { ToastProvider } from '../components/Toast';
 import { setMediaMatches } from '../test/media';
 import { WaitingRoom } from './WaitingRoom';
+import { recordsApi } from '../api/records';
+
+vi.mock('../api/records', () => ({ recordsApi: { member: vi.fn() } }));
 
 const room: Room = {
   code: 'ABC234', name: '방', gameType: 'PAPER_SAFARI', gameTypeName: '페이퍼 사파리', status: 'WAITING', hostId: 1, maxPlayers: 4, locked: false, spectators: [], theme: 'WOOD',
@@ -197,9 +200,10 @@ describe('WaitingRoom', () => {
   it('관전자가 있으면 관전 중인 사람을 보여준다', () => {
     renderRoom({ room: { ...room, spectators: [{ id: 3, nickname: '캐롤' }, { id: 4, nickname: '데이브' }] } });
 
-    expect(screen.getByText('관전 중: 캐롤, 데이브')).toBeInTheDocument();
+    const list = screen.getByText(/관전 중:/).closest('p') as HTMLElement;
+    expect(list).toHaveTextContent('관전 중:캐롤,데이브');
     // 오로라 눈밭·해변 모래 위에서도 읽히게 테마별 알약 바탕(pill)을 쓴다.
-    expect(screen.getByText('관전 중: 캐롤, 데이브').closest('p')).toHaveClass('pill');
+    expect(list).toHaveClass('pill');
     expect(screen.queryByRole('button', { name: '자리에 앉기' })).not.toBeInTheDocument();
   });
 
@@ -314,5 +318,48 @@ describe('WaitingRoom', () => {
     const chairs = screen.getAllByTestId('chair');
     expect(within(chairs[0]).getByTestId('avatar')).toHaveAttribute('data-avatar', 'TIGER');
     expect(within(chairs[1]).getByTestId('avatar')).toHaveAttribute('data-avatar', 'RABBIT');
+  });
+
+  describe('다른 사람 전적 보기', () => {
+    const stats = (memberId: number, nickname: string) => ({
+      memberId, nickname, stats: [
+        { gameType: 'PAPER_SAFARI' as const, gameTypeName: '페이퍼 사파리', matches: 4, wins: 3, draws: 0, losses: 1, winRate: 0.75, rounds: 0, roundWins: 0, roundDraws: 0, roundLosses: 0, roundWinRate: null, averageRoundScore: null },
+        { gameType: 'UNO' as const, gameTypeName: '우노', matches: 0, wins: 0, draws: 0, losses: 0, winRate: null, rounds: 0, roundWins: 0, roundDraws: 0, roundLosses: 0, roundWinRate: null, averageRoundScore: null },
+      ],
+    });
+    beforeEach(() => {
+      vi.mocked(recordsApi.member).mockReset().mockImplementation(async (id: number) => stats(id, id === 2 ? '밥' : '캐롤'));
+    });
+
+    it('다른 사람 자리를 누르면 그 사람의 승률 창이 뜨고, 내 자리는 버튼이 아니다', async () => {
+      renderRoom();
+
+      expect(screen.queryByRole('button', { name: '앨리스님 전적 보기' })).not.toBeInTheDocument();
+      await userEvent.click(screen.getByRole('button', { name: '밥님 전적 보기' }));
+
+      const dialog = await screen.findByRole('dialog', { name: '밥님 전적' });
+      expect(recordsApi.member).toHaveBeenCalledWith(2);
+      expect(within(dialog).getByTestId('avatar')).toHaveAttribute('data-avatar', 'RABBIT');
+      expect(await within(dialog).findByTestId('stat-PAPER_SAFARI')).toHaveTextContent('페이퍼 사파리4판3승75.0%');
+    });
+
+    it('방장이 내보내기 X를 누르면 전적 창이 아니라 내보내기 확인 창이 뜬다', async () => {
+      setMediaMatches(false);
+      renderRoom();
+
+      await userEvent.click(screen.getByRole('button', { name: '밥님 내보내기' }));
+
+      await waitFor(() => expect(within(screen.getByRole('dialog')).getByText('밥님을 내보낼까요?')).toBeVisible());
+      expect(screen.queryByRole('dialog', { name: '밥님 전적' })).not.toBeInTheDocument();
+      expect(recordsApi.member).not.toHaveBeenCalled();
+    });
+
+    it('관전자 목록의 다른 사람 이름도 눌러 전적을 볼 수 있다', async () => {
+      renderRoom({ room: { ...room, spectators: [{ id: 3, nickname: '캐롤' }, { id: 1, nickname: '앨리스' }] }, meId: 2 });
+
+      await userEvent.click(screen.getByRole('button', { name: '캐롤님 전적 보기' }));
+      expect(await screen.findByRole('dialog', { name: '캐롤님 전적' })).toBeInTheDocument();
+      expect(recordsApi.member).toHaveBeenCalledWith(3);
+    });
   });
 });

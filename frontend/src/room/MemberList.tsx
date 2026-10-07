@@ -21,6 +21,8 @@ type Props = {
   onKick?: (memberId: number) => void;
   /** 사람 id별 말풍선 내용(대기실 채팅). */
   bubbles?: SeatBubbles;
+  /** 있으면 나 말고 다른 사람의 아바타가 전적 보기 버튼이 된다. */
+  onShowStats?: (member: RoomMember) => void;
 };
 
 type Point = { left: number; top: number };
@@ -47,7 +49,7 @@ function positionOf(maxPlayers: number, index: number): Point {
   return { left: 50 + 34 * Math.cos(angle), top: 44 + 30 * Math.sin(angle) };
 }
 
-export function MemberList({ members, maxPlayers, meId, receivedAt, now, onForfeit, onKick, bubbles }: Props) {
+export function MemberList({ members, maxPlayers, meId, receivedAt, now, onForfeit, onKick, bubbles, onShowStats }: Props) {
   const pc = useMediaQuery(PC_QUERY);
   const seats = Array.from({ length: maxPlayers }, (_, index) => members[index] ?? null);
   return (
@@ -65,7 +67,15 @@ export function MemberList({ members, maxPlayers, meId, receivedAt, now, onForfe
                 <motion.div key="taken" initial={{ scale: 0, y: -20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0 }}
                   transition={{ type: 'spring', bounce: 0.5 }}
                   className="relative flex h-12 w-12 items-center justify-center rounded-full bg-cream-50 text-xl font-black text-wood-800 shadow-[0_4px_0_var(--color-cream-300),0_10px_16px_rgb(0_0_0/0.4)] sm:h-14 sm:w-14 sm:text-2xl">
-                  <AvatarFace avatar={avatarOf(member.avatar, member.id)} />
+                  {onShowStats && member.id !== meId ? (
+                    // 아바타 전체가 누르는 영역. 연결 점·내보내기 X는 뒤에 그려 이 버튼 위에 놓이므로 X를 누르면 전적 창이 뜨지 않는다.
+                    <button type="button" aria-label={`${member.nickname}님 전적 보기`} onClick={() => onShowStats(member)}
+                      className="block h-full w-full cursor-pointer rounded-full outline-none transition-transform hover:scale-105 focus-visible:ring-[3px] focus-visible:ring-mustard-300 motion-reduce:transition-none motion-reduce:hover:scale-100">
+                      <AvatarFace avatar={avatarOf(member.avatar, member.id)} />
+                    </button>
+                  ) : (
+                    <AvatarFace avatar={avatarOf(member.avatar, member.id)} />
+                  )}
                   <span aria-hidden="true" className={`absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full ring-2 ring-cream-50 ${member.connected ? 'bg-green-500' : 'bg-stone-400'}`} />
                   {remove && !pc ? <KickBadge label={`${member.nickname}님 내보내기`} onClick={remove} className="absolute -right-2 -top-2" /> : null}
                 </motion.div>

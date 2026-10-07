@@ -10,6 +10,8 @@ import { PC_QUERY, useMediaQuery } from '../lib/useMediaQuery';
 import { ChatPanel } from './ChatPanel';
 import { KickConfirmModal } from './KickConfirmModal';
 import { MemberList } from './MemberList';
+import { MemberStatsModal, type StatsTarget } from './MemberStatsModal';
+import { MemberAvatar } from '../components/Avatar';
 import { useSeatBubbles } from './useSeatBubbles';
 import { WaitingActionBar } from './WaitingActionBar';
 
@@ -37,6 +39,7 @@ const FELT_RIM = 'p-[13px]';
 export function WaitingRoom({ room, meId, receivedAt, now, onStart, onReady, onForfeit, onKick, onSeat, chat }: Props) {
   const spectating = room.spectators.some((spectator) => spectator.id === meId);
   const [kickTarget, setKickTarget] = useState<RoomMember | null>(null);
+  const [statsTarget, setStatsTarget] = useState<StatsTarget | null>(null);
   const wide = useMediaQuery(PC_QUERY);
   const [rulesOpen, setRulesOpen] = useState(false);
   const rules = findGame(room.gameType)?.rules;
@@ -56,11 +59,25 @@ export function WaitingRoom({ room, meId, receivedAt, now, onStart, onReady, onF
         {/* 테이블 위에는 자리만 둔다. 가운데가 비어 있으니 펠트를 낮게(정사각형~3:2) 그린다. */}
         <Felt shape="round" className="aspect-square w-full max-w-[640px] sm:aspect-[3/2]">
           <MemberList members={room.members} maxPlayers={room.maxPlayers} meId={meId} receivedAt={receivedAt} now={now} bubbles={bubbles}
-            onForfeit={spectating ? undefined : onForfeit} onKick={canKick ? askKick : undefined} />
+            onForfeit={spectating ? undefined : onForfeit} onKick={canKick ? askKick : undefined} onShowStats={setStatsTarget} />
         </Felt>
         <WaitingActionBar room={room} meId={meId} spectating={spectating} onStart={onStart} onReady={onReady} onSeat={onSeat} />
         {room.spectators.length > 0 ? (
-          <p className="flex w-fit items-center gap-1.5 pill rounded-full px-3 py-1 text-sm"><BinocularsIcon /> 관전 중: {room.spectators.map((spectator) => spectator.nickname).join(', ')}</p>
+          <p className="flex w-fit max-w-full flex-wrap items-center gap-x-1.5 gap-y-1 pill rounded-full px-3 py-1 text-sm">
+            <BinocularsIcon /> 관전 중:
+            {room.spectators.map((spectator, index) => {
+              const separator = index < room.spectators.length - 1 ? ',' : '';
+              if (spectator.id === meId) {
+                return <span key={spectator.id} className="inline-flex items-center gap-1"><MemberAvatar memberId={spectator.id} avatar={spectator.avatar} size={18} />{spectator.nickname}{separator}</span>;
+              }
+              return (
+                <button key={spectator.id} type="button" aria-label={`${spectator.nickname}님 전적 보기`} onClick={() => setStatsTarget(spectator)}
+                  className="inline-flex cursor-pointer items-center gap-1 rounded-full underline decoration-dotted underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-mustard-300">
+                  <MemberAvatar memberId={spectator.id} avatar={spectator.avatar} size={18} />{spectator.nickname}{separator}
+                </button>
+              );
+            })}
+          </p>
         ) : null}
       </section>
       <div className="flex flex-col gap-6">
@@ -83,6 +100,7 @@ export function WaitingRoom({ room, meId, receivedAt, now, onStart, onReady, onF
         ) : null}
       </div>
       {rules ? <RulesCarousel open={rulesOpen} onClose={() => setRulesOpen(false)} title={rules.title} slides={rules.slides} renderArt={rules.renderArt} /> : null}
+      <MemberStatsModal target={statsTarget} onClose={() => setStatsTarget(null)} />
       <KickConfirmModal nickname={kickTarget?.nickname ?? null} onCancel={() => setKickTarget(null)} onConfirm={confirmKick} />
     </div>
   );
