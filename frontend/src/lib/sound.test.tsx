@@ -149,3 +149,66 @@ describe('sound', () => {
     expect(readDrawSound()).toBe('chime');
   });
 });
+
+describe('카드 움직임 소리', () => {
+  const hz: number[] = [];
+  let noises = 0;
+  class FakeNode { connect = vi.fn((next: unknown) => next); }
+  const param = () => ({ value: 0, setValueAtTime: vi.fn(), exponentialRampToValueAtTime: vi.fn() });
+  class FakeCtx {
+    state = 'running'; currentTime = 0; sampleRate = 100; destination = new FakeNode();
+    resume = vi.fn(() => Promise.resolve());
+    createGain() { return Object.assign(new FakeNode(), { gain: param() }); }
+    createOscillator() {
+      return Object.assign(new FakeNode(), { type: 'sine', frequency: { ...param(), setValueAtTime: (value: number) => { hz.push(value); } }, start: vi.fn(), stop: vi.fn() });
+    }
+    createBuffer(_channels: number, length: number) { return { getChannelData: () => new Float32Array(length) }; }
+    createBufferSource() { noises += 1; return Object.assign(new FakeNode(), { buffer: null, start: vi.fn() }); }
+    createBiquadFilter() { return Object.assign(new FakeNode(), { type: 'bandpass', frequency: param() }); }
+  }
+
+  async function playAll(names: Parameters<ReturnType<typeof useSound>['play']>[0][]) {
+    hz.length = 0;
+    noises = 0;
+    (window as unknown as { AudioContext: unknown }).AudioContext = FakeCtx;
+    function Probe() {
+      const { play } = useSound();
+      return <button type="button" onClick={() => names.forEach((name) => play(name))}>재생</button>;
+    }
+    render(<SoundProvider><Probe /></SoundProvider>);
+    await userEvent.click(screen.getByRole('button', { name: '재생' }));
+    delete (window as unknown as { AudioContext?: unknown }).AudioContext;
+  }
+
+  it('카드를 내려놓는 소리(place)도 고른 소리(뽁)로 난다 — 예전 낮은 뚱 소리(180Hz)는 없다', async () => {
+    writeDrawSound('pop');
+
+    await playAll(['place', 'draw']);
+
+    expect(hz).toEqual([380, 380]);
+    expect(hz).not.toContain(180);
+  });
+
+  it('기본(슥)이면 place도 슥(잡음 한 번)으로 난다', async () => {
+    await playAll(['place']);
+
+    expect(noises).toBe(1);
+    expect(hz).toEqual([]);
+  });
+
+  it('효과음을 끄면 place도 나지 않는다', async () => {
+    writeMuted(true);
+
+    await playAll(['place']);
+
+    expect(noises + hz.length).toBe(0);
+  });
+
+  it('차례 알림·시간 경고·뒤집기 같은 카드 움직임이 아닌 소리는 고른 소리와 상관없이 그대로다', async () => {
+    writeDrawSound('pop');
+
+    await playAll(['myTurn', 'tick']);
+
+    expect(hz).toEqual([784, 1047, 660, 660]);
+  });
+});

@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
 export type SoundName = 'draw' | 'place' | 'flip' | 'myTurn' | 'roundWin' | 'roundLose' | 'click' | 'tick' | 'uno' | 'chat';
-/** 덱·버린 카드에서 카드를 가져올 때 나는 소리. 닉네임 메뉴에서 고른다. */
+/** 카드를 가져오거나 내려놓을 때(그리고 사이트 버튼을 누를 때) 나는 소리. 닉네임 메뉴에서 고른다. */
 export type DrawSound = 'swish' | 'pop' | 'tock' | 'chime';
 export type SoundApi = {
   play: (name: SoundName) => void;
@@ -174,8 +174,14 @@ const DRAW_RECIPES: Record<DrawSound, Recipe> = {
   chime: (ctx, out) => { glide(ctx, out, 1046, 1046, 0, 0.16, 0.13); glide(ctx, out, 1568, 1568, 0.07, 0.2, 0.11); },
 };
 
-const RECIPES: Record<Exclude<SoundName, 'draw'>, Recipe> = {
-  place: (ctx, out) => tone(ctx, out, 180, 0, 0.08, 'triangle', 0.25),
+/** 카드가 움직이는 소리(가져오기 draw, 내려놓기·내기 place). 닉네임 메뉴에서 고른 소리 하나로 낸다. */
+type CardMoveSound = Extract<SoundName, 'draw' | 'place'>;
+
+function isCardMove(name: SoundName): name is CardMoveSound {
+  return name === 'draw' || name === 'place';
+}
+
+const RECIPES: Record<Exclude<SoundName, CardMoveSound>, Recipe> = {
   flip: (ctx, out) => { noise(ctx, out, 0.06, 4000, 0.2); tone(ctx, out, 900, 0.03, 0.04, 'square', 0.05); },
   myTurn: (ctx, out) => { tone(ctx, out, 784, 0, 0.18); tone(ctx, out, 1047, 0.15, 0.25); },
   roundWin: (ctx, out) => { tone(ctx, out, 523, 0, 0.15); tone(ctx, out, 659, 0.12, 0.15); tone(ctx, out, 784, 0.24, 0.3); },
@@ -189,7 +195,7 @@ const RECIPES: Record<Exclude<SoundName, 'draw'>, Recipe> = {
 };
 
 function recipeOf(name: SoundName, drawSound: DrawSound): Recipe {
-  return name === 'draw' ? DRAW_RECIPES[drawSound] : RECIPES[name];
+  return isCardMove(name) ? DRAW_RECIPES[drawSound] : RECIPES[name];
 }
 
 /** 재생마다 음량(0~100) 노드를 하나 거쳐 내보낸다. 소리가 꺼졌거나 음량이 0이면 아무것도 하지 않는다. */
