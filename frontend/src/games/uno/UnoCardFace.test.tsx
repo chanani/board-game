@@ -88,4 +88,17 @@ describe('UnoCardFace', () => {
     expect(Number(seven?.getAttribute('font-size'))).toBeGreaterThanOrEqual(60);
     expect(seven).toHaveAttribute('font-weight', '900');
   });
+
+  it('뒷면은 비스듬한 빨강 타원 위에 윤곽선 두른 굵은 우노 글자를 기울여 쓰고 잔무늬는 두지 않는다', () => {
+    render(<UnoCardFace card={null} width={22} />);
+
+    const back = screen.getByTestId('uno-card-back');
+    expect(back.querySelector('[data-testid="back-oval"]')?.parentElement).toHaveAttribute('transform', expect.stringMatching(/^rotate\(-60 /));
+    const word = back.querySelector('[data-testid="back-word"]');
+    expect(word).toHaveTextContent('우노');
+    expect(word).toHaveAttribute('font-weight', '900');
+    expect(word).toHaveAttribute('paint-order', 'stroke');
+    expect(word?.getAttribute('transform')).toMatch(/rotate\(-22 100 150\) skewX/);
+    expect(back.querySelectorAll('circle')).toHaveLength(0);
+  });
 });

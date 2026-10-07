@@ -154,6 +154,12 @@ function ColorMark({ color }: { color: UnoColor }) {
   return <path {...common} d="M36 248 L49 262 L36 276 L23 262 Z" />;
 }
 
+// 타원은 카드 대각선을 따라 길게(가로 반지름 118, 회전 -60°면 카드 안쪽 폭 176 안에 든다), 글자는 그보다 덜 기울여 힘 있게 둔다.
+const BACK_OVAL_TILT = -60;
+const BACK_WORD_TILT = -22;
+const BACK_RED = '#D93A3A';
+const BACK_INK = '#FFF4D6';
+
 function Back({ width, decorative, className }: { width: number; decorative: boolean; className?: string }) {
   const gradient = useId();
   return (
@@ -167,11 +173,16 @@ function Back({ width, decorative, className }: { width: number; decorative: boo
       </defs>
       <rect width="200" height="300" rx="20" fill="#fff" />
       <rect x="12" y="12" width="176" height="276" rx="14" fill={`url(#${gradient})`} />
-      <g fill="none" stroke="#fff" strokeOpacity="0.18">
-        <circle cx="100" cy="150" r="82" strokeWidth="10" />
-        <circle cx="100" cy="150" r="58" strokeWidth="6" />
+      {/* 카드 뒷면 무늬: 비스듬한 빨강 타원 위에 굵은 '우노'. 작은 크기에서도 뭉개지지 않게 잔무늬 없이 큰 모양만 둔다. */}
+      <g data-testid="back-emblem">
+        <g transform={`rotate(${BACK_OVAL_TILT} 100 150)`}>
+          <ellipse cx="100" cy="150" rx="118" ry="62" fill="#fff" />
+          <ellipse data-testid="back-oval" cx="100" cy="150" rx="110" ry="54" fill={BACK_RED} />
+        </g>
+        <text data-testid="back-word" x="100" y="150" textAnchor="middle" dominantBaseline="central" fontSize="64" fontWeight="900" fontFamily={FONT}
+          letterSpacing="-1" fill={BACK_INK} stroke="#1F2430" strokeWidth="10" strokeLinejoin="round" paintOrder="stroke"
+          transform={`rotate(${BACK_WORD_TILT} 100 150) skewX(-10) translate(26 0)`}>우노</text>
       </g>
-      <text x="100" y="152" textAnchor="middle" dominantBaseline="central" fontSize="58" fontWeight="900" fontFamily={FONT} fill="#fff">우노</text>
     </svg>
   );
 }
