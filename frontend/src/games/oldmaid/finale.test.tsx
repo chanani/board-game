@@ -55,6 +55,8 @@ describe('도둑잡기 게임 끝 연출', () => {
 
     act(() => vi.advanceTimersByTime(FINALE_DELAY_MS));
     expect(screen.getByTestId('game-end-banner')).toBeInTheDocument();
+    expect(screen.getByText('순위를 정하고 있어요')).toBeInTheDocument();
+    expect(screen.queryByText('점수를 계산하고 있어요')).not.toBeInTheDocument();
     expect(play).toHaveBeenCalledWith('gameOverWin');
 
     act(() => vi.advanceTimersByTime(BANNER_MS));

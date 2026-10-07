@@ -1,7 +1,7 @@
 import { motion } from 'motion/react';
 
-/** 결과 창 전에 테이블 가운데 잠깐 떴다 사라지는 "게임 끝!" 배너. */
-export function GameEndBanner() {
+/** 결과 창 전에 테이블 가운데 잠깐 떴다 사라지는 "게임 끝!" 배너. 아랫줄은 게임마다 다르다(점수가 없는 도둑잡기는 순위). */
+export function GameEndBanner({ subtitle = '점수를 계산하고 있어요' }: { subtitle?: string }) {
   return (
     <div className="pointer-events-none fixed inset-0 z-40 grid place-items-center px-4">
       <motion.div
@@ -16,7 +16,7 @@ export function GameEndBanner() {
         }}
       >
         <p className="text-3xl font-black tracking-wide text-mustard-200">게임 끝!</p>
-        <p className="mt-1 text-xs font-bold text-cream-200">점수를 계산하고 있어요</p>
+        <p className="mt-1 text-xs font-bold text-cream-200">{subtitle}</p>
       </motion.div>
     </div>
   );

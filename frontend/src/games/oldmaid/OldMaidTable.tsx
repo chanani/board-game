@@ -188,7 +188,7 @@ export function OldMaidTable({ view, room, meId, log, receivedAt, now, errorSeq,
         <div className={wide ? 'space-y-2' : 'space-y-3'}>{turnBar}{felt}{mine}</div>
       )}
       <OldMaidGhostLayer ghosts={ghosts} />
-      {finale === 'banner' ? <GameEndBanner /> : null}
+      {finale === 'banner' ? <GameEndBanner subtitle="순위를 정하고 있어요" /> : null}
     </div>
   );
 }
