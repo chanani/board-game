@@ -2,6 +2,7 @@ package com.boardgame.oldmaid;
 
 import com.boardgame.common.error.BusinessException;
 import com.boardgame.common.error.ErrorCode;
+import com.boardgame.oldmaid.view.OldMaidView;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -193,5 +194,9 @@ public class OldMaidGame {
 
     public List<OldMaidEvent> latestEvents() {
         return events.latest();
+    }
+
+    public OldMaidView viewFor(PlayerId viewer, OldMaidViewContext context) {
+        return OldMaidViewAssembler.assemble(this, viewer, context);
     }
 }
