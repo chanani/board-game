@@ -197,3 +197,20 @@ export const StarIcon = ({ className, testId }: IconProps) => (
 export const AlertIcon = ({ className, testId }: IconProps) => (
   <Svg testId={testId} className={className}><path d="M12 6v8" /><circle cx="12" cy="18" r="1" fill="currentColor" /></Svg>
 );
+
+/** 도둑 가면: 눈구멍 두 개가 뚫린 띠 가면과 묶은 끈. */
+export const ThiefMaskIcon = ({ className, testId }: IconProps) => (
+  <Svg className={className} testId={testId}>
+    <path d="M2 9.5c2.5-1.6 6-2.4 10-2.4s7.5.8 10 2.4c-.3 3.6-2.6 6-5.6 6-1.9 0-3.3-1.1-4.4-2.6-1.1 1.5-2.5 2.6-4.4 2.6-3 0-5.3-2.4-5.6-6z" />
+    <path d="M6 11.2c.8-.7 1.9-1 3-.8M18 11.2c-.8-.7-1.9-1-3-.8" />
+    <path d="M2 9.5 1 7M22 9.5l1-2.5" />
+  </Svg>
+);
+
+/** 겹친 두 장(짝). */
+export const PairIcon = ({ className }: IconProps) => (
+  <Svg className={className}>
+    <rect x="3" y="5" width="10" height="14" rx="2" />
+    <path d="M11 4.6 17.8 6.4a2 2 0 0 1 1.4 2.4l-2.6 9.7a2 2 0 0 1-2.4 1.4l-3-.8" />
+  </Svg>
+);
