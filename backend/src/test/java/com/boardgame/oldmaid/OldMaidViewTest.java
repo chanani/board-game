@@ -64,6 +64,7 @@ class OldMaidViewTest {
 
         // A가 하트 3을 뽑아 스페이드 3과 짝을 버렸다: 2·15는 버린 짝으로 공개, 3(A의 스페이드 4)·52(B의 조커)·45·33(C)은 주인만.
         assertThat(cardIds(owner.at("/game/hand"))).containsExactly(52);
+        assertThat(cardIds(owner)).containsOnlyOnce(52);
         assertThat(cardIds(owner)).doesNotContain(3, 45, 33);
         assertThat(cardIds(other)).doesNotContain(52, 3);
         assertThat(cardIds(drawer)).doesNotContain(52, 45, 33);
@@ -131,6 +132,18 @@ class OldMaidViewTest {
         assertThat(view.at("/game/result/ranking/1/placement").asText()).isEqualTo("THIEF");
         assertThat(view.at("/game/result/ranking/1/rank").asInt()).isEqualTo(2);
         assertThat(view.at("/game/discardCount").asInt()).isEqualTo(2);
+    }
+
+    @Test
+    void 기권한_사람의_화면에는_손패가_없다() {
+        OldMaidSession session = session();
+        session.forfeit(3L);
+
+        JsonNode forfeiter = json(session, 3L);
+
+        assertThat(forfeiter.at("/game/hand").isNull()).isTrue();
+        assertThat(forfeiter.at("/game/players/2/forfeited").asBoolean()).isTrue();
+        assertThat(cardIds(forfeiter)).doesNotContain(45, 33, 52, 3);
     }
 
     @Test

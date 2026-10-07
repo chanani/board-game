@@ -33,8 +33,8 @@ final class OldMaidViewAssembler {
                 game.canShuffle(viewer),
                 game.discardCount(),
                 pairs(game),
-                game.result().map(OldMaidResultView::of).orElse(null),
-                game.result().map(result -> Long.valueOf(result.winner().value())).orElse(null),
+                resultOf(game),
+                winnerIdOf(game),
                 context.timing().deadline(),
                 context.timing().serverNow(),
                 context.autoActors().ids(),
@@ -52,7 +52,7 @@ final class OldMaidViewAssembler {
         return game.seats()
                 .stream()
                 .map(player -> new OldMaidPlayerView(player.value(), game.cardCount(player),
-                        game.rankOf(player).map(FinishRank::value).orElse(null), game.hasForfeited(player)))
+                        rankValueOf(game, player), game.hasForfeited(player)))
                 .toList();
     }
 
@@ -66,6 +66,26 @@ final class OldMaidViewAssembler {
 
     private static OldMaidPeekView peek(OldMaidGame game) {
         return new OldMaidPeekView(peekIndex(game), game.peekSeq());
+    }
+
+    // 자리에 앉은 사람만 부른다(rankOf는 자리에 없는 id에 NOT_A_PLAYER).
+    private static Integer rankValueOf(OldMaidGame game, PlayerId player) {
+        return game.rankOf(player)
+                .map(FinishRank::value)
+                .orElse(null);
+    }
+
+    private static OldMaidResultView resultOf(OldMaidGame game) {
+        return game.result()
+                .map(OldMaidResultView::of)
+                .orElse(null);
+    }
+
+    private static Long winnerIdOf(OldMaidGame game) {
+        return game.result()
+                .map(OldMaidResult::winner)
+                .map(PlayerId::value)
+                .orElse(null);
     }
 
     private static Integer peekIndex(OldMaidGame game) {

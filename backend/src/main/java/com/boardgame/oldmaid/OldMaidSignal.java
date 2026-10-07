@@ -16,7 +16,9 @@ public enum OldMaidSignal {
             if (index != null && index < 0) {
                 return false;
             }
-            return game.peek(player, Optional.ofNullable(index).map(SlotIndex::new), now);
+            Optional<SlotIndex> slot = Optional.ofNullable(index)
+                    .map(SlotIndex::new);
+            return game.peek(player, slot, now);
         }
     };
 
