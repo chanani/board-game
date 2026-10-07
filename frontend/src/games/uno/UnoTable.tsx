@@ -190,7 +190,7 @@ export function UnoTable({ view, room, meId, log, receivedAt, now, errorSeq, nic
   // 내 차례면 손패 칸을 안쪽 강조 테두리로 둘러 차례 안내 바의 "내 차례"와 함께 한눈에 알 수 있게 한다.
   const mine = game.hand === null ? <SpectatorNotice /> : (
     <div data-testid="my-area" data-active={myTurn ? 'true' : undefined}
-      className={`relative space-y-1 rounded-2xl px-1 py-1 ${myTurn ? 'turn-ring ring-[3px] ring-inset ring-(--turn-ring)' : ''}`}>
+      className={`relative -my-1 space-y-1 rounded-2xl px-1 py-1 ${myTurn ? 'turn-ring ring-[3px] ring-inset ring-(--turn-ring)' : ''}`}>
       {effects[meId]?.bubble ? (
         <motion.span data-testid="my-uno-bubble" initial={reduced ? false : { scale: 0.6 }} animate={{ scale: 1 }}
           className="pointer-events-none absolute -top-3 left-1/2 z-20 w-max -translate-x-1/2 whitespace-nowrap rounded-full bg-yellow-300 px-2.5 py-0.5 text-xs font-black leading-tight text-wood-900 shadow">우노!</motion.span>

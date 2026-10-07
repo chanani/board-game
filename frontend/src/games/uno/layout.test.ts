@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CARD_ART_WIDTH, CORNER_EXTENT } from './cards';
-import { fanAngle, fanOverhang, handSpacing, minVisibleOf, UNO_PC_SHORT_SIZES, UNO_SIZES, unoInstruction, unoSizes } from './layout';
+import { fanAngle, fanDrop, fanOverhang, fanRoom, fanUnderhang, handSpacing, minVisibleOf, UNO_PC_SHORT_SIZES, UNO_SIZES, unoInstruction, unoSizes } from './layout';
 import { unoView } from './unoFixtures';
 
 const nick = (id: number) => ({ 1: '앨리스', 2: '밥', 3: '캐롤' })[id] ?? '떠난 플레이어';
@@ -64,13 +64,26 @@ describe('손패 간격', () => {
   });
 });
 
-describe('PC 부채꼴 각도', () => {
-  it('±12도 안에서 고르게 기울이고 한 장이면 똑바로 둔다', () => {
-    expect(fanAngle(0, 7)).toBe(-12);
+describe('손패 부채꼴', () => {
+  it('±15도 안에서 고르게 기울이고 한 장이면 똑바로 둔다', () => {
+    expect(fanAngle(0, 7)).toBe(-15);
     expect(fanAngle(3, 7)).toBe(0);
-    expect(fanAngle(6, 7)).toBe(12);
-    expect(fanAngle(0, 2)).toBe(-2);
+    expect(fanAngle(6, 7)).toBe(15);
+    expect(fanAngle(0, 2)).toBe(-2.5);
     expect(fanAngle(0, 1)).toBe(0);
+    expect(fanAngle(0, 30)).toBe(-15);
+  });
+
+  it('가장자리 카드는 호를 따라 가운데보다 내려앉고, 줄 아래 여백이 그 높이를 품는다', () => {
+    expect(fanDrop(88, 0)).toBe(0);
+    expect(fanDrop(88, 15)).toBeGreaterThan(fanDrop(88, 7.5) * 3);
+    expect(fanDrop(88, -15)).toBeCloseTo(fanDrop(88, 15));
+    [UNO_SIZES.portrait, UNO_SIZES.landscape, UNO_SIZES.pc, UNO_PC_SHORT_SIZES].forEach((sizes) => {
+      expect(fanRoom(sizes.hand, 15)).toBeGreaterThanOrEqual(fanDrop(sizes.hand, 15) + fanUnderhang(sizes.hand, 15));
+    });
+    // 예전 PC 고정 여백(32px)보다 크지 않아 PC 한 화면 맞춤을 해치지 않는다.
+    expect(fanRoom(UNO_SIZES.pc.hand, 15)).toBeLessThanOrEqual(32);
+    expect(fanRoom(UNO_PC_SHORT_SIZES.hand, 15)).toBeLessThanOrEqual(32);
   });
 });
 

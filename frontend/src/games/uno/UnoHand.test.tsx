@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { UnoCard } from '../../api/types';
 import { setMediaMatches } from '../../test/media';
-import { fanOverhang, handSpacing, PC_TALL_QUERY, UNO_PC_SHORT_SIZES, UNO_SIZES } from './layout';
+import { fanOverhang, fanUnderhang, handSpacing, PC_TALL_QUERY, UNO_PC_SHORT_SIZES, UNO_SIZES } from './layout';
 import { UnoHand } from './UnoHand';
 import { drawTwo, num, skip, wild } from './unoFixtures';
 
@@ -27,15 +27,16 @@ describe('UnoHand', () => {
     expect(labels()).toEqual(['빨강 2, 낼 수 있어요', '빨강 건너뛰기, 낼 수 있어요', '파랑 7', '와일드, 낼 수 있어요']);
   });
 
-  it('PC 부채꼴의 가장자리 카드가 줄 아래로 넘치지 않는다', () => {
-    renderHand();
+  it.each(['pc', 'portrait', 'landscape'] as const)('%s 부채꼴의 가장자리 카드가 줄 아래로 넘치지 않는다', (layout) => {
+    renderHand({ layout, cards: [...CARDS, num('GREEN', 1, 51), num('GREEN', 2, 52), num('YELLOW', 3, 27), drawTwo('BLUE', 98), num('BLUE', 9, 96)] });
 
     const inner = screen.getByTestId('uno-hand').firstElementChild as HTMLElement;
     const bottoms = screen.getAllByTestId('hand-card').map((card) => {
       const drop = Number(/translateY\((-?[\d.]+)px\)/.exec(card.style.transform)?.[1] ?? 0);
-      return parseFloat(card.style.top) + parseFloat(card.style.height) + drop;
+      const angle = Number(card.getAttribute('data-angle'));
+      return parseFloat(card.style.top) + parseFloat(card.style.height) + drop + fanUnderhang(parseFloat(card.style.width), angle);
     });
-    expect(parseFloat(inner.style.height)).toBeGreaterThanOrEqual(Math.max(...bottoms) + 8);
+    expect(parseFloat(inner.style.height)).toBeGreaterThanOrEqual(Math.max(...bottoms) + 4);
   });
 
   it('내 차례에는 낼 수 있는 카드를 들고 나머지는 흐리게 한다', () => {
@@ -113,12 +114,24 @@ describe('UnoHand', () => {
     expect(onPlay).not.toHaveBeenCalled();
   });
 
-  it('PC에서는 부채꼴로 기울이고 휴대폰에서는 한 줄로 둔다', () => {
-    const { rerender } = renderHand();
-    expect(screen.getAllByTestId('hand-card')[0]).toHaveAttribute('data-angle', '-6');
+  it.each(['pc', 'portrait', 'landscape'] as const)('%s 배치에서도 한 줄이 아니라 부채꼴로 기울이고 호를 따라 가장자리를 내린다', (layout) => {
+    render(<UnoHand cards={CARDS} playableIds={[]} myTurn={false} layout={layout} zoneId={1} onPlay={vi.fn()} />);
 
-    rerender(<UnoHand cards={CARDS} playableIds={[3]} myTurn layout="portrait" zoneId={1} onPlay={vi.fn()} />);
-    expect(screen.getAllByTestId('hand-card')[0]).toHaveAttribute('data-angle', '0');
+    const cards = screen.getAllByTestId('hand-card');
+    const angles = cards.map((card) => Number(card.getAttribute('data-angle')));
+    expect(angles).toEqual([-7.5, -2.5, 2.5, 7.5]);
+    const drops = cards.map((card) => Number(/translateY\((-?[\d.]+)px\)/.exec(card.style.transform)?.[1] ?? 0));
+    expect(drops[0]).toBeGreaterThan(drops[1]);
+    expect(drops[0]).toBeCloseTo(drops[3]);
+    expect(cards[0].style.transform).toContain('rotate(-7.5deg)');
+  });
+
+  it.each(['pc', 'portrait', 'landscape'] as const)('%s 부채꼴에서도 고르고 들어 올린 카드가 줄 위로 넘치지 않는다', (layout) => {
+    render(<UnoHand cards={CARDS} playableIds={[3, 19, 100]} myTurn layout={layout} zoneId={1} onPlay={vi.fn()} />);
+
+    screen.getAllByTestId('hand-card').forEach((card) => {
+      expect(parseFloat(card.style.top) - 24 - 10).toBeGreaterThanOrEqual(0);
+    });
   });
 
   it('첫 카드와 마지막 카드가 줄 양끝 여백 안에 들어 잘리지 않는다', () => {
@@ -127,8 +140,8 @@ describe('UnoHand', () => {
 
     const inner = screen.getByTestId('uno-hand').firstElementChild as HTMLElement;
     const cards = screen.getAllByTestId('hand-card');
-    const { step, inset } = handSpacing(4, 0, UNO_SIZES.pc, 6);
-    expect(inset).toBeGreaterThanOrEqual(fanOverhang(88, 6));
+    const { step, inset } = handSpacing(4, 0, UNO_SIZES.pc, 7.5);
+    expect(inset).toBeGreaterThanOrEqual(fanOverhang(88, 7.5));
     expect(parseFloat(cards[0].style.left)).toBe(inset);
     expect(parseFloat(cards[3].style.left)).toBe(inset + step * 3);
     expect(parseFloat(inner.style.width)).toBe(inset * 2 + step * 3 + 88);

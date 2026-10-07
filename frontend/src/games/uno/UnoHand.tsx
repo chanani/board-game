@@ -3,7 +3,7 @@ import type { UnoCard } from '../../api/types';
 import { useMediaQuery } from '../../lib/useMediaQuery';
 import type { TableLayout } from '../../lib/useTableLayout';
 import { cardName, sortHand } from './cards';
-import { fanAngle, handSpacing, useUnoSizes } from './layout';
+import { FAN_RADIUS, fanAngle, fanDrop, fanRoom, handSpacing, useUnoSizes } from './layout';
 import { UnoCardFace } from './UnoCardFace';
 
 type Props = {
@@ -18,8 +18,6 @@ type Props = {
 
 const FRESH_MS = 1200;
 const TOP = 40;
-// PC 부채꼴 가장자리 카드가 기울고 내려앉는 만큼 줄 안에 남겨 두는 아래 여백.
-const FAN_DROP_ROOM = 32;
 const SELECT_LIFT = 24;
 const PLAYABLE_LIFT = 10;
 const EDGE_FADE = 'linear-gradient(to right, transparent, black 16px, black calc(100% - 16px), transparent)';
@@ -69,7 +67,13 @@ export function UnoHand({ cards, playableIds, myTurn, layout, zoneId, onPlay }: 
   const sorted = sortHand(cards);
   const boxRef = useRef<HTMLDivElement>(null);
   const width = useWidth(boxRef);
-  const edgeAngle = layout === 'pc' ? Math.abs(fanAngle(0, sorted.length)) : 0;
+  // PC·휴대폰 모두 부채꼴로 편다. 가장자리 각도로 양끝 여백과 아래 여백을 정해 끝 카드가 잘리지 않게 한다.
+  const edgeAngle = Math.abs(fanAngle(0, sorted.length));
+  const radius = FAN_RADIUS[layout];
+  // 부채꼴 아래 여백 일부를 위쪽 들어 올림 칸의 남는 몫(TOP - 최대 들어 올림)으로 메워 줄 높이를 덜 늘린다(눕힌 화면 한 화면 맞춤).
+  const room = fanRoom(sizes.hand, edgeAngle, radius);
+  const rise = Math.min(room, TOP - SELECT_LIFT - PLAYABLE_LIFT);
+  const cardTop = TOP - rise;
   const { step, scroll, inset } = handSpacing(sorted.length, width, sizes, edgeAngle);
   const fresh = useFreshIds(cards);
   const [selected, setSelected] = useState<number | null>(null);
@@ -114,14 +118,14 @@ export function UnoHand({ cards, playableIds, myTurn, layout, zoneId, onPlay }: 
     <div ref={boxRef} role="group" aria-label={`내 카드 ${cards.length}장`} data-testid="uno-hand" data-uno-zone={`hand:${zoneId}`}
       className={scroll ? 'overflow-x-auto' : 'overflow-x-clip'}
       style={scroll ? { maskImage: EDGE_FADE, WebkitMaskImage: EDGE_FADE } : undefined}>
-      <div className="relative" style={{ width: innerWidth, height: sizes.hand * 1.5 + 44 + (layout === 'pc' ? FAN_DROP_ROOM : 0), margin: scroll ? undefined : '0 auto' }}>
+      <div className="relative" style={{ width: innerWidth, height: sizes.hand * 1.5 + 44 + room - rise, margin: scroll ? undefined : '0 auto' }}>
         {sorted.map((card, index) => {
           const playable = myTurn && playableIds.includes(card.id);
           const blocked = myTurn && !playable;
           const isSelected = card.id === selected;
-          const angle = layout === 'pc' ? fanAngle(index, count) : 0;
+          const angle = fanAngle(index, count);
           const lift = (isSelected ? SELECT_LIFT : 0) + (playable ? PLAYABLE_LIFT : 0);
-          const dropY = Math.abs(angle) * 1.2;
+          const dropY = fanDrop(sizes.hand, angle, radius);
           const isFresh = fresh.has(card.id);
           return (
             <Fragment key={card.id}>
@@ -132,7 +136,7 @@ export function UnoHand({ cards, playableIds, myTurn, layout, zoneId, onPlay }: 
               onClick={() => press(card, playable)} onKeyDown={(event) => keyPress(event, card, playable)}
               className={`absolute rounded-lg transition-transform duration-200 focus-visible:outline-2 focus-visible:outline-mustard-400 ${isFresh ? 'ring-4 ring-yellow-300' : ''}`}
               style={{
-                left: inset + index * step, top: TOP, zIndex: index, width: sizes.hand, height: sizes.hand * 1.5,
+                left: inset + index * step, top: cardTop, zIndex: index, width: sizes.hand, height: sizes.hand * 1.5,
                 transform: `translateY(${dropY - lift}px) rotate(${angle}deg)`,
                 opacity: blocked ? 0.55 : undefined,
                 filter: playable ? 'drop-shadow(0 0 6px rgb(255 255 255 / 0.9))' : undefined,

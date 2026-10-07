@@ -29,8 +29,9 @@ export function UnoSeat({ player, nickname, active, backWidth, maxBacks, timer, 
     <motion.div role="group" aria-label={label} data-testid="uno-seat" data-player={player.playerId} data-shaking={shaking ? 'true' : undefined}
       data-active={active ? 'true' : undefined}
       animate={shake ? { x: [0, -6, 6, -6, 6, 0] } : { x: 0 }} transition={{ duration: 0.5 }}
-      // 차례인 상대 자리는 페이퍼 사파리 판처럼 안쪽 강조 테두리로 둘러 멀리서도 보이게 한다. 여백은 늘 같아 차례가 바뀌어도 자리가 흔들리지 않는다.
-      className={`relative flex flex-col items-center gap-1 rounded-2xl px-1.5 py-1 ${active ? 'turn-ring bg-black/20 ring-[3px] ring-inset ring-(--turn-ring)' : ''}`}>
+      // 차례인 상대 자리는 페이퍼 사파리 판처럼 안쪽 강조 테두리로 둘러 멀리서도 보이게 한다. 여백은 늘 같아 차례가 바뀌어도 자리가 흔들리지 않고,
+      // 위아래 여백은 음수 바깥 여백으로 되돌려 펠트 높이(눕힌 화면 한 화면 맞춤)를 늘리지 않는다.
+      className={`relative -my-1 flex flex-col items-center gap-1 rounded-2xl px-1.5 py-1 ${active ? 'turn-ring bg-black/20 ring-[3px] ring-inset ring-(--turn-ring)' : ''}`}>
       {bubble ? (
         <motion.span data-testid="uno-bubble" initial={reduced ? false : { scale: 0.6 }} animate={{ scale: 1 }}
           // 자리 폭(좁은 이름표)에 끌려 줄바꿈되지 않게 글자 폭 그대로(w-max·nowrap) 두고, 이웃 자리 위로 넘쳐도 가려지지 않게 앞으로 띄운다.
