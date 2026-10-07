@@ -146,6 +146,14 @@ public class Room {
         return outcomes;
     }
 
+    /** 상태를 바꾸지 않는 신호. 게임 중이 아니거나 참가자가 아니면 조용히 버린다(신호는 오류 알림을 띄우지 않는다). */
+    public Optional<Object> signal(long memberId, GameAction action) {
+        if (status() != RoomStatus.PLAYING || !occupants.isPlayer(memberId)) {
+            return Optional.empty();
+        }
+        return game.signal(memberId, action);
+    }
+
     /** 시간 초과로 서버가 대신 행동한다. 게임이 그 행동으로 끝나면 직접 행동했을 때처럼 정리한다. */
     public List<GameOutcome> autoAct(Random random) {
         if (status() != RoomStatus.PLAYING) {

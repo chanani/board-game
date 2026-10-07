@@ -24,6 +24,9 @@ public class FakeGameSession implements GameSession {
     private Instant deadline;
     private boolean failAutoAct;
     private boolean finishOnAutoAct;
+    // null이면 GameSession 기본 동작(INVALID_INPUT). 값이 있으면 그 Optional을 돌려준다.
+    private Optional<Object> signalReply;
+    private final List<GameAction> signals = new ArrayList<>();
 
     public FakeGameSession(List<Long> players) {
         this.players = List.copyOf(players);
@@ -121,5 +124,22 @@ public class FakeGameSession implements GameSession {
 
     public List<GameAction> actions() {
         return actions;
+    }
+
+    @Override
+    public Optional<Object> signal(long memberId, GameAction action) {
+        signals.add(action);
+        if (signalReply == null) {
+            return GameSession.super.signal(memberId, action);
+        }
+        return signalReply;
+    }
+
+    public void replySignal(Object reply) {
+        signalReply = Optional.ofNullable(reply);
+    }
+
+    public List<GameAction> signals() {
+        return signals;
     }
 }

@@ -43,6 +43,10 @@ public class RoomGame {
         return session.act(memberId, action);
     }
 
+    public Optional<Object> signal(long memberId, GameAction action) {
+        return session.signal(memberId, action);
+    }
+
     public List<GameOutcome> forfeit(long memberId) {
         return session.forfeit(memberId);
     }

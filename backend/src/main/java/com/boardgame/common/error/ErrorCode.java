@@ -30,7 +30,7 @@ public enum ErrorCode {
     INVALID_THEME(HttpStatus.BAD_REQUEST, "지원하지 않는 테마예요."),
     INVALID_ROOM_NAME(HttpStatus.BAD_REQUEST, "방 이름은 1~20자로 입력해 주세요."),
     FORFEIT_NOT_ALLOWED_YET(HttpStatus.CONFLICT, "연결이 끊긴 지 60초가 지나야 기권 처리할 수 있습니다."),
-    INVALID_CAPACITY(HttpStatus.BAD_REQUEST, "최대 인원은 2~5명 중에서 골라 주세요."),
+    INVALID_CAPACITY(HttpStatus.BAD_REQUEST, "이 게임에서 고를 수 없는 최대 인원이에요."),
     INVALID_ROOM_PASSWORD(HttpStatus.BAD_REQUEST, "방 비밀번호는 4~20자로 입력해 주세요."),
     CAPACITY_BELOW_PLAYERS(HttpStatus.CONFLICT, "지금 있는 인원보다 적게 줄일 수 없어요."),
     ROOM_PASSWORD_MISMATCH(HttpStatus.FORBIDDEN, "비밀번호가 맞지 않아요."),
@@ -64,7 +64,11 @@ public enum ErrorCode {
     UNO_COLOR_REQUIRED(HttpStatus.BAD_REQUEST, "와일드 카드는 색을 골라야 해요."),
     UNO_INVALID_COLOR(HttpStatus.BAD_REQUEST, "고를 수 없는 색이에요."),
     UNO_CALL_NOT_ALLOWED(HttpStatus.CONFLICT, "지금은 우노를 외칠 수 없어요."),
-    UNO_CATCH_CLOSED(HttpStatus.CONFLICT, "지금은 우노를 잡을 수 없어요.");
+    UNO_CATCH_CLOSED(HttpStatus.CONFLICT, "지금은 우노를 잡을 수 없어요."),
+    OLD_MAID_INVALID_PLAYER_COUNT(HttpStatus.BAD_REQUEST, "도둑잡기는 2~6명이 플레이할 수 있습니다."),
+    OLD_MAID_INVALID_SLOT(HttpStatus.BAD_REQUEST, "고를 수 없는 카드 자리예요."),
+    OLD_MAID_SHUFFLE_NOT_ALLOWED(HttpStatus.CONFLICT, "지금은 손패를 섞을 수 없어요."),
+    OLD_MAID_SHUFFLE_TOO_FAST(HttpStatus.TOO_MANY_REQUESTS, "조금 뒤에 다시 섞을 수 있어요.");
 
     private final HttpStatus status;
     private final String message;

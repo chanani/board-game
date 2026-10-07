@@ -23,4 +23,9 @@ public class StompRoomNotifier implements RoomNotifier {
     public void gameUpdated(long memberId, Object view) {
         messagingTemplate.convertAndSendToUser(String.valueOf(memberId), "/queue/game", view);
     }
+
+    @Override
+    public void gameSignal(long memberId, Object signal) {
+        messagingTemplate.convertAndSendToUser(String.valueOf(memberId), "/queue/signal", signal);
+    }
 }

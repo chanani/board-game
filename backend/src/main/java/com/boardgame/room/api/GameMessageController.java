@@ -33,6 +33,11 @@ public class GameMessageController {
         roomService.act(code, LoginMember.idOf(principal), action);
     }
 
+    @MessageMapping("/rooms/{code}/signals")
+    public void signal(@DestinationVariable String code, @Payload GameAction action, Principal principal) {
+        roomService.signal(code, LoginMember.idOf(principal), action);
+    }
+
     @MessageMapping("/rooms/{code}/sync")
     public void sync(@DestinationVariable String code, Principal principal) {
         roomService.sync(code, LoginMember.idOf(principal));

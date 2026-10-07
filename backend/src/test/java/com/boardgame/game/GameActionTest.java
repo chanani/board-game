@@ -34,4 +34,17 @@ class GameActionTest {
 
         assertThat(flip).isEqualTo(new GameAction("FLIP", 2, 1));
     }
+
+    @Test
+    void JSON의_index_칸을_읽고_예전_생성자는_index를_비워_둔다() throws Exception {
+        GameAction draw = mapper.readValue("{\"type\":\"DRAW\",\"index\":3}", GameAction.class);
+        GameAction peekNone = mapper.readValue("{\"type\":\"PEEK\",\"index\":null}", GameAction.class);
+
+        assertThat(draw.index()).isEqualTo(3);
+        assertThat(peekNone.index()).isNull();
+        assertThat(new GameAction("FLIP", 0, 1).index()).isNull();
+        assertThat(new GameAction("PLAY", null, null, 104, "GREEN", null).index()).isNull();
+        assertThat(new GameAction("PLAY", null, null, 104, "GREEN", null))
+                .isEqualTo(new GameAction("PLAY", null, null, 104, "GREEN", null, null));
+    }
 }

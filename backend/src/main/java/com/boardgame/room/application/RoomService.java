@@ -267,6 +267,18 @@ public class RoomService {
         outcomePublisher.publish(room, outcomes, clock.instant());
     }
 
+    // D3: 신호는 방 정보·화면을 다시 보내지 않고, 타이머도 다시 걸지 않는다.
+    public synchronized void signal(String rawCode, long memberId, GameAction action) {
+        Room room = find(rawCode);
+        room.signal(memberId, action)
+                .ifPresent(payload -> sendSignal(room, payload));
+    }
+
+    private void sendSignal(Room room, Object payload) {
+        room.occupantIds()
+                .forEach(memberId -> notifier.gameSignal(memberId, payload));
+    }
+
     // 예약 스레드에서 들어온다. 같은 잠금 안에서 판번호가 최신일 때만 대신 행동하므로, 사람의 행동과 겹쳐 적용되지 않는다.
     private synchronized void timeout(RoomCode code, TimerVersion version) {
         Optional<Room> found = registry.find(code).filter(room -> turnTimer.isCurrent(code, version));
