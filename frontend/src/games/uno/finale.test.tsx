@@ -2,6 +2,7 @@ import { act, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SILENT_SOUND, SoundContext } from '../../lib/sound';
 import type { Room, UnoView } from '../../api/types';
+import { BANNER_MS } from '../../table/useFinalePhase';
 import { UnoTable } from './UnoTable';
 import { num, unoEvent, unoView } from './unoFixtures';
 
@@ -51,9 +52,22 @@ describe('우노 게임 끝 연출', () => {
     expect(screen.queryByRole('dialog', { name: '게임 결과' })).not.toBeInTheDocument();
     act(() => { vi.advanceTimersByTime(450); });
     expect(screen.getByTestId('game-end-banner')).toBeInTheDocument();
-    act(() => { vi.advanceTimersByTime(1400); });
+    act(() => { vi.advanceTimersByTime(BANNER_MS); });
 
     expect(screen.getByRole('dialog', { name: '게임 결과' })).toBeInTheDocument();
+  });
+
+  it('"게임 끝!" 알림은 1.5초 넘게 머문 뒤에야 결과 창으로 바뀐다', () => {
+    vi.useFakeTimers();
+    const { rerender } = render(table(playing, null));
+
+    rerender(table(over, { seq: 2, from: playing, to: over, animate: true }));
+    act(() => { vi.advanceTimersByTime(450 + 1500); });
+
+    expect(BANNER_MS).toBeGreaterThanOrEqual(1500);
+    expect(BANNER_MS).toBeLessThanOrEqual(2000);
+    expect(screen.getByTestId('game-end-banner')).toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: '게임 결과' })).not.toBeInTheDocument();
   });
 
   it('이미 끝난 화면을 받으면 바로 결과 창을 연다', () => {
@@ -121,7 +135,7 @@ describe('우노 게임 끝 소리', () => {
     expect(cues()).toHaveLength(0);
     act(() => { vi.advanceTimersByTime(450); });
     expect(cues()).toEqual([['gameOverWin']]);
-    act(() => { vi.advanceTimersByTime(1400); });
+    act(() => { vi.advanceTimersByTime(BANNER_MS); });
     rerender(table(over, transition));
 
     expect(screen.getByRole('dialog', { name: '게임 결과' })).toBeInTheDocument();

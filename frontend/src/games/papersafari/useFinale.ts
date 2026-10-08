@@ -2,12 +2,12 @@ import { useReducedMotion } from 'motion/react';
 import { useEffect, useRef, useState } from 'react';
 import type { CardView, PaperSafariView, SlotView } from '../../api/types';
 import type { ViewTransition } from '../../room/useRoomChannel';
+import { BANNER_MS } from '../../table/useFinalePhase';
 
 export type FinalePhase = 'idle' | 'revealing' | 'banner' | 'done';
 
 const FLIP_STEP_MS = 120;
 const REVEAL_MAX_MS = 1200;
-const BANNER_MS = 1300;
 /** 뒷면 카드가 많으면 뒤집기 간격이 짧아지므로, 소리는 이 간격보다 자주 내지 않는다. */
 const SOUND_GAP_MS = 100;
 

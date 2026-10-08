@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Room } from '../api/types';
 import { StartCountdownOverlay, countdownNumber } from './StartCountdownOverlay';
@@ -46,22 +46,22 @@ describe('StartCountdownOverlay', () => {
     expect(screen.queryByTestId('start-countdown')).toBeNull();
   });
 
-  it('서버 시계 기준으로 3, 2, 1을 차례로 보인다(내 시계와 서버 시계가 달라도)', () => {
+  it('서버 시계 기준으로 3, 2, 1을 차례로 보인다(내 시계와 서버 시계가 달라도)', async () => {
     render(<StartCountdownOverlay room={roomOf(SERVER_NOW + 3000)} />);
 
     expect(screen.getByTestId('start-countdown')).toBeInTheDocument();
     expect(screen.getByText('곧 게임이 시작돼요')).toBeInTheDocument();
-    expect(numbersShown()).toContain('3');
+    expect(numbersShown()).toEqual(['3']);
 
     act(() => {
       vi.advanceTimersByTime(1000);
     });
-    expect(numbersShown()).toContain('2');
+    await waitFor(() => expect(numbersShown()).toEqual(['2']));
 
     act(() => {
       vi.advanceTimersByTime(1000);
     });
-    expect(numbersShown()).toContain('1');
+    await waitFor(() => expect(numbersShown()).toEqual(['1']));
   });
 
   it('카운트다운 도중에 들어오면 남은 숫자부터 보인다', () => {

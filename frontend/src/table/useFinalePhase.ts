@@ -3,7 +3,8 @@ import { useEffect, useState } from 'react';
 import type { ViewTransition } from '../games/gameModule';
 
 export const FINALE_DELAY_MS = 450;
-export const BANNER_MS = 1400;
+/** "게임 끝!" 알림을 보이는 시간. 세 게임이 같은 길이를 쓰고, 그 뒤에 결과 창이 열린다. */
+export const BANNER_MS = 1800;
 export type FinalePhase = 'playing' | 'flying' | 'banner' | 'done';
 
 type Timed = { seq: number; phase: 'flying' | 'banner' | 'done' };

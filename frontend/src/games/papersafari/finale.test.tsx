@@ -4,6 +4,7 @@ import type { LogEntry } from '../../lib/eventLog';
 import type { BoardView, PaperSafariSessionView, PaperSafariView, Room, SlotView } from '../../api/types';
 import { SILENT_SOUND, SoundContext } from '../../lib/sound';
 import type { ViewTransition } from '../../room/useRoomChannel';
+import { BANNER_MS } from '../../table/useFinalePhase';
 import { PaperSafariTable } from './PaperSafariTable';
 
 const motionState = vi.hoisted(() => ({ reduced: false }));
@@ -92,7 +93,7 @@ describe('게임 종료 연출', () => {
     expect(resultDialog()).not.toBeInTheDocument();
     expect(play.mock.calls.filter(([name]) => name === 'flip').length).toBeGreaterThan(0);
 
-    advance(1300);
+    advance(BANNER_MS);
     expect(banner()).not.toBeInTheDocument();
     expect(resultDialog()).toBeInTheDocument();
   });
@@ -111,7 +112,7 @@ describe('게임 종료 연출', () => {
     expect(resultDialog()).not.toBeInTheDocument();
     advance(1200);
     expect(banner()).toBeInTheDocument();
-    advance(1300);
+    advance(BANNER_MS);
     expect(resultDialog()).toBeInTheDocument();
   });
 
@@ -135,7 +136,7 @@ describe('게임 종료 연출', () => {
   it('같은 게임에서 여러 번 다시 그려도 배너는 한 번만 나온다', () => {
     const { rerender } = render(ui(playing));
     rerender(ui(over()));
-    advance(2500);
+    advance(1200 + BANNER_MS);
     expect(resultDialog()).toBeInTheDocument();
 
     rerender(ui(over()));
@@ -206,7 +207,7 @@ describe('게임 끝 소리', () => {
     const transition = { seq: 2, from: playing, to: ended, animate: true };
     rerender(ui(ended, transition));
 
-    advance(2500);
+    advance(1200 + BANNER_MS);
     expect(resultDialog()).toBeInTheDocument();
     expect(cues()).toHaveLength(0);
     for (let step = 0; step < 12; step += 1) {
