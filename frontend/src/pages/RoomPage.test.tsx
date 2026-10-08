@@ -25,6 +25,14 @@ vi.mock('../room/useRoomChat', () => ({
     return { messages: [{ id: 1, memberId: 1, nickname: '앨리스', text: '잘 부탁해요', sentAt: '2026-10-06T00:00:00Z' }], send: chat.send };
   },
 }));
+const emotes = vi.hoisted(() => ({ args: [] as unknown[] }));
+vi.mock('../emote/useRoomEmotes', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../emote/useRoomEmotes')>()),
+  useRoomEmotes: (...args: unknown[]) => {
+    emotes.args = args;
+    return { bubbles: new Map(), send: () => true, coolingDown: false };
+  },
+}));
 vi.mock('../api/rooms', () => ({ roomsApi: { seat: vi.fn(), leave: vi.fn(), start: vi.fn(), forfeit: vi.fn(), kick: vi.fn(), ready: vi.fn(), updateSettings: vi.fn() } }));
 
 const members = [
@@ -465,6 +473,15 @@ describe('RoomPage 준비와 채팅', () => {
     expect(chat.args).toEqual(['ABC234', true, 3]);
     expect(screen.getByTestId('room-chips')).toHaveTextContent('대기 중');
     expect(screen.getByTestId('room-chips')).toHaveTextContent('2/4명');
+  });
+
+  it('방 감정 표현을 켜 두고, 대기실 내 자리는 전적 대신 표정 패널을 연다', async () => {
+    setChannel({ room: waiting });
+    renderRoom();
+
+    expect(emotes.args).toEqual(['ABC234', true]);
+    await userEvent.click(screen.getByRole('button', { name: '감정 표현하기' }));
+    expect(screen.getByRole('dialog', { name: '감정 표현' })).toBeInTheDocument();
   });
 
   it('대기실에서 게임이 시작되면 PC 오른쪽 채팅 칸으로 이어진다', async () => {

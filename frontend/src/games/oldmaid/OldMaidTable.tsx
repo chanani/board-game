@@ -26,6 +26,8 @@ import { drawnPairIds, keepInHand, pickCard } from './pairPick';
 import { TargetFan } from './TargetFan';
 import { effectivePeek, usePeekSender } from './usePeek';
 import { useShuffleEffects } from './useShuffleEffects';
+import { EmoteBubble } from '../../emote/EmoteBubble';
+import { EMOTE_DOCK, EmoteDock } from '../../emote/EmoteDock';
 
 // PC 펠트는 화면 높이에서 머리글·상태 바·차례 줄·손패 몫(약 32rem)을 뺀 만큼까지만 늘어나 1280×860 한 화면에 들어간다.
 const FELT: Record<TableLayout, string> = {
@@ -198,6 +200,7 @@ export function OldMaidTable({ view, room, meId, log, receivedAt, now, errorSeq,
           timer={active && game.deadline !== null ? { deadline: game.deadline, serverNow: game.serverNow } : undefined}
           connected={botOf(member) ? undefined : member?.connected} bot={botOf(member)} offlineSeconds={member ? offlineSecondsNow(member, receivedAt, now) : 0}
           shuffling={shuffling.has(player.playerId)} thief={thiefId === player.playerId} note={seatNote(player, active)} />
+        <EmoteBubble memberId={player.playerId} />
       </div>
     );
   };
@@ -248,6 +251,7 @@ export function OldMaidTable({ view, room, meId, log, receivedAt, now, errorSeq,
   const mine = game.hand === null ? <SpectatorNotice /> : (
     <div data-testid="my-area" data-active={acting ? 'true' : undefined} className="relative -my-1 rounded-2xl px-1 py-1">
       {ribbon ? <TurnRibbon deadline={game.deadline} serverNow={game.serverNow} label={ribbon.label} showSeconds={ribbon.showSeconds} /> : null}
+      <EmoteDock meId={meId} className={EMOTE_DOCK} />
       <MyHand cards={game.hand} liftIndex={drawing && game.targetId === meId ? liftIndex : null} layout={layout} sizes={sizes} zoneId={meId}
         canShuffle={game.canShuffle} shuffleLocked={shuffleLocked} onShuffle={shuffle} picker={picker} />
     </div>

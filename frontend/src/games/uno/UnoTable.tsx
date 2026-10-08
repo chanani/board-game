@@ -26,6 +26,8 @@ import { useUnoMotion } from './motion/useUnoMotion';
 import { useSeatEffects } from './useSeatEffects';
 import { useUnoFinale } from './useUnoFinale';
 import { liveGameEnd, useGameOverCue } from '../../table/gameOver';
+import { EmoteBubble } from '../../emote/EmoteBubble';
+import { EMOTE_DOCK, EmoteDock } from '../../emote/EmoteDock';
 
 const PENDING_MS = 3000;
 
@@ -126,6 +128,7 @@ export function UnoTable({ view, room, meId, log, receivedAt, now, errorSeq, nic
           connected={botOf(member) ? undefined : member?.connected} bot={botOf(member)} offlineSeconds={member ? offlineSecondsNow(member, receivedAt, now) : 0}
           catchable={game.unoCatch?.playerId === player.playerId}
           bubble={effects[player.playerId]?.bubble} shaking={effects[player.playerId]?.shake} skipped={effects[player.playerId]?.skipped} />
+        <EmoteBubble memberId={player.playerId} />
       </div>
     );
   };
@@ -160,6 +163,7 @@ export function UnoTable({ view, room, meId, log, receivedAt, now, errorSeq, nic
   const mine = game.hand === null ? <SpectatorNotice /> : (
     <div data-testid="my-area" data-active={myTurn ? 'true' : undefined} className="relative -my-1 space-y-1 rounded-2xl px-1 py-1">
       {myTurn ? <TurnRibbon deadline={game.deadline} serverNow={game.serverNow} /> : null}
+      <EmoteDock meId={meId} className={EMOTE_DOCK} />
       {effects[meId]?.bubble ? (
         <motion.span data-testid="my-uno-bubble" initial={reduced ? false : { scale: 0.6 }} animate={{ scale: 1 }}
           className="pointer-events-none absolute -top-3 left-1/2 z-20 w-max -translate-x-1/2 whitespace-nowrap rounded-full bg-yellow-300 px-2.5 py-0.5 text-xs font-black leading-tight text-wood-900 shadow">우노!</motion.span>

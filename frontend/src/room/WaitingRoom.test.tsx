@@ -7,6 +7,7 @@ import { ToastProvider } from '../components/Toast';
 import { setMediaMatches } from '../test/media';
 import { WaitingRoom } from './WaitingRoom';
 import { recordsApi } from '../api/records';
+import { EmoteContext, type RoomEmotes } from '../emote/useRoomEmotes';
 
 vi.mock('../api/records', () => ({ recordsApi: { member: vi.fn() } }));
 
@@ -18,13 +19,19 @@ const room: Room = {
   ],
 };
 
-type Overrides = { room?: Room; meId?: number; onSeat?: () => void; onReady?: (ready: boolean) => unknown; onStart?: () => void; onForfeit?: (memberId: number) => void; onKick?: (memberId: number) => unknown };
+type Overrides = { room?: Room; meId?: number; onSeat?: () => void; onReady?: (ready: boolean) => unknown; onStart?: () => void; onForfeit?: (memberId: number) => void; onKick?: (memberId: number) => unknown; emotes?: RoomEmotes };
 
-function renderRoom({ room: shown = room, meId = 1, onSeat = vi.fn(), onReady = vi.fn(), onStart = vi.fn(), onForfeit = vi.fn(), onKick = vi.fn() }: Overrides = {}) {
+function emotesOf(overrides: Partial<RoomEmotes> = {}): RoomEmotes {
+  return { bubbles: new Map(), send: vi.fn(() => true), coolingDown: false, ...overrides };
+}
+
+function renderRoom({ room: shown = room, meId = 1, onSeat = vi.fn(), onReady = vi.fn(), onStart = vi.fn(), onForfeit = vi.fn(), onKick = vi.fn(), emotes }: Overrides = {}) {
   return render(
     <ToastProvider>
-      <WaitingRoom room={shown} meId={meId} receivedAt={0} now={0} onStart={onStart} onReady={onReady} onForfeit={onForfeit} onKick={onKick} onSeat={onSeat}
-        chat={{ messages: [{ id: 1, memberId: 2, nickname: '밥', text: '준비할게요', sentAt: '2026-10-06T00:00:00Z' }], onSend: vi.fn(() => true) }} />
+      <EmoteContext.Provider value={emotes ?? null}>
+        <WaitingRoom room={shown} meId={meId} receivedAt={0} now={0} onStart={onStart} onReady={onReady} onForfeit={onForfeit} onKick={onKick} onSeat={onSeat}
+          chat={{ messages: [{ id: 1, memberId: 2, nickname: '밥', text: '준비할게요', sentAt: '2026-10-06T00:00:00Z' }], onSend: vi.fn(() => true) }} />
+      </EmoteContext.Provider>
     </ToastProvider>,
   );
 }
@@ -200,7 +207,7 @@ describe('WaitingRoom', () => {
   it('관전자가 있으면 관전 중인 사람을 보여준다', () => {
     renderRoom({ room: { ...room, spectators: [{ id: 3, nickname: '캐롤' }, { id: 4, nickname: '데이브' }] } });
 
-    const list = screen.getByText(/관전 중:/).closest('p') as HTMLElement;
+    const list = screen.getByText(/관전 중:/).closest('div') as HTMLElement;
     expect(list).toHaveTextContent('관전 중:캐롤,데이브');
     // 오로라 눈밭·해변 모래 위에서도 읽히게 테마별 알약 바탕(pill)을 쓴다.
     expect(list).toHaveClass('pill');
@@ -344,7 +351,7 @@ describe('WaitingRoom', () => {
       expect(await within(dialog).findByTestId('stat-PAPER_SAFARI')).toHaveTextContent('페이퍼 사파리4판3승75.0%');
     });
 
-    it('내 자리를 누르면 같은 창에 내 승률이 뜬다', async () => {
+    it('감정 표현을 쓸 수 없는 화면(컨텍스트 없음)에서는 내 자리를 누르면 내 승률이 뜬다', async () => {
       renderRoom();
 
       await userEvent.click(screen.getByRole('button', { name: '내 전적 보기' }));
@@ -354,15 +361,47 @@ describe('WaitingRoom', () => {
       expect(await within(dialog).findByTestId('stat-PAPER_SAFARI')).toHaveTextContent('페이퍼 사파리4판3승75.0%');
     });
 
-    it('방장이 내 자리를 눌러도 내보내기 버튼은 없고 전적 창만 뜬다', async () => {
+    it('내 자리를 누르면 내 전적 대신 표정 10개 패널이 열리고, 고르면 보낸다', async () => {
+      const emotes = emotesOf();
+      renderRoom({ emotes });
+
+      expect(screen.queryByRole('button', { name: '내 전적 보기' })).not.toBeInTheDocument();
+      await userEvent.click(screen.getByRole('button', { name: '감정 표현하기' }));
+
+      const panel = screen.getByRole('dialog', { name: '감정 표현' });
+      expect(within(panel).getAllByRole('button')).toHaveLength(10);
+      expect(recordsApi.member).not.toHaveBeenCalled();
+      await userEvent.click(within(panel).getByRole('button', { name: '크게 웃음' }));
+      expect(emotes.send).toHaveBeenCalledWith('LAUGH');
+      expect(screen.queryByRole('dialog', { name: '감정 표현' })).not.toBeInTheDocument();
+    });
+
+    it('표정을 쓸 수 있어도 다른 사람 자리는 그대로 전적 창을 연다', async () => {
+      renderRoom({ emotes: emotesOf() });
+
+      await userEvent.click(screen.getByRole('button', { name: '밥님 전적 보기' }));
+
+      expect(await screen.findByRole('dialog', { name: '밥님 전적' })).toBeInTheDocument();
+      expect(screen.queryByRole('dialog', { name: '감정 표현' })).not.toBeInTheDocument();
+    });
+
+    it('방장이 내 자리를 눌러도 내보내기 버튼은 없고 표정 패널만 뜬다', async () => {
       setMediaMatches(false);
-      renderRoom();
+      renderRoom({ emotes: emotesOf() });
 
       expect(screen.queryByRole('button', { name: '앨리스님 내보내기' })).not.toBeInTheDocument();
-      await userEvent.click(screen.getByRole('button', { name: '내 전적 보기' }));
+      await userEvent.click(screen.getByRole('button', { name: '감정 표현하기' }));
 
-      expect(await screen.findByRole('dialog', { name: '앨리스님 전적' })).toBeInTheDocument();
+      expect(screen.getByRole('dialog', { name: '감정 표현' })).toBeInTheDocument();
       expect(screen.queryByText('앨리스님을 내보낼까요?')).not.toBeInTheDocument();
+    });
+
+    it('누가 표정을 보내면 그 사람 자리 위에 말풍선이 뜬다', () => {
+      renderRoom({ emotes: emotesOf({ bubbles: new Map([[2, { key: 7, emote: 'HEART_EYES' as const }]]) }) });
+
+      const chairs = screen.getAllByTestId('chair');
+      expect(within(chairs[1]).getByTestId('emote-bubble-2')).toHaveAccessibleName('감정 표현: 하트 눈');
+      expect(within(chairs[0]).queryByTestId('emote-bubble-1')).not.toBeInTheDocument();
     });
 
     it('방장이 내보내기 X를 누르면 전적 창이 아니라 내보내기 확인 창이 뜬다', async () => {
@@ -384,12 +423,15 @@ describe('WaitingRoom', () => {
       expect(recordsApi.member).toHaveBeenCalledWith(3);
     });
 
-    it('관전 중인 내 이름을 눌러도 내 전적을 볼 수 있다', async () => {
-      renderRoom({ room: { ...room, spectators: [{ id: 3, nickname: '캐롤' }] }, meId: 3 });
+    it('관전 중인 내 이름을 누르면 표정 패널이 열린다', async () => {
+      const emotes = emotesOf();
+      renderRoom({ room: { ...room, spectators: [{ id: 3, nickname: '캐롤' }] }, meId: 3, emotes });
 
-      await userEvent.click(screen.getByRole('button', { name: '내 전적 보기' }));
-      expect(await screen.findByRole('dialog', { name: '캐롤님 전적' })).toBeInTheDocument();
-      expect(recordsApi.member).toHaveBeenCalledWith(3);
+      await userEvent.click(screen.getByRole('button', { name: '감정 표현하기' }));
+      await userEvent.click(within(screen.getByRole('dialog', { name: '감정 표현' })).getByRole('button', { name: '생각 중' }));
+
+      expect(emotes.send).toHaveBeenCalledWith('THINKING');
+      expect(recordsApi.member).not.toHaveBeenCalled();
     });
   });
 });
