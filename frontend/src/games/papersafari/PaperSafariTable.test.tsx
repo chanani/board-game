@@ -308,11 +308,32 @@ describe('게임 화면 다듬기', () => {
     expect(bar).not.toHaveClass('text-sm');
   });
 
-  it('PC 차례 안내 바는 테이블과 16px 넘게(나무 테두리 13px 포함 mb-8) 띄우고, 덱 묶음과 내 판 사이는 32px 이상 띄운다', () => {
+  it('PC 차례 안내 바는 테이블과 16px 넘게(나무 테두리 13px 포함 mb-8) 띄우고, 덱 묶음은 내 판 옆(같은 줄)에 둔다', () => {
     setMediaMatches(true);
     render(<PaperSafariTable {...baseProps(build({ phase: 'DRAW', current: ME }))} />);
     expect(screen.getByTestId('turn-bar')).toHaveClass('mb-8');
-    expect(screen.getByTestId('my-row')).toHaveClass('mt-8');
+    expect(within(screen.getByTestId('my-row')).getByRole('button', { name: '덱에서 뽑기' })).toBeInTheDocument();
+  });
+
+  it('PC에서 상대 4명(5인)은 맞은편 한 줄에 작은 판(xs)으로 앉고, 양 끝 자리는 아래로 내려 앉는다', () => {
+    setMediaMatches(true);
+    render(<PaperSafariTable {...baseProps(withOpponents(4))} />);
+    const row = screen.getByTestId('opponent-row');
+    const seats = within(row).getAllByTestId('opponent-seat');
+    expect(seats).toHaveLength(4);
+    within(seats[1]).getAllByRole('button', { name: '뒷면 카드' }).forEach((card) => expect(card).toHaveClass('w-10'));
+    expect(seats[0].parentElement).toHaveClass('pt-12');
+    expect(seats[3].parentElement).toHaveClass('pt-12');
+    mySlotButtons().forEach((button) => expect(button).toHaveClass('w-20'));
+  });
+
+  it('PC 관전자는 내 판이 없어 위 줄 · 가운데 줄(양옆 상대와 덱) 둥근 배치를 그대로 쓴다', () => {
+    setMediaMatches(true);
+    const view = withOpponents(4);
+    render(<PaperSafariTable {...baseProps(view)} meId={999} />);
+    expect(screen.queryByTestId('opponent-row')).not.toBeInTheDocument();
+    const piles = screen.getByRole('button', { name: '덱에서 뽑기' }).closest('.grid') as HTMLElement;
+    expect(within(piles).getAllByTestId('opponent-seat')).toHaveLength(2);
   });
 
   it('차례 안내 바는 마감 5초 전부터 카운트다운을 보이고 내 차례면 경고음을 한 번 낸다', () => {

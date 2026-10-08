@@ -7,9 +7,10 @@ import { HandAnchor, Seat, type SeatSize } from './Seat';
 import { SpectatorNotice } from '../../../table/SpectatorNotice';
 import { seatRows } from '../../../table/seats';
 import type { PaperSafariTableProps } from '../PaperSafariTable';
+import { pcSeatPlan } from './pcSeatPlan';
 
 /**
- * pc: 큰 둥근 테이블(PC·태블릿).
+ * pc: 큰 둥근 테이블(PC·태블릿). 내 자리가 있으면 상대 한 줄 + 덱·내 판 한 줄(pcSeatPlan), 관전자는 위·가운데 줄 둥근 배치.
  * landscape: 휴대폰을 눕힌 낮은 화면. 상대는 모두 맞은편 한 줄(양 끝은 조금 아래), 덱·내 판·내 옆 칸은 아래 한 줄.
  * mini: 세로 휴대폰용 가장 작은 테이블. landscape·mini는 상대 카드 폭 28px, 예상 점수는 크게 보기에서만.
  */
@@ -28,7 +29,7 @@ type DensityStyle = {
 const DENSITY: Record<TableDensity, DensityStyle> = {
   pc: {
     opponent: 'sm', piles: 'md', me: 'lg',
-    felt: 'min-h-[min(70vh,640px)] max-w-6xl justify-between gap-4 px-[6%] pb-4 pt-6',
+    felt: 'min-h-[min(68vh,640px)] max-w-6xl justify-between gap-4 px-[6%] pb-4 pt-6',
     top: 'gap-12', middle: 'gap-4', myRow: 'mt-8',
   },
   landscape: {
@@ -53,6 +54,15 @@ export function TableRound({ density = 'pc', ...props }: Props) {
   const rows = seatRows(opponents.length);
   const style = DENSITY[density];
   const pc = density === 'pc';
+  // PC는 내 자리가 있으면 덱을 내 판 옆에 두고 상대를 한 줄에 앉혀 한 화면(1280x860)에 들어가게 한다.
+  const plan = pc ? pcSeatPlan(opponents.length, Boolean(myBoard)) : null;
+  const arc = density === 'landscape' || plan?.arrangement === 'arc';
+  const opponentSize = plan?.opponent ?? style.opponent;
+  const handOverlay = plan ? plan.handOverlay : true;
+  const lowered = plan ? plan.lowered : 'pt-6';
+  const topGap = plan?.gap ?? style.top;
+  // 한 줄 배치의 PC 펠트는 justify-between으로 두 줄을 위아래로 벌리므로 내 줄 위 여백을 작게 둔다.
+  const arcMyRow = pc ? 'mt-2' : style.myRow;
   const opponentSeat = (index: number | null) => {
     const board: BoardView | undefined = index === null ? undefined : opponents[index];
     if (!board) {
@@ -60,7 +70,7 @@ export function TableRound({ density = 'pc', ...props }: Props) {
     }
     return (
       <div key={board.playerId} data-testid="opponent-seat">
-        <OpponentSeat board={board} nickname={nicknameOf(board.playerId)} size={style.opponent} handOverlay={!pc} showEstimate={style.opponent !== 'mini'}
+        <OpponentSeat board={board} nickname={nicknameOf(board.playerId)} size={opponentSize} handOverlay={handOverlay} showEstimate={opponentSize !== 'mini'}
           active={round.currentPlayerId === board.playerId} held={round.held} presence={presenceOf(board.playerId)} timer={timerFor(board.playerId)} />
       </div>
     );
@@ -80,18 +90,18 @@ export function TableRound({ density = 'pc', ...props }: Props) {
   );
   const sideBox = (width: string) => (mySide ? <div className={`flex ${width} shrink-0`}>{mySide}</div> : null);
 
-  // 눕힌 휴대폰: 높이가 낮아 상대는 모두 맞은편 한 줄(양 끝은 조금 아래로 둘러앉은 느낌), 덱·내 판·내 옆 칸은 아래 한 줄.
-  const landscapeRows = (
+  // 한 줄 배치(눕힌 휴대폰, 내 자리가 있는 PC): 상대는 모두 맞은편 한 줄(양 끝은 조금 아래로 둘러앉은 느낌), 덱·내 판·내 옆 칸은 아래 한 줄.
+  const arcRows = (
     <>
-      <div data-testid="opponent-row" className={`flex items-start justify-center ${style.top}`}>
-        <div className="pt-6">{opponentSeat(rows.left)}</div>
+      <div data-testid="opponent-row" className={`flex items-start justify-center ${topGap}`}>
+        <div className={lowered}>{opponentSeat(rows.left)}</div>
         {rows.top.map(opponentSeat)}
-        <div className="pt-6">{opponentSeat(rows.right)}</div>
+        <div className={lowered}>{opponentSeat(rows.right)}</div>
       </div>
-      <div data-testid="my-row" className={`${style.myRow} flex items-center justify-center gap-4`}>
+      <div data-testid="my-row" className={`${arcMyRow} flex items-center justify-center ${pc ? 'gap-6' : 'gap-4'}`}>
         {piles}
-        {mySeat ?? <SpectatorNotice />}
-        {sideBox('w-28')}
+        {pc && mySeat ? <div className={`transition-transform duration-300 ${myTurn ? '-translate-y-2' : ''}`}>{mySeat}</div> : (mySeat ?? <SpectatorNotice />)}
+        {sideBox(pc ? 'w-36' : 'w-28')}
       </div>
     </>
   );
@@ -126,7 +136,7 @@ export function TableRound({ density = 'pc', ...props }: Props) {
   return (
     <div data-testid="table-round" data-density={density} className="space-y-3">
       <Felt shape="oval" className={`mx-auto flex w-full flex-col ${style.felt}`}>
-        {density === 'landscape' ? landscapeRows : roundRows}
+        {arc ? arcRows : roundRows}
       </Felt>
     </div>
   );
