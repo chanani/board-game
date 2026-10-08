@@ -39,4 +39,15 @@ class OldMaidPendingActorsTest {
         assertThat(game.isFinished()).isTrue();
         assertThat(game.pendingActors()).isEmpty();
     }
+
+    @Test
+    void R18_뽑은_뒤_짝을_버리는_동안에도_뽑은_사람이_차례다() {
+        OldMaidGame game = game(A, hands(List.of(s(Rank.FIVE), d(Rank.THREE)), List.of(h(Rank.FIVE), JOKER, c(Rank.SEVEN))));
+
+        game.draw(A, new SlotIndex(0));
+
+        assertThat(game.stage()).isEqualTo(OldMaidStage.DISCARD);
+        assertThat(game.pendingActors()).contains(PendingActor.turn(1L));
+        assertThat(game.pendingActors()).filteredOn(actor -> actor.memberId() == 1L).hasSize(1);
+    }
 }

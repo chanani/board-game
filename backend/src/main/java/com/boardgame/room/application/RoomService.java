@@ -293,6 +293,10 @@ public class RoomService {
     private void applyAct(Room room, long memberId, GameAction action) {
         List<Long> before = room.memberIds();
         List<GameOutcome> outcomes = room.act(memberId, action);
+        afterAct(room, before, outcomes);
+    }
+
+    private void afterAct(Room room, List<Long> before, List<GameOutcome> outcomes) {
         baselineNewcomers(room, before);
         saveAndNotifyClosed(room);
         rearm(room);
@@ -300,7 +304,7 @@ public class RoomService {
         outcomePublisher.publish(room, outcomes, clock.instant());
     }
 
-    // R20: 예약 스레드에서 들어온다. 같은 잠금 안에서 상태 번호가 최신일 때만 그 컴퓨터의 걸음을 한다.
+    // R20: 예약 스레드에서 들어온다. 같은 잠금 안에서 그 컴퓨터의 결정이 아직 살아 있을 때만 걸음을 한다.
     private synchronized void runBot(BotTicket ticket) {
         registry.find(ticket.code())
                 .filter(room -> bots.isCurrent(room, ticket))
@@ -314,27 +318,36 @@ public class RoomService {
             bots.continueWith(ticket, this::runBot);
             return;
         }
+        bots.consume(ticket);
         actAsBot(room, ticket.botId(), step.action());
     }
 
-    // R21: 서버가 거절하면 기록하고 기존 자동 행동과 같은 결정을 한 번 시도한다.
+    // R21: 게임이 그 행동을 거절했을 때만 기존 자동 행동과 같은 결정을 한 번 시도한다.
+    // 행동이 적용된 뒤(저장·타이머·방송·결과 발행)의 실패는 대신 행동할 이유가 아니다(두 번 행동하게 된다).
     private void actAsBot(Room room, long botId, GameAction action) {
-        try {
-            applyAct(room, botId, action);
-        } catch (RuntimeException exception) {
-            log.warn("컴퓨터 행동 거절, 자동 행동으로 대신한다: room={}, bot={}, action={}", room.codeValue(), botId,
-                    action, exception);
+        List<Long> before = room.memberIds();
+        Optional<List<GameOutcome>> outcomes = tryBotAct(room, botId, action);
+        if (outcomes.isEmpty()) {
             fallbackAct(room, botId);
+            return;
         }
+        afterAct(room, before, outcomes.get());
     }
 
-    // R21: 그래도 안 되면 결정 시간이 끝날 때 기존 시간 초과 처리가 진행시킨다.
+    // R21: 그래도 거절되면 결정 시간이 끝날 때 기존 시간 초과 처리가 진행시킨다.
     private void fallbackAct(Room room, long botId) {
+        List<Long> before = room.memberIds();
+        bots.fallback(room, botId)
+                .flatMap(action -> tryBotAct(room, botId, action))
+                .ifPresent(outcomes -> afterAct(room, before, outcomes));
+    }
+
+    private Optional<List<GameOutcome>> tryBotAct(Room room, long botId, GameAction action) {
         try {
-            bots.fallback(room, botId)
-                    .ifPresent(action -> applyAct(room, botId, action));
-        } catch (RuntimeException exception) {
-            log.warn("컴퓨터 자동 행동도 실패, 시간 초과 처리에 맡긴다: room={}, bot={}", room.codeValue(), botId, exception);
+            return Optional.of(room.act(botId, action));
+        } catch (BusinessException exception) {
+            log.warn("컴퓨터 행동 거절: room={}, bot={}, action={}", room.codeValue(), botId, action, exception);
+            return Optional.empty();
         }
     }
 
@@ -371,11 +384,7 @@ public class RoomService {
     private void applyTimeout(Room room) {
         List<Long> before = room.memberIds();
         List<GameOutcome> outcomes = room.autoAct(random);
-        baselineNewcomers(room, before);
-        saveAndNotifyClosed(room);
-        rearm(room);
-        broadcast(room);
-        outcomePublisher.publish(room, outcomes, clock.instant());
+        afterAct(room, before, outcomes);
     }
 
     // 실패하면 마감이 이미 지났으므로 rearm은 곧바로 다시 실행돼 실패를 되풀이한다. 한 번의 제한 시간 뒤에 다시 시도한다.

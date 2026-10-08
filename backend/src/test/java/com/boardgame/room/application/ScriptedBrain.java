@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 // 정해 둔 계획을 돌려주고 받은 입력을 모두 기록하는 머리(BotDriverTest용). planner·fallbackAction은 테스트가 바꾼다.
@@ -20,9 +21,13 @@ final class ScriptedBrain implements BotBrain {
     final List<Object> observed = new ArrayList<>();
     final List<BotSituation> situations = new ArrayList<>();
     final List<BotDifficulty> made = new ArrayList<>();
+    final List<BotMind> minds = new ArrayList<>();
     Function<BotSituation, Optional<BotPlan>> planner =
             situation -> Optional.of(BotPlan.act(Duration.ofMillis(800), new GameAction("FLIP", 0, 0)));
     GameAction fallbackAction = new GameAction("AUTO", null, null);
+    Consumer<Object> observer = view -> {
+    };
+    boolean failMind;
 
     @Override
     public GameType type() {
@@ -31,11 +36,15 @@ final class ScriptedBrain implements BotBrain {
 
     @Override
     public BotMind mind(BotDifficulty difficulty) {
+        if (failMind) {
+            throw new IllegalStateException("마음 만들기 실패");
+        }
         made.add(difficulty);
-        return new BotMind() {
+        BotMind mind = new BotMind() {
             @Override
             public void observe(Object view) {
                 observed.add(view);
+                observer.accept(view);
             }
 
             @Override
@@ -49,5 +58,7 @@ final class ScriptedBrain implements BotBrain {
                 return Optional.of(fallbackAction);
             }
         };
+        minds.add(mind);
+        return mind;
     }
 }

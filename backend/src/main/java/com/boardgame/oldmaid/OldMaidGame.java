@@ -179,6 +179,7 @@ public class OldMaidGame {
     }
 
     // R18: 처음 버리기 단계면 짝이 남은 모두(TOGETHER), 그 밖에는 뽑는 사람(TURN)과 섞을 수 있는 사람(REACTION).
+    // 처음 버리기 단계에는 섞기를 알리지 않는다(컴퓨터는 첫 차례부터 섞는다). 뽑은 뒤 버리기(DISCARD)도 뽑는 사람의 TURN이다.
     public List<PendingActor> pendingActors() {
         if (isFinished()) {
             return List.of();
