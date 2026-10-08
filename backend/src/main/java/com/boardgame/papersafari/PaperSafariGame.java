@@ -81,12 +81,14 @@ public class PaperSafariGame {
         return seats.soleSurvivor();
     }
 
+    // 기권한 사람은 패배다. 라운드가 끝났으면 점수로 가리고(최저점 공동은 무승부, 나머지는 패배), 아니면 혼자 남은 사람이 이긴다.
     public RoundOutcome outcomeOf(PlayerId player) {
-        Optional<PlayerId> winner = winner();
-        if (winner.isEmpty()) {
-            return drawUnlessForfeited(player);
+        if (!isSeated(player)) {
+            return RoundOutcome.LOSE;
         }
-        return RoundOutcome.winOrLose(player.equals(winner.get()));
+        return lastRoundResult()
+                .map(result -> result.outcomeOf(player))
+                .orElseGet(() -> RoundOutcome.winOrLose(isSoleSurvivor(player)));
     }
 
     public Optional<RoundResult> lastRoundResult() {
@@ -140,11 +142,8 @@ public class PaperSafariGame {
                 autoActors.sequence());
     }
 
-    private RoundOutcome drawUnlessForfeited(PlayerId player) {
-        if (!isSeated(player)) {
-            return RoundOutcome.LOSE;
-        }
-        return RoundOutcome.DRAW;
+    private boolean isSoleSurvivor(PlayerId player) {
+        return seats.soleSurvivor().filter(player::equals).isPresent();
     }
 
     // 사람의 행동(기권 포함)이 성공하면 직전 자동 행동 표시를 지운다. 거부된 행동은 표시를 건드리지 않는다.

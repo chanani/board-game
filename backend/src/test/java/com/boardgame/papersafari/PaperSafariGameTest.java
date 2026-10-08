@@ -7,6 +7,8 @@ import static com.boardgame.papersafari.Fixtures.CAROL;
 import static com.boardgame.papersafari.Fixtures.FIRST;
 import static com.boardgame.papersafari.Fixtures.LOSER_HAND;
 import static com.boardgame.papersafari.Fixtures.WINNER_HAND;
+import static com.boardgame.papersafari.Fixtures.REST;
+import static com.boardgame.papersafari.Fixtures.numbers;
 import static com.boardgame.papersafari.Fixtures.stack;
 import static com.boardgame.papersafari.Fixtures.zeros;
 import static com.boardgame.papersafari.GameFixtures.game;
@@ -53,6 +55,38 @@ class PaperSafariGameTest {
             assertThat(result.outcomeOf(ALICE)).isEqualTo(RoundOutcome.DRAW);
             assertThat(result.outcomeOf(BOB)).isEqualTo(RoundOutcome.DRAW);
         });
+    }
+
+    @Test
+    void 세_명_중_최저점을_나눈_두_명은_무승부이고_나머지는_패배로_끝난다() {
+        PaperSafariGame game = game(THREE, List.of(
+                stack(List.of(WINNER_HAND, numbers(1, 0, 0, 0, 0, 0), LOSER_HAND), Card.number(7), zeros(30))));
+        THREE.forEach(player -> game.flipInitial(player, FIRST));
+
+        for (Position position : REST) {
+            passUntilTurnOf(game, ALICE);
+            game.drawFromDeck(ALICE);
+            game.swapAt(ALICE, position);
+        }
+        while (game.status() == GameStatus.IN_ROUND) {
+            passTurn(game, game.currentPlayer());
+        }
+
+        assertThat(game.winner()).isEmpty();
+        assertThat(game.outcomeOf(ALICE)).isEqualTo(RoundOutcome.DRAW);
+        assertThat(game.outcomeOf(BOB)).isEqualTo(RoundOutcome.DRAW);
+        assertThat(game.outcomeOf(CAROL)).isEqualTo(RoundOutcome.LOSE);
+    }
+
+    private static void passUntilTurnOf(PaperSafariGame game, PlayerId player) {
+        while (!game.currentPlayer().equals(player)) {
+            passTurn(game, game.currentPlayer());
+        }
+    }
+
+    private static void passTurn(PaperSafariGame game, PlayerId player) {
+        game.drawFromDeck(player);
+        game.discardDrawn(player);
     }
 
     @Test

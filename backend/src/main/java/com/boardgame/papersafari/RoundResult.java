@@ -36,11 +36,15 @@ public class RoundResult {
         return winner().isEmpty();
     }
 
+    // 최저점이 아니면 패배다. 최저점을 여럿이 나눴을 때만 그 사람들끼리 무승부다.
     public RoundOutcome outcomeOf(PlayerId player) {
+        if (!lowestPlayers().contains(player)) {
+            return RoundOutcome.LOSE;
+        }
         if (isDraw()) {
             return RoundOutcome.DRAW;
         }
-        return RoundOutcome.winOrLose(lowestPlayers().contains(player));
+        return RoundOutcome.WIN;
     }
 
     public Score scoreOf(PlayerId player) {
