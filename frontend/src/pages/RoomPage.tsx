@@ -10,6 +10,7 @@ import { lobbyPath } from '../games/catalog';
 import { findGame, sessionGameType } from '../games/registry';
 import { GameChat } from '../room/GameChat';
 import { useGameOverDismissal } from '../room/useGameOverDismissal';
+import { usePracticeStartNotice } from '../room/usePracticeStartNotice';
 import { useRoomChat } from '../room/useRoomChat';
 import { useRoomChannel } from '../room/useRoomChannel';
 import { LeaveConfirmModal } from '../room/LeaveConfirmModal';
@@ -46,6 +47,7 @@ export function RoomPage() {
   const gameView = room && view && sessionGameType(view) === room.gameType ? view : null;
   const overKey = game && gameView ? game.gameOverKey(code, gameView) : null;
   const gameOver = useGameOverDismissal(code, overKey, room?.status === 'PLAYING');
+  usePracticeStartNotice(room);
   // 이 화면은 REST 입장(참가·관전) 뒤에만 오므로 채팅도 방 채널과 같은 시점에 시작한다.
   const roomChat = useRoomChat(code, room !== null && !missing, meId);
   // 채팅 머리줄 그림은 방 정보(참가자·관전자)에서 찾는다.

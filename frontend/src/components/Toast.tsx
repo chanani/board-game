@@ -3,7 +3,7 @@ import { createContext, useCallback, useContext, useMemo, useRef, useState, type
 
 type Tone = 'error' | 'info';
 type ToastItem = { id: number; message: string; tone: Tone };
-type ToastApi = { show: (message: string, tone?: Tone) => void };
+type ToastApi = { show: (message: string, tone?: Tone, durationMs?: number) => void };
 
 const ToastContext = createContext<ToastApi | null>(null);
 
@@ -16,10 +16,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const nextId = useRef(1);
 
-  const show = useCallback((message: string, tone: Tone = 'error') => {
+  const show = useCallback((message: string, tone: Tone = 'error', durationMs = 3000) => {
     const id = nextId.current++;
     setToasts((current) => [...current, { id, message, tone }]);
-    window.setTimeout(() => setToasts((current) => current.filter((toast) => toast.id !== id)), 3000);
+    window.setTimeout(() => setToasts((current) => current.filter((toast) => toast.id !== id)), durationMs);
   }, []);
 
   const api = useMemo(() => ({ show }), [show]);
