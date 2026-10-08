@@ -1,13 +1,16 @@
 package com.boardgame.oldmaid.bot;
 
+import com.boardgame.oldmaid.OldMaidEventType;
 import com.boardgame.oldmaid.OldMaidStage;
 import com.boardgame.oldmaid.OldMaidStatus;
 import com.boardgame.oldmaid.Rank;
 import com.boardgame.oldmaid.Suit;
 import com.boardgame.oldmaid.view.OldMaidCardView;
+import com.boardgame.oldmaid.view.OldMaidEventView;
 import com.boardgame.oldmaid.view.OldMaidPlayerView;
 import com.boardgame.oldmaid.view.OldMaidSessionView;
 import com.boardgame.oldmaid.view.OldMaidView;
+import java.time.Instant;
 import java.util.List;
 
 // 컴퓨터 자리 화면을 손으로 만든다(23필드 순서는 OldMaidView).
@@ -56,5 +59,17 @@ final class OldMaidViews {
     static OldMaidSessionView discarding(OldMaidStage stage) {
         return view(ME, stage, stage == OldMaidStage.DRAW ? null : ME, null, 0L, List.of(card(1), card(14)),
                 List.of(player(ME, 2), player(OTHER, 2)), false, true);
+    }
+
+    /** 같은 화면에 actor의 SHUFFLE 사건(seq)과 서버 시각 at을 싣는다. */
+    static OldMaidSessionView withShuffle(OldMaidSessionView base, long seq, long actor, Instant at) {
+        OldMaidView g = base.game();
+        OldMaidEventView shuffle = new OldMaidEventView(seq, OldMaidEventType.SHUFFLE, actor, null, List.of(), null,
+                null, false);
+        OldMaidView game = new OldMaidView(g.viewerId(), g.status(), g.stage(), g.startedAt(), g.currentPlayerId(),
+                g.targetId(), g.turnSeq(), g.participantIds(), g.players(), g.hand(), g.peek(), g.canShuffle(),
+                g.canDiscard(), g.discardCount(), g.recentPairs(), g.discards(), g.result(), g.winnerId(), g.deadline(),
+                at.toEpochMilli(), g.lastAutoActorIds(), g.autoActSeq(), List.of(shuffle));
+        return new OldMaidSessionView(game);
     }
 }

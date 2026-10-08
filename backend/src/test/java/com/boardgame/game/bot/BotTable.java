@@ -10,6 +10,7 @@ import com.boardgame.support.MutableClock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -33,6 +34,7 @@ public final class BotTable {
     private final Map<Long, BotMind> minds;
     private final MutableClock clock;
     private final Map<Long, Intent> intents = new TreeMap<>();
+    private final Map<String, Integer> applied = new HashMap<>();
     private int timeouts;
     private int rejections;
     private int steps;
@@ -62,6 +64,11 @@ public final class BotTable {
 
     public int steps() {
         return steps;
+    }
+
+    /** 게임이 받아 준 컴퓨터 행동 중 그 종류(GameAction.type)의 수. */
+    public int applied(String type) {
+        return applied.getOrDefault(type, 0);
     }
 
     public GameSession session() {
@@ -151,6 +158,7 @@ public final class BotTable {
     private boolean tryAct(long id, GameAction action) {
         try {
             session.act(id, action);
+            applied.merge(action.type(), 1, Integer::sum);
             return true;
         } catch (BusinessException exception) {
             return false;

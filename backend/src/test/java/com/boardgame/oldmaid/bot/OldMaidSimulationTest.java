@@ -30,22 +30,31 @@ class OldMaidSimulationTest {
     void 모든_난이도가_섞인_2_6명_판이_멈추지_않고_끝난다() {
         Random random = new Random(20261008L);
         int steps = 0;
+        int shuffles = 0;
         for (int players = 2; players <= 6; players++) {
             for (int game = 0; game < 40; game++) {
-                steps += playFinished(mixed(players, random), random).steps();
+                BotTable table = playFinished(mixed(players, random), random);
+                steps += table.steps();
+                shuffles += table.applied("SHUFFLE");
             }
         }
-        System.out.printf("[OldMaid] 200 games, %d bot steps%n", steps);
+        System.out.printf("[OldMaid] 200 games, %d bot steps, %d shuffles%n", steps, shuffles);
+        // R36: 중·상이 낀 판에서 섞기가 실제로 일어난다(예약이 바뀌어도 결정이 사라지지 않는다).
+        assertThat(shuffles).isPositive();
     }
 
     @Test
-    void 상끼리_두어도_판이_끝난다() {
+    void 상끼리_두어도_판이_끝나고_조커를_든_상은_섞는다() {
         Random random = new Random(11L);
+        int shuffles = 0;
         for (int players : new int[] {2, 6}) {
             for (int game = 0; game < 30; game++) {
-                playFinished(Collections.nCopies(players, BotDifficulty.HARD), random);
+                shuffles += playFinished(Collections.nCopies(players, BotDifficulty.HARD), random).applied("SHUFFLE");
             }
         }
+        System.out.printf("[OldMaid] hard-only 60 games, %d shuffles%n", shuffles);
+        // 조커를 든 상은 판마다 적어도 한 번은 뽑힐 차례를 맞는다.
+        assertThat(shuffles).isGreaterThanOrEqualTo(60);
     }
 
     private BotTable playFinished(List<BotDifficulty> seats, Random random) {

@@ -1,6 +1,5 @@
 package com.boardgame.oldmaid.bot;
 
-import com.boardgame.game.GameAction;
 import com.boardgame.game.bot.ThinkTime;
 import java.time.Duration;
 import java.time.Instant;
@@ -28,7 +27,7 @@ final class EasyOldMaid implements OldMaidPlayer {
     }
 
     @Override
-    public Optional<GameAction> shuffle(OldMaidSight sight, Instant at) {
+    public Optional<Duration> shuffleDelay(OldMaidSight sight, Instant now, Duration think) {
         return Optional.empty();
     }
 }

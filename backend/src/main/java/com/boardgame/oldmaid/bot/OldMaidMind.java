@@ -48,8 +48,8 @@ final class OldMaidMind implements BotMind {
 
     private Optional<BotPlan> shuffling(BotSituation situation, OldMaidSight sight) {
         Duration think = ThinkTime.standard(situation.random());
-        return player.shuffle(sight, situation.now().plus(think))
-                .map(action -> BotPlan.act(think, action));
+        return player.shuffleDelay(sight, situation.now(), think)
+                .map(delay -> BotPlan.act(delay, OldMaidMoves.shuffle()));
     }
 
     @Override

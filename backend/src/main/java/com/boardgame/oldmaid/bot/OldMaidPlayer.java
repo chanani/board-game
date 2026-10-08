@@ -1,6 +1,5 @@
 package com.boardgame.oldmaid.bot;
 
-import com.boardgame.game.GameAction;
 import com.boardgame.game.bot.ThinkTime;
 import java.time.Duration;
 import java.time.Instant;
@@ -20,5 +19,6 @@ interface OldMaidPlayer {
 
     List<Integer> lifts(int count, int chosen, Random random);
 
-    Optional<GameAction> shuffle(OldMaidSight sight, Instant at);
+    /** R36: 차례 밖에서 섞을 때까지 남은 시간. 섞지 않으면 빈 값. think는 처음 정할 때의 생각 시간. */
+    Optional<Duration> shuffleDelay(OldMaidSight sight, Instant now, Duration think);
 }
