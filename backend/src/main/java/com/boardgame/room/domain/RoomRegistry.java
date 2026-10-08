@@ -18,7 +18,8 @@ public class RoomRegistry {
     public void save(Room room) {
         RoomCode code = room.code();
         memberRooms.entrySet().removeIf(entry -> entry.getValue().equals(code) && !room.isOccupant(entry.getKey()));
-        room.occupantIds().forEach(memberId -> memberRooms.put(memberId, code));
+        // R7: 회원 방 찾기는 사람만 기억한다(컴퓨터 번호는 음수라 회원과 겹치지 않지만 넣지 않는다).
+        room.humanOccupantIds().forEach(memberId -> memberRooms.put(memberId, code));
         rooms.put(code, room);
         removeIfEmpty(room);
     }

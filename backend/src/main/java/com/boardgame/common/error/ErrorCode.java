@@ -37,6 +37,7 @@ public enum ErrorCode {
     ROOM_PRIVATE(HttpStatus.FORBIDDEN, "비공개방은 관전할 수 없어요."),
     ROOM_NOT_PLAYING(HttpStatus.CONFLICT, "게임 중인 방만 관전할 수 있어요. 참가하기를 눌러 주세요."),
     NOT_SPECTATOR(HttpStatus.CONFLICT, "관전 중인 사람만 자리에 앉을 수 있어요."),
+    BOT_NOT_FOUND(HttpStatus.NOT_FOUND, "컴퓨터를 찾을 수 없어요."),
     SESSION_REPLACED(HttpStatus.UNAUTHORIZED, "다른 곳에서 로그인해서 로그아웃됐어요."),
     PLAYERS_NOT_READY(HttpStatus.CONFLICT, "모두 준비해야 시작할 수 있어요."),
     INVALID_CHAT_MESSAGE(HttpStatus.BAD_REQUEST, "메시지는 1~200자로 입력해 주세요."),

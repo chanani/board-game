@@ -1,5 +1,7 @@
 package com.boardgame.room.domain;
 
+import com.boardgame.game.bot.BotDifficulty;
+import com.boardgame.member.domain.Avatar;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -119,5 +121,42 @@ public class RoomOccupants {
 
     public List<Participant> spectators() {
         return spectators.asList();
+    }
+
+    public Participant addBot(BotDifficulty difficulty, Avatar avatar, Capacity capacity) {
+        return players.addBot(difficulty, avatar, capacity);
+    }
+
+    public void changeBot(long botId, BotDifficulty difficulty) {
+        players.changeBot(botId, difficulty);
+    }
+
+    // R13: 사람 참가자가 한 명도 없으면 컴퓨터·관전자가 남아도 빈 방이다.
+    public boolean hasNoHumanPlayers() {
+        return !players.hasHumans();
+    }
+
+    public boolean hasBots() {
+        return !players.bots().isEmpty();
+    }
+
+    public List<Participant> bots() {
+        return players.bots();
+    }
+
+    public boolean isBot(long memberId) {
+        return players.isBot(memberId);
+    }
+
+    public Participant host() {
+        return players.host();
+    }
+
+    public List<Long> humanPlayerIds() {
+        return players.humanIds();
+    }
+
+    public List<Long> humanOccupantIds() {
+        return Stream.concat(players.humanIds().stream(), spectators.ids().stream()).toList();
     }
 }

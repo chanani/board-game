@@ -31,4 +31,11 @@ class CapacityTest {
         assertThat(three.isBelow(4)).isTrue();
         assertThat(three.isBelow(3)).isFalse();
     }
+
+    @Test
+    void R9_게임_최대_인원보다_작으면_하나_늘리고_최대면_ROOM_FULL() {
+        assertThat(Capacity.of(GameType.UNO, 4).grownFor(GameType.UNO)).isEqualTo(new Capacity(5));
+        assertError(() -> Capacity.of(GameType.UNO, 5).grownFor(GameType.UNO), ErrorCode.ROOM_FULL);
+        assertThat(Capacity.of(GameType.OLD_MAID, 5).grownFor(GameType.OLD_MAID)).isEqualTo(new Capacity(6));
+    }
 }

@@ -6,6 +6,8 @@ import com.boardgame.game.GameAction;
 import com.boardgame.game.GameOutcome;
 import com.boardgame.game.GameSession;
 import com.boardgame.game.GameType;
+import com.boardgame.game.bot.BotDifficulty;
+import com.boardgame.member.domain.Avatar;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -108,6 +110,29 @@ public class Room {
         }
         occupants.removePlayer(targetId);
         recordDeparture(targetId);
+    }
+
+    /** R8·R9: 방장이 대기 중에 컴퓨터를 앉힌다. 꽉 찼으면 게임 최대 인원까지 정원을 1 늘린다(D3). */
+    public Participant addBot(long requesterId, BotDifficulty difficulty, Avatar avatar) {
+        requireHost(requesterId);
+        requireWaiting();
+        makeSeatForBot();
+        return occupants.addBot(difficulty, avatar, profile.capacity());
+    }
+
+    /** R10: 대기 중에 방장이 앉아 있는 컴퓨터의 난이도를 바꾼다. */
+    public void changeBot(long requesterId, long botId, BotDifficulty difficulty) {
+        requireHost(requesterId);
+        requireWaiting();
+        occupants.changeBot(botId, difficulty);
+    }
+
+    private void makeSeatForBot() {
+        Capacity capacity = profile.capacity();
+        if (!capacity.isFull(occupants.playerCount())) {
+            return;
+        }
+        profile = profile.reconfigured(capacity.grownFor(gameType()), theme());
     }
 
     /** 대기 중에 방장이 최대 인원과 테마를 바꾼다. 비밀번호와 이름, 준비 상태는 그대로 둔다. */
@@ -243,8 +268,9 @@ public class Room {
         return occupants.isSpectator(memberId);
     }
 
+    // R13: 사람 참가자가 없으면 빈 방이다(컴퓨터·관전자만 남아도 닫는다, D6).
     public boolean isEmpty() {
-        return occupants.hasNoPlayers();
+        return occupants.hasNoHumanPlayers();
     }
 
     public RoomCode code() {
@@ -278,6 +304,28 @@ public class Room {
 
     public long hostId() {
         return occupants.hostId();
+    }
+
+    public Participant host() {
+        return occupants.host();
+    }
+
+    public List<Participant> bots() {
+        return occupants.bots();
+    }
+
+    public boolean isBot(long memberId) {
+        return occupants.isBot(memberId);
+    }
+
+    /** 사람 참가자(R6: 접속 기준점·연결 끊김 기권 대상). */
+    public List<Long> humanIds() {
+        return occupants.humanPlayerIds();
+    }
+
+    /** 사람 참가자와 관전자(R7: 회원 방 찾기, R16: 화면을 받는 사람). */
+    public List<Long> humanOccupantIds() {
+        return occupants.humanOccupantIds();
     }
 
     public List<Participant> participants() {

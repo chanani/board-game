@@ -24,4 +24,12 @@ public record Capacity(int value) {
     public boolean isFull(int size) {
         return size >= value;
     }
+
+    /** R9: 게임 최대 인원보다 작으면 1 늘린다. 이미 최대면 ROOM_FULL. */
+    public Capacity grownFor(GameType type) {
+        if (value >= type.maxPlayers()) {
+            throw new BusinessException(ErrorCode.ROOM_FULL);
+        }
+        return new Capacity(value + 1);
+    }
 }
