@@ -31,4 +31,11 @@ public record OldMaidView(
         List<Long> lastAutoActorIds,
         long autoActSeq,
         List<OldMaidEventView> events) {
+
+    // R19: 컴퓨터의 결정 비교용. 서버 시각만 0으로 고정한다.
+    OldMaidView withoutClock() {
+        return new OldMaidView(viewerId, status, stage, startedAt, currentPlayerId, targetId, turnSeq, participantIds, players,
+                hand, peek, canShuffle, canDiscard, discardCount, recentPairs, discards, result, winnerId, deadline,
+                0L, lastAutoActorIds, autoActSeq, events);
+    }
 }

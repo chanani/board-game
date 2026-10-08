@@ -36,4 +36,12 @@ public record UnoView(
         List<Long> lastAutoActorIds,
         long autoActSeq,
         List<UnoEventView> events) {
+
+    // R19: 컴퓨터의 결정 비교용. 서버 시각만 0으로 고정한다.
+    UnoView withoutClock() {
+        return new UnoView(viewerId, status, startedAt, stage, currentPlayerId, direction, currentColor, discardTop,
+                discardCount, drawPileCount, participantIds, players, hand, playableCardIds, wildDrawFourRisky,
+                drawnCardId, canCallUno, unoCatch, canCatch, challenge, reveal, result, winnerId, deadline, 0L,
+                lastAutoActorIds, autoActSeq, events);
+    }
 }

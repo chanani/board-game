@@ -17,4 +17,10 @@ public record PaperSafariView(
         Long lastAutoActorId,
         List<Long> lastAutoActorIds,
         long autoActSeq) {
+
+    // R19: 컴퓨터의 결정 비교용. 서버 시각만 0으로 고정한다.
+    PaperSafariView withoutClock() {
+        return new PaperSafariView(viewerId, status, roundNumber, round, lastRoundResult, winnerId, deadline, 0L, lastAutoActorId,
+                lastAutoActorIds, autoActSeq);
+    }
 }

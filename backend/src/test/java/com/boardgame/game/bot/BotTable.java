@@ -1,6 +1,7 @@
 package com.boardgame.game.bot;
 
 import com.boardgame.common.error.BusinessException;
+import com.boardgame.game.ClockFreeView;
 import com.boardgame.game.GameAction;
 import com.boardgame.game.GameSession;
 import com.boardgame.game.PendingActor;
@@ -20,7 +21,7 @@ import java.util.stream.Collectors;
 // 방·예약기 없이 실제 세션 한 판을 컴퓨터만으로 끝까지 돌린다(시뮬레이션용).
 // BotDriver와 같은 결정 경로를 흉내 낸다(시계는 가짜라 기다리지 않는다):
 // - 상태가 바뀔 때마다 모든 마음에 자기 자리 화면(viewFor)만 observe시키고, 기다리는 컴퓨터마다 결정이 바뀌었을 때만
-//   plan을 묻는다(같은 종류이고 동시 단계이거나 자기 화면이 그대로면 예약을 그대로 둔다. 빈 계획도 기억한다).
+//   plan을 묻는다(같은 종류이고 동시 단계이거나 서버 시각을 뺀 자기 화면이 그대로면 예약을 그대로 둔다. 빈 계획도 기억한다).
 // - 예약 중 가장 먼저 올 걸음을 실행한다(R19). SIGNAL은 session.signal 후 같은 결정으로 다음 걸음을 예약하고,
 //   ACT는 결정을 다 쓰고 session.act. 거절(BusinessException)이면 rejections++ 후 fallback을 한 번(R21).
 // - 마감(session.deadline)이 먼저 오거나 예약이 하나도 없으면 timeouts++ 후 session.autoAct(시간 초과 처리).
@@ -171,7 +172,7 @@ public final class BotTable {
             if (kind != currentKind) {
                 return false;
             }
-            return kind == PendingKind.TOGETHER || view.equals(currentView);
+            return kind == PendingKind.TOGETHER || ClockFreeView.of(view).equals(ClockFreeView.of(currentView));
         }
 
         Intent continueWith(BotPlan rest) {

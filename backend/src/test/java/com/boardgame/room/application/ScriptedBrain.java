@@ -28,10 +28,19 @@ final class ScriptedBrain implements BotBrain {
     Consumer<Object> observer = view -> {
     };
     boolean failMind;
+    private final GameType type;
+
+    ScriptedBrain() {
+        this(GameType.PAPER_SAFARI);
+    }
+
+    ScriptedBrain(GameType type) {
+        this.type = type;
+    }
 
     @Override
     public GameType type() {
-        return GameType.PAPER_SAFARI;
+        return type;
     }
 
     @Override
