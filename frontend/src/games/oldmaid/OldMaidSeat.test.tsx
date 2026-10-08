@@ -55,4 +55,11 @@ describe('OldMaidSeat', () => {
     expect(screen.getByTestId('discard-note')).toHaveTextContent('짝 버리는 중');
     expect(screen.queryByTestId('turn-tag')).not.toBeInTheDocument();
   });
+
+  it('차례인 상대 자리에만 내 차례와 같은 테두리 링이 생긴다', () => {
+    const { container, rerender } = render(<OldMaidSeat player={player()} nickname="밥" active targeted={false} backWidth={30} maxBacks={7} liftIndex={null} />);
+    expect(container.firstElementChild).toHaveClass('turn-ring', 'ring-inset', 'ring-(--turn-ring)');
+    rerender(<OldMaidSeat player={player()} nickname="밥" active={false} targeted={false} backWidth={30} maxBacks={7} liftIndex={null} />);
+    expect(container.firstElementChild).not.toHaveClass('turn-ring');
+  });
 });

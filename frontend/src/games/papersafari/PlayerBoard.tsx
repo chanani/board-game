@@ -24,7 +24,6 @@ type Props = {
   nickname: string;
   active: boolean;
   /** 내 차례일 때 판 테두리 안쪽에 겨자색 링과 빛을 단다(바깥으로 번지지 않아 위 정보를 덮지 않는다). */
-  turnRing?: boolean;
   size?: CardSize;
   pulseSlots?: boolean;
   onSlotClick?: (slot: SlotView) => void;
@@ -47,7 +46,7 @@ const PAD = { mini: 'p-1 w-min', xs: 'p-2 w-min', sm: 'p-2', md: 'p-2', lg: 'p-2
 const COLUMNS = { mini: 'grid-cols-[repeat(3,auto)]', xs: 'grid-cols-[repeat(3,auto)]', sm: 'grid-cols-3', md: 'grid-cols-3', lg: 'grid-cols-3' };
 const GAP = { mini: 'gap-0.5', xs: 'gap-1', sm: 'gap-1.5', md: 'gap-2.5', lg: 'gap-2.5' };
 
-export function PlayerBoard({ result, board, nickname, active, turnRing = false, size = 'md', pulseSlots = false, onSlotClick, canClick, connected, bot, offlineSeconds = 0, zoomLabel, onZoom, timer, avatar }: Props) {
+export function PlayerBoard({ result, board, nickname, active, size = 'md', pulseSlots = false, onSlotClick, canClick, connected, bot, offlineSeconds = 0, zoomLabel, onZoom, timer, avatar }: Props) {
   const ordered = [...board.slots].sort((a, b) => a.row - b.row || a.column - b.column);
   const zeroColumns = new Set(zeroPairColumns(board));
   const previousZero = useRef<Set<number>>(zeroColumns);
@@ -58,7 +57,7 @@ export function PlayerBoard({ result, board, nickname, active, turnRing = false,
 
   return (
     <div data-testid={`board-${board.playerId}`} data-winner={result ? result.winner : undefined}
-      className={`rounded-2xl bg-black/15 ${PAD[size]} backdrop-blur-[1px] ${result ? 'mx-auto w-fit' : ''} ${turnRing ? 'ring-[3px] ring-inset ring-(--turn-ring) turn-ring' : ''} ${result?.winner ? 'ring-[3px] ring-mustard-400 shadow-[0_0_18px_rgb(242_179_61/0.7)]' : ''}`}>
+      className={`rounded-2xl bg-black/15 ${PAD[size]} backdrop-blur-[1px] ${result ? 'mx-auto w-fit' : ''} ${active ? 'ring-[3px] ring-inset ring-(--turn-ring) turn-ring' : ''} ${result?.winner ? 'ring-[3px] ring-mustard-400 shadow-[0_0_18px_rgb(242_179_61/0.7)]' : ''}`}>
       {/* 결과 화면의 좁은 휴대폰에서는 이름표 줄이 판 폭을 넓히지 않게(inline-size 격리) 카드 격자 폭에 맞추고, 넘치는 닉네임만 말줄임한다. */}
       <div data-testid="board-header" className={`flex items-center justify-between gap-2 text-sm ${size === 'mini' ? 'mb-1' : 'mb-2'} ${result ? 'max-sm:[contain:inline-size]' : ''}`}>
         <span className={`flex min-w-0 items-center gap-1.5 ${result ? '' : 'flex-wrap'}`}>
