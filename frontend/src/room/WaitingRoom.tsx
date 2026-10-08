@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import type { ChatMessage } from '../api/chat';
 import type { BotDifficulty, Room, RoomMember } from '../api/types';
 import { BinocularsIcon, BookIcon } from '../components/icons';
@@ -16,6 +16,9 @@ import { MemberStatsModal, type StatsTarget } from './MemberStatsModal';
 import { MemberAvatar } from '../components/Avatar';
 import { useSeatBubbles } from './useSeatBubbles';
 import { WaitingActionBar } from './WaitingActionBar';
+import { EmoteBubble } from '../emote/EmoteBubble';
+import { EmotePanel } from '../emote/EmotePanel';
+import { useEmotes } from '../emote/useRoomEmotes';
 
 /** latest: 지금 막 받은 메시지(기록 제외). 앉은 사람의 말이면 그 자리 위에 말풍선을 띄운다. */
 type Chat = { messages: ChatMessage[]; onSend: (text: string) => boolean; latest?: ChatMessage | null };
@@ -38,6 +41,22 @@ type Props = {
   chat: Chat;
 };
 
+/** 관전 중인 내 이름: 누르면 내 전적 대신 표정 패널이 아래로 열리고, 보낸 표정은 이름 위에 뜬다. */
+function SpectatorEmoteButton({ spectator, separator }: { spectator: Room['spectators'][number]; separator: string }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLSpanElement>(null);
+  return (
+    <span ref={ref} className="relative inline-flex">
+      <EmoteBubble memberId={spectator.id} className="absolute -top-12 left-0" />
+      <button type="button" aria-label="감정 표현하기" aria-expanded={open} onClick={() => setOpen((current) => !current)}
+        className="inline-flex cursor-pointer items-center gap-1 rounded-full underline decoration-dotted underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-mustard-300">
+        <MemberAvatar memberId={spectator.id} avatar={spectator.avatar} size={18} />{spectator.nickname}{separator}
+      </button>
+      {open ? <EmotePanel anchorRef={ref} onClose={() => setOpen(false)} placement="down" align="start" /> : null}
+    </span>
+  );
+}
+
 /** 펠트의 나무 테두리(box-shadow 13px)는 레이아웃에 잡히지 않으므로 그만큼 안쪽 여백을 두어 패널 사이 간격(24px)을 맞춘다. */
 const FELT_RIM = 'p-[13px]';
 
@@ -52,6 +71,7 @@ export function WaitingRoom({ room, meId, receivedAt, now, onStart, onReady, onF
   const [rulesOpen, setRulesOpen] = useState(false);
   const rules = findGame(room.gameType)?.rules;
   const bubbles = useSeatBubbles(room.status === 'WAITING' ? chat.latest ?? null : null);
+  const canEmote = useEmotes() !== null;
   const canKick = !spectating && room.status === 'WAITING' && room.hostId === meId;
   const canManageBots = canKick && onAddBot !== undefined;
   // 컴퓨터는 확인 창 없이 바로 내보낸다. 사람만 한 번 더 묻는다.
@@ -94,10 +114,13 @@ export function WaitingRoom({ room, meId, receivedAt, now, onStart, onReady, onF
         </Felt>
         <WaitingActionBar room={room} meId={meId} spectating={spectating} onStart={onStart} onReady={onReady} onSeat={onSeat} />
         {room.spectators.length > 0 ? (
-          <p className="flex w-fit max-w-full flex-wrap items-center gap-x-1.5 gap-y-1 pill rounded-full px-3 py-1 text-sm">
+          <div className="flex w-fit max-w-full flex-wrap items-center gap-x-1.5 gap-y-1 pill rounded-full px-3 py-1 text-sm">
             <BinocularsIcon /> 관전 중:
             {room.spectators.map((spectator, index) => {
               const separator = index < room.spectators.length - 1 ? ',' : '';
+              if (spectator.id === meId && canEmote) {
+                return <SpectatorEmoteButton key={spectator.id} spectator={spectator} separator={separator} />;
+              }
               return (
                 <button key={spectator.id} type="button" aria-label={statsLabelOf(spectator, meId)} onClick={() => setStatsTarget(spectator)}
                   className="inline-flex cursor-pointer items-center gap-1 rounded-full underline decoration-dotted underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-mustard-300">
@@ -105,7 +128,7 @@ export function WaitingRoom({ room, meId, receivedAt, now, onStart, onReady, onF
                 </button>
               );
             })}
-          </p>
+          </div>
         ) : null}
       </section>
       <div className="flex flex-col gap-6">

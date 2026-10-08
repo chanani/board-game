@@ -8,6 +8,8 @@ import { SpectatorNotice } from '../../../table/SpectatorNotice';
 import { seatRows } from '../../../table/seats';
 import type { PaperSafariTableProps } from '../PaperSafariTable';
 import { pcSeatPlan, ringSeats } from './pcSeatPlan';
+import { EmoteBubble } from '../../../emote/EmoteBubble';
+import { EmoteDock } from '../../../emote/EmoteDock';
 
 /**
  * pc: 큰 둥근 테이블(PC·태블릿). 내 자리가 있으면 덱을 테이블 가운데 두고 상대가 위·양옆에 둘러앉는 배치(pcSeatPlan), 관전자는 위·가운데 줄 둥근 배치.
@@ -65,15 +67,20 @@ export function TableRound({ density = 'pc', ...props }: Props) {
       return null;
     }
     return (
-      <div key={board.playerId} data-testid="opponent-seat">
+      <div key={board.playerId} data-testid="opponent-seat" className="relative">
         <OpponentSeat board={board} nickname={nicknameOf(board.playerId)} size={opponentSize} handOverlay={handOverlay} showEstimate={opponentSize !== 'mini'}
           active={round.currentPlayerId === board.playerId} held={round.held} presence={presenceOf(board.playerId)} timer={timerFor(board.playerId)} />
+        <EmoteBubble memberId={board.playerId} className="absolute -right-3 -top-7" />
       </div>
     );
   };
+  // 감정 표현 버튼은 내 판 오른쪽 위 모서리에 떠 있어 카드 누르기와 겹치지 않는다.
   const mySeat = myBoard ? (
-    <Seat board={myBoard} nickname={`${nicknameOf(meId)} (나)`} active={myTurn} turnRing={myTurn} hand="none" timer={timerFor(meId)}
-      held={round.held} size={meSize} presence={{ avatar: presenceOf(meId).avatar }} handLabel="들고 있는 카드" onSlotClick={clickSlot} canClick={canClickSlot} pulseSlots={myTurn} />
+    <div className="relative">
+      <Seat board={myBoard} nickname={`${nicknameOf(meId)} (나)`} active={myTurn} turnRing={myTurn} hand="none" timer={timerFor(meId)}
+        held={round.held} size={meSize} presence={{ avatar: presenceOf(meId).avatar }} handLabel="들고 있는 카드" onSlotClick={clickSlot} canClick={canClickSlot} pulseSlots={myTurn} />
+      <EmoteDock meId={meId} className="-right-3 -top-3" align="end" />
+    </div>
   ) : null;
   const mySide = myBoard ? (
     <MySide canDiscard={canDiscard} canUndo={canUndo} estimate={estimate}

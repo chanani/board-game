@@ -1,3 +1,4 @@
+import { useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import type { RoomMember } from '../api/types';
 import { BotChip } from '../components/BotChip';
@@ -10,6 +11,9 @@ import { CheckIcon, CrownIcon, RobotIcon } from '../components/icons';
 import { SeatBubble, type SeatBubbles } from './useSeatBubbles';
 import { AvatarFace } from '../components/Avatar';
 import { avatarOf } from '../lib/avatars';
+import { EmoteBubble } from '../emote/EmoteBubble';
+import { EmotePanel, type PanelAlign } from '../emote/EmotePanel';
+import { useEmotes } from '../emote/useRoomEmotes';
 
 type Props = {
   members: RoomMember[];
@@ -23,7 +27,7 @@ type Props = {
   onKick?: (memberId: number) => void;
   /** 사람 id별 말풍선 내용(대기실 채팅). */
   bubbles?: SeatBubbles;
-  /** 있으면 모든 참가자(나 포함)의 아바타가 전적 보기 버튼이 된다. */
+  /** 있으면 참가자의 아바타가 전적 보기 버튼이 된다. 감정 표현을 쓸 수 있으면(방 화면) 내 아바타는 대신 표정 패널을 연다. */
   onShowStats?: (member: RoomMember) => void;
   /** 있으면(대기 중인 방장) 빈자리가 "컴퓨터 추가" 버튼이 된다. */
   onAddBot?: () => void;
@@ -68,25 +72,32 @@ export function MemberList({ members, maxPlayers, meId, receivedAt, now, onForfe
   const pc = useMediaQuery(PC_QUERY);
   const seatCount = seatCountOf(members, maxPlayers, gameMaxPlayers, onAddBot !== undefined);
   const seats = Array.from({ length: seatCount }, (_, index) => members[index] ?? null);
+  const canEmote = useEmotes() !== null;
+  const [emoting, setEmoting] = useState(false);
+  const myAvatarRef = useRef<HTMLDivElement>(null);
   return (
     <ul aria-label="자리" className="absolute inset-0">
       {seats.map((member, index) => {
         const { left, top } = positionOf(seatCount, index);
         const remove = member ? removeActionOf({ member, meId, receivedAt, now, onForfeit, onKick }) : null;
+        const mine = canEmote && member?.id === meId;
         return (
           <li key={member ? member.id : `empty-${index}`} data-testid="chair"
             style={{ left: `${left}%`, top: `${top}%` }}
-            className="absolute flex w-24 -translate-x-1/2 -translate-y-6 flex-col items-center gap-1 sm:-translate-y-7">
+            // 표정 패널이 열린 내 자리는 뒤에 그려지는 다른 자리보다 위에 놓는다.
+            className={`absolute flex w-24 -translate-x-1/2 -translate-y-6 flex-col items-center gap-1 sm:-translate-y-7 ${mine && emoting ? 'z-30' : ''}`}>
             {member ? <SeatBubble memberId={member.id} bubble={bubbles?.get(member.id)} lines={top < 20 ? 1 : 2} /> : null}
             <AnimatePresence mode="wait">
               {member ? (
-                <motion.div key="taken" initial={{ scale: 0, y: -20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0 }}
+                <motion.div key="taken" ref={mine ? myAvatarRef : undefined} initial={{ scale: 0, y: -20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0 }}
                   transition={{ type: 'spring', bounce: 0.5 }}
                   className="relative flex h-12 w-12 items-center justify-center rounded-full bg-cream-50 text-xl font-black text-wood-800 shadow-[0_4px_0_var(--color-cream-300),0_10px_16px_rgb(0_0_0/0.4)] sm:h-14 sm:w-14 sm:text-2xl">
                   {onShowStats ? (
                     // 아바타 전체가 누르는 영역. 연결 점·내보내기 X는 뒤에 그려 이 버튼 위에 놓이므로 X를 누르면 전적 창이 뜨지 않는다.
                     // 내 자리에는 내보내기·기권 버튼이 없고 준비 버튼은 테이블 아래 행동 바에 있어, 내 자리를 눌러도 겹치지 않는다.
-                    <button type="button" aria-label={statsLabelOf(member, meId)} onClick={() => onShowStats(member)}
+                    // 감정 표현을 쓸 수 있으면 내 아바타는 내 전적 대신 표정 패널을 연다(다른 사람 아바타는 그대로 전적).
+                    <button type="button" aria-label={mine ? '감정 표현하기' : statsLabelOf(member, meId)} aria-expanded={mine ? emoting : undefined}
+                      onClick={() => (mine ? setEmoting((current) => !current) : onShowStats(member))}
                       className="block h-full w-full cursor-pointer rounded-full outline-none transition-transform hover:scale-105 focus-visible:ring-[3px] focus-visible:ring-mustard-300 motion-reduce:transition-none motion-reduce:hover:scale-100">
                       <AvatarFace avatar={avatarOf(member.avatar, member.id)} />
                     </button>
@@ -94,6 +105,10 @@ export function MemberList({ members, maxPlayers, meId, receivedAt, now, onForfe
                     <AvatarFace avatar={avatarOf(member.avatar, member.id)} />
                   )}
                   {member.bot ? null : <span aria-hidden="true" data-testid="presence-dot" className={`absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full ring-2 ring-cream-50 ${member.connected ? 'bg-green-500' : 'bg-stone-400'}`} />}
+                  {member.bot ? null : <EmoteBubble memberId={member.id} />}
+                  {mine && emoting ? (
+                    <EmotePanel anchorRef={myAvatarRef} onClose={() => setEmoting(false)} placement={top < 50 ? 'down' : 'up'} align={panelAlignOf(left)} />
+                  ) : null}
                   {remove && !pc ? <KickBadge label={`${member.nickname}님 내보내기`} onClick={remove} className="absolute -right-2 -top-2" /> : null}
                 </motion.div>
               ) : (
@@ -118,6 +133,14 @@ export function MemberList({ members, maxPlayers, meId, receivedAt, now, onForfe
       })}
     </ul>
   );
+}
+
+/** 표정 패널이 펠트 양옆 자리에서 화면 밖으로 나가지 않게, 왼쪽 자리는 왼쪽 끝·오른쪽 자리는 오른쪽 끝에 맞춘다. */
+function panelAlignOf(left: number): PanelAlign {
+  if (left < 35) {
+    return 'start';
+  }
+  return left > 65 ? 'end' : 'center';
 }
 
 /** 전적 보기 버튼의 접근 이름. 내 자리는 "내 전적 보기". */

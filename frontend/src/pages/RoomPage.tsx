@@ -24,6 +24,7 @@ import { withMyAvatar } from '../lib/avatars';
 import { isPresent } from '../lib/departures';
 import { useChatAvatars } from '../room/useChatAvatars';
 import { ChatColorProvider, chatOrderOf } from '../room/chatColors';
+import { EmoteContext, useRoomEmotes } from '../emote/useRoomEmotes';
 
 export function RoomPage() {
   const { code = '' } = useParams();
@@ -54,6 +55,8 @@ export function RoomPage() {
   // 채팅 머리줄 그림은 방 정보(참가자·관전자)에서 찾는다.
   const chatMessages = useChatAvatars(roomChat.messages, room);
   const chat = { ...roomChat, messages: chatMessages };
+  // 감정 표현: 대기실 자리와 게임 테이블의 자리가 이 정보를 컨텍스트로 받아 말풍선·표정 패널을 그린다.
+  const emotes = useRoomEmotes(code, room !== null && !missing);
 
   useEffect(() => {
     const watching = Boolean(room?.spectators.some((spectator) => spectator.id === meId));
@@ -155,6 +158,7 @@ export function RoomPage() {
   return (
     <RoomThemeProvider value={room.theme}>
     <ChatColorProvider order={chatOrder}>
+    <EmoteContext.Provider value={emotes}>
     <div data-theme={room.theme} className="space-y-4">
       <RoomBackdrop theme={room.theme} />
       {landscapeGame ? null : statusBar}
@@ -220,6 +224,7 @@ export function RoomPage() {
       <LeaveConfirmModal open={confirmLeave} onCancel={() => setConfirmLeave(false)} onConfirm={leave} />
       <StartCountdownOverlay room={room} />
     </div>
+    </EmoteContext.Provider>
     </ChatColorProvider>
     </RoomThemeProvider>
   );
