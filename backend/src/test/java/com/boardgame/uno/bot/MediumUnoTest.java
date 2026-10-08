@@ -66,10 +66,8 @@ class MediumUnoTest {
 
     @Test
     void R30_우노를_90퍼센트_외친다() {
-        UnoSight sight = view().playable(number(UnoColor.RED, 3)).held(number(UnoColor.BLUE, 4)).canCall().sight();
-
-        assertThat(medium.turn(sight, new FixedRandom(80)).type()).isEqualTo("CALL_UNO");
-        assertThat(medium.turn(sight, new FixedRandom(95)).type()).isEqualTo("PLAY");
+        assertThat(medium.call(new FixedRandom(80))).isPresent();
+        assertThat(medium.call(new FixedRandom(95))).isEmpty();
     }
 
     @Test

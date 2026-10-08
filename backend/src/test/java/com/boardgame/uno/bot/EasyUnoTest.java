@@ -62,11 +62,9 @@ class EasyUnoTest {
     }
 
     @Test
-    void R29_두_장일_때_50퍼센트만_외친다() {
-        UnoSight sight = view().playable(number(UnoColor.RED, 3)).held(number(UnoColor.BLUE, 4)).canCall().sight();
-
-        assertThat(easy.turn(sight, new FixedRandom(40)).type()).isEqualTo("CALL_UNO");
-        assertThat(easy.turn(sight, new FixedRandom(60)).type()).isEqualTo("PLAY");
+    void R29_한_장이_된_내_잡기_창에서_50퍼센트만_외친다() {
+        assertThat(easy.call(new FixedRandom(40))).isPresent();
+        assertThat(easy.call(new FixedRandom(60))).isEmpty();
     }
 
     @Test

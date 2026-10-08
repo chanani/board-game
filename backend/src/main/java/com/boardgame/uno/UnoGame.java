@@ -138,8 +138,8 @@ public class UnoGame {
         }
     }
 
-    // R18: 차례인 사람(TURN). 잡기 창이 열려 있으면 차례인 사람을 뺀 남은 사람 모두(REACTION: 잡기, 대상 본인은 늦은 외침).
-    // 차례인 사람도 잡거나(대상이 자기면) 늦게 외칠 수 있지만 TURN 하나로만 알린다. 그 판단은 TURN 계획 안에서 한다.
+    // R18: 차례인 사람(TURN). 잡기 창이 열려 있으면 차례인 사람을 뺀 남은 사람 모두(REACTION: 남은 잡기, 대상 본인은 우노 외치기).
+    // 차례인 사람도 잡거나(대상이 자기면) 외칠 수 있지만 TURN 하나로만 알린다. 그 판단은 TURN 계획 안에서 한다.
     public List<PendingActor> pendingActors() {
         if (isFinished()) {
             return List.of();

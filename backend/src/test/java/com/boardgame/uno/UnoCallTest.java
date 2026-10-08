@@ -12,11 +12,9 @@ import static com.boardgame.uno.UnoFixtures.filler;
 import static com.boardgame.uno.UnoFixtures.game;
 import static com.boardgame.uno.UnoFixtures.num;
 import static com.boardgame.uno.UnoFixtures.skip;
-import static com.boardgame.uno.UnoFixtures.wildFour;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.boardgame.common.error.ErrorCode;
-import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -32,73 +30,54 @@ class UnoCallTest {
         return game(List.of(A, B, C), HANDS, FIRST, filler(20));
     }
 
-    private static UnoGame threePlayersDrawing(UnoCard top) {
-        List<UnoCard> pile = new ArrayList<>();
-        pile.add(top);
-        pile.addAll(filler(20));
-        return game(List.of(A, B, C), HANDS, FIRST, pile);
-    }
-
     private static void play(UnoGame game, PlayerId player, UnoCard card) {
         game.play(player, card.id(), ChosenColor.none());
     }
 
     @Test
-    void R23_2장일_때_외치고_내면_우노_선언이_된다() {
+    void R23_2장일_때는_미리_외칠_수_없다() {
         UnoGame game = threePlayers();
+
+        assertThat(game.canCallUno(A)).isFalse();
+        assertError(() -> game.callUno(A), ErrorCode.UNO_CALL_NOT_ALLOWED);
+        assertError(() -> game.callUno(B), ErrorCode.UNO_CALL_NOT_ALLOWED);
+        assertThat(game.latestEvents()).extracting(UnoEvent::type).containsExactly(UnoEventType.START);
+    }
+
+    @Test
+    void R23_1장이_되면_본인만_외칠_수_있고_외치면_선언되며_창이_닫힌다() {
+        UnoGame game = threePlayers();
+        play(game, A, num(RED, 1));
         StageSeq before = game.stageSeq();
+
+        assertThat(game.canCallUno(A)).isTrue();
+        assertThat(game.canCallUno(B)).isFalse();
+        assertThat(game.canCallUno(C)).isFalse();
+        assertError(() -> game.callUno(B), ErrorCode.UNO_CALL_NOT_ALLOWED);
 
         game.callUno(A);
 
         assertThat(game.latestEvents()).extracting(UnoEvent::type).containsExactly(UnoEventType.UNO_CALL);
         assertThat(game.latestEvents().get(0).actor()).isEqualTo(A);
-        assertThat(game.stageSeq()).isEqualTo(before);
-        assertThat(game.actor()).isEqualTo(A);
-        assertThat(game.canCallUno(A)).isFalse();
-        play(game, A, num(RED, 1));
         assertThat(game.isDeclared(A)).isTrue();
         assertThat(game.catchTarget()).isEmpty();
-    }
-
-    @Test
-    void R23_내_차례에_2장일_때만_외칠_수_있다() {
-        UnoGame game = threePlayers();
-
-        assertThat(game.canCallUno(A)).isTrue();
-        assertThat(game.canCallUno(B)).isFalse();
-        assertError(() -> game.callUno(B), ErrorCode.NOT_YOUR_TURN);
-    }
-
-    @Test
-    void R23_2장이_아니면_외칠_수_없다() {
-        UnoGame game = threePlayersDrawing(num(RED, 9));
-        game.draw(A);
-
         assertThat(game.canCallUno(A)).isFalse();
+        assertThat(game.actor()).isEqualTo(B);
+        assertThat(game.stageSeq()).isEqualTo(before);
         assertError(() -> game.callUno(A), ErrorCode.UNO_CALL_NOT_ALLOWED);
     }
 
     @Test
-    void R23_같은_차례에_두_번_외칠_수_없다() {
+    void R23_창이_닫힌_뒤에는_1장이어도_외칠_수_없다() {
         UnoGame game = threePlayers();
-        game.callUno(A);
-
-        assertError(() -> game.callUno(A), ErrorCode.UNO_CALL_NOT_ALLOWED);
-    }
-
-    @Test
-    void R23_외친_상태는_차례가_끝나면_사라진다() {
-        UnoGame game = threePlayersDrawing(num(RED, 9));
-        game.callUno(A);
-        game.draw(A);
-        play(game, A, num(RED, 9));
-        assertThat(game.isDeclared(A)).isFalse();
-        play(game, B, num(RED, 3));
-        play(game, C, num(RED, 4));
-
         play(game, A, num(RED, 1));
 
-        assertThat(game.catchTarget()).contains(A);
+        game.draw(B);
+
+        assertThat(game.cardCount(A)).isEqualTo(1);
+        assertThat(game.canCallUno(A)).isFalse();
+        assertError(() -> game.callUno(A), ErrorCode.UNO_CALL_NOT_ALLOWED);
+        assertThat(game.isDeclared(A)).isFalse();
     }
 
     @Test
@@ -186,11 +165,11 @@ class UnoCallTest {
     }
 
     @Test
-    void R25_다른_사람의_외치기는_창을_닫지_않는다() {
+    void R25_다른_사람은_외칠_수_없고_창도_닫히지_않는다() {
         UnoGame game = threePlayers();
         play(game, A, num(RED, 1));
 
-        game.callUno(B);
+        assertError(() -> game.callUno(B), ErrorCode.UNO_CALL_NOT_ALLOWED);
 
         assertThat(game.catchTarget()).contains(A);
     }
@@ -201,6 +180,7 @@ class UnoCallTest {
         play(game, A, skip(RED));
         assertThat(game.actor()).isEqualTo(A);
         assertThat(game.catchTarget()).contains(A);
+        assertThat(game.canCallUno(A)).isTrue();
 
         game.draw(A);
 
@@ -223,8 +203,8 @@ class UnoCallTest {
     @Test
     void R24_선언한_사람이_카드를_받아_2장_이상이_되면_선언이_풀린다() {
         UnoGame game = threePlayers();
-        game.callUno(A);
         play(game, A, num(RED, 1));
+        game.callUno(A);
         play(game, B, num(RED, 3));
         play(game, C, num(RED, 4));
 

@@ -1,13 +1,12 @@
 import { motion, useReducedMotion } from 'motion/react';
 import type { UnoStage } from '../../api/types';
-import { CheckIcon } from '../../components/icons';
 import { Button } from '../../components/ui';
 
 type Props = {
   stage: UnoStage | null;
   myTurn: boolean;
+  /** 내가 1장이 되어 열린 잡기 창 동안만 참(서버 canCallUno). 차례와 상관없이 우노! 버튼을 보인다. */
   canCallUno: boolean;
-  called: boolean;
   catchTarget: { id: number; name: string } | null;
   onDraw: () => void;
   onPlayDrawn: () => void;
@@ -17,7 +16,7 @@ type Props = {
 };
 
 /** 손패 바로 위, 높이 고정. 상황에 맞는 버튼만 보인다(스펙 6.4). */
-export function UnoActionBar({ stage, myTurn, canCallUno, called, catchTarget, onDraw, onPlayDrawn, onKeep, onCallUno, onCatch }: Props) {
+export function UnoActionBar({ stage, myTurn, canCallUno, catchTarget, onDraw, onPlayDrawn, onKeep, onCallUno, onCatch }: Props) {
   const reduced = useReducedMotion();
   return (
     <div data-testid="uno-action-bar" className="flex min-h-12 flex-wrap items-center justify-center gap-2">
@@ -35,11 +34,6 @@ export function UnoActionBar({ stage, myTurn, canCallUno, called, catchTarget, o
           className="press-3d rounded-full bg-yellow-300 px-5 py-2 text-base font-black text-wood-900 shadow-[0_4px_0_#a16207]">
           우노!
         </motion.button>
-      ) : null}
-      {!canCallUno && called ? (
-        <button type="button" disabled className="inline-flex items-center gap-1 rounded-full bg-yellow-100 px-4 py-2 text-sm font-bold text-wood-700 opacity-80">
-          <CheckIcon className="h-4 w-4" />우노 외침
-        </button>
       ) : null}
       {catchTarget ? (
         <button type="button" data-no-click-sound onClick={onCatch} aria-label={`우노 안 외쳤어요! (${catchTarget.name}님 잡기)`}

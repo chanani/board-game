@@ -68,7 +68,6 @@ public class UnoRound {
 
     // 차례를 넘긴다. steps 1 = 다음 사람, 2 = 한 사람 건너뜀. 같은 사람이 다시 해도 새 단계(새 순번)다.
     void passTurn(int steps) {
-        players.endTurn();
         players.advance(steps);
         progress.begin(Turn.play(players.current()));
     }
@@ -125,24 +124,13 @@ public class UnoRound {
         }
     }
 
-    // R23·R27: 내 차례(PLAY/DRAWN)에 2장이면 외친다. 잡기 창의 대상 본인이면 언제든 늦게 외쳐 선언된다.
+    // R23·R27: 1장이 되어 열린 잡기 창 동안 본인만 외칠 수 있다. 외치면 선언되고 창이 닫힌다. 차례·마감에는 영향이 없다.
     public void callUno(PlayerId player, EventBatch events) {
-        if (players.isCatchable(player)) {
-            players.declareLate(player);
-            events.add(UnoEvent.unoCall(player));
-            return;
-        }
-        progress.requireActor(player);
-        progress.requireStage(UnoStage.PLAY, UnoStage.DRAWN);
-        requireCallable(player);
-        players.call(player);
-        events.add(UnoEvent.unoCall(player));
-    }
-
-    private void requireCallable(PlayerId player) {
-        if (!players.canCall(player)) {
+        if (!players.isCatchable(player)) {
             throw new BusinessException(ErrorCode.UNO_CALL_NOT_ALLOWED);
         }
+        players.declare(player);
+        events.add(UnoEvent.unoCall(player));
     }
 
     // R26: 창이 열려 있고 대상이 맞고 본인이 아니면, 먼저 도착한 한 명만 성공한다. 차례·마감에는 영향이 없다.
@@ -156,10 +144,7 @@ public class UnoRound {
     }
 
     public boolean canCallUno(PlayerId viewer) {
-        if (players.isCatchable(viewer)) {
-            return true;
-        }
-        return progress.isActorIn(viewer, UnoStage.PLAY, UnoStage.DRAWN) && players.canCall(viewer);
+        return players.isCatchable(viewer);
     }
 
     public boolean canCatch(PlayerId viewer) {
@@ -231,7 +216,6 @@ public class UnoRound {
 
     // R29·R30: 마지막 카드의 뽑기 효과만 적용하고 끝낸다(SKIP·REVERSE·WILD는 효과 없음). 마지막 +4도 4장.
     private void applyLastCard(UnoCard card, EventBatch events) {
-        players.endTurn();
         PlayerId next = players.nextOf(players.current());
         if (card.kind() == CardKind.DRAW_TWO) {
             penalize(next, DRAW_TWO_COUNT, UnoEventReason.DRAW_TWO, events);
@@ -276,7 +260,6 @@ public class UnoRound {
         if (!acting) {
             return;
         }
-        players.endTurn();
         progress.begin(Turn.play(players.current()));
     }
 

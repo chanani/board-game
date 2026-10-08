@@ -82,28 +82,22 @@ class UnoSessionTimerTest {
     }
 
     @Test
-    void 외치기와_잡기와_늦은_외치기는_마감을_바꾸지_않는다() {
+    void 외치기와_잡기는_마감을_바꾸지_않는다() {
         UnoSession session = threePlayers();
         after(2);
-        session.act(A, action("CALL_UNO"));
-        assertThat(session.deadline()).contains(at(15));
-        after(2);
         session.act(A, play(num(RED, 1)));
-        assertThat(session.deadline()).contains(at(19));
+        assertThat(session.deadline()).contains(at(17));
+        after(2);
+        session.act(A, action("CALL_UNO"));
+        assertThat(session.deadline()).contains(at(17));
         after(2);
         session.act(B, play(num(RED, 3)));
         assertThat(session.deadline()).contains(at(21));
-        after(2);
-        session.act(B, action("CALL_UNO"));
-        assertThat(session.deadline()).contains(at(21));
-        after(2);
-        session.act(C, play(num(RED, 4)));
-        assertThat(session.deadline()).contains(at(25));
         after(1);
 
-        session.act(A, new GameAction("CATCH_UNO", null, null, null, null, C));
+        session.act(A, new GameAction("CATCH_UNO", null, null, null, null, B));
 
-        assertThat(session.deadline()).contains(at(25));
+        assertThat(session.deadline()).contains(at(21));
     }
 
     @Test

@@ -126,11 +126,63 @@ class UnoMindTest {
     }
 
     @Test
-    void R32_나를_잡을_수는_없다() {
+    void 내_잡기_창에서는_잡지_않고_곧바로_우노를_외친다() {
         BotMind mind = brain.mind(BotDifficulty.HARD);
         UnoViews mine = view().current(LEFT).held(number(UnoColor.BLUE, 1)).catchWindow(ME);
 
+        BotPlan plan = mind.plan(reaction(mine, NOW, new FixedRandom(0))).orElseThrow();
+
+        assertThat(plan.first().action().type()).isEqualTo("CALL_UNO");
+        assertThat(plan.first().delay()).isEqualTo(Duration.ofMillis(300));
+    }
+
+    @Test
+    void 내_잡기_창에서_외칠지는_창마다_한_번만_정하고_잊으면_아무것도_하지_않는다() {
+        BotMind mind = brain.mind(BotDifficulty.MEDIUM);
+        UnoViews mine = view().current(LEFT).held(number(UnoColor.BLUE, 1)).catchWindow(ME);
+        UnoViews closed = view().current(LEFT).held(number(UnoColor.BLUE, 1));
+
+        // 95 ≥ 90: 이번 창에서는 잊었다. 같은 창에서 다시 물어도 외치지 않는다.
+        mind.observe(mine.session());
+        assertThat(mind.plan(reaction(mine, NOW, new FixedRandom(95)))).isEmpty();
         assertThat(mind.plan(reaction(mine, NOW, new FixedRandom(0)))).isEmpty();
+
+        // 창이 닫혔다 새로 열리면 다시 정하고, 외치기로 정한 뒤 다시 물으면 남은 시간으로 답한다.
+        mind.observe(closed.session());
+        mind.observe(mine.session());
+        BotPlan first = mind.plan(reaction(mine, NOW, new FixedRandom(0))).orElseThrow();
+        BotPlan again = mind.plan(reaction(mine, NOW.plusMillis(100), new FixedRandom(95))).orElseThrow();
+
+        assertThat(first.first().delay()).isEqualTo(Duration.ofMillis(300));
+        assertThat(again.first().delay()).isEqualTo(Duration.ofMillis(200));
+        assertThat(again.first().action().type()).isEqualTo("CALL_UNO");
+    }
+
+    @Test
+    void 내_잡기_창이_열린_채_내_차례면_먼저_외치고_창이_닫히면_차례_행동을_한다() {
+        BotMind mind = brain.mind(BotDifficulty.HARD);
+        UnoViews mine = view().playable(number(UnoColor.RED, 3)).catchWindow(ME);
+        UnoViews without = view().playable(number(UnoColor.RED, 3));
+
+        BotPlan called = mind.plan(new BotSituation(mine.session(), PendingKind.TURN, NOW, new FixedRandom(0)))
+                .orElseThrow();
+        mind.observe(without.session());
+        BotPlan played = mind.plan(new BotSituation(without.session(), PendingKind.TURN, NOW, new FixedRandom(0)))
+                .orElseThrow();
+
+        assertThat(called.first().action().type()).isEqualTo("CALL_UNO");
+        assertThat(played.first().action().type()).isEqualTo("PLAY");
+    }
+
+    @Test
+    void 내_잡기_창에서_외치기를_잊으면_차례_행동을_한다() {
+        BotMind mind = brain.mind(BotDifficulty.EASY);
+        UnoViews mine = view().playable(number(UnoColor.RED, 3)).catchWindow(ME);
+
+        BotPlan plan = mind.plan(new BotSituation(mine.session(), PendingKind.TURN, NOW, new FixedRandom(60)))
+                .orElseThrow();
+
+        assertThat(plan.first().action().type()).isNotEqualTo("CALL_UNO");
     }
 
     @Test

@@ -122,15 +122,11 @@ final class UnoViews {
         return this;
     }
 
-    UnoViews canCall() {
-        this.canCall = true;
-        return this;
-    }
-
-    /** 잡기 창: target이 안 외치고 한 장. 대상이 내가 아니면 잡을 수 있다. */
+    /** 잡기 창: target이 안 외치고 한 장. 대상이 내가 아니면 잡을 수 있고, 나면 외칠 수 있다. */
     UnoViews catchWindow(long target) {
         this.unoCatch = new UnoCatchView(target);
         this.canCatch = target != ME;
+        this.canCall = target == ME;
         return this;
     }
 

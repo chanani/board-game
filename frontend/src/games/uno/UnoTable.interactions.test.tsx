@@ -86,25 +86,35 @@ describe('UnoTable 잠금 중 와일드', () => {
     expect(send).toHaveBeenCalledTimes(1);
     expect(screen.getByRole('dialog', { name: '색을 골라 주세요' })).toBeInTheDocument();
   });
-
 });
 
 describe('UnoTable 우노와 잡기', () => {
-  it('외칠 수 있으면 우노! 버튼이 CALL_UNO를 보내고 외친 뒤에는 우노 외침으로 바뀐다', async () => {
-    const send = vi.fn();
-    const { rerender } = render(table({ canCallUno: true, hand: [num('RED', 2, 3), num('BLUE', 7, 88)], playableCardIds: [3] }, send));
+  it('내 차례에 2장이어도 미리 외치는 우노! 버튼은 없다', () => {
+    render(table({ canCallUno: false, hand: [num('RED', 2, 3), num('BLUE', 7, 88)], playableCardIds: [3] }, vi.fn()));
 
+    expect(screen.queryByRole('button', { name: '우노!' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '우노 외침' })).not.toBeInTheDocument();
+  });
+
+  it('1장이 되어 내 잡기 창이 열리면 남의 차례에도 우노! 버튼이 CALL_UNO를 보내고, 창이 닫히면 사라진다', async () => {
+    const send = vi.fn();
+    const myWindow: Partial<UnoView> = { currentPlayerId: 2, hand: [num('RED', 2, 3)], playableCardIds: [], unoCatch: { playerId: 1 }, canCallUno: true, canCatch: false };
+    const { rerender } = render(table(myWindow, send));
+
+    expect(screen.queryByRole('button', { name: /우노 안 외쳤어요!/ })).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: '우노!' }));
     expect(send).toHaveBeenCalledWith({ type: 'CALL_UNO' });
 
-    rerender(table({ canCallUno: false, hand: [num('RED', 2, 3), num('BLUE', 7, 88)], playableCardIds: [3], events: [unoEvent(5, 'UNO_CALL', { actorId: 1 })] }, send));
-    expect(screen.getByRole('button', { name: '우노 외침' })).toBeDisabled();
+    rerender(table({ ...myWindow, unoCatch: null, canCallUno: false, events: [unoEvent(5, 'UNO_CALL', { actorId: 1 })] }, send));
+    expect(screen.queryByRole('button', { name: '우노!' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '우노 외침' })).not.toBeInTheDocument();
   });
 
   it('잡을 수 있으면 대상 이름이 붙은 잡기 버튼이 CATCH_UNO를 보낸다', async () => {
     const send = vi.fn();
     render(table({ currentPlayerId: 3, playableCardIds: [], unoCatch: { playerId: 2 }, canCatch: true }, send));
 
+    expect(screen.queryByRole('button', { name: '우노!' })).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: '우노 안 외쳤어요! (밥님 잡기)' }));
 
     expect(send).toHaveBeenCalledWith({ type: 'CATCH_UNO', targetId: 2 });

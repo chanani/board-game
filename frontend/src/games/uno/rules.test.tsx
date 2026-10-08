@@ -11,7 +11,7 @@ describe('우노 규칙', () => {
     expect(UNO_RULE_SUMMARY).toEqual([
       '같은 색·숫자·기호의 카드를 1장씩 내요.',
       '낼 카드가 없으면 1장을 뽑아요.',
-      "2장일 때 '우노!'를 누르고 내요.",
+      "1장이 남으면 잡히기 전에 '우노!'를 눌러요.",
       '손패를 먼저 비우면 이겨요.',
     ]);
   });
@@ -25,6 +25,12 @@ describe('우노 규칙', () => {
     expect(screen.getByRole('img', { name: '빨강 1' })).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: '2번째 설명' }));
     expect(await screen.findAllByRole('img', { name: '우노 카드 뒷면' })).toHaveLength(3);
+  });
+
+  it('우노!는 2장일 때가 아니라 1장이 남았을 때 잡히기 전에 누른다', () => {
+    const uno = UNO_RULE_SLIDES.find((slide) => slide.title === '우노!');
+    expect(uno?.body).toContain("카드를 내고 1장이 남으면 '우노!' 버튼이 나타나요. 다른 사람에게 잡히기 전에 눌러요.");
+    expect(UNO_RULE_SLIDES.flatMap((slide) => slide.body).join(' ')).not.toContain('2장일 때');
   });
 
   it('+4는 도전 없이 언제든 낼 수 있고 받는 사람은 바로 4장을 뽑는다', () => {

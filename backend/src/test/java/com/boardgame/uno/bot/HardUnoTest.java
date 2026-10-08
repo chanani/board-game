@@ -13,6 +13,7 @@ import com.boardgame.uno.CardKind;
 import com.boardgame.uno.Direction;
 import com.boardgame.uno.UnoColor;
 import com.boardgame.uno.view.UnoCardView;
+import java.time.Duration;
 import org.junit.jupiter.api.Test;
 
 class HardUnoTest {
@@ -100,10 +101,9 @@ class HardUnoTest {
     }
 
     @Test
-    void R31_우노를_항상_외친다() {
-        UnoSight sight = view().playable(number(UnoColor.RED, 3)).held(number(UnoColor.BLUE, 4)).canCall().sight();
-
-        assertThat(hard.turn(sight, new FixedRandom(99)).type()).isEqualTo("CALL_UNO");
+    void R31_우노를_항상_0_3초에서_0_7초_만에_외친다() {
+        assertThat(hard.call(new FixedRandom(99))).contains(Duration.ofMillis(399));
+        assertThat(hard.call(new FixedRandom(400))).contains(Duration.ofMillis(700));
     }
 
     @Test

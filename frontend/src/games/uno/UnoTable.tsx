@@ -95,7 +95,6 @@ export function UnoTable({ view, room, meId, log, receivedAt, now, errorSeq, nic
     turnKey.current = mine ? game.deadline : null;
   }, [myTurn, game.stage, game.deadline, play]);
 
-  const called = myTurn && !game.canCallUno && game.events.some((event) => event.type === 'UNO_CALL' && event.actorId === meId);
   const catchTarget = game.canCatch && game.unoCatch ? { id: game.unoCatch.playerId, name: nicknameOf(game.unoCatch.playerId) } : null;
 
   const draw = () => send({ type: 'DRAW' });
@@ -166,7 +165,7 @@ export function UnoTable({ view, room, meId, log, receivedAt, now, errorSeq, nic
           className="pointer-events-none absolute -top-3 left-1/2 z-20 w-max -translate-x-1/2 whitespace-nowrap rounded-full bg-yellow-300 px-2.5 py-0.5 text-xs font-black leading-tight text-wood-900 shadow">우노!</motion.span>
       ) : null}
       <UnoActionBar stage={game.stage} myTurn={myTurn} onDraw={draw} onPlayDrawn={playDrawn} onKeep={() => send({ type: 'KEEP' })}
-        canCallUno={game.canCallUno} called={called} catchTarget={catchTarget}
+        canCallUno={game.canCallUno} catchTarget={catchTarget}
         onCallUno={() => send({ type: 'CALL_UNO' })} onCatch={() => catchTarget && send({ type: 'CATCH_UNO', targetId: catchTarget.id })} />
       <UnoHand cards={game.hand} playableIds={game.playableCardIds} myTurn={myTurn && (game.stage === 'PLAY' || game.stage === 'DRAWN')}
         layout={layout} zoneId={meId} onPlay={playCard} />

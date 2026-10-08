@@ -10,7 +10,18 @@ import static com.boardgame.uno.UnoFixtures.game;
 import static com.boardgame.uno.UnoFixtures.num;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.boardgame.game.GameAction;
 import com.boardgame.game.PendingActor;
+import com.boardgame.game.PendingKind;
+import com.boardgame.game.bot.BotDifficulty;
+import com.boardgame.game.bot.BotMind;
+import com.boardgame.game.bot.BotPlan;
+import com.boardgame.game.bot.BotSituation;
+import com.boardgame.support.FixedRandom;
+import com.boardgame.uno.bot.UnoBrain;
+import com.boardgame.uno.view.UnoSessionView;
+import java.time.Clock;
+import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -42,5 +53,25 @@ class UnoPendingActorsTest {
 
         assertThat(game.isFinished()).isTrue();
         assertThat(game.pendingActors()).isEmpty();
+    }
+
+    @Test
+    void 한_장이_된_컴퓨터는_반응으로_불려_자기_잡기_창에서_우노를_외치고_세션이_받아_준다() {
+        UnoSession session = new UnoSession(List.of(A.value(), B.value(), C.value()), UnoFixtures.factory(HANDS, FIRST, filler(20), 0),
+                Clock.systemUTC());
+        session.act(A.value(), new GameAction("PLAY", null, null, num(RED, 1).id().value(), null, null));
+        assertThat(session.pendingActors()).contains(PendingActor.reaction(A.value()));
+        BotMind mind = new UnoBrain().mind(BotDifficulty.HARD);
+        Object view = session.viewFor(A.value());
+        mind.observe(view);
+
+        BotPlan plan = mind.plan(new BotSituation(view, PendingKind.REACTION, Instant.EPOCH, new FixedRandom(0))).orElseThrow();
+        session.act(A.value(), plan.first().action());
+
+        assertThat(plan.first().action().type()).isEqualTo("CALL_UNO");
+        UnoSessionView after = (UnoSessionView) session.viewFor(A.value());
+        assertThat(after.game().unoCatch()).isNull();
+        assertThat(after.game().players().get(0).unoDeclared()).isTrue();
+        assertThat(session.pendingActors()).containsExactly(PendingActor.turn(B.value()));
     }
 }

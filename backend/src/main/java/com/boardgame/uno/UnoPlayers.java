@@ -3,10 +3,8 @@ package com.boardgame.uno;
 import java.util.List;
 import java.util.Optional;
 
-// 손패 + 자리 순서 + 우노 외침 기록.
+// 손패 + 자리 순서 + 우노 선언·잡기 창 기록.
 public class UnoPlayers {
-
-    private static final int UNO_CALL_HAND_SIZE = 2;
 
     private final Hands hands;
     private final TurnOrder order;
@@ -114,16 +112,8 @@ public class UnoPlayers {
         calls.settle(player, countOf(player));
     }
 
-    public void call(PlayerId player) {
-        calls.call(player);
-    }
-
-    public boolean canCall(PlayerId player) {
-        return countOf(player) == UNO_CALL_HAND_SIZE && !calls.hasCalled(player);
-    }
-
-    public void declareLate(PlayerId player) {
-        calls.declareLate(player);
+    public void declare(PlayerId player) {
+        calls.declare(player);
     }
 
     public boolean isDeclared(PlayerId player) {
@@ -140,9 +130,5 @@ public class UnoPlayers {
 
     public void closeCatch() {
         calls.closeCatch();
-    }
-
-    public void endTurn() {
-        calls.endTurn();
     }
 }
