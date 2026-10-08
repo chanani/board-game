@@ -5,6 +5,7 @@ import com.boardgame.game.GameCompleted;
 import com.boardgame.game.GameOutcome;
 import com.boardgame.game.GameSession;
 import com.boardgame.game.MatchEntry;
+import com.boardgame.game.PendingActor;
 import com.boardgame.game.ResultType;
 import com.boardgame.game.RoundCompleted;
 import com.boardgame.game.RoundEntry;
@@ -86,6 +87,11 @@ public class UnoSession implements GameSession {
     @Override
     public int roundNumber() {
         return ROUND_NUMBER;
+    }
+
+    @Override
+    public List<PendingActor> pendingActors() {
+        return game.pendingActors();
     }
 
     // 끝난 게임은 행동을 받지 않으므로, 행동 직후 끝나 있으면 이번 행동으로 끝난 것이다(결과는 딱 한 번).

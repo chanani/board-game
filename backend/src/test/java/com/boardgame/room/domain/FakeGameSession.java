@@ -1,9 +1,12 @@
 package com.boardgame.room.domain;
 
+import com.boardgame.common.error.BusinessException;
+import com.boardgame.common.error.ErrorCode;
 import com.boardgame.game.GameAction;
 import com.boardgame.game.GameCompleted;
 import com.boardgame.game.GameOutcome;
 import com.boardgame.game.GameSession;
+import com.boardgame.game.PendingActor;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -27,6 +30,9 @@ public class FakeGameSession implements GameSession {
     // null이면 GameSession 기본 동작(INVALID_INPUT). 값이 있으면 그 Optional을 돌려준다.
     private Optional<Object> signalReply;
     private final List<GameAction> signals = new ArrayList<>();
+    private List<PendingActor> pending = List.of();
+    private final List<Long> actors = new ArrayList<>();
+    private final Set<String> rejectedTypes = new HashSet<>();
 
     public FakeGameSession(List<Long> players) {
         this.players = List.copyOf(players);
@@ -34,7 +40,11 @@ public class FakeGameSession implements GameSession {
 
     @Override
     public List<GameOutcome> act(long memberId, GameAction action) {
+        if (rejectedTypes.contains(action.type())) {
+            throw new BusinessException(ErrorCode.INVALID_PHASE);
+        }
         actions.add(action);
+        actors.add(memberId);
         if (finishOnAct) {
             finished = true;
             return List.of(new GameCompleted(List.of()));
@@ -141,5 +151,26 @@ public class FakeGameSession implements GameSession {
 
     public List<GameAction> signals() {
         return signals;
+    }
+
+    @Override
+    public List<PendingActor> pendingActors() {
+        if (finished) {
+            return List.of();
+        }
+        return pending;
+    }
+
+    public void awaitActors(List<PendingActor> actors) {
+        pending = List.copyOf(actors);
+    }
+
+    public List<Long> actors() {
+        return actors;
+    }
+
+    /** 이 type의 행동은 규칙 위반처럼 거절한다(INVALID_PHASE). */
+    public void rejectType(String type) {
+        rejectedTypes.add(type);
     }
 }

@@ -6,6 +6,7 @@ import com.boardgame.game.GameAction;
 import com.boardgame.game.GameOutcome;
 import com.boardgame.game.GameSession;
 import com.boardgame.game.GameType;
+import com.boardgame.game.PendingActor;
 import com.boardgame.game.bot.BotDifficulty;
 import com.boardgame.member.domain.Avatar;
 import java.time.Instant;
@@ -196,6 +197,14 @@ public class Room {
             return Optional.empty();
         }
         return game.deadline();
+    }
+
+    /** R18: 진행 중인 게임이 기다리는 참가자. 진행 중이 아니면 비어 있다. */
+    public List<PendingActor> pendingActors() {
+        if (status() != RoomStatus.PLAYING) {
+            return List.of();
+        }
+        return game.pendingActors();
     }
 
     public Optional<Object> viewFor(long memberId) {

@@ -2,6 +2,7 @@ package com.boardgame.papersafari;
 
 import com.boardgame.common.error.BusinessException;
 import com.boardgame.common.error.ErrorCode;
+import com.boardgame.game.PendingActor;
 import com.boardgame.papersafari.view.PaperSafariView;
 import com.boardgame.papersafari.view.RoundResultView;
 import java.util.List;
@@ -97,6 +98,13 @@ public class PaperSafariGame {
 
     public RoundNumber roundNumber() {
         return RoundNumber.FIRST;
+    }
+
+    public List<PendingActor> pendingActors() {
+        if (status() == GameStatus.GAME_OVER) {
+            return List.of();
+        }
+        return round.pendingActors();
     }
 
     public PlayerId currentPlayer() {

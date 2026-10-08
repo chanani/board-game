@@ -5,6 +5,7 @@ import com.boardgame.game.GameCompleted;
 import com.boardgame.game.GameOutcome;
 import com.boardgame.game.GameSession;
 import com.boardgame.game.MatchEntry;
+import com.boardgame.game.PendingActor;
 import com.boardgame.game.ResultType;
 import com.boardgame.game.RoundCompleted;
 import com.boardgame.game.RoundEntry;
@@ -90,6 +91,11 @@ public class PaperSafariSession implements GameSession {
     public int roundNumber() {
         RoundNumber number = game.roundNumber();
         return number.value();
+    }
+
+    @Override
+    public List<PendingActor> pendingActors() {
+        return game.pendingActors();
     }
 
     // 상태가 바뀌었으니 마감을 다시 잡는다. 되돌리기와 되돌림이 있었던 차례의 가져오기는 차례 마감을 그대로 둔다.

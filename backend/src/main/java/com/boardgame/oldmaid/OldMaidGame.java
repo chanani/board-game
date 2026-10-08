@@ -2,6 +2,7 @@ package com.boardgame.oldmaid;
 
 import com.boardgame.common.error.BusinessException;
 import com.boardgame.common.error.ErrorCode;
+import com.boardgame.game.PendingActor;
 import com.boardgame.oldmaid.view.OldMaidView;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -10,6 +11,8 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.LongFunction;
+import java.util.function.Predicate;
 
 // 한 게임(= 한 판).
 public class OldMaidGame {
@@ -173,6 +176,27 @@ public class OldMaidGame {
 
     public Optional<OldMaidResult> result() {
         return Optional.ofNullable(result);
+    }
+
+    // R18: 처음 버리기 단계면 짝이 남은 모두(TOGETHER), 그 밖에는 뽑는 사람(TURN)과 섞을 수 있는 사람(REACTION).
+    public List<PendingActor> pendingActors() {
+        if (isFinished()) {
+            return List.of();
+        }
+        if (isOpening()) {
+            return seatsWhere(this::canDiscard, PendingActor::together);
+        }
+        List<PendingActor> pending = new ArrayList<>();
+        pending.add(PendingActor.turn(drawer().value()));
+        pending.addAll(seatsWhere(this::canShuffle, PendingActor::reaction));
+        return List.copyOf(pending);
+    }
+
+    private List<PendingActor> seatsWhere(Predicate<PlayerId> condition, LongFunction<PendingActor> kind) {
+        return seats().stream()
+                .filter(condition)
+                .map(player -> kind.apply(player.value()))
+                .toList();
     }
 
     public PlayerId drawer() {

@@ -2,6 +2,7 @@ package com.boardgame.papersafari;
 
 import com.boardgame.common.error.BusinessException;
 import com.boardgame.common.error.ErrorCode;
+import com.boardgame.game.PendingActor;
 import com.boardgame.papersafari.view.RoundView;
 import java.util.List;
 import java.util.Optional;
@@ -58,6 +59,20 @@ public class PaperSafariRound {
         turn.require(player, TurnPhase.PEEK);
         boards.peek(player, position);
         finishTurn();
+    }
+
+    // R18: 처음 뒤집기는 아직 안 뒤집은 모두, 그 밖에는 차례인 사람. 판이 끝나면 없음.
+    public List<PendingActor> pendingActors() {
+        if (turn.isSettingUp()) {
+            return boards.notFlipped()
+                    .stream()
+                    .map(player -> PendingActor.together(player.value()))
+                    .toList();
+        }
+        if (isOver()) {
+            return List.of();
+        }
+        return List.of(PendingActor.turn(currentPlayer().value()));
     }
 
     // 시간 초과: 지금 기다리는 행동을 대신 한다. 대신 행동한 사람들을 돌려준다.

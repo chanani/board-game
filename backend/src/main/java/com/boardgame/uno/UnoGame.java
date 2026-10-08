@@ -2,7 +2,9 @@ package com.boardgame.uno;
 
 import com.boardgame.common.error.BusinessException;
 import com.boardgame.common.error.ErrorCode;
+import com.boardgame.game.PendingActor;
 import com.boardgame.uno.view.UnoView;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -151,6 +153,28 @@ public class UnoGame {
         if (!round.isRemaining(player)) {
             throw new BusinessException(ErrorCode.NOT_A_PLAYER);
         }
+    }
+
+    // R18: 차례인 사람(TURN). 잡기 창이 열려 있으면 차례인 사람을 뺀 남은 사람 모두(REACTION: 잡기, 대상 본인은 늦은 외침).
+    public List<PendingActor> pendingActors() {
+        if (isFinished()) {
+            return List.of();
+        }
+        PlayerId actor = round.actor();
+        List<PendingActor> pending = new ArrayList<>();
+        pending.add(PendingActor.turn(actor.value()));
+        if (round.catchTarget().isPresent()) {
+            pending.addAll(reactionsExcept(actor));
+        }
+        return List.copyOf(pending);
+    }
+
+    private List<PendingActor> reactionsExcept(PlayerId actor) {
+        return round.remaining()
+                .stream()
+                .filter(player -> !player.equals(actor))
+                .map(player -> PendingActor.reaction(player.value()))
+                .toList();
     }
 
     public PlayerId actor() {

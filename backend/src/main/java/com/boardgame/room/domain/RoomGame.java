@@ -3,6 +3,7 @@ package com.boardgame.room.domain;
 import com.boardgame.game.GameAction;
 import com.boardgame.game.GameOutcome;
 import com.boardgame.game.GameSession;
+import com.boardgame.game.PendingActor;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -69,6 +70,10 @@ public class RoomGame {
 
     public int roundNumber() {
         return session.roundNumber();
+    }
+
+    public List<PendingActor> pendingActors() {
+        return session.pendingActors();
     }
 
     /** 방을 나간 사람을 기억한다. 다시 들어와도 이 게임이 끝난 뒤라면 결과 화면을 받지 않는다. */

@@ -34,4 +34,9 @@ public interface GameSession {
     boolean isPlaying(long memberId);
 
     int roundNumber();
+
+    /** R18: 지금 행동할 수 있는 참가자와 결정 종류. 끝난 게임은 빈 목록. */
+    default List<PendingActor> pendingActors() {
+        return List.of();
+    }
 }
