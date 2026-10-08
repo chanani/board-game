@@ -157,7 +157,8 @@ public class Room {
             throw new BusinessException(ErrorCode.PLAYERS_NOT_READY);
         }
         occupants.clearReady();
-        game = new RoomGame(sessionCreator.apply(occupants.playerIds()), matchKey, startedAt);
+        // R37·D8: 시작 때 컴퓨터가 있으면 연습 경기로 정한다(게임 중에는 컴퓨터가 빠질 수 없어 바뀌지 않는다).
+        game = new RoomGame(sessionCreator.apply(occupants.playerIds()), matchKey, startedAt, occupants.hasBots());
         return game;
     }
 
@@ -213,6 +214,11 @@ public class Room {
 
     public boolean isGameInProgress() {
         return status() == RoomStatus.PLAYING;
+    }
+
+    /** R38: 마지막으로 시작한 게임이 연습 경기인지. 끝난 뒤에도 다음 시작 전까지 결과 창 안내에 쓴다. */
+    public boolean isPractice() {
+        return game != null && game.isPractice();
     }
 
     public boolean isPlaying(long memberId) {

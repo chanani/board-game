@@ -23,7 +23,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 
-@SpringBootTest
+// 다른 API 테스트와 컨텍스트·DB를 나눠 쓰지 않는다: 컨텍스트마다 회원 번호가 1부터 다시 시작해, 같은 레지스트리를 쓰는 다른 테스트의 방과 번호가 겹치면 ALREADY_IN_ROOM이 난다.
+@SpringBootTest(properties = "spring.datasource.url=jdbc:h2:mem:botroomdb;MODE=MySQL;DB_CLOSE_DELAY=-1")
 @AutoConfigureMockMvc
 class BotRoomApiTest {
 

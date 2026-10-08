@@ -12,7 +12,7 @@ import java.util.List;
 
 public record RoomResponse(String code, String name, GameType gameType, String gameTypeName, RoomStatus status,
                            long hostId, int maxPlayers, boolean locked, RoomTheme theme, List<RoomMemberResponse> members,
-                           List<RoomSpectatorResponse> spectators) {
+                           List<RoomSpectatorResponse> spectators, boolean practice) {
 
     public static RoomResponse from(Room room, PresenceTracker presence, Instant now, AvatarBook avatars) {
         long hostId = room.hostId();
@@ -24,7 +24,8 @@ public record RoomResponse(String code, String name, GameType gameType, String g
                 .toList();
         GameType gameType = room.gameType();
         return new RoomResponse(room.codeValue(), room.nameValue(), gameType, gameType.displayName(),
-                room.status(), hostId, room.capacity(), room.isLocked(), room.theme(), members, spectators);
+                room.status(), hostId, room.capacity(), room.isLocked(), room.theme(), members, spectators,
+                room.isPractice());
     }
 
     private static RoomMemberResponse member(Participant participant, long hostId, List<Long> readyIds,

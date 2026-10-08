@@ -248,9 +248,17 @@ public class RoomService {
         presence.baseline(room.humanIds(), clock.instant());
         rearm(room);
         RoomResponse response = broadcast(room);
-        eventPublisher.publishEvent(
-                new GameStartedEvent(game.matchKey(), gameType, room.memberIds(), game.startedAt()));
+        publishStartUnlessPractice(room, game);
         return response;
+    }
+
+    // R37: 연습 경기는 경기 시작을 기록하지 않는다.
+    private void publishStartUnlessPractice(Room room, RoomGame game) {
+        if (game.isPractice()) {
+            return;
+        }
+        eventPublisher.publishEvent(
+                new GameStartedEvent(game.matchKey(), room.gameType(), room.memberIds(), game.startedAt()));
     }
 
     public synchronized RoomResponse get(String rawCode, long memberId) {

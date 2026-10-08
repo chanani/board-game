@@ -22,7 +22,8 @@ public class OutcomePublisher {
     }
 
     public void publish(Room room, List<GameOutcome> outcomes, Instant now) {
-        if (outcomes.isEmpty()) {
+        // R37: 연습 경기는 판 결과·게임 결과를 기록하지 않는다(나가기·시간 초과·행동 어느 길로 와도).
+        if (outcomes.isEmpty() || room.isPractice()) {
             return;
         }
         RoomGame game = room.currentGame();

@@ -15,8 +15,16 @@ public class RoomGame {
     private final Departures departures = new Departures();
 
     public RoomGame(GameSession session, String matchKey, Instant startedAt) {
+        this(session, matchKey, startedAt, false);
+    }
+
+    public RoomGame(GameSession session, String matchKey, Instant startedAt, boolean practice) {
         this.session = session;
-        this.stamp = new MatchStamp(matchKey, startedAt);
+        this.stamp = new MatchStamp(matchKey, startedAt, practice);
+    }
+
+    public boolean isPractice() {
+        return stamp.practice();
     }
 
     public GameSession session() {
