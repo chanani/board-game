@@ -1,10 +1,12 @@
 import { AnimatePresence, motion } from 'motion/react';
 import type { RoomMember } from '../api/types';
+import { BotChip } from '../components/BotChip';
+import { botOf } from '../lib/bots';
 import { canForfeit, offlineSecondsNow } from '../lib/format';
 import { Button } from '../components/ui';
 import { KickBadge } from '../components/KickBadge';
 import { PC_QUERY, useMediaQuery } from '../lib/useMediaQuery';
-import { CheckIcon, CrownIcon } from '../components/icons';
+import { CheckIcon, CrownIcon, RobotIcon } from '../components/icons';
 import { SeatBubble, type SeatBubbles } from './useSeatBubbles';
 import { AvatarFace } from '../components/Avatar';
 import { avatarOf } from '../lib/avatars';
@@ -23,6 +25,12 @@ type Props = {
   bubbles?: SeatBubbles;
   /** 있으면 모든 참가자(나 포함)의 아바타가 전적 보기 버튼이 된다. */
   onShowStats?: (member: RoomMember) => void;
+  /** 있으면(대기 중인 방장) 빈자리가 "컴퓨터 추가" 버튼이 된다. */
+  onAddBot?: () => void;
+  /** 게임이 받는 최대 인원. 정원이 다 찼어도 이보다 작으면 컴퓨터 추가 자리를 하나 더 둔다. */
+  gameMaxPlayers?: number;
+  /** 있으면 컴퓨터 칩이 난이도 바꾸기 버튼이 된다. */
+  onChangeBot?: (member: RoomMember) => void;
 };
 
 type Point = { left: number; top: number };
@@ -50,13 +58,20 @@ function positionOf(maxPlayers: number, index: number): Point {
   return { left: 50 + 34 * Math.cos(angle), top: 44 + 30 * Math.sin(angle) };
 }
 
-export function MemberList({ members, maxPlayers, meId, receivedAt, now, onForfeit, onKick, bubbles, onShowStats }: Props) {
+/** 방장이 컴퓨터를 앉힐 수 있고 정원이 다 찼는데 게임이 더 받을 수 있으면 의자를 하나 더 둔다(정원은 서버가 자동으로 늘린다). */
+export function seatCountOf(members: RoomMember[], maxPlayers: number, gameMaxPlayers: number | undefined, canAdd: boolean): number {
+  const growable = canAdd && gameMaxPlayers !== undefined && members.length >= maxPlayers && maxPlayers < gameMaxPlayers;
+  return growable ? maxPlayers + 1 : maxPlayers;
+}
+
+export function MemberList({ members, maxPlayers, meId, receivedAt, now, onForfeit, onKick, bubbles, onShowStats, onAddBot, gameMaxPlayers, onChangeBot }: Props) {
   const pc = useMediaQuery(PC_QUERY);
-  const seats = Array.from({ length: maxPlayers }, (_, index) => members[index] ?? null);
+  const seatCount = seatCountOf(members, maxPlayers, gameMaxPlayers, onAddBot !== undefined);
+  const seats = Array.from({ length: seatCount }, (_, index) => members[index] ?? null);
   return (
     <ul aria-label="자리" className="absolute inset-0">
       {seats.map((member, index) => {
-        const { left, top } = positionOf(maxPlayers, index);
+        const { left, top } = positionOf(seatCount, index);
         const remove = member ? removeActionOf({ member, meId, receivedAt, now, onForfeit, onKick }) : null;
         return (
           <li key={member ? member.id : `empty-${index}`} data-testid="chair"
@@ -78,18 +93,25 @@ export function MemberList({ members, maxPlayers, meId, receivedAt, now, onForfe
                   ) : (
                     <AvatarFace avatar={avatarOf(member.avatar, member.id)} />
                   )}
-                  <span aria-hidden="true" className={`absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full ring-2 ring-cream-50 ${member.connected ? 'bg-green-500' : 'bg-stone-400'}`} />
+                  {member.bot ? null : <span aria-hidden="true" data-testid="presence-dot" className={`absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full ring-2 ring-cream-50 ${member.connected ? 'bg-green-500' : 'bg-stone-400'}`} />}
                   {remove && !pc ? <KickBadge label={`${member.nickname}님 내보내기`} onClick={remove} className="absolute -right-2 -top-2" /> : null}
                 </motion.div>
               ) : (
-                <motion.div key="empty" aria-label="빈자리" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                  className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-dashed border-cream-50/45 sm:h-14 sm:w-14" />
+                onAddBot ? (
+                  <motion.button key="empty-bot" type="button" aria-label="빈자리에 컴퓨터 추가" onClick={onAddBot} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                    className="felt-ink-muted flex h-12 w-12 cursor-pointer items-center justify-center rounded-full border-2 border-dashed border-cream-50/45 outline-none transition-transform hover:scale-105 focus-visible:ring-[3px] focus-visible:ring-mustard-300 motion-reduce:transition-none motion-reduce:hover:scale-100 sm:h-14 sm:w-14">
+                    <RobotIcon className="h-6 w-6" />
+                  </motion.button>
+                ) : (
+                  <motion.div key="empty" aria-label="빈자리" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                    className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-dashed border-cream-50/45 sm:h-14 sm:w-14" />
+                )
               )}
             </AnimatePresence>
             {member ? (
-              <Seated member={member} meId={meId} receivedAt={receivedAt} now={now} remove={pc ? remove : null} />
+              <Seated member={member} meId={meId} receivedAt={receivedAt} now={now} remove={pc ? remove : null} onChangeBot={onChangeBot} />
             ) : (
-              <span aria-hidden="true" className="felt-ink-muted text-xs font-semibold">빈자리</span>
+              <span aria-hidden="true" className="felt-ink-muted text-xs font-semibold">{onAddBot ? '컴퓨터 추가' : '빈자리'}</span>
             )}
           </li>
         );
@@ -99,7 +121,10 @@ export function MemberList({ members, maxPlayers, meId, receivedAt, now, onForfe
 }
 
 /** 전적 보기 버튼의 접근 이름. 내 자리는 "내 전적 보기". */
-export function statsLabelOf(member: { id: number; nickname: string }, meId: number): string {
+export function statsLabelOf(member: { id: number; nickname: string; bot?: boolean }, meId: number): string {
+  if (member.bot) {
+    return `${member.nickname} 정보 보기`;
+  }
   return member.id === meId ? '내 전적 보기' : `${member.nickname}님 전적 보기`;
 }
 
@@ -113,22 +138,22 @@ function removeActionOf({ member, meId, receivedAt, now, onForfeit, onKick }: Se
   if (onKick) {
     return member.id === meId ? null : () => onKick(member.id);
   }
-  if (onForfeit && canForfeit(member, meId, receivedAt, now)) {
+  if (onForfeit && !member.bot && canForfeit(member, meId, receivedAt, now)) {
     return () => onForfeit(member.id);
   }
   return null;
 }
 
 /** remove는 글자 버튼용이다(PC). 모바일은 아바타 위 X 버튼이라 여기서는 null. */
-function Seated({ member, meId, receivedAt, now, remove }: { member: RoomMember; meId: number; receivedAt: number; now: number; remove: (() => void) | null }) {
+function Seated({ member, meId, receivedAt, now, remove, onChangeBot }: { member: RoomMember; meId: number; receivedAt: number; now: number; remove: (() => void) | null; onChangeBot?: (member: RoomMember) => void }) {
   return (
     <>
       <span className="pill-strong flex max-w-full items-center rounded-full px-2 text-sm font-bold">
         <span className="truncate">{member.nickname}</span>
         {member.id === meId ? <span className="shrink-0 text-xs">&nbsp;(나)</span> : null}
       </span>
-      <StatusChip member={member} />
-      {!member.connected ? <span className="felt-ink-muted text-xs">연결 끊김 {offlineSecondsNow(member, receivedAt, now)}초</span> : null}
+      <StatusChip member={member} onChangeBot={onChangeBot} />
+      {!member.bot && !member.connected ? <span className="felt-ink-muted text-xs">연결 끊김 {offlineSecondsNow(member, receivedAt, now)}초</span> : null}
       {remove ? (
         <Button variant="danger" className="px-2 py-0.5 text-xs" onClick={remove}>내보내기</Button>
       ) : null}
@@ -138,7 +163,11 @@ function Seated({ member, meId, receivedAt, now, remove }: { member: RoomMember;
 
 const CHIP = 'whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-bold leading-none shadow';
 
-function StatusChip({ member }: { member: RoomMember }) {
+function StatusChip({ member, onChangeBot }: { member: RoomMember; onChangeBot?: (member: RoomMember) => void }) {
+  const bot = botOf(member);
+  if (bot) {
+    return <BotChip difficulty={bot} onClick={onChangeBot ? () => onChangeBot(member) : undefined} />;
+  }
   if (member.host) {
     return <span className={`${CHIP} inline-flex items-center gap-1 bg-cream-50 text-wood-800`}><CrownIcon className="h-3 w-3" />방장</span>;
   }

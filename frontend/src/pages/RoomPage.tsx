@@ -192,6 +192,8 @@ export function RoomPage() {
               onForfeit={(memberId) => run(() => roomsApi.forfeit(code, memberId))}
               onKick={(memberId) => run(() => roomsApi.kick(code, memberId))}
               onSeat={() => run(() => roomsApi.seat(code))}
+              onAddBot={(difficulty) => run(() => roomsApi.addBot(code, difficulty))}
+              onChangeBot={(botId, difficulty) => run(() => roomsApi.changeBot(code, botId, difficulty))}
               chat={{ messages: chat.messages, onSend: chat.send, latest: chat.latest }}
             />
           )}

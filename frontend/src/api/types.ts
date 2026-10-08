@@ -8,7 +8,8 @@ export type ResultType = 'WIN' | 'DRAW' | 'LOSE';
 
 export type RoomStatus = 'WAITING' | 'PLAYING';
 export type RoomTheme = 'WOOD' | 'SUNSET' | 'MOONLIT' | 'AURORA' | 'BEACH';
-export type RoomMember = { id: number; nickname: string; avatar?: string; host: boolean; connected: boolean; offlineSeconds: number; ready: boolean };
+export type BotDifficulty = 'EASY' | 'MEDIUM' | 'HARD';
+export type RoomMember = { id: number; nickname: string; avatar?: string; host: boolean; connected: boolean; offlineSeconds: number; ready: boolean; bot?: boolean; difficulty?: BotDifficulty | null };
 export type Room = {
   code: string;
   name: string;
@@ -21,6 +22,8 @@ export type Room = {
   members: RoomMember[];
   spectators: { id: number; nickname: string; avatar?: string }[];
   theme: RoomTheme;
+  /** 컴퓨터가 낀 연습 경기(전적에 넣지 않는다). */
+  practice?: boolean;
 };
 export type RoomSummary = {
   code: string;

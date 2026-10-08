@@ -133,7 +133,15 @@ export const CrownIcon = ({ className, testId }: IconProps) => (
   <Svg testId={testId} className={className ?? 'h-3.5 w-3.5'}><path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5z" /></Svg>
 );
 
-export const CheckIcon = ({ className, testId }: IconProps) => (
+/** 컴퓨터 참가자 표시: 안테나가 달린 로봇 얼굴. */
+export const RobotIcon = ({ className, testId }: IconProps) => (
+  <Svg testId={testId} className={className ?? 'h-3.5 w-3.5'}>
+    <path d="M12 3.5V7" /><circle cx="12" cy="3" r="1" /><rect x="4" y="7" width="16" height="12" rx="3.5" />
+    <circle cx="9" cy="12.5" r="1.2" fill="currentColor" /><circle cx="15" cy="12.5" r="1.2" fill="currentColor" /><path d="M9.5 16h5" />
+  </Svg>
+);
+
+export const CheckIcon =({ className, testId }: IconProps) => (
   <Svg testId={testId} className={className ?? 'h-3.5 w-3.5'}><path d="M5 12.5l4.5 4.5L19 7" /></Svg>
 );
 
