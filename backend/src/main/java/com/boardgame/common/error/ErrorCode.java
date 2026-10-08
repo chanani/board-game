@@ -42,6 +42,8 @@ public enum ErrorCode {
     PLAYERS_NOT_READY(HttpStatus.CONFLICT, "모두 준비해야 시작할 수 있어요."),
     INVALID_CHAT_MESSAGE(HttpStatus.BAD_REQUEST, "메시지는 1~200자로 입력해 주세요."),
     CHAT_TOO_FAST(HttpStatus.TOO_MANY_REQUESTS, "메시지를 너무 빨리 보내고 있어요."),
+    INVALID_EMOTE(HttpStatus.BAD_REQUEST, "보낼 수 없는 감정 표현이에요."),
+    EMOTE_TOO_FAST(HttpStatus.TOO_MANY_REQUESTS, "감정 표현은 잠시 뒤에 다시 보낼 수 있어요."),
     INVALID_PLAYER_TOTAL(HttpStatus.BAD_REQUEST, "인원 수는 0명 이상이어야 합니다."),
 
     INVALID_PLAYER_COUNT(HttpStatus.BAD_REQUEST, "페이퍼 사파리는 2~5명이 플레이할 수 있습니다."),
