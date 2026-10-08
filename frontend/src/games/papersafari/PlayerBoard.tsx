@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
-import type { BoardView, SlotView } from '../../api/types';
+import { PresenceMark } from '../../components/PresenceMark';
+import type { BoardView, BotDifficulty, SlotView } from '../../api/types';
 import { Countdown } from '../../components/Countdown';
 import { CardFace, type CardSize } from './CardFace';
 import { ZoneAnchor } from './motion/ZoneAnchor';
@@ -29,6 +30,8 @@ type Props = {
   onSlotClick?: (slot: SlotView) => void;
   canClick?: (slot: SlotView) => boolean;
   connected?: boolean;
+  /** 컴퓨터면 연결 점 자리에 로봇 칩을 단다. */
+  bot?: BotDifficulty;
   offlineSeconds?: number;
   zoomLabel?: string;
   onZoom?: () => void;
@@ -44,7 +47,7 @@ const PAD = { mini: 'p-1 w-min', xs: 'p-2 w-min', sm: 'p-2', md: 'p-2', lg: 'p-2
 const COLUMNS = { mini: 'grid-cols-[repeat(3,auto)]', xs: 'grid-cols-[repeat(3,auto)]', sm: 'grid-cols-3', md: 'grid-cols-3', lg: 'grid-cols-3' };
 const GAP = { mini: 'gap-0.5', xs: 'gap-1', sm: 'gap-1.5', md: 'gap-2.5', lg: 'gap-2.5' };
 
-export function PlayerBoard({ result, board, nickname, active, turnRing = false, size = 'md', pulseSlots = false, onSlotClick, canClick, connected, offlineSeconds = 0, zoomLabel, onZoom, timer, avatar }: Props) {
+export function PlayerBoard({ result, board, nickname, active, turnRing = false, size = 'md', pulseSlots = false, onSlotClick, canClick, connected, bot, offlineSeconds = 0, zoomLabel, onZoom, timer, avatar }: Props) {
   const ordered = [...board.slots].sort((a, b) => a.row - b.row || a.column - b.column);
   const zeroColumns = new Set(zeroPairColumns(board));
   const previousZero = useRef<Set<number>>(zeroColumns);
@@ -59,9 +62,7 @@ export function PlayerBoard({ result, board, nickname, active, turnRing = false,
       {/* 결과 화면의 좁은 휴대폰에서는 이름표 줄이 판 폭을 넓히지 않게(inline-size 격리) 카드 격자 폭에 맞추고, 넘치는 닉네임만 말줄임한다. */}
       <div data-testid="board-header" className={`flex items-center justify-between gap-2 text-sm ${size === 'mini' ? 'mb-1' : 'mb-2'} ${result ? 'max-sm:[contain:inline-size]' : ''}`}>
         <span className={`flex min-w-0 items-center gap-1.5 ${result ? '' : 'flex-wrap'}`}>
-          {connected !== undefined ? (
-            <span aria-hidden="true" className={`inline-block h-2 w-2 shrink-0 rounded-full ${connected ? 'bg-green-500' : 'bg-stone-400'}`} />
-          ) : null}
+          <PresenceMark connected={connected} bot={bot} />
           {result ? (
             // 결과 화면: 좁으면 닉네임만 먼저 말줄임되고, 결과 글과 오른쪽 합계는 잘리지 않는다.
             <span data-testid="board-tag" title={`${result.tag}${result.suffix ?? ''}`}
@@ -78,7 +79,7 @@ export function PlayerBoard({ result, board, nickname, active, turnRing = false,
             </span>
           )}
           {timer ? <Countdown size="sm" deadline={timer.deadline} serverNow={timer.serverNow} /> : null}
-          {connected === false ? <span className="felt-ink text-xs">연결 끊김 {offlineSeconds}초</span> : null}
+          {!bot && connected === false ? <span className="felt-ink text-xs">연결 끊김 {offlineSeconds}초</span> : null}
         </span>
         {result ? <b data-testid="board-total" className="felt-ink shrink-0 whitespace-nowrap text-xs">{result.total}</b> : null}
       </div>

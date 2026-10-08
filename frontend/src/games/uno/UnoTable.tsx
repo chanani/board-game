@@ -1,3 +1,4 @@
+import { botOf } from '../../lib/bots';
 import { motion, useReducedMotion } from 'motion/react';
 import { roomAvatarOf } from '../../lib/avatars';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -159,7 +160,7 @@ export function UnoTable({ view, room, meId, log, receivedAt, now, errorSeq, nic
       <div key={player.playerId} data-testid="opponent-seat" className="relative z-10">
         <UnoSeat player={player} nickname={nicknameOf(player.playerId)} avatar={roomAvatarOf(room, player.playerId)} active={active} backWidth={sizes.back} maxBacks={maxBacks}
           timer={active && game.deadline !== null ? { deadline: game.deadline, serverNow: game.serverNow } : undefined}
-          connected={member?.connected} offlineSeconds={member ? offlineSecondsNow(member, receivedAt, now) : 0}
+          connected={botOf(member) ? undefined : member?.connected} bot={botOf(member)} offlineSeconds={member ? offlineSecondsNow(member, receivedAt, now) : 0}
           catchable={game.unoCatch?.playerId === player.playerId}
           bubble={effects[player.playerId]?.bubble} shaking={effects[player.playerId]?.shake} skipped={effects[player.playerId]?.skipped} />
       </div>

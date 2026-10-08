@@ -8,6 +8,7 @@ import { TurnBar } from '../../table/TurnBar';
 import { seatOrder } from '../../table/seats';
 import type { Presence } from './layout/Seat';
 import { useTableLayout, type TableLayout } from '../../lib/useTableLayout';
+import { botOf } from '../../lib/bots';
 import { offlineSecondsNow } from '../../lib/format';
 import { estimateBoard } from './score';
 import { useSound } from '../../lib/sound';
@@ -157,6 +158,10 @@ export function PaperSafariTable({ view: rawView, room, meId, log, receivedAt, n
     const avatar = roomAvatarOf(room, memberId);
     if (!member) {
       return { avatar };
+    }
+    const bot = botOf(member);
+    if (bot) {
+      return { avatar, bot };
     }
     return {
       avatar,

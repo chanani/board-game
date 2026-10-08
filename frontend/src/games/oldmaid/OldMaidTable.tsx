@@ -1,3 +1,4 @@
+import { botOf } from '../../lib/bots';
 import { useEffect, useRef, useState } from 'react';
 import type { GameAction, OldMaidSessionView } from '../../api/types';
 import { Felt } from '../../components/Felt';
@@ -195,7 +196,7 @@ export function OldMaidTable({ view, room, meId, log, receivedAt, now, errorSeq,
         <OldMaidSeat player={player} nickname={nicknameOf(player.playerId)} avatar={roomAvatarOf(room, player.playerId)}
           active={active} targeted={targeted} liftIndex={targeted ? liftIndex : null} backWidth={backWidth} maxBacks={maxBacks}
           timer={active && game.deadline !== null ? { deadline: game.deadline, serverNow: game.serverNow } : undefined}
-          connected={member?.connected} offlineSeconds={member ? offlineSecondsNow(member, receivedAt, now) : 0}
+          connected={botOf(member) ? undefined : member?.connected} bot={botOf(member)} offlineSeconds={member ? offlineSecondsNow(member, receivedAt, now) : 0}
           shuffling={shuffling.has(player.playerId)} thief={thiefId === player.playerId} note={seatNote(player, active)} />
       </div>
     );

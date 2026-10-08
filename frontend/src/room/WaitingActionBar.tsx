@@ -20,7 +20,7 @@ function startBlocker(members: RoomMember[]): string | null {
   if (members.length < 2) {
     return '2명 이상 모여야 해요';
   }
-  if (members.some((member) => !member.host && !member.ready)) {
+  if (members.some((member) => !member.host && !member.bot && !member.ready)) {
     return '모두 준비하면 시작할 수 있어요';
   }
   return null;

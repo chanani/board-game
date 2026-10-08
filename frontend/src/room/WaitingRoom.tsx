@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { ChatMessage } from '../api/chat';
-import type { Room, RoomMember } from '../api/types';
+import type { BotDifficulty, Room, RoomMember } from '../api/types';
 import { BinocularsIcon, BookIcon } from '../components/icons';
 import { Button, Panel } from '../components/ui';
 import { Felt } from '../components/Felt';
@@ -8,6 +8,8 @@ import { RulesCarousel } from '../table/RulesCarousel';
 import { findGame } from '../games/registry';
 import { PC_QUERY, useMediaQuery } from '../lib/useMediaQuery';
 import { ChatPanel } from './ChatPanel';
+import { BotDifficultyModal } from './BotDifficultyModal';
+import { BotInfoModal } from './BotInfoModal';
 import { KickConfirmModal } from './KickConfirmModal';
 import { MemberList, statsLabelOf } from './MemberList';
 import { MemberStatsModal, type StatsTarget } from './MemberStatsModal';
@@ -30,22 +32,49 @@ type Props = {
   /** 방장이 대기 중에 참가자를 내보낸다(확인 창을 거친 뒤 부른다). */
   onKick: (memberId: number) => unknown;
   onSeat: () => void;
+  /** 있으면 방장이 대기 중에 빈자리에 컴퓨터를 앉힌다. */
+  onAddBot?: (difficulty: BotDifficulty) => unknown;
+  onChangeBot?: (botId: number, difficulty: BotDifficulty) => unknown;
   chat: Chat;
 };
 
 /** 펠트의 나무 테두리(box-shadow 13px)는 레이아웃에 잡히지 않으므로 그만큼 안쪽 여백을 두어 패널 사이 간격(24px)을 맞춘다. */
 const FELT_RIM = 'p-[13px]';
 
-export function WaitingRoom({ room, meId, receivedAt, now, onStart, onReady, onForfeit, onKick, onSeat, chat }: Props) {
+export function WaitingRoom({ room, meId, receivedAt, now, onStart, onReady, onForfeit, onKick, onSeat, onAddBot, onChangeBot, chat }: Props) {
   const spectating = room.spectators.some((spectator) => spectator.id === meId);
   const [kickTarget, setKickTarget] = useState<RoomMember | null>(null);
   const [statsTarget, setStatsTarget] = useState<StatsTarget | null>(null);
+  const [botInfo, setBotInfo] = useState<RoomMember | null>(null);
+  const [addingBot, setAddingBot] = useState(false);
+  const [changingBot, setChangingBot] = useState<RoomMember | null>(null);
   const wide = useMediaQuery(PC_QUERY);
   const [rulesOpen, setRulesOpen] = useState(false);
   const rules = findGame(room.gameType)?.rules;
   const bubbles = useSeatBubbles(room.status === 'WAITING' ? chat.latest ?? null : null);
   const canKick = !spectating && room.status === 'WAITING' && room.hostId === meId;
-  const askKick = (memberId: number) => setKickTarget(room.members.find((member) => member.id === memberId) ?? null);
+  const canManageBots = canKick && onAddBot !== undefined;
+  // 컴퓨터는 확인 창 없이 바로 내보낸다. 사람만 한 번 더 묻는다.
+  const askKick = (memberId: number) => {
+    const target = room.members.find((member) => member.id === memberId) ?? null;
+    if (target?.bot) {
+      onKick(target.id);
+      return;
+    }
+    setKickTarget(target);
+  };
+  const showStats = (target: RoomMember) => (target.bot ? setBotInfo(target) : setStatsTarget(target));
+  const addBot = (difficulty: BotDifficulty) => {
+    setAddingBot(false);
+    onAddBot?.(difficulty);
+  };
+  const changeBot = (difficulty: BotDifficulty) => {
+    const target = changingBot;
+    setChangingBot(null);
+    if (target) {
+      onChangeBot?.(target.id, difficulty);
+    }
+  };
   const confirmKick = () => {
     if (kickTarget) {
       onKick(kickTarget.id);
@@ -59,7 +88,9 @@ export function WaitingRoom({ room, meId, receivedAt, now, onStart, onReady, onF
         {/* 테이블 위에는 자리만 둔다. 가운데가 비어 있으니 펠트를 낮게(정사각형~3:2) 그린다. */}
         <Felt shape="round" className="aspect-square w-full max-w-[640px] sm:aspect-[3/2]">
           <MemberList members={room.members} maxPlayers={room.maxPlayers} meId={meId} receivedAt={receivedAt} now={now} bubbles={bubbles}
-            onForfeit={spectating ? undefined : onForfeit} onKick={canKick ? askKick : undefined} onShowStats={setStatsTarget} />
+            onForfeit={spectating ? undefined : onForfeit} onKick={canKick ? askKick : undefined} onShowStats={showStats}
+            onAddBot={canManageBots ? () => setAddingBot(true) : undefined} gameMaxPlayers={findGame(room.gameType)?.maxPlayers}
+            onChangeBot={canManageBots && onChangeBot ? setChangingBot : undefined} />
         </Felt>
         <WaitingActionBar room={room} meId={meId} spectating={spectating} onStart={onStart} onReady={onReady} onSeat={onSeat} />
         {room.spectators.length > 0 ? (
@@ -98,6 +129,10 @@ export function WaitingRoom({ room, meId, receivedAt, now, onStart, onReady, onF
       </div>
       {rules ? <RulesCarousel open={rulesOpen} onClose={() => setRulesOpen(false)} title={rules.title} slides={rules.slides} renderArt={rules.renderArt} /> : null}
       <MemberStatsModal target={statsTarget} onClose={() => setStatsTarget(null)} />
+      <BotInfoModal target={botInfo} onClose={() => setBotInfo(null)} />
+      <BotDifficultyModal open={addingBot} title="빈자리에 컴퓨터 추가" onPick={addBot} onClose={() => setAddingBot(false)} />
+      <BotDifficultyModal open={changingBot !== null} title={`${changingBot?.nickname ?? '컴퓨터'} 난이도 바꾸기`} current={changingBot?.difficulty}
+        onPick={changeBot} onClose={() => setChangingBot(null)} />
       <KickConfirmModal nickname={kickTarget?.nickname ?? null} onCancel={() => setKickTarget(null)} onConfirm={confirmKick} />
     </div>
   );

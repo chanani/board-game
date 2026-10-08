@@ -1,5 +1,5 @@
 import { request } from './http';
-import type { GameType, Room, RoomSummary, RoomTheme } from './types';
+import type { BotDifficulty, GameType, Room, RoomSummary, RoomTheme } from './types';
 
 const path = (code: string) => `/api/rooms/${encodeURIComponent(code)}`;
 
@@ -21,5 +21,8 @@ export const roomsApi = {
     request<Room>(`${path(code)}/settings`, { method: 'PATCH', body: { maxPlayers, theme } }),
   start: (code: string) => request<Room>(`${path(code)}/start`, { method: 'POST' }),
   kick: (code: string, memberId: number) => request<void>(`${path(code)}/members/${memberId}/kick`, { method: 'POST' }),
+  addBot: (code: string, difficulty: BotDifficulty) => request<Room>(`${path(code)}/bots`, { method: 'POST', body: { difficulty } }),
+  changeBot: (code: string, botId: number, difficulty: BotDifficulty) =>
+    request<Room>(`${path(code)}/bots/${botId}`, { method: 'PATCH', body: { difficulty } }),
   forfeit: (code: string, memberId: number) => request<void>(`${path(code)}/members/${memberId}/forfeit`, { method: 'POST' }),
 };

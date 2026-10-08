@@ -1,3 +1,4 @@
+import { PracticeNote } from '../../table/PracticeNote';
 import { useEffect, useState } from 'react';
 import type { Room, UnoResultPlayer, UnoView } from '../../api/types';
 import { Confetti } from '../../components/Confetti';
@@ -62,6 +63,7 @@ export function UnoGameOverPanel({ game, room, meId, nicknameOf, onReady, onClos
               {rows.map((player) => <ResultRow key={player.playerId} player={player} name={nicknameOf(player.playerId)} />)}
             </ul>
           ) : null}
+          <PracticeNote room={room} />
           <div className="flex flex-wrap items-center justify-between gap-3">
             <ReadyChips members={room.members} />
             <div className="ml-auto">

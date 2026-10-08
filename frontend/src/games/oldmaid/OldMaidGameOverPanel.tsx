@@ -1,3 +1,4 @@
+import { PracticeNote } from '../../table/PracticeNote';
 import type { OldMaidRankEntry, OldMaidView, Room } from '../../api/types';
 import { AvatarFace } from '../../components/Avatar';
 import { Confetti } from '../../components/Confetti';
@@ -66,6 +67,7 @@ export function OldMaidGameOverPanel({ game, room, meId, nicknameOf, onReady, on
           <ol aria-label="등수" className="space-y-2">
             {(result?.ranking ?? []).map((entry) => <RankRow key={entry.playerId} entry={entry} name={nicknameOf(entry.playerId)} room={room} />)}
           </ol>
+          <PracticeNote room={room} />
           <div className="flex flex-wrap items-center justify-between gap-3">
             <ReadyChips members={room.members} />
             <div className="ml-auto">
