@@ -45,7 +45,7 @@ export const SEAT_POSITIONS: Record<number, Point[]> = {
   3: [{ left: 50, top: 12 }, { left: 81, top: 60 }, { left: 19, top: 60 }],
   4: [{ left: 50, top: 12 }, { left: 84, top: 42 }, { left: 50, top: 68 }, { left: 16, top: 42 }],
   5: [{ left: 50, top: 12 }, { left: 84, top: 37 }, { left: 71, top: 68 }, { left: 29, top: 68 }, { left: 16, top: 37 }],
-  6: [{ left: 50, top: 12 }, { left: 84, top: 30 }, { left: 84, top: 60 }, { left: 50, top: 70 }, { left: 16, top: 60 }, { left: 16, top: 30 }],
+  6: [{ left: 50, top: 12 }, { left: 84, top: 27 }, { left: 84, top: 63 }, { left: 50, top: 70 }, { left: 16, top: 63 }, { left: 16, top: 27 }],
 };
 
 function positionOf(maxPlayers: number, index: number): Point {
