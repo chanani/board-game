@@ -141,7 +141,7 @@ export const RobotIcon = ({ className, testId }: IconProps) => (
   </Svg>
 );
 
-export const CheckIcon =({ className, testId }: IconProps) => (
+export const CheckIcon = ({ className, testId }: IconProps) => (
   <Svg testId={testId} className={className ?? 'h-3.5 w-3.5'}><path d="M5 12.5l4.5 4.5L19 7" /></Svg>
 );
 

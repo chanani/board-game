@@ -9,7 +9,7 @@ export const DIFFICULTY_BUTTON: Record<BotDifficulty, string> = { EASY: '하 · 
 export const DIFFICULTY_NOTE: Record<BotDifficulty, string> = {
   EASY: '실수도 하고 가끔 엉뚱한 선택을 해요.',
   MEDIUM: '무난하게 두고 가끔 실수해요.',
-  HARD: '상대 패와 지난 흐름을 기억해서 신중하게 둬요.',
+  HARD: '지금까지 나온 카드와 흐름을 기억해서 신중하게 둬요.',
 };
 
 export function botLabel(difficulty: BotDifficulty): string {

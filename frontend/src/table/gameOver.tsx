@@ -43,7 +43,8 @@ export function HeadlineIcon({ won }: { won: boolean }) {
 }
 
 export function ReadyChips({ members }: { members: RoomMember[] }) {
-  const guests = members.filter((member) => !member.host);
+  // 컴퓨터는 늘 준비돼 있으니 칩에서 뺀다(결과 창이 커지지 않게).
+  const guests = members.filter((member) => !member.host && !member.bot);
   if (guests.length === 0) {
     return null;
   }
