@@ -2,8 +2,8 @@ package com.boardgame.room.domain;
 
 import com.boardgame.game.bot.BotDifficulty;
 import com.boardgame.member.domain.Avatar;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Stream;
 
 public class RoomOccupants {
 
@@ -112,7 +112,7 @@ public class RoomOccupants {
     }
 
     public List<Long> occupantIds() {
-        return Stream.concat(players.ids().stream(), spectators.ids().stream()).toList();
+        return together(players.ids(), spectators.ids());
     }
 
     public List<Participant> players() {
@@ -157,6 +157,12 @@ public class RoomOccupants {
     }
 
     public List<Long> humanOccupantIds() {
-        return Stream.concat(players.humanIds().stream(), spectators.ids().stream()).toList();
+        return together(players.humanIds(), spectators.ids());
+    }
+
+    private static List<Long> together(List<Long> first, List<Long> second) {
+        List<Long> all = new ArrayList<>(first);
+        all.addAll(second);
+        return List.copyOf(all);
     }
 }

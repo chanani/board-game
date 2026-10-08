@@ -132,7 +132,7 @@ public class RoomMembers {
     }
 
     public boolean isBot(long memberId) {
-        return bots().stream().anyMatch(bot -> bot.memberId() == memberId);
+        return botIds().contains(memberId);
     }
 
     public List<Participant> asList() {
@@ -141,6 +141,12 @@ public class RoomMembers {
 
     private Stream<Participant> humans() {
         return members.stream().filter(Participant::isHuman);
+    }
+
+    private List<Long> botIds() {
+        return bots().stream()
+                .map(Participant::memberId)
+                .toList();
     }
 
     private List<BotNumber> botNumbers() {

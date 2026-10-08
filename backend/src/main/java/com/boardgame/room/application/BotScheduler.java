@@ -31,6 +31,10 @@ public class BotScheduler {
         scheduler.schedule(() -> runQuietly(task), clock.instant().plus(pace.scale(delay)));
     }
 
+    public double pace() {
+        return pace.factor();
+    }
+
     public Instant now() {
         return clock.instant();
     }

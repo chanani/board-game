@@ -98,6 +98,7 @@ class RoomServiceBotTest {
     void R6_오래_끊긴_사람을_찾는_확인은_컴퓨터를_기권시키지_않는다() {
         addBot("EASY");
         service.start(CODE, HOST);
+        presence.baseline(List.of(BOT), T0);
         clock.advance(Duration.ofSeconds(120));
 
         service.forfeitLongDisconnected();
@@ -123,6 +124,45 @@ class RoomServiceBotTest {
 
         assertThat(registry.find(ROOM_CODE)).isEmpty();
         verify(events).publishEvent(new RoomClosedEvent(CODE));
+    }
+
+    @Test
+    void R13_컴퓨터_둘이_남은_게임에서_마지막_사람이_나가면_관전자가_있어도_방을_닫고_더는_방송하지_않는다() {
+        addBot("EASY");
+        addBot("MEDIUM");
+        service.start(CODE, HOST);
+        service.watch(CODE, new LoginMember(3L, "캐롤"));
+        clearInvocations(notifier);
+
+        service.leave(CODE, HOST);
+
+        assertThat(registry.find(ROOM_CODE)).isEmpty();
+        assertThat(registry.findByMember(3L)).isEmpty();
+        verify(events).publishEvent(new RoomClosedEvent(CODE));
+        verify(notifier, never()).roomUpdated(any());
+    }
+
+    @Test
+    void D6_컴퓨터_하나와_하는_게임에서_마지막_사람이_나가면_관전자를_앉히지_않고_방을_닫는다() {
+        addBot("EASY");
+        service.start(CODE, HOST);
+        service.watch(CODE, new LoginMember(3L, "캐롤"));
+
+        service.leave(CODE, HOST);
+
+        assertThat(registry.find(ROOM_CODE)).isEmpty();
+        assertThat(registry.findByMember(3L)).isEmpty();
+    }
+
+    @Test
+    void R16_채팅_받는_사람에_컴퓨터는_빠진다() {
+        addBot("EASY");
+        service.start(CODE, HOST);
+        service.watch(CODE, new LoginMember(3L, "캐롤"));
+
+        List<Long> recipients = service.withOccupant(CODE, HOST, OccupantContext::occupantIds);
+
+        assertThat(recipients).containsExactlyInAnyOrder(HOST, 3L);
     }
 
     @Test

@@ -191,7 +191,7 @@ public class RoomService {
         List<Participant> everyone = Stream.concat(room.participants().stream(), room.spectators().stream()).toList();
         String nickname = everyone.stream().filter(person -> person.memberId() == memberId)
                 .map(Participant::nickname).findFirst().orElseThrow();
-        return action.apply(new OccupantContext(nickname, everyone.stream().map(Participant::memberId).toList(),
+        return action.apply(new OccupantContext(nickname, room.humanOccupantIds(),
                 room.isSpectator(memberId)));
     }
 
@@ -522,11 +522,14 @@ public class RoomService {
         Stream<Avatar> humanAvatars = humans.stream()
                 .map(book::keyOf)
                 .map(Avatar::parse);
-        Stream<Avatar> botAvatars = room.bots().stream()
+        Set<Avatar> taken = Stream.concat(humanAvatars, avatarsOf(room.bots())).collect(Collectors.toSet());
+        return AvatarDraw.pick(taken, random);
+    }
+
+    private static Stream<Avatar> avatarsOf(List<Participant> bots) {
+        return bots.stream()
                 .map(Participant::bot)
                 .map(BotProfile::avatar);
-        Set<Avatar> taken = Stream.concat(humanAvatars, botAvatars).collect(Collectors.toSet());
-        return AvatarDraw.pick(taken, random);
     }
 
     public synchronized RoomResponse reconfigure(String rawCode, long memberId, UpdateRoomSettingsRequest request) {

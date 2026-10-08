@@ -162,7 +162,7 @@ public class BotDriver {
         }
         long epoch = rooms.nextEpoch();
         state.hold(botId, new BotIntent(epoch, actor.kind(), view.get()));
-        BotSituation situation = new BotSituation(view.get(), actor.kind(), scheduler.now(), random);
+        BotSituation situation = new BotSituation(view.get(), actor.kind(), scheduler.now(), random, scheduler.pace());
         planSafely(mind.get(), situation)
                 .ifPresent(plan -> schedule(new BotTicket(room.code(), botId, epoch, plan), runner));
     }

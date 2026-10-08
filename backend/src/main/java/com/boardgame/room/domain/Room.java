@@ -383,6 +383,9 @@ public class Room {
             return;
         }
         occupants.clearReady();
+        if (occupants.hasNoHumanPlayers()) {
+            return;
+        }
         occupants.seatWaitingSpectators(profile.capacity());
     }
 
