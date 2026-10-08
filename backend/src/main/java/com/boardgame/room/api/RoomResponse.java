@@ -29,10 +29,12 @@ public record RoomResponse(String code, String name, GameType gameType, String g
 
     private static RoomMemberResponse member(Participant participant, long hostId, List<Long> readyIds,
                                              PresenceTracker presence, Instant now, AvatarBook avatars) {
+        if (participant.isBot()) {
+            return RoomMemberResponse.bot(participant);
+        }
         long memberId = participant.memberId();
         long offlineSeconds = presence.offlineFor(memberId, now).toSeconds();
-        return new RoomMemberResponse(memberId, participant.nickname(), avatars.keyOf(memberId), memberId == hostId,
-                presence.isConnected(memberId), offlineSeconds,
-                readyIds.contains(memberId));
+        return RoomMemberResponse.human(memberId, participant.nickname(), avatars.keyOf(memberId), memberId == hostId,
+                presence.isConnected(memberId), offlineSeconds, readyIds.contains(memberId));
     }
 }

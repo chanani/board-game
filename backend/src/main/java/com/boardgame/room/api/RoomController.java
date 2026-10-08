@@ -104,6 +104,19 @@ public class RoomController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/{code}/bots")
+    public RoomResponse addBot(@PathVariable String code, @AuthenticationPrincipal LoginMember member,
+                               @RequestBody(required = false) BotDifficultyRequest request) {
+        return roomService.addBot(code, member.id(), request);
+    }
+
+    @PatchMapping("/{code}/bots/{botId}")
+    public RoomResponse changeBot(@PathVariable String code, @PathVariable long botId,
+                                  @AuthenticationPrincipal LoginMember member,
+                                  @RequestBody(required = false) BotDifficultyRequest request) {
+        return roomService.changeBot(code, member.id(), botId, request);
+    }
+
     @PatchMapping("/{code}/settings")
     public RoomResponse settings(@PathVariable String code, @AuthenticationPrincipal LoginMember member,
                                  @RequestBody UpdateRoomSettingsRequest request) {

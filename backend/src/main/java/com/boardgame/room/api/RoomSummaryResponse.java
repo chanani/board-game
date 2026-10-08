@@ -15,7 +15,8 @@ public record RoomSummaryResponse(String code, String name, GameType gameType, S
     public static RoomSummaryResponse from(Room room) {
         List<Participant> participants = room.participants();
         GameType gameType = room.gameType();
-        Participant host = participants.get(0);
+        // R12: 방장은 첫 사람이다(컴퓨터가 먼저 앉아 있어도).
+        Participant host = room.host();
         Integer roundNumber = room.roundNumber().orElse(null);
         return new RoomSummaryResponse(room.codeValue(), room.nameValue(), gameType, gameType.displayName(),
                 participants.size(), room.capacity(), host.nickname(), room.status(), room.isLocked(),

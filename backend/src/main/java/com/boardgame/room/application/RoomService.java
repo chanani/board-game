@@ -8,7 +8,12 @@ import com.boardgame.game.GameOutcome;
 import com.boardgame.game.GameSessionFactories;
 import com.boardgame.game.GameType;
 import com.boardgame.game.event.GameStartedEvent;
+import com.boardgame.game.bot.BotDifficulty;
 import com.boardgame.member.domain.Avatar;
+import com.boardgame.member.domain.AvatarBook;
+import com.boardgame.room.api.BotDifficultyRequest;
+import com.boardgame.room.domain.AvatarDraw;
+import com.boardgame.room.domain.BotProfile;
 import com.boardgame.room.api.CreateRoomRequest;
 import com.boardgame.room.domain.RoomClosedEvent;
 import com.boardgame.room.domain.RoomTheme;
@@ -38,8 +43,10 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.time.Instant;
 import org.slf4j.Logger;
@@ -99,7 +106,7 @@ public class RoomService {
         RoomProfile profile = new RoomProfile(newCode(), name, settings);
         Room room = Room.open(profile, participantOf(member));
         saveAndNotifyClosed(room);
-        presence.baseline(room.memberIds(), clock.instant());
+        presence.baseline(room.humanIds(), clock.instant());
         return broadcast(room);
     }
 
@@ -138,7 +145,7 @@ public class RoomService {
         requireNotInOtherRoom(member.id(), room);
         room.admit(participantOf(member), passed);
         saveAndNotifyClosed(room);
-        presence.baseline(room.memberIds(), clock.instant());
+        presence.baseline(room.humanIds(), clock.instant());
         return broadcast(room);
     }
 
@@ -160,7 +167,7 @@ public class RoomService {
         Room room = find(rawCode);
         room.seat(memberId);
         saveAndNotifyClosed(room);
-        presence.baseline(room.memberIds(), clock.instant());
+        presence.baseline(room.humanIds(), clock.instant());
         return broadcast(room);
     }
 
@@ -208,9 +215,9 @@ public class RoomService {
                 .ifPresent(room -> leave(room.codeValue(), memberId));
     }
 
-    // 게임이 끝나 자동으로 참가한 관전자도 기권 유예 시간을 잴 수 있게 기준 시각을 둔다.
+    // 게임이 끝나 자동으로 참가한 관전자도 기권 유예 시간을 잴 수 있게 기준 시각을 둔다. R6: 컴퓨터는 빼고 사람만.
     private void baselineNewcomers(Room room, List<Long> before) {
-        List<Long> newcomers = room.memberIds().stream()
+        List<Long> newcomers = room.humanIds().stream()
                 .filter(id -> !before.contains(id))
                 .toList();
         presence.baseline(newcomers, clock.instant());
@@ -238,7 +245,7 @@ public class RoomService {
         GameType gameType = room.gameType();
         RoomGame game = room.start(memberId, memberIds -> sessionFactories.create(gameType, memberIds),
                 UUID.randomUUID().toString(), clock.instant());
-        presence.baseline(room.memberIds(), clock.instant());
+        presence.baseline(room.humanIds(), clock.instant());
         rearm(room);
         RoomResponse response = broadcast(room);
         eventPublisher.publishEvent(
@@ -279,7 +286,7 @@ public class RoomService {
     }
 
     private void sendSignal(Room room, Object payload) {
-        room.occupantIds()
+        room.humanOccupantIds()
                 .forEach(memberId -> notifier.gameSignal(memberId, payload));
     }
 
@@ -351,6 +358,10 @@ public class RoomService {
         if (requesterId == targetId) {
             throw new BusinessException(ErrorCode.INVALID_INPUT);
         }
+        // R6: 컴퓨터는 연결 끊김 기권 대상이 아니다.
+        if (room.isBot(targetId)) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT);
+        }
         if (!presence.isOfflineAtLeast(targetId, clock.instant(), FORFEIT_GRACE)) {
             throw new BusinessException(ErrorCode.FORFEIT_NOT_ALLOWED_YET);
         }
@@ -388,7 +399,7 @@ public class RoomService {
     }
 
     private Stream<Departure> longDisconnected(Room room, Instant now) {
-        return room.memberIds()
+        return room.humanIds()
                 .stream()
                 .filter(room::isPlaying)
                 .filter(memberId -> presence.isOfflineAtLeast(memberId, now, FORFEIT_GRACE))
@@ -403,6 +414,46 @@ public class RoomService {
         room.kick(requesterId, targetId);
         saveAndNotifyClosed(room);
         broadcast(room);
+    }
+
+    // R8·R9·R4: 방장이 대기 중에 컴퓨터를 앉힌다. 그림은 방 안 다른 사람과 겹치지 않게 고른다.
+    public synchronized RoomResponse addBot(String rawCode, long requesterId, BotDifficultyRequest request) {
+        BotDifficulty difficulty = BotDifficulty.parse(requireDifficulty(request));
+        Room room = find(rawCode);
+        room.addBot(requesterId, difficulty, botAvatarFor(room));
+        saveAndNotifyClosed(room);
+        return broadcast(room);
+    }
+
+    // R10: 방장이 대기 중에 앉아 있는 컴퓨터의 난이도를 바꾼다.
+    public synchronized RoomResponse changeBot(String rawCode, long requesterId, long botId,
+                                               BotDifficultyRequest request) {
+        BotDifficulty difficulty = BotDifficulty.parse(requireDifficulty(request));
+        Room room = find(rawCode);
+        room.changeBot(requesterId, botId, difficulty);
+        saveAndNotifyClosed(room);
+        return broadcast(room);
+    }
+
+    private String requireDifficulty(BotDifficultyRequest request) {
+        if (request == null) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT);
+        }
+        return request.difficulty();
+    }
+
+    // R4: 사람의 그림(메모리)과 앉은 컴퓨터의 그림을 피해 고른다.
+    private Avatar botAvatarFor(Room room) {
+        List<Long> humans = room.humanOccupantIds();
+        AvatarBook book = avatars.bookOf(humans);
+        Stream<Avatar> humanAvatars = humans.stream()
+                .map(book::keyOf)
+                .map(Avatar::parse);
+        Stream<Avatar> botAvatars = room.bots().stream()
+                .map(Participant::bot)
+                .map(BotProfile::avatar);
+        Set<Avatar> taken = Stream.concat(humanAvatars, botAvatars).collect(Collectors.toSet());
+        return AvatarDraw.pick(taken, random);
     }
 
     public synchronized RoomResponse reconfigure(String rawCode, long memberId, UpdateRoomSettingsRequest request) {
@@ -456,7 +507,7 @@ public class RoomService {
     private RoomResponse broadcast(Room room) {
         RoomResponse response = response(room);
         notifier.roomUpdated(response);
-        room.occupantIds().forEach(memberId -> sendView(room, memberId));
+        room.humanOccupantIds().forEach(memberId -> sendView(room, memberId));
         return response;
     }
 
