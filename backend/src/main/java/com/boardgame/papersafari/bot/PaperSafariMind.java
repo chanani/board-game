@@ -44,7 +44,8 @@ final class PaperSafariMind implements BotMind {
             case SETUP_FLIP -> player.flip(sight, random);
             case DRAW -> player.draw(sight, random);
             case PLACE -> player.place(sight, random);
-            case PEEK, ROUND_OVER -> player.peek(sight, random);
+            case PEEK -> player.peek(sight, random);
+            case ROUND_OVER -> throw new IllegalStateException("판이 끝나 행동을 정할 수 없어요");
         };
     }
 }

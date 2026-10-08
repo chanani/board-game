@@ -13,6 +13,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.ToIntFunction;
 
 // R16: 컴퓨터의 시야 = 그 자리 사람이 받는 화면(UnoView) 그대로. 남의 손패·뽑을 더미·+4 합법 여부는 여기에 없다.
 public record UnoSight(UnoView game) {
@@ -118,20 +119,28 @@ public record UnoSight(UnoView game) {
 
     /** except 카드를 뺀 손패에서 가장 많은 색. 동점은 enum 순서(RED 먼저) = 자동 색 고르기(R40). */
     public UnoColor mostHeldColorExcept(UnoCardView except) {
-        return Arrays.stream(UnoColor.values())
-                .reduce((best, color) -> moreThan(color, best, except))
-                .orElseThrow();
-    }
-
-    private UnoColor moreThan(UnoColor color, UnoColor best, UnoCardView except) {
-        if (countOfColorExcept(color, except) > countOfColorExcept(best, except)) {
-            return color;
-        }
-        return best;
+        return mostHeld(color -> countOfColorExcept(color, except));
     }
 
     /** 손패에서 가장 많은 색. */
     public UnoColor mostHeldColor() {
-        return mostHeldColorExcept(new UnoCardView(-1, null, null, null));
+        return mostHeld(this::countOfColor);
+    }
+
+    private int countOfColor(UnoColor color) {
+        return (int) hand().stream().filter(card -> card.color() == color).count();
+    }
+
+    private UnoColor mostHeld(ToIntFunction<UnoColor> counter) {
+        return Arrays.stream(UnoColor.values())
+                .reduce((best, color) -> moreThan(color, best, counter))
+                .orElseThrow();
+    }
+
+    private UnoColor moreThan(UnoColor color, UnoColor best, ToIntFunction<UnoColor> counter) {
+        if (counter.applyAsInt(color) > counter.applyAsInt(best)) {
+            return color;
+        }
+        return best;
     }
 }

@@ -32,11 +32,11 @@ record Guess(Integer value, boolean wild) {
     }
 
     boolean pairs(Guess other) {
-        return known() && value.equals(other.value());
+        return known() && !wild && !other.wild() && value.equals(other.value());
     }
 
     boolean matches(CardView card) {
-        return known() && value == card.value();
+        return known() && !wild && card.kind() != CardKind.WILD && value == card.value();
     }
 
     Guess zeroIfWild() {

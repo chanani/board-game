@@ -48,11 +48,13 @@ final class UnoMind implements BotMind {
             return Optional.empty();
         }
         long open = target.get();
-        return window.decide(open, situation.now(), () -> decision(situation.random()))
+        return window.decide(open, situation.now(), () -> decision(situation).map(situation::real))
+                .map(situation::planned)
                 .map(delay -> BotPlan.act(delay, UnoMoves.catchUno(open)));
     }
 
-    private Optional<Duration> decision(Random random) {
+    private Optional<Duration> decision(BotSituation situation) {
+        Random random = situation.random();
         return style.catchHabit()
                 .filter(habit -> habit.tries(random))
                 .map(habit -> habit.delay(random));

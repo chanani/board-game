@@ -88,6 +88,22 @@ class UnoMindTest {
     }
 
     @Test
+    void 예약_배율이_있어도_다시_물으면_실제로_남은_시간에_맞는_지연을_답한다() {
+        BotMind mind = brain.mind(BotDifficulty.MEDIUM);
+        UnoViews open = othersTurnWithWindow();
+        mind.observe(open.session());
+
+        BotPlan first = mind.plan(new BotSituation(open.session(), PendingKind.REACTION, NOW, new FixedRandom(10), 0.5))
+                .orElseThrow();
+        // 실제로 200ms가 지났다: 예약은 처음 505ms 뒤였으니 305ms 남았고, 구동기가 0.5를 곱하므로 610을 돌려줘야 한다.
+        BotPlan again = mind.plan(new BotSituation(open.session(), PendingKind.REACTION, NOW.plusMillis(200),
+                new FixedRandom(90), 0.5)).orElseThrow();
+
+        assertThat(first.first().delay()).isEqualTo(Duration.ofMillis(1010));
+        assertThat(again.first().delay()).isEqualTo(Duration.ofMillis(610));
+    }
+
+    @Test
     void R31_상은_0_8_1_5초_안에_반드시_잡는다() {
         BotMind mind = brain.mind(BotDifficulty.HARD);
 

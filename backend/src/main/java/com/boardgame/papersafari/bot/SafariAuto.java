@@ -47,7 +47,8 @@ final class SafariAuto {
             case SETUP_FLIP -> flip(sight, random);
             case DRAW -> draw(sight);
             case PLACE -> place(sight, random);
-            case PEEK, ROUND_OVER -> peek(sight, random);
+            case PEEK -> peek(sight, random);
+            case ROUND_OVER -> throw new IllegalStateException("판이 끝나 행동을 정할 수 없어요");
         };
     }
 }
