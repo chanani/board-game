@@ -621,6 +621,13 @@ describe('모바일 게임 화면 (상대 판·내 차례·손 카드)', () => {
     expect(screen.getByTestId('board-1')).not.toHaveClass('turn-ring');
   });
 
+  it('다른 사람 차례면 그 사람 판에만 내 차례와 같은 테두리 링이 생긴다', () => {
+    setMediaMatches(false);
+    render(<PaperSafariTable {...baseProps(build({ phase: 'DRAW', current: OPPONENT }))} />);
+    expect(screen.getByTestId(`board-${OPPONENT}`)).toHaveClass('turn-ring', 'ring-inset', 'ring-(--turn-ring)');
+    expect(screen.getByTestId(`board-${ME}`)).not.toHaveClass('turn-ring');
+  });
+
   it('모바일에서 내 손 칸은 내 옆 칸 안에 하나만 있다', () => {
     setMediaMatches(false);
     render(<PaperSafariTable {...baseProps(build({ phase: 'PLACE', current: ME, held: { playerId: ME, source: 'DECK', card: { kind: 'NUMBER', value: 5 } } }))} />);

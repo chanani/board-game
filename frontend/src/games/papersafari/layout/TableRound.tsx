@@ -77,7 +77,7 @@ export function TableRound({ density = 'pc', ...props }: Props) {
   // 감정 표현 버튼은 내 판 오른쪽 위 모서리에 떠 있어 카드 누르기와 겹치지 않는다.
   const mySeat = myBoard ? (
     <div className="relative">
-      <Seat board={myBoard} nickname={`${nicknameOf(meId)} (나)`} active={myTurn} turnRing={myTurn} hand="none" timer={timerFor(meId)}
+      <Seat board={myBoard} nickname={`${nicknameOf(meId)} (나)`} active={myTurn} hand="none" timer={timerFor(meId)}
         held={round.held} size={meSize} presence={{ avatar: presenceOf(meId).avatar }} handLabel="들고 있는 카드" onSlotClick={clickSlot} canClick={canClickSlot} pulseSlots={myTurn} />
       <EmoteDock meId={meId} className="-right-3 -top-3" align="end" />
     </div>
