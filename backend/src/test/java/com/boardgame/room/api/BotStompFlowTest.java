@@ -2,6 +2,8 @@ package com.boardgame.room.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import jakarta.websocket.ContainerProvider;
+import jakarta.websocket.WebSocketContainer;
 import com.boardgame.game.GameAction;
 import com.boardgame.game.GameType;
 import com.boardgame.game.bot.BotBrains;
@@ -72,8 +74,11 @@ class BotStompFlowTest {
     private record Player(long id, String cookie, StompSession stomp, BlockingQueue<JsonNode> views) {
     }
 
+    // 손패가 긴 화면은 Tomcat 클라이언트 기본 글 버퍼(8KB)를 넘어 연결이 닫히므로 넉넉히 늘린다.
     private static WebSocketStompClient createClient() {
-        WebSocketStompClient client = new WebSocketStompClient(new StandardWebSocketClient());
+        WebSocketContainer container = ContainerProvider.getWebSocketContainer();
+        container.setDefaultMaxTextMessageBufferSize(256 * 1024);
+        WebSocketStompClient client = new WebSocketStompClient(new StandardWebSocketClient(container));
         client.setMessageConverter(new MappingJackson2MessageConverter());
         return client;
     }
