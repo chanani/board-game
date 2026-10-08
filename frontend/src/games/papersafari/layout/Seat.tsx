@@ -1,3 +1,4 @@
+import type { BotDifficulty } from '../../../api/types';
 import type { BoardView, HeldView, SlotView } from '../../../api/types';
 import { CardFace, type CardSize } from '../CardFace';
 import { PlayerBoard, type SeatTimer } from '../PlayerBoard';
@@ -12,7 +13,7 @@ const HAND = { mini: { box: 'min-h-10 w-7', card: 'mini' }, xs: { box: 'min-h-14
 import type { AvatarKey } from '../../../lib/avatars';
 
 /** avatar: 이름표 앞 프로필 그림. */
-export type Presence = { connected?: boolean; offlineSeconds?: number; avatar?: AvatarKey };
+export type Presence = { connected?: boolean; offlineSeconds?: number; avatar?: AvatarKey; bot?: BotDifficulty };
 
 type Props = {
   board: BoardView;

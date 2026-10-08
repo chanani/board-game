@@ -1,3 +1,5 @@
+import type { BotDifficulty } from '../../api/types';
+import { PresenceMark } from '../../components/PresenceMark';
 import { motion, useReducedMotion } from 'motion/react';
 import type { OldMaidPlayerView } from '../../api/types';
 import { AvatarFace } from '../../components/Avatar';
@@ -21,6 +23,8 @@ type Props = {
   liftIndex: number | null;
   timer?: { deadline: number | null; serverNow: number };
   connected?: boolean;
+  /** 컴퓨터면 연결 점 자리에 로봇 칩을 단다. */
+  bot?: BotDifficulty;
   offlineSeconds?: number;
   shuffling?: boolean;
   /** 게임이 끝나 도둑으로 정해짐. */
@@ -34,7 +38,7 @@ export type SeatNote = { text: string; done: boolean };
 
 const TAG = 'whitespace-nowrap rounded-full px-2 py-0.5 shadow-[0_1px_0_rgb(0_0_0/0.3)]';
 
-export function OldMaidSeat({ player, nickname, active, targeted, backWidth, maxBacks, liftIndex, timer, connected, offlineSeconds = 0, shuffling = false, thief = false, avatar, note = null }: Props) {
+export function OldMaidSeat({ player, nickname, active, targeted, backWidth, maxBacks, liftIndex, timer, connected, bot, offlineSeconds = 0, shuffling = false, thief = false, avatar, note = null }: Props) {
   const reduced = useReducedMotion();
   const backs = Math.min(player.cardCount, maxBacks);
   const lifted = targeted && liftIndex !== null ? scaledIndex(liftIndex, player.cardCount, backs) : null;
@@ -46,14 +50,14 @@ export function OldMaidSeat({ player, nickname, active, targeted, backWidth, max
       // 차례인 자리는 우노와 같은 안쪽 강조 테두리. 여백은 늘 같아 차례가 바뀌어도 자리가 흔들리지 않는다.
       className={`relative -my-1 flex flex-col items-center gap-1 rounded-2xl px-1.5 py-1 ${active ? 'turn-ring bg-black/20 ring-[3px] ring-inset ring-(--turn-ring)' : ''} ${player.forfeited ? 'opacity-55' : ''}`}>
       <div className="flex items-center gap-1.5">
-        {connected !== undefined ? <span aria-hidden="true" className={`inline-block h-2 w-2 rounded-full ${connected ? 'bg-green-500' : 'bg-stone-400'}`} /> : null}
+        <PresenceMark connected={connected} bot={bot} />
         <span data-testid="seat-tag" className={`inline-flex max-w-[5.5rem] items-center rounded-full px-2.5 py-0.5 text-xs font-bold shadow-[0_2px_0_rgb(0_0_0/0.3)] md:max-w-[7rem] ${active ? 'turn-glow bg-(--turn-tag-bg) text-(--turn-tag-ink)' : 'bg-cream-50 text-wood-800'}`}>
           {avatar ? <AvatarFace avatar={avatar} size={18} className="-my-0.5 -ml-1.5 mr-1" /> : null}
           <span className="min-w-0 truncate">{nickname}</span>
         </span>
         {timer ? <Countdown size="sm" deadline={timer.deadline} serverNow={timer.serverNow} /> : null}
       </div>
-      {connected === false ? <span className="felt-ink text-xs">연결 끊김 {offlineSeconds}초</span> : null}
+      {!bot && connected === false ? <span className="felt-ink text-xs">연결 끊김 {offlineSeconds}초</span> : null}
       <div data-oldmaid-zone={`hand:${player.playerId}`} aria-hidden="true" className="flex items-end"
         style={{ minHeight: backWidth * (1.5 + LIFT_RATIO), minWidth: backWidth }}>
         {Array.from({ length: backs }, (_, index) => (

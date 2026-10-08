@@ -1,3 +1,5 @@
+import type { BotDifficulty } from '../../api/types';
+import { PresenceMark } from '../../components/PresenceMark';
 import { motion, useReducedMotion } from 'motion/react';
 import type { UnoPlayerView } from '../../api/types';
 import { Countdown } from '../../components/Countdown';
@@ -15,6 +17,8 @@ type Props = {
   maxBacks: number;
   timer?: { deadline: number | null; serverNow: number };
   connected?: boolean;
+  /** 컴퓨터면 연결 점 자리에 로봇 칩을 단다. */
+  bot?: BotDifficulty;
   offlineSeconds?: number;
   catchable: boolean;
   bubble?: boolean;
@@ -24,7 +28,7 @@ type Props = {
   avatar?: AvatarKey;
 };
 
-export function UnoSeat({ player, nickname, active, backWidth, maxBacks, timer, connected, offlineSeconds = 0, catchable, bubble = false, shaking = false, skipped = false, avatar }: Props) {
+export function UnoSeat({ player, nickname, active, backWidth, maxBacks, timer, connected, bot, offlineSeconds = 0, catchable, bubble = false, shaking = false, skipped = false, avatar }: Props) {
   const reduced = useReducedMotion();
   const shake = shaking && !reduced;
   const backs = Math.min(player.cardCount, maxBacks);
@@ -46,7 +50,7 @@ export function UnoSeat({ player, nickname, active, backWidth, maxBacks, timer, 
           className="absolute -top-6 right-0 text-red-200"><SkipIcon className="h-5 w-5" /></motion.span>
       ) : null}
       <div className="flex items-center gap-1.5">
-        {connected !== undefined ? <span aria-hidden="true" className={`inline-block h-2 w-2 rounded-full ${connected ? 'bg-green-500' : 'bg-stone-400'}`} /> : null}
+        <PresenceMark connected={connected} bot={bot} />
         <span data-testid="seat-tag" className={`inline-flex max-w-[5.5rem] items-center md:max-w-[7rem] rounded-full px-2.5 py-0.5 text-xs font-bold shadow-[0_2px_0_rgb(0_0_0/0.3)] ${active ? 'turn-glow bg-(--turn-tag-bg) text-(--turn-tag-ink)' : 'bg-cream-50 text-wood-800'}`}>
           {avatar ? <AvatarFace avatar={avatar} size={18} className="-my-0.5 -ml-1.5 mr-1" /> : null}
           <span className="min-w-0 truncate">{nickname}</span>
@@ -54,7 +58,7 @@ export function UnoSeat({ player, nickname, active, backWidth, maxBacks, timer, 
         {catchable ? <span data-testid="catch-badge" role="img" aria-label="우노를 안 외쳤어요" className="rounded-full bg-red-600 p-0.5 text-white"><AlertIcon className="h-3 w-3" /></span> : null}
         {timer ? <Countdown size="sm" deadline={timer.deadline} serverNow={timer.serverNow} /> : null}
       </div>
-      {connected === false ? <span className="felt-ink text-xs">연결 끊김 {offlineSeconds}초</span> : null}
+      {!bot && connected === false ? <span className="felt-ink text-xs">연결 끊김 {offlineSeconds}초</span> : null}
       <div data-uno-zone={`hand:${player.playerId}`} aria-hidden="true" className="flex" style={{ minHeight: backWidth * 1.5, minWidth: backWidth }}>
         {Array.from({ length: backs }, (_, index) => (
           <span key={index} style={{ marginLeft: index === 0 ? 0 : -backWidth * 0.62 }}><UnoCardFace card={null} width={backWidth} decorative /></span>

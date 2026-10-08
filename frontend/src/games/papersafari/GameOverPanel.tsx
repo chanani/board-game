@@ -1,3 +1,4 @@
+import { PracticeNote } from '../../table/PracticeNote';
 import { motion, useReducedMotion } from 'motion/react';
 import { useEffect, useState } from 'react';
 import type { BoardView, PaperSafariView, PlayerResultView, Room } from '../../api/types';
@@ -123,6 +124,7 @@ export function GameOverPanel({ game, room, meId, nicknameOf, onReady, onClose, 
               </Felt>
             ))}
           </div>
+          <PracticeNote room={room} />
           <div className="flex flex-wrap items-center justify-between gap-3">
             <ReadyChips members={room.members} />
             <div className="ml-auto">
