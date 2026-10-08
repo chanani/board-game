@@ -7,10 +7,10 @@ import { HandAnchor, Seat, type SeatSize } from './Seat';
 import { SpectatorNotice } from '../../../table/SpectatorNotice';
 import { seatRows } from '../../../table/seats';
 import type { PaperSafariTableProps } from '../PaperSafariTable';
-import { pcSeatPlan } from './pcSeatPlan';
+import { pcSeatPlan, ringSeats } from './pcSeatPlan';
 
 /**
- * pc: 큰 둥근 테이블(PC·태블릿). 내 자리가 있으면 상대 한 줄 + 덱·내 판 한 줄(pcSeatPlan), 관전자는 위·가운데 줄 둥근 배치.
+ * pc: 큰 둥근 테이블(PC·태블릿). 내 자리가 있으면 덱을 테이블 가운데 두고 상대가 위·양옆에 둘러앉는 배치(pcSeatPlan), 관전자는 위·가운데 줄 둥근 배치.
  * landscape: 휴대폰을 눕힌 낮은 화면. 상대는 모두 맞은편 한 줄(양 끝은 조금 아래), 덱·내 판·내 옆 칸은 아래 한 줄.
  * mini: 세로 휴대폰용 가장 작은 테이블. landscape·mini는 상대 카드 폭 28px, 예상 점수는 크게 보기에서만.
  */
@@ -54,15 +54,11 @@ export function TableRound({ density = 'pc', ...props }: Props) {
   const rows = seatRows(opponents.length);
   const style = DENSITY[density];
   const pc = density === 'pc';
-  // PC는 내 자리가 있으면 덱을 내 판 옆에 두고 상대를 한 줄에 앉혀 한 화면(1280x860)에 들어가게 한다.
+  // PC는 내 자리가 있으면 덱을 상대들과 내 판 사이 가운데에 두고, 한 화면(1280x860)에 들어가게 판 크기를 pcSeatPlan이 고른다.
   const plan = pc ? pcSeatPlan(opponents.length, Boolean(myBoard)) : null;
-  const arc = density === 'landscape' || plan?.arrangement === 'arc';
   const opponentSize = plan?.opponent ?? style.opponent;
+  const meSize = plan?.me ?? style.me;
   const handOverlay = plan ? plan.handOverlay : true;
-  const lowered = plan ? plan.lowered : 'pt-6';
-  const topGap = plan?.gap ?? style.top;
-  // 한 줄 배치의 PC 펠트는 justify-between으로 두 줄을 위아래로 벌리므로 내 줄 위 여백을 작게 둔다.
-  const arcMyRow = pc ? 'mt-2' : style.myRow;
   const opponentSeat = (index: number | null) => {
     const board: BoardView | undefined = index === null ? undefined : opponents[index];
     if (!board) {
@@ -77,37 +73,65 @@ export function TableRound({ density = 'pc', ...props }: Props) {
   };
   const mySeat = myBoard ? (
     <Seat board={myBoard} nickname={`${nicknameOf(meId)} (나)`} active={myTurn} turnRing={myTurn} hand="none" timer={timerFor(meId)}
-      held={round.held} size={style.me} presence={{ avatar: presenceOf(meId).avatar }} handLabel="들고 있는 카드" onSlotClick={clickSlot} canClick={canClickSlot} pulseSlots={myTurn} />
+      held={round.held} size={meSize} presence={{ avatar: presenceOf(meId).avatar }} handLabel="들고 있는 카드" onSlotClick={clickSlot} canClick={canClickSlot} pulseSlots={myTurn} />
   ) : null;
   const mySide = myBoard ? (
     <MySide canDiscard={canDiscard} canUndo={canUndo} estimate={estimate}
-      hand={<HandAnchor board={myBoard} held={round.held} size={style.me} handLabel="들고 있는 카드" />}
+      hand={<HandAnchor board={myBoard} held={round.held} size={meSize} handLabel="들고 있는 카드" />}
       onDiscard={() => send({ type: 'DISCARD' })} onUndo={() => send({ type: 'CANCEL_DRAW' })} />
   ) : null;
   const piles = (
-    <CenterPiles deckSize={round.deckSize} discardTop={round.discardTop} drawable={drawable} size={style.piles}
+    <CenterPiles deckSize={round.deckSize} discardTop={round.discardTop} drawable={drawable} size={plan?.piles ?? style.piles}
       onDrawDeck={() => send({ type: 'DRAW_DECK' })} onDrawDiscard={() => send({ type: 'DRAW_DISCARD' })} />
   );
   const sideBox = (width: string) => (mySide ? <div className={`flex ${width} shrink-0`}>{mySide}</div> : null);
 
-  // 한 줄 배치(눕힌 휴대폰, 내 자리가 있는 PC): 상대는 모두 맞은편 한 줄(양 끝은 조금 아래로 둘러앉은 느낌), 덱·내 판·내 옆 칸은 아래 한 줄.
-  const arcRows = (
+  // 눕힌 휴대폰: 높이가 낮아 상대는 모두 맞은편 한 줄(양 끝은 조금 아래로 둘러앉은 느낌), 덱·내 판·내 옆 칸은 아래 한 줄.
+  const landscapeRows = (
     <>
-      <div data-testid="opponent-row" className={`flex items-start justify-center ${topGap}`}>
-        <div className={lowered}>{opponentSeat(rows.left)}</div>
+      <div data-testid="opponent-row" className={`flex items-start justify-center ${style.top}`}>
+        <div className="pt-6">{opponentSeat(rows.left)}</div>
         {rows.top.map(opponentSeat)}
-        <div className={lowered}>{opponentSeat(rows.right)}</div>
+        <div className="pt-6">{opponentSeat(rows.right)}</div>
       </div>
-      <div data-testid="my-row" className={`${arcMyRow} flex items-center justify-center ${pc ? 'gap-6' : 'gap-4'}`}>
+      <div data-testid="my-row" className={`${style.myRow} flex items-center justify-center gap-4`}>
         {piles}
-        {pc && mySeat ? <div className={`transition-transform duration-300 ${myTurn ? '-translate-y-2' : ''}`}>{mySeat}</div> : (mySeat ?? <SpectatorNotice />)}
-        {sideBox(pc ? 'w-36' : 'w-28')}
+        {mySeat ?? <SpectatorNotice />}
+        {sideBox('w-28')}
       </div>
     </>
   );
 
-  // 그 밖의 배치: 위 줄 · 가운데 줄(왼쪽 상대, 덱, 오른쪽 상대) · 내 줄.
-  // 덱·버린 카드 묶음과 내 판 사이는 PC에서 32px 이상(mt-8 + gap-4, 내 차례에 판이 8px 떠올라도 40px) 띄운다.
+  // PC 내 줄: 내 판은 가운데, 버리기·손 칸·예상 점수는 오른쪽 칸. 내 차례에는 판이 8px 떠오른다.
+  const pcMyRow = (spacing: string) => (
+    <div data-testid="my-row" className={`${spacing} grid grid-cols-[1fr_auto_1fr] items-end gap-4`}>
+      <div />
+      {mySeat ? <div className={`transition-transform duration-300 ${myTurn ? '-translate-y-2' : ''}`}>{mySeat}</div> : <SpectatorNotice />}
+      {mySide ? <div className="flex w-36 self-center justify-self-start">{mySide}</div> : <div />}
+    </div>
+  );
+
+  // 내 자리가 있는 PC: 가운데 칸(위 상대 줄, 그 아래 덱·버린 카드) 양옆에 왼쪽·오른쪽 상대, 맨 아래 내 판.
+  // 덱·버린 카드가 상대들과 내 판 사이, 테이블 가로 가운데에 온다.
+  const ring = ringSeats(rows);
+  const ringRows = (
+    <>
+      <div data-testid="opponent-ring" className="grid grid-cols-[1fr_auto_1fr] items-center gap-x-10">
+        <div className="justify-self-end">{opponentSeat(ring.left)}</div>
+        <div data-testid="table-center" className="flex flex-col items-center gap-2">
+          {ring.top.length > 0 ? (
+            <div data-testid="opponent-row" className="flex items-start justify-center gap-6">{ring.top.map(opponentSeat)}</div>
+          ) : null}
+          {piles}
+        </div>
+        <div className="justify-self-start">{opponentSeat(ring.right)}</div>
+      </div>
+      {pcMyRow('')}
+    </>
+  );
+
+  // 그 밖의 배치(PC 관전자, 세로 휴대폰): 위 줄 · 가운데 줄(왼쪽 상대, 덱, 오른쪽 상대) · 내 줄.
+  // 덱·버린 카드 묶음과 내 줄 사이는 PC에서 32px 이상(mt-8 + gap-4) 띄운다.
   const roundRows = (
     <>
       {rows.top.length > 0 ? (
@@ -118,13 +142,7 @@ export function TableRound({ density = 'pc', ...props }: Props) {
         {piles}
         <div className="justify-self-end">{opponentSeat(rows.right)}</div>
       </div>
-      {pc ? (
-        <div data-testid="my-row" className={`${style.myRow} grid grid-cols-[1fr_auto_1fr] items-end gap-4`}>
-          <div />
-          {mySeat ? <div className={`transition-transform duration-300 ${myTurn ? '-translate-y-2' : ''}`}>{mySeat}</div> : <SpectatorNotice />}
-          {mySide ? <div className="flex w-36 self-center justify-self-start">{mySide}</div> : <div />}
-        </div>
-      ) : (
+      {pc ? pcMyRow(style.myRow) : (
         <div data-testid="my-row" className={`${style.myRow} flex w-full items-start justify-center gap-2`}>
           {mySeat ?? <SpectatorNotice />}
           {sideBox('w-28')}
@@ -133,10 +151,17 @@ export function TableRound({ density = 'pc', ...props }: Props) {
     </>
   );
 
+  const layoutRows = () => {
+    if (density === 'landscape') {
+      return landscapeRows;
+    }
+    return plan?.arrangement === 'ring' ? ringRows : roundRows;
+  };
+
   return (
     <div data-testid="table-round" data-density={density} className="space-y-3">
       <Felt shape="oval" className={`mx-auto flex w-full flex-col ${style.felt}`}>
-        {arc ? arcRows : roundRows}
+        {layoutRows()}
       </Felt>
     </div>
   );

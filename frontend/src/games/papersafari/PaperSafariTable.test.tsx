@@ -308,22 +308,34 @@ describe('게임 화면 다듬기', () => {
     expect(bar).not.toHaveClass('text-sm');
   });
 
-  it('PC 차례 안내 바는 테이블과 16px 넘게(나무 테두리 13px 포함 mb-8) 띄우고, 덱 묶음은 내 판 옆(같은 줄)에 둔다', () => {
+  it('PC 차례 안내 바는 테이블과 16px 넘게(나무 테두리 13px 포함 mb-8) 띄우고, 덱 묶음은 내 줄이 아니라 테이블 가운데 칸(상대 아래)에 둔다', () => {
     setMediaMatches(true);
     render(<PaperSafariTable {...baseProps(build({ phase: 'DRAW', current: ME }))} />);
     expect(screen.getByTestId('turn-bar')).toHaveClass('mb-8');
-    expect(within(screen.getByTestId('my-row')).getByRole('button', { name: '덱에서 뽑기' })).toBeInTheDocument();
+    expect(within(screen.getByTestId('my-row')).queryByRole('button', { name: '덱에서 뽑기' })).not.toBeInTheDocument();
+    const center = screen.getByTestId('table-center');
+    expect(within(center).getByRole('button', { name: '덱에서 뽑기' })).toBeInTheDocument();
+    expect(within(center).getByTestId('opponent-row')).toBeInTheDocument();
   });
 
-  it('PC에서 상대 4명(5인)은 맞은편 한 줄에 작은 판(xs)으로 앉고, 양 끝 자리는 아래로 내려 앉는다', () => {
+  it('PC에서 상대 4명(5인)은 가운데 칸 위에 둘, 양옆에 하나씩 작은 판(xs)으로 앉고 내 판은 한 단계(md) 줄인다', () => {
     setMediaMatches(true);
     render(<PaperSafariTable {...baseProps(withOpponents(4))} />);
-    const row = screen.getByTestId('opponent-row');
-    const seats = within(row).getAllByTestId('opponent-seat');
-    expect(seats).toHaveLength(4);
-    within(seats[1]).getAllByRole('button', { name: '뒷면 카드' }).forEach((card) => expect(card).toHaveClass('w-10'));
-    expect(seats[0].parentElement).toHaveClass('pt-12');
-    expect(seats[3].parentElement).toHaveClass('pt-12');
+    const ring = screen.getByTestId('opponent-ring');
+    expect(within(ring).getAllByTestId('opponent-seat')).toHaveLength(4);
+    const top = within(screen.getByTestId('opponent-row')).getAllByTestId('opponent-seat');
+    expect(top).toHaveLength(2);
+    within(top[0]).getAllByRole('button', { name: '뒷면 카드' }).forEach((card) => expect(card).toHaveClass('w-10'));
+    mySlotButtons().forEach((button) => expect(button).toHaveClass('w-16'));
+  });
+
+  it('PC에서 상대 2명(3인)은 덱 양옆에 보통 크기 판으로 앉고 내 판도 큰 판(lg)이다', () => {
+    setMediaMatches(true);
+    render(<PaperSafariTable {...baseProps(withOpponents(2))} />);
+    expect(screen.queryByTestId('opponent-row')).not.toBeInTheDocument();
+    const seats = within(screen.getByTestId('opponent-ring')).getAllByTestId('opponent-seat');
+    expect(seats).toHaveLength(2);
+    within(seats[0]).getAllByRole('button', { name: '뒷면 카드' }).forEach((card) => expect(card).toHaveClass('w-12'));
     mySlotButtons().forEach((button) => expect(button).toHaveClass('w-20'));
   });
 
@@ -331,6 +343,7 @@ describe('게임 화면 다듬기', () => {
     setMediaMatches(true);
     const view = withOpponents(4);
     render(<PaperSafariTable {...baseProps(view)} meId={999} />);
+    expect(screen.queryByTestId('opponent-ring')).not.toBeInTheDocument();
     expect(screen.queryByTestId('opponent-row')).not.toBeInTheDocument();
     const piles = screen.getByRole('button', { name: '덱에서 뽑기' }).closest('.grid') as HTMLElement;
     expect(within(piles).getAllByTestId('opponent-seat')).toHaveLength(2);
