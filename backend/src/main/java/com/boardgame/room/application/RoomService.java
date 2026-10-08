@@ -9,6 +9,7 @@ import com.boardgame.game.GameSessionFactories;
 import com.boardgame.game.GameType;
 import com.boardgame.game.event.GameStartedEvent;
 import com.boardgame.game.bot.BotDifficulty;
+import com.boardgame.game.bot.BotStep;
 import com.boardgame.member.domain.Avatar;
 import com.boardgame.member.domain.AvatarBook;
 import com.boardgame.room.api.BotDifficultyRequest;
@@ -51,6 +52,7 @@ import java.util.stream.Stream;
 import java.time.Instant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -74,12 +76,22 @@ public class RoomService {
     private final TurnTimer turnTimer;
     private final Random random;
     private final RoomAvatars avatars;
+    private final BotDriver bots;
 
     public RoomService(RoomRegistry registry, RoomCodeGenerator codeGenerator, GameSessionFactories sessionFactories,
                        RoomNotifier notifier, OutcomePublisher outcomePublisher,
                        ApplicationEventPublisher eventPublisher, Clock clock, PresenceTracker presence,
+                       RoomPasswordHasher hasher, TurnTimer turnTimer, Random random, RoomAvatars avatars) {
+        this(registry, codeGenerator, sessionFactories, notifier, outcomePublisher, eventPublisher, clock, presence,
+                hasher, turnTimer, random, avatars, BotDriver.idle());
+    }
+
+    @Autowired
+    public RoomService(RoomRegistry registry, RoomCodeGenerator codeGenerator, GameSessionFactories sessionFactories,
+                       RoomNotifier notifier, OutcomePublisher outcomePublisher,
+                       ApplicationEventPublisher eventPublisher, Clock clock, PresenceTracker presence,
                        RoomPasswordHasher hasher, TurnTimer turnTimer,
-                       @Qualifier(TurnTimerConfig.RANDOM) Random random, RoomAvatars avatars) {
+                       @Qualifier(TurnTimerConfig.RANDOM) Random random, RoomAvatars avatars, BotDriver bots) {
         this.registry = registry;
         this.codeGenerator = codeGenerator;
         this.sessionFactories = sessionFactories;
@@ -92,6 +104,7 @@ public class RoomService {
         this.turnTimer = turnTimer;
         this.random = random;
         this.avatars = avatars;
+        this.bots = bots;
     }
 
     // 비밀번호 해시(BCrypt)와 프로필 그림(DB)은 느리므로 서비스 전체 잠금 밖에서 먼저 만든다.
@@ -185,6 +198,7 @@ public class RoomService {
     private void saveAndNotifyClosed(Room room) {
         registry.save(room);
         if (!registry.exists(room.code())) {
+            bots.forget(room.code());
             eventPublisher.publishEvent(new RoomClosedEvent(room.codeValue()));
         }
     }
@@ -272,7 +286,11 @@ public class RoomService {
     }
 
     public synchronized void act(String rawCode, long memberId, GameAction action) {
-        Room room = find(rawCode);
+        applyAct(find(rawCode), memberId, action);
+    }
+
+    // R17: 사람과 컴퓨터가 같은 경로(검증 → 저장 → 타이머 → 방송 → 결과 발행)를 탄다.
+    private void applyAct(Room room, long memberId, GameAction action) {
         List<Long> before = room.memberIds();
         List<GameOutcome> outcomes = room.act(memberId, action);
         baselineNewcomers(room, before);
@@ -280,6 +298,44 @@ public class RoomService {
         rearm(room);
         broadcast(room);
         outcomePublisher.publish(room, outcomes, clock.instant());
+    }
+
+    // R20: 예약 스레드에서 들어온다. 같은 잠금 안에서 상태 번호가 최신일 때만 그 컴퓨터의 걸음을 한다.
+    private synchronized void runBot(BotTicket ticket) {
+        registry.find(ticket.code())
+                .filter(room -> bots.isCurrent(room, ticket))
+                .ifPresent(room -> runBotStep(room, ticket));
+    }
+
+    private void runBotStep(Room room, BotTicket ticket) {
+        BotStep step = ticket.step();
+        if (step.isSignal()) {
+            signal(room, ticket.botId(), step.action());
+            bots.continueWith(ticket, this::runBot);
+            return;
+        }
+        actAsBot(room, ticket.botId(), step.action());
+    }
+
+    // R21: 서버가 거절하면 기록하고 기존 자동 행동과 같은 결정을 한 번 시도한다.
+    private void actAsBot(Room room, long botId, GameAction action) {
+        try {
+            applyAct(room, botId, action);
+        } catch (RuntimeException exception) {
+            log.warn("컴퓨터 행동 거절, 자동 행동으로 대신한다: room={}, bot={}, action={}", room.codeValue(), botId,
+                    action, exception);
+            fallbackAct(room, botId);
+        }
+    }
+
+    // R21: 그래도 안 되면 결정 시간이 끝날 때 기존 시간 초과 처리가 진행시킨다.
+    private void fallbackAct(Room room, long botId) {
+        try {
+            bots.fallback(room, botId)
+                    .ifPresent(action -> applyAct(room, botId, action));
+        } catch (RuntimeException exception) {
+            log.warn("컴퓨터 자동 행동도 실패, 시간 초과 처리에 맡긴다: room={}, bot={}", room.codeValue(), botId, exception);
+        }
     }
 
     // D3: 신호는 방 정보·화면을 다시 보내지 않고, 타이머도 다시 걸지 않는다. D15: 방이 이미 없으면 조용히 버린다.
@@ -516,6 +572,7 @@ public class RoomService {
         RoomResponse response = response(room);
         notifier.roomUpdated(response);
         room.humanOccupantIds().forEach(memberId -> sendView(room, memberId));
+        bots.afterChange(room, this::runBot);
         return response;
     }
 
