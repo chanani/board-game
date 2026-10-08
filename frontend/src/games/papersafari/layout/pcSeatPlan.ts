@@ -1,38 +1,43 @@
+import type { SeatRows } from '../../../table/seats';
+import type { PileSize } from './CenterPiles';
 import type { SeatSize } from './Seat';
 
 /**
- * PC 테이블에서 상대 판을 어떻게 앉힐지.
- * arc: 상대는 모두 맞은편 한 줄(양옆 자리는 lowered만큼 아래로), 덱·내 판·내 옆 칸은 아래 한 줄.
+ * PC 테이블에서 자리를 어떻게 앉힐지.
+ * ring: 가운데 칸(위 상대 줄, 그 아래 덱·버린 카드) 양옆에 왼쪽·오른쪽 상대, 맨 아래 내 판. 덱이 상대와 내 판 사이 테이블 가운데에 온다.
  * round: 위 줄 · 가운데 줄(왼쪽 상대, 덱, 오른쪽 상대) · 내 줄. 내 판이 없는 관전자만 쓴다.
  */
 export type PcSeatPlan = {
-  arrangement: 'arc' | 'round';
+  arrangement: 'ring' | 'round';
   opponent: SeatSize;
+  me: SeatSize;
+  piles: PileSize;
   /** 들고 있는 카드를 판 옆이 아니라 판 위에 겹쳐 자리 폭을 판 폭으로 줄인다. */
   handOverlay: boolean;
-  /** arc에서 양 끝(왼쪽·오른쪽) 자리를 내리는 위 여백. 타원 모서리 밖으로 판이 나가지 않게 한다. */
-  lowered: string;
-  /** 상대 줄의 자리 사이 간격. */
-  gap: string;
 };
 
-const ROUND: PcSeatPlan = { arrangement: 'round', opponent: 'sm', handOverlay: false, lowered: '', gap: 'gap-12' };
+const ROUND: PcSeatPlan = { arrangement: 'round', opponent: 'sm', me: 'lg', piles: 'md', handOverlay: false };
 
 /**
- * 1280x860 PC 화면은 상태 바·차례 안내 아래 테이블에 약 590px 높이만 남는다.
- * 내 판(lg, 278px)과 상대 판(sm, 208px)에 덱 줄까지 세로로 쌓으면 넘치므로, 내 자리가 있으면 덱을 내 판 옆에 두고
- * 상대를 한 줄에 앉힌다. 한 줄에 셋이면 손 카드를 판 위에 겹치고, 넷이면 판을 한 단계(xs) 줄여 펠트 폭 안에 넣는다.
+ * 1280x860 PC 화면은 상태 바·차례 안내 아래 펠트 안쪽에 약 545px 높이만 남는다.
+ * 상대가 양옆에만 앉으면(3인) 덱이 그 사이에 들어가 보통 크기(상대 sm 208px, 내 판 lg 278px)로 들어간다.
+ * 가운데 칸에 위 상대가 있으면 위 상대(xs 184px) · 덱(sm 93px) · 내 판(md 234px)을 세로로 쌓아야 해서 한 단계씩 줄인다.
  * 관전자는 내 판이 없어 기존 둥근 배치로도 들어간다.
  */
 export function pcSeatPlan(opponentCount: number, seated: boolean): PcSeatPlan {
   if (!seated) {
     return ROUND;
   }
-  if (opponentCount <= 2) {
-    return { arrangement: 'arc', opponent: 'sm', handOverlay: false, lowered: '', gap: 'gap-12' };
+  if (opponentCount === 2) {
+    return { arrangement: 'ring', opponent: 'sm', me: 'lg', piles: 'md', handOverlay: false };
   }
-  if (opponentCount === 3) {
-    return { arrangement: 'arc', opponent: 'sm', handOverlay: true, lowered: 'pt-10', gap: 'gap-6' };
+  return { arrangement: 'ring', opponent: 'xs', me: 'md', piles: 'sm', handOverlay: true };
+}
+
+/** ring 배치의 자리: 위 왼쪽·위 오른쪽 둘만 있으면(3인) 양옆으로 옮겨 덱을 가운데 두고 둘러앉게 한다. */
+export function ringSeats(rows: SeatRows): SeatRows {
+  if (rows.left !== null || rows.top.length !== 2) {
+    return rows;
   }
-  return { arrangement: 'arc', opponent: 'xs', handOverlay: true, lowered: 'pt-12', gap: 'gap-4' };
+  return { top: [], left: rows.top[0], right: rows.top[1] };
 }
