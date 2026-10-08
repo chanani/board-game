@@ -1,6 +1,6 @@
 import { motion, useAnimate, useReducedMotion } from 'motion/react';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import type { Room, RoomMember } from '../api/types';
+import type { Room } from '../api/types';
 import { BinocularsIcon } from '../components/icons';
 import { Button } from '../components/ui';
 
@@ -16,7 +16,11 @@ type Props = {
 
 const MAIN_BUTTON = 'shrink-0 px-4 py-2 sm:px-5 sm:py-2.5 sm:text-base';
 
-function startBlocker(members: RoomMember[]): string | null {
+function startBlocker(room: Room): string | null {
+  const { members } = room;
+  if (room.startsAt) {
+    return '곧 게임이 시작돼요';
+  }
   if (members.length < 2) {
     return '2명 이상 모여야 해요';
   }
@@ -49,7 +53,7 @@ function Status({ children }: { children: ReactNode }) {
 
 function ActionContent({ room, meId, spectating, onStart, onReady, onSeat }: Props) {
   if (spectating) {
-    const canSeat = room.status === 'WAITING' && room.members.length < room.maxPlayers;
+    const canSeat = room.status === 'WAITING' && !room.startsAt && room.members.length < room.maxPlayers;
     return (
       <>
         <Status><BinocularsIcon /> <b>관전 중</b> <span>· {room.status === 'WAITING' ? '자리가 나면 앉을 수 있어요' : '게임이 끝나면 자동으로 참가해요'}</span></Status>
@@ -62,7 +66,7 @@ function ActionContent({ room, meId, spectating, onStart, onReady, onSeat }: Pro
     return null;
   }
   if (me.host) {
-    const blocker = startBlocker(room.members);
+    const blocker = startBlocker(room);
     const reasonId = 'start-blocker-reason';
     return (
       <>
@@ -72,10 +76,11 @@ function ActionContent({ room, meId, spectating, onStart, onReady, onSeat }: Pro
       </>
     );
   }
-  return <ReadyButton ready={me.ready} onReady={onReady} />;
+  return <ReadyButton ready={me.ready} onReady={onReady} locked={Boolean(room.startsAt)} />;
 }
 
-function ReadyButton({ ready, onReady }: { ready: boolean; onReady: (ready: boolean) => unknown }) {
+// locked: 시작 카운트다운 중에는 준비를 바꿀 수 없다.
+function ReadyButton({ ready, onReady, locked = false }: { ready: boolean; onReady: (ready: boolean) => unknown; locked?: boolean }) {
   const [pending, setPending] = useState(false);
   // 요청이 끝나기 전에 다시 눌러 준비·취소가 엇갈려 가지 않게 잠근다.
   const toggle = async () => {
@@ -106,7 +111,7 @@ function ReadyButton({ ready, onReady }: { ready: boolean; onReady: (ready: bool
   }, [ready, reduceMotion, animate, scope]);
   return (
     <div ref={scope} className="inline-flex">
-      <Button variant={ready ? 'muted' : 'primary'} onClick={toggle} disabled={pending}
+      <Button variant={ready ? 'muted' : 'primary'} onClick={toggle} disabled={pending || locked}
         className={`${MAIN_BUTTON} transition-colors duration-300`}>
         <span className="inline-flex items-center gap-1.5">
           {ready ? <ReadyCheck animated={entrance} /> : null}

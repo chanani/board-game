@@ -79,6 +79,7 @@ public class RoomService {
     private final RoomAvatars avatars;
     private final BotDriver bots;
     private final PlayOrder playOrder;
+    private final StartCountdown countdown;
 
     public RoomService(RoomRegistry registry, RoomCodeGenerator codeGenerator, GameSessionFactories sessionFactories,
                        RoomNotifier notifier, OutcomePublisher outcomePublisher,
@@ -97,13 +98,22 @@ public class RoomService {
                 hasher, turnTimer, random, avatars, bots, PlayOrder.SEATED);
     }
 
+    public RoomService(RoomRegistry registry, RoomCodeGenerator codeGenerator, GameSessionFactories sessionFactories,
+                       RoomNotifier notifier, OutcomePublisher outcomePublisher,
+                       ApplicationEventPublisher eventPublisher, Clock clock, PresenceTracker presence,
+                       RoomPasswordHasher hasher, TurnTimer turnTimer, Random random, RoomAvatars avatars,
+                       BotDriver bots, PlayOrder playOrder) {
+        this(registry, codeGenerator, sessionFactories, notifier, outcomePublisher, eventPublisher, clock, presence,
+                hasher, turnTimer, random, avatars, bots, playOrder, StartCountdown.immediate());
+    }
+
     @Autowired
     public RoomService(RoomRegistry registry, RoomCodeGenerator codeGenerator, GameSessionFactories sessionFactories,
                        RoomNotifier notifier, OutcomePublisher outcomePublisher,
                        ApplicationEventPublisher eventPublisher, Clock clock, PresenceTracker presence,
                        RoomPasswordHasher hasher, TurnTimer turnTimer,
                        @Qualifier(TurnTimerConfig.RANDOM) Random random, RoomAvatars avatars, BotDriver bots,
-                       PlayOrder playOrder) {
+                       PlayOrder playOrder, StartCountdown countdown) {
         this.registry = registry;
         this.codeGenerator = codeGenerator;
         this.sessionFactories = sessionFactories;
@@ -118,6 +128,7 @@ public class RoomService {
         this.avatars = avatars;
         this.bots = bots;
         this.playOrder = playOrder;
+        this.countdown = countdown;
     }
 
     // 비밀번호 해시(BCrypt)와 프로필 그림(DB)은 느리므로 서비스 전체 잠금 밖에서 먼저 만든다.
@@ -267,10 +278,29 @@ public class RoomService {
         return broadcast(room);
     }
 
+    // 방장이 시작을 누르면 방 안 모두가 3-2-1 카운트다운을 본 뒤 게임이 시작된다. 그동안 게임이 없으므로 타이머·컴퓨터도 쉰다.
     public synchronized RoomResponse start(String rawCode, long memberId) {
         Room room = find(rawCode);
+        Instant startsAt = countdown.startsAt(clock.instant());
+        room.scheduleStart(memberId, startsAt);
+        if (countdown.isImmediate()) {
+            return kickOff(room);
+        }
+        RoomCode code = room.code();
+        countdown.schedule(startsAt, () -> kickOffIfStillStarting(code, startsAt));
+        return broadcast(room);
+    }
+
+    // 예약 스레드에서 들어온다. 카운트다운 중에 참가자가 나가 취소됐거나 방이 사라졌으면 아무것도 하지 않는다.
+    private synchronized void kickOffIfStillStarting(RoomCode code, Instant startsAt) {
+        registry.find(code)
+                .filter(room -> room.isStartingAt(startsAt))
+                .ifPresent(this::kickOff);
+    }
+
+    private RoomResponse kickOff(Room room) {
         GameType gameType = room.gameType();
-        RoomGame game = room.start(memberId,
+        RoomGame game = room.kickOff(
                 memberIds -> sessionFactories.create(gameType, playOrder.arrange(memberIds)),
                 UUID.randomUUID().toString(), clock.instant());
         presence.baseline(room.humanIds(), clock.instant());

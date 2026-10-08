@@ -27,6 +27,7 @@ public enum ErrorCode {
     NOT_ENOUGH_PLAYERS(HttpStatus.CONFLICT, "인원이 부족해 시작할 수 없습니다."),
     ROOM_ALREADY_PLAYING(HttpStatus.CONFLICT, "이미 게임이 진행 중인 방입니다."),
     GAME_NOT_STARTED(HttpStatus.CONFLICT, "게임이 시작되지 않았습니다."),
+    GAME_STARTING(HttpStatus.CONFLICT, "곧 게임이 시작돼요. 잠시 뒤에 다시 시도해 주세요."),
     INVALID_THEME(HttpStatus.BAD_REQUEST, "지원하지 않는 테마예요."),
     INVALID_ROOM_NAME(HttpStatus.BAD_REQUEST, "방 이름은 1~20자로 입력해 주세요."),
     FORFEIT_NOT_ALLOWED_YET(HttpStatus.CONFLICT, "연결이 끊긴 지 60초가 지나야 기권 처리할 수 있습니다."),

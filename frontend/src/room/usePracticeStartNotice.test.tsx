@@ -30,6 +30,17 @@ describe('usePracticeStartNotice', () => {
     expect(screen.getByText(PRACTICE_START_MESSAGE)).toBeTruthy();
   });
 
+  it('시작 카운트다운 중에는 알리지 않고, 카운트다운이 끝나 게임이 시작될 때 알린다', () => {
+    const counting = { ...roomOf('WAITING', [human, bot]), startsAt: 3000, serverNow: 0 };
+    const view = renderWith(roomOf('WAITING', [human, bot]));
+
+    view.rerender(<ToastProvider><Probe room={counting} /></ToastProvider>);
+    expect(screen.queryByText(PRACTICE_START_MESSAGE)).toBeNull();
+
+    view.rerender(<ToastProvider><Probe room={roomOf('PLAYING', [human, bot])} /></ToastProvider>);
+    expect(screen.getByText(PRACTICE_START_MESSAGE)).toBeTruthy();
+  });
+
   it('사람끼리 시작한 게임에는 알리지 않는다', () => {
     const other: RoomMember = { ...human, id: 2, host: false };
     const view = renderWith(roomOf('WAITING', [human, other]));

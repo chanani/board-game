@@ -12,7 +12,7 @@ import java.util.List;
 
 public record RoomResponse(String code, String name, GameType gameType, String gameTypeName, RoomStatus status,
                            long hostId, int maxPlayers, boolean locked, RoomTheme theme, List<RoomMemberResponse> members,
-                           List<RoomSpectatorResponse> spectators, boolean practice) {
+                           List<RoomSpectatorResponse> spectators, boolean practice, Long startsAt, long serverNow) {
 
     public static RoomResponse from(Room room, PresenceTracker presence, Instant now, AvatarBook avatars) {
         long hostId = room.hostId();
@@ -25,7 +25,14 @@ public record RoomResponse(String code, String name, GameType gameType, String g
         GameType gameType = room.gameType();
         return new RoomResponse(room.codeValue(), room.nameValue(), gameType, gameType.displayName(),
                 room.status(), hostId, room.capacity(), room.isLocked(), room.theme(), members, spectators,
-                room.isPractice());
+                room.isPractice(), startsAtOf(room), now.toEpochMilli());
+    }
+
+    // 게임 시작 카운트다운 중이면 시작 시각(epoch ms). 화면은 serverNow를 빼서 남은 시간을 잰다.
+    private static Long startsAtOf(Room room) {
+        return room.startsAt()
+                .map(Instant::toEpochMilli)
+                .orElse(null);
     }
 
     private static RoomMemberResponse member(Participant participant, long hostId, List<Long> readyIds,

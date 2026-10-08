@@ -20,6 +20,7 @@ public class Room {
     private RoomProfile profile;
     private final RoomOccupants occupants;
     private RoomGame game;
+    private Kickoff kickoff = Kickoff.none();
 
     private Room(RoomProfile profile, RoomOccupants occupants) {
         this.profile = profile;
@@ -95,6 +96,8 @@ public class Room {
         occupants.requirePlayer(memberId);
         boolean wasPlaying = status() == RoomStatus.PLAYING;
         List<GameOutcome> outcomes = forfeitIfPlaying(memberId);
+        // 카운트다운 중에 참가자가 나가면 시작을 취소한다. 남은 사람끼리 다시 시작할 수 있다.
+        kickoff = Kickoff.none();
         occupants.removePlayer(memberId);
         recordDeparture(memberId);
         settleIfJustFinished(wasPlaying);
@@ -147,8 +150,15 @@ public class Room {
         occupants.seatWaitingSpectators(capacity);
     }
 
+    /** 카운트다운 없이 바로 시작한다. */
     public RoomGame start(long requesterId, Function<List<Long>, GameSession> sessionCreator,
                           String matchKey, Instant startedAt) {
+        scheduleStart(requesterId, startedAt);
+        return kickOff(sessionCreator, matchKey, startedAt);
+    }
+
+    /** 방장이 시작을 누른다. startsAt까지 카운트다운하는 동안 방은 대기실 그대로 잠기고, 참가자가 나가면 취소된다. */
+    public void scheduleStart(long requesterId, Instant startsAt) {
         requireHost(requesterId);
         requireWaiting();
         if (occupants.playerCount() < gameType().minPlayers()) {
@@ -157,10 +167,29 @@ public class Room {
         if (!occupants.everyGuestReady()) {
             throw new BusinessException(ErrorCode.PLAYERS_NOT_READY);
         }
+        kickoff = Kickoff.at(startsAt);
+    }
+
+    /** 카운트다운이 끝나 게임을 만든다. 카운트다운 중에는 사람이 바뀌지 않으므로 시작 때 확인한 그대로다. */
+    public RoomGame kickOff(Function<List<Long>, GameSession> sessionCreator, String matchKey, Instant startedAt) {
+        if (!kickoff.isPending()) {
+            throw new BusinessException(ErrorCode.GAME_NOT_STARTED);
+        }
+        kickoff = Kickoff.none();
         occupants.clearReady();
         // R37·D8: 시작 때 컴퓨터가 있으면 연습 경기로 정한다(게임 중에는 컴퓨터가 빠질 수 없어 바뀌지 않는다).
         game = new RoomGame(sessionCreator.apply(occupants.playerIds()), matchKey, startedAt, occupants.hasBots());
         return game;
+    }
+
+    /** 이 시각에 시작하기로 한 카운트다운이 아직 살아 있는지(취소·다시 시작된 예약을 거른다). */
+    public boolean isStartingAt(Instant startsAt) {
+        return kickoff.isAt(startsAt);
+    }
+
+    /** 카운트다운 중이면 게임이 시작될 시각. */
+    public Optional<Instant> startsAt() {
+        return kickoff.startsAt();
     }
 
     public List<GameOutcome> act(long memberId, GameAction action) {
@@ -399,6 +428,9 @@ public class Room {
     private void requireWaiting() {
         if (status() == RoomStatus.PLAYING) {
             throw new BusinessException(ErrorCode.ROOM_ALREADY_PLAYING);
+        }
+        if (kickoff.isPending()) {
+            throw new BusinessException(ErrorCode.GAME_STARTING);
         }
     }
 

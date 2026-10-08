@@ -24,6 +24,10 @@ export type Room = {
   theme: RoomTheme;
   /** 컴퓨터가 낀 연습 경기(전적에 넣지 않는다). */
   practice?: boolean;
+  /** 방장이 시작을 누른 뒤 카운트다운 중이면 게임이 시작될 시각(서버 시계, epoch ms). */
+  startsAt?: number | null;
+  /** 서버가 방 정보를 만든 시각(서버 시계). startsAt에서 빼서 클라이언트 시계와의 차이를 없앤다. */
+  serverNow?: number;
 };
 export type RoomSummary = {
   code: string;

@@ -16,6 +16,7 @@ import { useRoomChannel } from '../room/useRoomChannel';
 import { LeaveConfirmModal } from '../room/LeaveConfirmModal';
 import { RoomSettingsModal } from '../room/RoomSettingsModal';
 import { WaitingRoom } from '../room/WaitingRoom';
+import { StartCountdownOverlay } from '../room/StartCountdownOverlay';
 import { RoomBackdrop, RoomThemeProvider } from '../room/roomTheme';
 import { PC_QUERY, useMediaQuery } from '../lib/useMediaQuery';
 import { useTableLayout } from '../lib/useTableLayout';
@@ -217,6 +218,7 @@ export function RoomPage() {
         }}
       />
       <LeaveConfirmModal open={confirmLeave} onCancel={() => setConfirmLeave(false)} onConfirm={leave} />
+      <StartCountdownOverlay room={room} />
     </div>
     </ChatColorProvider>
     </RoomThemeProvider>

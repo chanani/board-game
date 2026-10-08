@@ -27,3 +27,6 @@ server:
 app:
   websocket:
     allowed-origin-patterns: "${APP_WEBSOCKET_ALLOWED_ORIGIN_PATTERNS:http://localhost:[*],http://127.0.0.1:[*]}"
+  # 방장이 시작을 누른 뒤 방 안 모두에게 3-2-1을 보여 주고 게임을 시작하는 시간
+  start-countdown:
+    duration: 3s

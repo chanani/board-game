@@ -32,6 +32,17 @@ describe('WaitingActionBar', () => {
     expect(screen.getByRole('button', { name: '준비 취소' }).closest('[data-testid="waiting-action-bar"]')).toHaveClass('justify-center');
   });
 
+  it('시작 카운트다운 중에는 방장의 시작 버튼과 참가자의 준비 버튼을 잠근다', () => {
+    const counting: Room = { ...room, startsAt: 3000, serverNow: 0 };
+    const host = renderBar(1, counting);
+    expect(screen.getByRole('button', { name: '게임 시작' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '게임 시작' })).toHaveAttribute('title', '곧 게임이 시작돼요');
+    host.unmount();
+
+    renderBar(2, counting);
+    expect(screen.getByRole('button', { name: '준비 취소' })).toBeDisabled();
+  });
+
   it('준비 취소는 회색 버튼이다', () => {
     renderBar(2);
 
