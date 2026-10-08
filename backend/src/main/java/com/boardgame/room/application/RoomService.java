@@ -26,6 +26,7 @@ import com.boardgame.room.api.UpdateRoomSettingsRequest;
 import com.boardgame.room.domain.Capacity;
 import com.boardgame.room.domain.GameOccupancies;
 import com.boardgame.room.domain.Participant;
+import com.boardgame.room.domain.PlayOrder;
 import com.boardgame.room.domain.Room;
 import com.boardgame.room.domain.RoomStatus;
 import com.boardgame.room.domain.RoomCode;
@@ -77,6 +78,7 @@ public class RoomService {
     private final Random random;
     private final RoomAvatars avatars;
     private final BotDriver bots;
+    private final PlayOrder playOrder;
 
     public RoomService(RoomRegistry registry, RoomCodeGenerator codeGenerator, GameSessionFactories sessionFactories,
                        RoomNotifier notifier, OutcomePublisher outcomePublisher,
@@ -86,12 +88,22 @@ public class RoomService {
                 hasher, turnTimer, random, avatars, BotDriver.idle());
     }
 
+    public RoomService(RoomRegistry registry, RoomCodeGenerator codeGenerator, GameSessionFactories sessionFactories,
+                       RoomNotifier notifier, OutcomePublisher outcomePublisher,
+                       ApplicationEventPublisher eventPublisher, Clock clock, PresenceTracker presence,
+                       RoomPasswordHasher hasher, TurnTimer turnTimer, Random random, RoomAvatars avatars,
+                       BotDriver bots) {
+        this(registry, codeGenerator, sessionFactories, notifier, outcomePublisher, eventPublisher, clock, presence,
+                hasher, turnTimer, random, avatars, bots, PlayOrder.SEATED);
+    }
+
     @Autowired
     public RoomService(RoomRegistry registry, RoomCodeGenerator codeGenerator, GameSessionFactories sessionFactories,
                        RoomNotifier notifier, OutcomePublisher outcomePublisher,
                        ApplicationEventPublisher eventPublisher, Clock clock, PresenceTracker presence,
                        RoomPasswordHasher hasher, TurnTimer turnTimer,
-                       @Qualifier(TurnTimerConfig.RANDOM) Random random, RoomAvatars avatars, BotDriver bots) {
+                       @Qualifier(TurnTimerConfig.RANDOM) Random random, RoomAvatars avatars, BotDriver bots,
+                       PlayOrder playOrder) {
         this.registry = registry;
         this.codeGenerator = codeGenerator;
         this.sessionFactories = sessionFactories;
@@ -105,6 +117,7 @@ public class RoomService {
         this.random = random;
         this.avatars = avatars;
         this.bots = bots;
+        this.playOrder = playOrder;
     }
 
     // 비밀번호 해시(BCrypt)와 프로필 그림(DB)은 느리므로 서비스 전체 잠금 밖에서 먼저 만든다.
@@ -257,7 +270,8 @@ public class RoomService {
     public synchronized RoomResponse start(String rawCode, long memberId) {
         Room room = find(rawCode);
         GameType gameType = room.gameType();
-        RoomGame game = room.start(memberId, memberIds -> sessionFactories.create(gameType, memberIds),
+        RoomGame game = room.start(memberId,
+                memberIds -> sessionFactories.create(gameType, playOrder.arrange(memberIds)),
                 UUID.randomUUID().toString(), clock.instant());
         presence.baseline(room.humanIds(), clock.instant());
         rearm(room);
