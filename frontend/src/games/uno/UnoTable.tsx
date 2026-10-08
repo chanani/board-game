@@ -1,11 +1,10 @@
 import { botOf } from '../../lib/bots';
 import { motion, useReducedMotion } from 'motion/react';
 import { roomAvatarOf } from '../../lib/avatars';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { GameEndBanner } from '../../table/GameEndBanner';
 import { Felt } from '../../components/Felt';
 import type { GameAction, UnoCard, UnoColor, UnoSessionView } from '../../api/types';
-import { useToast } from '../../components/Toast';
 import { useSound } from '../../lib/sound';
 import { offlineSecondsNow } from '../../lib/format';
 import { useTableLayout, type TableLayout } from '../../lib/useTableLayout';
@@ -14,10 +13,7 @@ import { seatOrder, seatRows } from '../../table/seats';
 import { SpectatorNotice } from '../../table/SpectatorNotice';
 import { TurnBar } from '../../table/TurnBar';
 import { COLOR_ORDER, isWild } from './cards';
-import { ChallengePrompt } from './ChallengePrompt';
-import { ChallengeReveal } from './ChallengeReveal';
 import { ColorPicker } from './ColorPicker';
-import { describeUnoEvent } from './describe';
 import { unoInstruction, useUnoSizes } from './layout';
 import { UnoActionBar } from './UnoActionBar';
 import { UnoCenter } from './UnoCenter';
@@ -40,8 +36,6 @@ const FELT: Record<TableLayout, string> = {
   landscape: 'flex-row items-center justify-center gap-3 px-[4%] py-2',
   portrait: 'flex-col gap-3 px-3 py-4',
 };
-
-const maxSeq = (events: { seq: number }[]) => events.reduce((max, event) => Math.max(max, event.seq), 0);
 
 function colorCounts(hand: UnoCard[]): Record<UnoColor, number> {
   const counts: Record<UnoColor, number> = { RED: 0, YELLOW: 0, GREEN: 0, BLUE: 0 };
@@ -68,7 +62,6 @@ export function UnoTable({ view, room, meId, log, receivedAt, now, errorSeq, nic
   useGameOverCue(liveGameEnd(game, transition), finale === 'banner' || finale === 'done', game.winnerId === meId);
   const effects = useSeatEffects(game.events);
   const reduced = useReducedMotion();
-  const toast = useToast();
   const { play } = useSound();
 
   // 보낸 뒤 화면이 바뀌거나 오류가 오기 전까지는 다시 보내지 않는다(페이퍼 사파리와 같은 패턴).
@@ -92,35 +85,6 @@ export function UnoTable({ view, room, meId, log, receivedAt, now, errorSeq, nic
     }
   }, [myTurn]);
   const counts = colorCounts(game.hand ?? []);
-
-  // 공개는 서버가 UNO_CALL·UNO_CAUGHT 묶음에도 남겨 두므로(R25) 이벤트가 아니라 reveal 자체로 한 번만 보인다.
-  const [revealClosed, setRevealClosed] = useState(false);
-  const closeReveal = useCallback(() => setRevealClosed(true), []);
-  const hasReveal = game.reveal !== null;
-  useEffect(() => {
-    if (!hasReveal) {
-      setRevealClosed(false);
-    }
-  }, [hasReveal]);
-  const showReveal = hasReveal && !revealClosed;
-  // 남의 도전 결과는 알림으로만(D10). 처음 그린 화면의 이벤트는 알리지 않는다.
-  const seenSeq = useRef(maxSeq(game.events));
-  // 이벤트 순번은 판마다 다시 시작하므로, 새 판이 시작되면 본 순번과 닫은 공개를 처음으로 되돌린다.
-  const gameStart = useRef(game.startedAt);
-  useEffect(() => {
-    if (gameStart.current !== game.startedAt) {
-      gameStart.current = game.startedAt;
-      seenSeq.current = 0;
-      setRevealClosed(false);
-    }
-  }, [game.startedAt]);
-  useEffect(() => {
-    const fresh = game.events.filter((event) => event.seq > seenSeq.current);
-    seenSeq.current = Math.max(seenSeq.current, maxSeq(game.events));
-    fresh
-      .filter((event) => event.type === 'CHALLENGE' && event.actorId !== meId)
-      .forEach((event) => describeUnoEvent(event, nicknameOf).forEach(({ text }) => toast.show(text, 'info')));
-  }, [game.events, meId, nicknameOf, toast]);
 
   const turnKey = useRef<number | null>(null);
   useEffect(() => {
@@ -193,7 +157,7 @@ export function UnoTable({ view, room, meId, log, receivedAt, now, errorSeq, nic
       )}
     </Felt>
   );
-  // 내 차례면(낼 카드·뽑은 카드·색 고르기·도전 결정 모두) 손패 위에 강조색 리본으로 남은 시간과 함께 알린다.
+  // 내 차례면(낼 카드·뽑은 카드·색 고르기 모두) 손패 위에 강조색 리본으로 남은 시간과 함께 알린다.
   const mine = game.hand === null ? <SpectatorNotice /> : (
     <div data-testid="my-area" data-active={myTurn ? 'true' : undefined} className="relative -my-1 space-y-1 rounded-2xl px-1 py-1">
       {myTurn ? <TurnRibbon deadline={game.deadline} serverNow={game.serverNow} /> : null}
@@ -225,14 +189,10 @@ export function UnoTable({ view, room, meId, log, receivedAt, now, errorSeq, nic
   };
   const dialogs = (
     <>
-      <ColorPicker open={pendingWild !== null} mode="wild" risky={pendingWild?.kind === 'WILD_DRAW_FOUR' && game.wildDrawFourRisky}
+      <ColorPicker open={pendingWild !== null} mode="wild"
         counts={counts} onCancel={() => setPendingWild(null)} onPick={pickWild} />
-      <ColorPicker open={myTurn && game.stage === 'CHOOSE_COLOR'} mode="first" risky={false} counts={counts}
+      <ColorPicker open={myTurn && game.stage === 'CHOOSE_COLOR'} mode="first" counts={counts}
         onCancel={() => undefined} onPick={(color) => send({ type: 'CHOOSE_COLOR', color })} />
-      <ChallengePrompt open={myTurn && game.stage === 'CHALLENGE' && game.challenge !== null} byName={nicknameOf(game.challenge?.byId ?? 0)}
-        previousColor={game.challenge?.previousColor ?? null}
-        deadline={game.deadline} serverNow={game.serverNow} onAccept={() => send({ type: 'ACCEPT' })} onChallenge={() => send({ type: 'CHALLENGE' })} />
-      {showReveal && game.reveal ? <ChallengeReveal reveal={game.reveal} name={nicknameOf(game.reveal.playerId)} challengerName={nicknameOf(meId)} onClose={closeReveal} /> : null}
     </>
   );
 

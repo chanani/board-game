@@ -1,11 +1,11 @@
-import { act, render, screen, waitFor, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Room, UnoView } from '../../api/types';
 import { SILENT_SOUND, SoundContext, type SoundName } from '../../lib/sound';
 import { setMediaMatches } from '../../test/media';
 import { UnoTable } from './UnoTable';
-import { num, unoEvent, unoSession, wild, wildFour } from './unoFixtures';
+import { num, unoEvent, unoSession, wild } from './unoFixtures';
 
 const toast = vi.hoisted(() => ({ show: vi.fn() }));
 vi.mock('../../components/Toast', () => ({ useToast: () => toast }));
@@ -61,14 +61,6 @@ describe('UnoTable 와일드와 색 고르기', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
 
-  it('지금 색 카드가 있는데 와일드 +4를 내려 하면 경고한다', async () => {
-    render(table({ hand: [num('RED', 2, 3), wildFour(104)], playableCardIds: [3, 104], wildDrawFourRisky: true }, vi.fn()));
-
-    await userEvent.click(screen.getByRole('button', { name: '와일드 +4, 낼 수 있어요' }));
-
-    expect(await screen.findByText('지금 색 카드가 있어서, 도전받으면 내가 4장을 뽑아요.')).toBeInTheDocument();
-  });
-
   it('첫 카드가 와일드면 취소 없이 색을 골라 CHOOSE_COLOR를 보낸다', async () => {
     const send = vi.fn();
     render(table({ stage: 'CHOOSE_COLOR', currentColor: null, discardTop: wild(101), playableCardIds: [] }, send));
@@ -79,94 +71,6 @@ describe('UnoTable 와일드와 색 고르기', () => {
     await userEvent.click(within(dialog).getByRole('button', { name: /^파랑/ }));
 
     expect(send).toHaveBeenCalledWith({ type: 'CHOOSE_COLOR', color: 'BLUE' });
-  });
-});
-
-describe('UnoTable 도전', () => {
-  const challenged: Partial<UnoView> = { stage: 'CHALLENGE', currentPlayerId: 1, challenge: { byId: 3, targetId: 1, previousColor: 'RED' }, playableCardIds: [], deadline: 15000, serverNow: 1000 };
-
-  it('와일드 +4를 받으면 닫을 수 없는 도전 창이 뜬다', async () => {
-    const send = vi.fn();
-    render(table(challenged, send));
-
-    const dialog = await screen.findByRole('dialog', { name: '와일드 +4를 받았어요' });
-    expect(dialog).toHaveTextContent('캐롤님이 직전 색 카드를 갖고 있었다고 생각하면 도전하세요. 맞으면 캐롤님이 4장, 틀리면 내가 6장을 뽑아요.');
-    expect(within(dialog).getByTestId('challenge-basis')).toHaveTextContent('직전 색(빨강)을 낸 사람이 갖고 있었으면 도전 성공');
-    expect(within(dialog).queryByRole('button', { name: '닫기' })).not.toBeInTheDocument();
-    await userEvent.keyboard('{Escape}');
-    expect(screen.getByRole('dialog', { name: '와일드 +4를 받았어요' })).toBeInTheDocument();
-    await userEvent.click(within(dialog).getByRole('button', { name: '도전하기' }));
-
-    expect(send).toHaveBeenCalledWith({ type: 'CHALLENGE' });
-  });
-
-  it('4장 받기는 ACCEPT를 보낸다', async () => {
-    const send = vi.fn();
-    render(table(challenged, send));
-
-    await userEvent.click(await screen.findByRole('button', { name: '4장 받기' }));
-
-    expect(send).toHaveBeenCalledWith({ type: 'ACCEPT' });
-  });
-
-  it('도전 결과 공개는 도전자에게 한 번만 뜨고 확인이나 5초 뒤에 닫힌다', async () => {
-    const before: Partial<UnoView> = { stage: 'PLAY', currentPlayerId: 3, currentColor: 'RED', playableCardIds: [] };
-    const reveal: Partial<UnoView> = {
-      stage: 'PLAY', currentPlayerId: 1, currentColor: 'GREEN', discardTop: wildFour(104),
-      reveal: { playerId: 3, cards: [num('RED', 2, 3), num('BLUE', 1, 76)], guilty: true, previousColor: 'RED' },
-      events: [unoEvent(7, 'CHALLENGE', { actorId: 1, targetId: 3, reason: 'GUILTY', color: 'RED' }), unoEvent(8, 'PENALTY', { targetId: 3, count: 4, reason: 'CHALLENGE_GUILTY' })],
-    };
-    const { rerender } = render(table(before, vi.fn()));
-    rerender(table(challenged, vi.fn()));
-    rerender(table(reveal, vi.fn()));
-
-    const dialog = await screen.findByRole('dialog', { name: '캐롤님의 카드' });
-    expect(within(dialog).getByTestId('reveal-verdict')).toHaveTextContent('캐롤님이 빨강 카드를 갖고 있었어요 — 도전 성공! 캐롤님이 4장');
-    const cards = within(dialog).getAllByTestId('reveal-card');
-    expect(cards[0]).toHaveAttribute('data-highlight', 'true');
-    expect(cards[1]).toHaveAttribute('data-dim', 'true');
-    await userEvent.click(within(dialog).getByRole('button', { name: '확인' }));
-    await waitFor(() => expect(screen.queryByRole('dialog', { name: '캐롤님의 카드' })).not.toBeInTheDocument());
-
-    rerender(table({ ...reveal, serverNow: 5 }, vi.fn()));
-    expect(screen.queryByRole('dialog', { name: '캐롤님의 카드' })).not.toBeInTheDocument();
-  });
-
-  it('도전자의 공개는 다른 사람의 우노 외침 묶음에도 남아 있다가 reveal이 사라지면 닫힌다', async () => {
-    const reveal: Partial<UnoView> = {
-      stage: 'PLAY', currentPlayerId: 1, currentColor: 'GREEN',
-      reveal: { playerId: 3, cards: [num('BLUE', 1, 76)], guilty: false, previousColor: 'RED' },
-      events: [unoEvent(7, 'CHALLENGE', { actorId: 1, targetId: 3, reason: 'INNOCENT', color: 'RED' })],
-    };
-    const { rerender } = render(table(reveal, vi.fn()));
-    expect(await screen.findByRole('dialog', { name: '캐롤님의 카드' })).toBeInTheDocument();
-
-    rerender(table({ ...reveal, events: [unoEvent(8, 'UNO_CALL', { actorId: 2 })] }, vi.fn()));
-    expect(screen.getByRole('dialog', { name: '캐롤님의 카드' })).toBeInTheDocument();
-
-    rerender(table({ ...reveal, reveal: null, events: [unoEvent(9, 'UNO_CALL', { actorId: 3 })] }, vi.fn()));
-    await waitFor(() => expect(screen.queryByRole('dialog', { name: '캐롤님의 카드' })).not.toBeInTheDocument());
-  });
-
-  it('도전 실패 공개는 5초 뒤 저절로 닫힌다', () => {
-    vi.useFakeTimers();
-    render(table({
-      reveal: { playerId: 3, cards: [num('BLUE', 1, 76)], guilty: false, previousColor: 'RED' },
-      events: [unoEvent(7, 'CHALLENGE', { actorId: 1, targetId: 3, reason: 'INNOCENT', color: 'RED' })],
-    }, vi.fn()));
-
-    expect(screen.getByRole('dialog', { name: '캐롤님의 카드' })).toHaveTextContent('캐롤님에게 빨강 카드가 없었어요 — 정당한 +4, 앨리스님이 6장');
-    act(() => { vi.advanceTimersByTime(5000); });
-    expect(screen.queryByRole('dialog', { name: '캐롤님의 카드' })).not.toBeInTheDocument();
-  });
-
-  it('남의 도전 결과는 알림으로만 보여 준다', () => {
-    const { rerender } = render(table({ currentPlayerId: 2 }, vi.fn()));
-
-    rerender(table({ currentPlayerId: 3, events: [unoEvent(9, 'CHALLENGE', { actorId: 2, targetId: 3, reason: 'INNOCENT', color: 'BLUE' })] }, vi.fn()));
-
-    expect(toast.show).toHaveBeenCalledWith('캐롤님에게 파랑 카드가 없었어요 — 정당한 +4, 밥님이 6장', 'info');
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 });
 
@@ -183,13 +87,6 @@ describe('UnoTable 잠금 중 와일드', () => {
     expect(screen.getByRole('dialog', { name: '색을 골라 주세요' })).toBeInTheDocument();
   });
 
-  it('새 판이 시작되면 이전 판의 도전 알림 순번에 막히지 않는다', () => {
-    const { rerender } = render(table({ currentPlayerId: 2, events: [unoEvent(40, 'UNO_CALL', { actorId: 2 })] }, vi.fn()));
-
-    rerender(table({ currentPlayerId: 3, startedAt: 999, events: [unoEvent(2, 'CHALLENGE', { actorId: 2, targetId: 3, reason: 'INNOCENT', color: 'GREEN' })] }, vi.fn()));
-
-    expect(toast.show).toHaveBeenCalledWith('캐롤님에게 초록 카드가 없었어요 — 정당한 +4, 밥님이 6장', 'info');
-  });
 });
 
 describe('UnoTable 우노와 잡기', () => {

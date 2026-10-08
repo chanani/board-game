@@ -83,11 +83,6 @@ public class UnoPlayers {
         return hand.isEmpty();
     }
 
-    public boolean holdsColor(PlayerId player, UnoColor color) {
-        Hand hand = hands.of(player);
-        return hand.holdsColor(color);
-    }
-
     public UnoColor mostHeldColor(PlayerId player) {
         Hand hand = hands.of(player);
         return hand.mostHeldColor();

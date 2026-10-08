@@ -82,8 +82,8 @@ class UnoViewTest {
         assertThat(json.get("gameType").asText()).isEqualTo("UNO");
         assertThat(fieldNames(json.get("game"))).containsExactlyInAnyOrder(
                 "viewerId", "status", "startedAt", "stage", "currentPlayerId", "direction", "currentColor", "discardTop",
-                "discardCount", "drawPileCount", "participantIds", "players", "hand", "playableCardIds", "wildDrawFourRisky",
-                "drawnCardId", "canCallUno", "unoCatch", "canCatch", "challenge", "reveal", "result", "winnerId", "deadline",
+                "discardCount", "drawPileCount", "participantIds", "players", "hand", "playableCardIds",
+                "drawnCardId", "canCallUno", "unoCatch", "canCatch", "result", "winnerId", "deadline",
                 "serverNow", "lastAutoActorIds", "autoActSeq", "events");
         assertThat(fieldNames(json.at("/game/discardTop"))).containsExactlyInAnyOrder("id", "kind", "color", "number");
         assertThat(fieldNames(json.at("/game/players/0"))).containsExactlyInAnyOrder("playerId", "cardCount", "unoDeclared");
@@ -95,7 +95,7 @@ class UnoViewTest {
     }
 
     @Test
-    void R22_남의_손패와_뽑은_카드와_도전_공개는_JSON에_없다() {
+    void R22_남의_손패와_뽑은_카드는_JSON에_없다() {
         List<UnoCard> pile = new ArrayList<>(List.of(num(RED, 9)));
         pile.addAll(filler(10));
         UnoSession drawing = threePlayers(pile);
@@ -106,9 +106,7 @@ class UnoViewTest {
         JsonNode watcher = json(drawing, WATCHER);
 
         assertThat(mine.at("/game/drawnCardId").asInt()).isEqualTo(num(RED, 9).id().value());
-        assertThat(mine.at("/game/wildDrawFourRisky").asBoolean()).isTrue();
         assertThat(theirs.at("/game/drawnCardId").isNull()).isTrue();
-        assertThat(theirs.at("/game/wildDrawFourRisky").asBoolean()).isFalse();
         assertThat(theirs.at("/game/playableCardIds").size()).isZero();
         assertThat(theirs.at("/game/hand").size()).isEqualTo(4);
         Set<Integer> aHand = new HashSet<>(idsOf(A_HAND));
@@ -116,20 +114,6 @@ class UnoViewTest {
         assertThat(cardIdsIn(theirs)).doesNotContainAnyElementsOf(aHand);
         assertThat(cardIdsIn(watcher)).doesNotContainAnyElementsOf(aHand);
         theirs.at("/game/players").forEach(player -> assertThat(fieldNames(player)).containsExactlyInAnyOrder("playerId", "cardCount", "unoDeclared"));
-
-        UnoSession challenged = threePlayers(filler(10));
-        challenged.act(A, new GameAction("PLAY", null, null, wildFour(0).id().value(), "GREEN", null));
-        challenged.act(B, action("CHALLENGE"));
-
-        JsonNode challenger = json(challenged, B);
-        JsonNode bystander = json(challenged, C);
-        assertThat(challenger.at("/game/reveal/playerId").asLong()).isEqualTo(A);
-        assertThat(challenger.at("/game/reveal/guilty").asBoolean()).isTrue();
-        assertThat(challenger.at("/game/reveal/previousColor").asText()).isEqualTo("RED");
-        assertThat(cardIdsIn(challenger.at("/game/reveal/cards"))).containsExactlyInAnyOrderElementsOf(idsOf(A_HAND.subList(1, 4)));
-        assertThat(bystander.at("/game/reveal").isNull()).isTrue();
-        assertThat(json(challenged, A).at("/game/reveal").isNull()).isTrue();
-        assertThat(cardIdsIn(bystander)).doesNotContainAnyElementsOf(idsOf(A_HAND.subList(1, 4)));
     }
 
     @Test
@@ -144,28 +128,13 @@ class UnoViewTest {
     }
 
     @Test
-    void 내_차례에는_낼_수_있는_카드와_위험한_4를_알려_준다() {
+    void 내_차례에는_낼_수_있는_카드를_알려_준다() {
         JsonNode mine = json(threePlayers(filler(10)), A);
 
         List<Integer> playable = new ArrayList<>();
         mine.at("/game/playableCardIds").forEach(id -> playable.add(id.asInt()));
         assertThat(playable).containsExactlyInAnyOrder(wildFour(0).id().value(), num(RED, 2).id().value());
-        assertThat(mine.at("/game/wildDrawFourRisky").asBoolean()).isTrue();
         assertThat(mine.at("/game/hand").size()).isEqualTo(4);
-    }
-
-    @Test
-    void CHALLENGE_단계에는_낸_사람과_받는_사람만_알리고_합법_여부는_넣지_않는다() {
-        UnoSession session = threePlayers(filler(10));
-        session.act(A, new GameAction("PLAY", null, null, wildFour(0).id().value(), "GREEN", null));
-
-        JsonNode bystander = json(session, C);
-
-        assertThat(fieldNames(bystander.at("/game/challenge"))).containsExactlyInAnyOrder("byId", "targetId", "previousColor");
-        assertThat(bystander.at("/game/challenge/previousColor").asText()).isEqualTo("RED");
-        assertThat(bystander.at("/game/challenge/byId").asLong()).isEqualTo(A);
-        assertThat(bystander.at("/game/challenge/targetId").asLong()).isEqualTo(B);
-        assertThat(bystander.at("/game/stage").asText()).isEqualTo("CHALLENGE");
     }
 
     @Test

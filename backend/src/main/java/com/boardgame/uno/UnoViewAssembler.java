@@ -2,12 +2,10 @@ package com.boardgame.uno;
 
 import com.boardgame.uno.view.UnoCardView;
 import com.boardgame.uno.view.UnoCatchView;
-import com.boardgame.uno.view.UnoChallengeView;
 import com.boardgame.uno.view.UnoEventView;
 import com.boardgame.uno.view.UnoPlayerView;
 import com.boardgame.uno.view.UnoResultPlayerView;
 import com.boardgame.uno.view.UnoResultView;
-import com.boardgame.uno.view.UnoRevealView;
 import com.boardgame.uno.view.UnoView;
 import java.util.List;
 
@@ -34,13 +32,10 @@ final class UnoViewAssembler {
                 players(game),
                 hand(game, viewer),
                 live ? ids(game.playableFor(viewer)) : List.of(),
-                live && game.isRiskyFour(viewer),
                 live ? game.drawnFor(viewer).map(CardId::value).orElse(null) : null,
                 live && game.canCallUno(viewer),
                 live ? game.catchTarget().map(target -> new UnoCatchView(target.value())).orElse(null) : null,
                 live && game.canCatch(viewer),
-                live ? challenge(game) : null,
-                game.revealFor(viewer).map(UnoRevealView::of).orElse(null),
                 game.result().map(result -> result(game, result)).orElse(null),
                 game.result().map(result -> Long.valueOf(result.winner().value())).orElse(null),
                 context.timing().deadline(),
@@ -68,12 +63,6 @@ final class UnoViewAssembler {
         return cards.stream()
                 .map(CardId::value)
                 .toList();
-    }
-
-    private static UnoChallengeView challenge(UnoGame game) {
-        return game.pendingCharge()
-                .map(charge -> new UnoChallengeView(charge.by().value(), game.actor().value(), charge.previousColor().orElse(null)))
-                .orElse(null);
     }
 
     private static UnoResultView result(UnoGame game, UnoResult result) {

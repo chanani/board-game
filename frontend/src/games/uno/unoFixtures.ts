@@ -21,8 +21,8 @@ export function unoView(overrides: Partial<UnoView> = {}): UnoView {
       { playerId: 2, cardCount: 7, unoDeclared: false },
       { playerId: 3, cardCount: 7, unoDeclared: false },
     ],
-    hand: [num('RED', 2, 3), num('BLUE', 7, 88), wild(100)], playableCardIds: [3, 100], wildDrawFourRisky: false,
-    drawnCardId: null, canCallUno: false, unoCatch: null, canCatch: false, challenge: null, reveal: null, result: null,
+    hand: [num('RED', 2, 3), num('BLUE', 7, 88), wild(100)], playableCardIds: [3, 100],
+    drawnCardId: null, canCallUno: false, unoCatch: null, canCatch: false, result: null,
     winnerId: null, deadline: null, serverNow: 0, lastAutoActorIds: [], autoActSeq: 0, events: [],
     ...overrides,
   };

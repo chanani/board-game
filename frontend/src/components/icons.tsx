@@ -182,10 +182,6 @@ export const ColorWheelIcon = ({ className }: IconProps) => (
   <Svg className={className}><circle cx="12" cy="12" r="8" /><path d="M12 4v16M4 12h16" /></Svg>
 );
 
-export const ScaleIcon = ({ className }: IconProps) => (
-  <Svg className={className}><path d="M12 4v16M8 20h8M5 7h14" /><path d="M5 7l-3 6a3 3 0 0 0 6 0z" /><path d="M19 7l-3 6a3 3 0 0 0 6 0z" /></Svg>
-);
-
 export const StarBubbleIcon = ({ className }: IconProps) => (
   <Svg className={className}><path d="M4 5h16v11H9l-5 4z" /><path d="M12 7.5l1 2 2.2.3-1.6 1.5.4 2.2-2-1.1-2 1.1.4-2.2-1.6-1.5 2.2-.3z" /></Svg>
 );

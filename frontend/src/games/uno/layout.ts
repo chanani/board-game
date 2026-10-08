@@ -48,7 +48,6 @@ const MY_TEXT: Record<UnoStage, [string, string]> = {
   PLAY: ['낼 카드를 고르거나 카드를 뽑으세요.', '카드를 내거나 뽑으세요'],
   DRAWN: ['뽑은 카드를 낼까요? 아니면 갖고 넘기세요.', '뽑은 카드를 낼까요?'],
   CHOOSE_COLOR: ['첫 카드가 와일드예요. 색을 골라 주세요.', '색을 골라 주세요'],
-  CHALLENGE: ['와일드 +4에 도전할지 골라 주세요.', '도전할지 골라 주세요'],
 };
 
 /** 스펙 6.6 차례 안내 문구. */
@@ -58,7 +57,7 @@ export function unoInstruction(game: UnoView, meId: number, nicknameOf: (id: num
   }
   if (game.currentPlayerId !== meId) {
     const name = nicknameOf(game.currentPlayerId);
-    return game.stage === 'CHALLENGE' ? `${name}님이 도전할지 고르는 중…` : `${name}님의 차례예요.`;
+    return `${name}님의 차례예요.`;
   }
   const [pc, narrow] = MY_TEXT[game.stage];
   return wide ? pc : narrow;

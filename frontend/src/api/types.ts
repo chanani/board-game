@@ -41,7 +41,7 @@ export type RoomSummary = {
 };
 
 export type GameActionType = 'FLIP' | 'DRAW_DECK' | 'DRAW_DISCARD' | 'SWAP' | 'DISCARD' | 'PEEK' | 'CANCEL_DRAW';
-export type UnoActionType = 'PLAY' | 'DRAW' | 'KEEP' | 'CHOOSE_COLOR' | 'CHALLENGE' | 'ACCEPT' | 'CALL_UNO' | 'CATCH_UNO';
+export type UnoActionType = 'PLAY' | 'DRAW' | 'KEEP' | 'CHOOSE_COLOR' | 'CALL_UNO' | 'CATCH_UNO';
 export type OldMaidActionType = 'SHUFFLE' | 'PEEK' | 'DISCARD_ALL';
 export type GameAction = {
   type: GameActionType | UnoActionType | OldMaidActionType;
@@ -92,19 +92,17 @@ export type PaperSafariSessionView = { gameType?: 'PAPER_SAFARI'; game: PaperSaf
 export type UnoColor = 'RED' | 'YELLOW' | 'GREEN' | 'BLUE';
 export type UnoCardKind = 'NUMBER' | 'SKIP' | 'REVERSE' | 'DRAW_TWO' | 'WILD' | 'WILD_DRAW_FOUR';
 export type UnoCard = { id: number; kind: UnoCardKind; color: UnoColor | null; number: number | null };
-export type UnoStage = 'PLAY' | 'DRAWN' | 'CHOOSE_COLOR' | 'CHALLENGE';
+export type UnoStage = 'PLAY' | 'DRAWN' | 'CHOOSE_COLOR';
 export type UnoDirection = 'CLOCKWISE' | 'COUNTER_CLOCKWISE';
 export type UnoPlayerView = { playerId: number; cardCount: number; unoDeclared: boolean };
 export type UnoEventType = 'START' | 'FIRST_CARD_REDRAWN' | 'PLAY' | 'COLOR' | 'DRAW' | 'PASS' | 'SKIP' | 'REVERSE'
-  | 'PENALTY' | 'CHALLENGE' | 'UNO_CALL' | 'UNO_CAUGHT' | 'RESHUFFLE' | 'GAME_END';
-export type UnoEventReason = 'KEEP' | 'NO_PLAYABLE' | 'EMPTY_PILE' | 'DRAW_TWO' | 'WILD_DRAW_FOUR' | 'CHALLENGE_FAILED'
-  | 'CHALLENGE_GUILTY' | 'UNO_CAUGHT' | 'GUILTY' | 'INNOCENT' | 'EMPTY_HAND' | 'FORFEIT';
+  | 'PENALTY' | 'UNO_CALL' | 'UNO_CAUGHT' | 'RESHUFFLE' | 'GAME_END';
+export type UnoEventReason = 'KEEP' | 'NO_PLAYABLE' | 'EMPTY_PILE' | 'DRAW_TWO' | 'WILD_DRAW_FOUR'
+  | 'UNO_CAUGHT' | 'EMPTY_HAND' | 'FORFEIT';
 export type UnoEvent = {
   seq: number; type: UnoEventType; actorId: number | null; targetId: number | null; card: UnoCard | null;
   color: UnoColor | null; count: number | null; reason: UnoEventReason | null; auto: boolean;
 };
-/** previousColor: +4를 내기 직전의 색. 도전 판정은 고른 색이 아니라 이 색 기준이다. */
-export type UnoReveal = { playerId: number; cards: UnoCard[]; guilty: boolean; previousColor: UnoColor | null };
 export type UnoResultPlayer = { playerId: number; cards: UnoCard[]; points: number };
 export type UnoResult = { reason: 'EMPTY_HAND' | 'FORFEIT'; winnerId: number; points: number; players: UnoResultPlayer[] };
 export type UnoView = {
@@ -124,14 +122,10 @@ export type UnoView = {
   /** 남은 참가자면 내 손패(받은 순서), 아니면 null. */
   hand: UnoCard[] | null;
   playableCardIds: number[];
-  wildDrawFourRisky: boolean;
   drawnCardId: number | null;
   canCallUno: boolean;
   unoCatch: { playerId: number } | null;
   canCatch: boolean;
-  /** previousColor: +4를 내기 직전의 색(도전 판정 기준). */
-  challenge: { byId: number; targetId: number; previousColor: UnoColor | null } | null;
-  reveal: UnoReveal | null;
   result: UnoResult | null;
   winnerId: number | null;
   deadline: number | null;

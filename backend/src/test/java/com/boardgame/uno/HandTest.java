@@ -14,15 +14,6 @@ import org.junit.jupiter.api.Test;
 class HandTest {
 
     @Test
-    void R11_현재_색_카드를_갖고_있는지_안다_와일드는_색_카드가_아니다() {
-        Hand hand = new Hand(List.of(wild(0), num(UnoColor.RED, 5)));
-
-        assertThat(hand.holdsColor(UnoColor.RED)).isTrue();
-        assertThat(hand.holdsColor(UnoColor.GREEN)).isFalse();
-        assertThat(new Hand(List.of(wild(0), wildFour(0))).holdsColor(UnoColor.RED)).isFalse();
-    }
-
-    @Test
     void R40_가장_많은_색을_고르고_같으면_빨강_노랑_초록_파랑_순이다() {
         assertThat(new Hand(List.of(num(UnoColor.GREEN, 1), num(UnoColor.GREEN, 2), num(UnoColor.BLUE, 3))).mostHeldColor()).isEqualTo(UnoColor.GREEN);
         assertThat(new Hand(List.of(num(UnoColor.YELLOW, 1), num(UnoColor.BLUE, 2))).mostHeldColor()).isEqualTo(UnoColor.YELLOW);

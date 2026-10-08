@@ -1,4 +1,4 @@
-import type { UnoColor, UnoEvent, UnoSessionView, UnoStage, UnoView } from '../../api/types';
+import type { UnoEvent, UnoSessionView, UnoStage, UnoView } from '../../api/types';
 import type { LogDraft } from '../../lib/eventLog';
 import { cardName, COLOR_NAMES, isWild } from './cards';
 
@@ -6,12 +6,9 @@ type Nickname = (memberId: number) => string;
 
 const AUTO_HIDDEN = new Set<UnoEvent['type']>(['DRAW', 'PASS', 'COLOR']);
 
-// 시간 초과 자동 행동 자체(뽑기·넘기기·색·4장 받기)는 "시간이 지나…" 한 줄로 대신한다. 더미 다시 만들기 같은 결과는 쓴다.
+// 시간 초과 자동 행동 자체(뽑기·넘기기·색)는 "시간이 지나…" 한 줄로 대신한다. 더미 다시 만들기 같은 결과는 쓴다.
 function hiddenWhenAuto(event: UnoEvent): boolean {
-  if (!event.auto) {
-    return false;
-  }
-  return AUTO_HIDDEN.has(event.type) || (event.type === 'PENALTY' && event.reason === 'WILD_DRAW_FOUR');
+  return event.auto && AUTO_HIDDEN.has(event.type);
 }
 
 function passText(event: UnoEvent, name: string): string {
@@ -44,21 +41,6 @@ function penaltyLines(event: UnoEvent, nicknameOf: Nickname, ending: boolean): L
   return [];
 }
 
-/** 도전 판정 이유를 쓴다: 고른 색이 아니라 +4 직전의 색(event.color) 카드를 낸 사람이 갖고 있었는지. */
-export function challengeVerdictText(guilty: boolean, chargedName: string, challengerName: string, previousColor: UnoColor | null): string {
-  const color = previousColor ? COLOR_NAMES[previousColor] : '직전 색';
-  if (guilty) {
-    return `${chargedName}님이 ${color} 카드를 갖고 있었어요 — 도전 성공! ${chargedName}님이 4장`;
-  }
-  return `${chargedName}님에게 ${color} 카드가 없었어요 — 정당한 +4, ${challengerName}님이 6장`;
-}
-
-function challengeLine(event: UnoEvent, nicknameOf: Nickname): LogDraft {
-  const challenger = event.actorId ?? 0;
-  const text = challengeVerdictText(event.reason === 'GUILTY', nicknameOf(event.targetId ?? 0), nicknameOf(challenger), event.color);
-  return { kind: 'challenge', actorId: challenger, text };
-}
-
 function gameEndLine(event: UnoEvent, nicknameOf: Nickname): LogDraft {
   const winner = event.actorId ?? 0;
   const points = event.count === null ? '' : ` (${event.count}점)`;
@@ -88,8 +70,6 @@ export function describeUnoEvent(event: UnoEvent, nicknameOf: Nickname, ending =
       return [{ kind: 'reverse', text: '진행 방향이 바뀌었어요' }];
     case 'PENALTY':
       return penaltyLines(event, nicknameOf, ending);
-    case 'CHALLENGE':
-      return [challengeLine(event, nicknameOf)];
     case 'UNO_CALL':
       return [{ kind: 'uno', actorId: actor, text: `${name}님이 우노를 외쳤어요!` }];
     case 'UNO_CAUGHT':
@@ -120,7 +100,6 @@ const AUTO_TEXT: Record<UnoStage, (name: string, view: UnoView) => string> = {
   PLAY: (name) => `시간이 지나 ${name}님 대신 카드를 1장 뽑고 차례를 넘겼어요`,
   DRAWN: (name) => `시간이 지나 ${name}님 대신 뽑은 카드를 갖고 차례를 넘겼어요`,
   CHOOSE_COLOR: (name, view) => `시간이 지나 ${name}님 대신 ${autoColorName(view)}을 골랐어요`,
-  CHALLENGE: (name) => `시간이 지나 ${name}님 대신 도전하지 않고 4장을 받았어요`,
 };
 
 /** autoActSeq가 늘었을 때만, 직전 화면의 단계 기준으로 한 줄. */

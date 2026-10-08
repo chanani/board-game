@@ -1,6 +1,5 @@
 package com.boardgame.uno.bot;
 
-import static com.boardgame.uno.bot.UnoViews.LEFT;
 import static com.boardgame.uno.bot.UnoViews.action;
 import static com.boardgame.uno.bot.UnoViews.four;
 import static com.boardgame.uno.bot.UnoViews.number;
@@ -71,16 +70,6 @@ class MediumUnoTest {
 
         assertThat(medium.turn(sight, new FixedRandom(80)).type()).isEqualTo("CALL_UNO");
         assertThat(medium.turn(sight, new FixedRandom(95)).type()).isEqualTo("PLAY");
-    }
-
-    @Test
-    void R30_도전은_5장_이상일_때_30퍼센트() {
-        UnoSight many = view().held(number(UnoColor.BLUE, 1)).challenge(LEFT, UnoColor.RED).left(5).sight();
-        UnoSight few = view().held(number(UnoColor.BLUE, 1)).challenge(LEFT, UnoColor.RED).left(4).sight();
-
-        assertThat(medium.turn(many, new FixedRandom(20)).type()).isEqualTo("CHALLENGE");
-        assertThat(medium.turn(many, new FixedRandom(40)).type()).isEqualTo("ACCEPT");
-        assertThat(medium.turn(few, new FixedRandom(0)).type()).isEqualTo("ACCEPT");
     }
 
     @Test

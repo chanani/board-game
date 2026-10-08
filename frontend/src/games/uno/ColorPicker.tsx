@@ -7,19 +7,16 @@ type Props = {
   open: boolean;
   /** wild: 와일드를 낼 때(취소 가능). first: 첫 카드 WILD의 색 고르기(취소·닫기 없음). */
   mode: 'wild' | 'first';
-  /** 와일드 +4인데 지금 색 카드를 갖고 있으면 경고한다. */
-  risky: boolean;
   counts: Record<UnoColor, number>;
   onPick: (color: UnoColor) => void;
   onCancel: () => void;
 };
 
-export function ColorPicker({ open, mode, risky, counts, onPick, onCancel }: Props) {
+export function ColorPicker({ open, mode, counts, onPick, onCancel }: Props) {
   const title = mode === 'first' ? '첫 카드가 와일드예요. 색을 골라 주세요' : '색을 골라 주세요';
   return (
     <Modal open={open} title={title} onClose={mode === 'wild' ? onCancel : undefined}>
       <h2 className="mb-3 pr-8 text-base font-black text-wood-800">{title}</h2>
-      {risky ? <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm font-bold text-red-700">지금 색 카드가 있어서, 도전받으면 내가 4장을 뽑아요.</p> : null}
       <div className="grid grid-cols-2 gap-3">
         {COLOR_ORDER.map((color) => (
           <button key={color} type="button" data-no-click-sound aria-label={`${COLOR_NAMES[color]}, 내 카드 ${counts[color]}장`} onClick={() => onPick(color)}

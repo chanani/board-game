@@ -3,7 +3,7 @@ import { chatTime } from '../lib/format';
 import type { LogEntry, LogKind } from '../lib/eventLog';
 import {
   CardsIcon, ClockIcon, ColorWheelIcon, DotIcon, EyeIcon, HandIcon, LogoutIcon, MedalIcon, PairIcon, PlayIcon, RecycleIcon, ReverseIcon,
-  ScaleIcon, ShuffleIcon, SkipIcon, StarBubbleIcon, SwapIcon, ThiefMaskIcon, TrophyIcon, UndoIcon, UnoCardIcon,
+  ShuffleIcon, SkipIcon, StarBubbleIcon, SwapIcon, ThiefMaskIcon, TrophyIcon, UndoIcon, UnoCardIcon,
 } from '../components/icons';
 
 export type Nickname = (memberId: number) => string;
@@ -23,7 +23,6 @@ const KIND_STYLE: Record<LogKind, { Icon: ComponentType<{ className?: string }>;
   skip: { Icon: SkipIcon, bg: 'bg-orange-100' },
   reverse: { Icon: ReverseIcon, bg: 'bg-violet-100' },
   color: { Icon: ColorWheelIcon, bg: 'bg-teal-100' },
-  challenge: { Icon: ScaleIcon, bg: 'bg-fuchsia-100' },
   uno: { Icon: StarBubbleIcon, bg: 'bg-yellow-200' },
   catch: { Icon: HandIcon, bg: 'bg-rose-200' },
   reshuffle: { Icon: ShuffleIcon, bg: 'bg-cyan-100' },

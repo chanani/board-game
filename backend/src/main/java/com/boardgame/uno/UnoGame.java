@@ -51,14 +51,6 @@ public class UnoGame {
         run(player, batch -> round.keep(player, batch));
     }
 
-    public void challenge(PlayerId player) {
-        run(player, batch -> round.challenge(player, batch));
-    }
-
-    public void accept(PlayerId player) {
-        run(player, batch -> round.accept(player, batch));
-    }
-
     public void callUno(PlayerId player) {
         run(player, batch -> round.callUno(player, batch));
     }
@@ -73,14 +65,6 @@ public class UnoGame {
 
     public boolean canCatch(PlayerId viewer) {
         return round.canCatch(viewer);
-    }
-
-    public Optional<FourCharge> pendingCharge() {
-        return round.pendingCharge();
-    }
-
-    public Optional<ChallengeReveal> revealFor(PlayerId viewer) {
-        return round.revealFor(viewer);
     }
 
     public void chooseColor(PlayerId player, ChosenColor color) {
@@ -123,7 +107,6 @@ public class UnoGame {
         EventBatch batch = events.open(auto);
         action.accept(batch);
         settle(batch);
-        round.forgetRevealUnless(batch);
         events.commit(batch);
     }
 
@@ -157,7 +140,6 @@ public class UnoGame {
 
     // R18: 차례인 사람(TURN). 잡기 창이 열려 있으면 차례인 사람을 뺀 남은 사람 모두(REACTION: 잡기, 대상 본인은 늦은 외침).
     // 차례인 사람도 잡거나(대상이 자기면) 늦게 외칠 수 있지만 TURN 하나로만 알린다. 그 판단은 TURN 계획 안에서 한다.
-    // +4 도전 결정(CHALLENGE)도 차례인 사람의 TURN이다.
     public List<PendingActor> pendingActors() {
         if (isFinished()) {
             return List.of();
@@ -241,10 +223,6 @@ public class UnoGame {
 
     public List<CardId> playableFor(PlayerId viewer) {
         return round.playableFor(viewer);
-    }
-
-    public boolean isRiskyFour(PlayerId viewer) {
-        return round.isRiskyFour(viewer);
     }
 
     public Optional<CardId> drawnFor(PlayerId viewer) {

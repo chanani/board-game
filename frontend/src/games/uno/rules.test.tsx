@@ -6,8 +6,8 @@ import { UNO_RULE_SLIDES, UNO_RULE_SUMMARY } from './rules';
 import { unoModule } from './module';
 
 describe('우노 규칙', () => {
-  it('슬라이드 10장과 대기실 요약 4줄', () => {
-    expect(UNO_RULE_SLIDES.map((slide) => slide.title)).toEqual(['목표', '준비', '내 차례', '카드 뽑기', '기능 카드', '와일드', '도전', '우노!', '점수', '시간']);
+  it('슬라이드 9장과 대기실 요약 4줄', () => {
+    expect(UNO_RULE_SLIDES.map((slide) => slide.title)).toEqual(['목표', '준비', '내 차례', '카드 뽑기', '기능 카드', '와일드', '우노!', '점수', '시간']);
     expect(UNO_RULE_SUMMARY).toEqual([
       '같은 색·숫자·기호의 카드를 1장씩 내요.',
       '낼 카드가 없으면 1장을 뽑아요.',
@@ -27,8 +27,10 @@ describe('우노 규칙', () => {
     expect(await screen.findAllByRole('img', { name: '우노 카드 뒷면' })).toHaveLength(3);
   });
 
-  it('+4 도전은 고른 색이 아니라 직전 색 기준임을 밝힌다', () => {
-    const challenge = UNO_RULE_SLIDES.find((slide) => slide.title === '도전');
-    expect(challenge?.body).toContain('판정 기준은 낸 사람이 고른 색이 아니라 +4를 내기 직전의 색이에요.');
+  it('+4는 도전 없이 언제든 낼 수 있고 받는 사람은 바로 4장을 뽑는다', () => {
+    const wild = UNO_RULE_SLIDES.find((slide) => slide.title === '와일드');
+    expect(wild?.body).toContain('와일드 +4: 색을 고르고, 다음 사람은 4장을 뽑고 차례를 쉬어요.');
+    expect(wild?.body).toContain('와일드 +4도 언제든 낼 수 있어요.');
+    expect(UNO_RULE_SLIDES.flatMap((slide) => slide.body).join(' ')).not.toContain('도전');
   });
 });

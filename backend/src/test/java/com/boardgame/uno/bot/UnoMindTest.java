@@ -166,9 +166,6 @@ class UnoMindTest {
                         .session(), random))
                 .map(GameAction::color)
                 .contains("GREEN");
-        assertThat(mind.fallback(view().challenge(LEFT, UnoColor.RED).session(), random))
-                .map(GameAction::type)
-                .contains("ACCEPT");
         assertThat(mind.fallback(view().current(LEFT).session(), random)).isEmpty();
     }
 

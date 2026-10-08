@@ -24,7 +24,6 @@ final class UnoMind implements BotMind {
     @Override
     public void observe(Object view) {
         UnoSight sight = UnoSight.of(view);
-        style.observe(sight);
         window.forgetIfClosed(sight.catchTarget());
     }
 

@@ -44,11 +44,6 @@ public class Hand {
         return cards.isEmpty();
     }
 
-    // R11
-    public boolean holdsColor(UnoColor color) {
-        return countOf(color) > 0;
-    }
-
     // R40: 가장 많은 색, 같으면 선언 순서(빨강 > 노랑 > 초록 > 파랑), 색 카드가 없으면 빨강.
     public UnoColor mostHeldColor() {
         return Arrays.stream(UnoColor.values())

@@ -23,12 +23,6 @@ abstract class UnoStyle {
 
     abstract UnoColor color(UnoSight sight, UnoCardView played, Random random);
 
-    abstract boolean challenges(UnoSight sight, Random random);
-
-    /** 상태가 바뀔 때마다 자기 화면을 본다(기억이 필요한 난이도만 쓴다). */
-    void observe(UnoSight sight) {
-    }
-
     final GameAction turn(UnoSight sight, Random random) {
         if (calls(sight, random)) {
             return UnoMoves.callUno();
@@ -37,7 +31,6 @@ abstract class UnoStyle {
             case PLAY -> play(sight, random);
             case DRAWN -> drawn(sight, sight.drawn().orElseThrow(), random);
             case CHOOSE_COLOR -> UnoMoves.chooseColor(color(sight, sight.game().discardTop(), random));
-            case CHALLENGE -> answer(sight, random);
         };
     }
 
@@ -47,13 +40,6 @@ abstract class UnoStyle {
             return false;
         }
         return random.nextInt(PERCENT) < callPercent();
-    }
-
-    private GameAction answer(UnoSight sight, Random random) {
-        if (challenges(sight, random)) {
-            return UnoMoves.challenge();
-        }
-        return UnoMoves.accept();
     }
 
     /** 와일드일 때만 color()로 색을 고른다. */

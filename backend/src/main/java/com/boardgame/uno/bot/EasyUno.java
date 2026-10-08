@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 
-// R29 하: 규칙만 아는 초보. 무작위로 내고(20%는 그냥 뽑음), 뽑은 카드는 반만 내고, 색은 무작위, 도전 안 함,
+// R29 하: 규칙만 아는 초보. 무작위로 내고(20%는 그냥 뽑음), 뽑은 카드는 반만 내고, 색은 무작위,
 // 우노는 반만 외치고, 남을 잡지 않는다.
 final class EasyUno extends UnoStyle {
 
@@ -47,10 +47,5 @@ final class EasyUno extends UnoStyle {
     UnoColor color(UnoSight sight, UnoCardView played, Random random) {
         UnoColor[] colors = UnoColor.values();
         return colors[random.nextInt(colors.length)];
-    }
-
-    @Override
-    boolean challenges(UnoSight sight, Random random) {
-        return false;
     }
 }

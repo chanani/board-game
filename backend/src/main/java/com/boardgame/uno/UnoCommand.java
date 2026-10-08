@@ -31,18 +31,6 @@ public enum UnoCommand {
             game.chooseColor(player, new ChosenColor(action.color()));
         }
     },
-    CHALLENGE {
-        @Override
-        void apply(UnoGame game, PlayerId player, GameAction action) {
-            game.challenge(player);
-        }
-    },
-    ACCEPT {
-        @Override
-        void apply(UnoGame game, PlayerId player, GameAction action) {
-            game.accept(player);
-        }
-    },
     CALL_UNO {
         @Override
         void apply(UnoGame game, PlayerId player, GameAction action) {

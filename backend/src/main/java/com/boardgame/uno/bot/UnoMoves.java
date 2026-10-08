@@ -27,14 +27,6 @@ final class UnoMoves {
         return new GameAction("CHOOSE_COLOR", null, null, null, nameOf(color), null);
     }
 
-    static GameAction challenge() {
-        return plain("CHALLENGE");
-    }
-
-    static GameAction accept() {
-        return plain("ACCEPT");
-    }
-
     static GameAction callUno() {
         return plain("CALL_UNO");
     }

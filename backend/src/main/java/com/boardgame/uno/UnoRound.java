@@ -13,7 +13,6 @@ public class UnoRound {
     private static final int DRAW_TWO_COUNT = 2;
     private static final int TWO_PLAYERS = 2;
     private static final int FOUR = 4;
-    private static final int CHALLENGE_PENALTY = 2;
     private static final int UNO_PENALTY = 2;
 
     private final UnoTable table;
@@ -82,7 +81,6 @@ public class UnoRound {
         progress.requireDrawnOrAny(cardId);
         requirePlayable(card);
         UnoColor color = colorFor(card, chosen);
-        FourBasis fourBasis = fourBasisOf(player);
         players.closeCatch();
         players.discardFrom(player, cardId);
         table.discard(card, color);
@@ -92,18 +90,7 @@ public class UnoRound {
             applyLastCard(card, events);
             return;
         }
-        resolve(player, card, fourBasis, events);
-    }
-
-    // R11: 낼 때(손에서 빼기 전, 새 색을 칠하기 전)의 현재 색(직전 색)과 그 색 카드가 없었는지. 현재 색이 없으면 합법.
-    private FourBasis fourBasisOf(PlayerId player) {
-        return table.color()
-                .map(color -> new FourBasis(color, !players.holdsColor(player, color)))
-                .orElse(FourBasis.noColor());
-    }
-
-    private boolean holdsNoActiveColor(PlayerId player) {
-        return fourBasisOf(player).legal();
+        resolve(player, card, events);
     }
 
     private void requirePlayable(UnoCard card) {
@@ -128,60 +115,14 @@ public class UnoRound {
     }
 
     // R15~R18
-    void resolve(PlayerId player, UnoCard card, FourBasis fourBasis, EventBatch events) {
+    void resolve(PlayerId player, UnoCard card, EventBatch events) {
         switch (card.kind()) {
             case SKIP -> skipNext(events);
             case REVERSE -> reverse(player, events);
             case DRAW_TWO -> drawTwoNext(events);
-            case WILD_DRAW_FOUR -> awaitChallenge(new FourCharge(player, fourBasis, players.cardsOf(player)));
+            case WILD_DRAW_FOUR -> drawFourNext(events);
             case NUMBER, WILD -> passTurn(NEXT);
         }
-    }
-
-    // R18: 다음 사람(받는 사람)이 도전할지 고른다.
-    private void awaitChallenge(FourCharge charge) {
-        progress.charge(charge);
-        players.endTurn();
-        players.advance(NEXT);
-        progress.begin(Turn.challenge(players.current()));
-    }
-
-    // R20·R21·R22
-    public void challenge(PlayerId player, EventBatch events) {
-        progress.requireActor(player);
-        progress.requireStage(UnoStage.CHALLENGE);
-        players.closeCatch();
-        FourCharge charge = progress.takeCharge();
-        progress.reveal(new ChallengeReveal(player, charge));
-        if (charge.legal()) {
-            challengeFails(player, charge, events);
-            return;
-        }
-        challengeSucceeds(player, charge, events);
-    }
-
-    // R20: 낸 사람이 4장. +4 카드와 고른 색은 그대로, 받는 사람이 정상 차례를 한다(D9).
-    private void challengeSucceeds(PlayerId challenger, FourCharge charge, EventBatch events) {
-        events.add(UnoEvent.challenge(challenger, charge.by(), UnoEventReason.GUILTY, charge.previousColor().orElse(null)));
-        penalize(charge.by(), FOUR, UnoEventReason.CHALLENGE_GUILTY, events);
-        progress.begin(Turn.play(challenger));
-    }
-
-    // R21: 받는 사람이 6장을 뽑고 차례를 잃는다.
-    private void challengeFails(PlayerId challenger, FourCharge charge, EventBatch events) {
-        events.add(UnoEvent.challenge(challenger, charge.by(), UnoEventReason.INNOCENT, charge.previousColor().orElse(null)));
-        penalize(challenger, FOUR + CHALLENGE_PENALTY, UnoEventReason.CHALLENGE_FAILED, events);
-        passTurn(NEXT);
-    }
-
-    // R19
-    public void accept(PlayerId player, EventBatch events) {
-        progress.requireActor(player);
-        progress.requireStage(UnoStage.CHALLENGE);
-        players.closeCatch();
-        progress.takeCharge();
-        penalize(player, FOUR, UnoEventReason.WILD_DRAW_FOUR, events);
-        passTurn(NEXT);
     }
 
     // R23·R27: 내 차례(PLAY/DRAWN)에 2장이면 외친다. 잡기 창의 대상 본인이면 언제든 늦게 외쳐 선언된다.
@@ -227,32 +168,6 @@ public class UnoRound {
                 .isPresent();
     }
 
-    public Optional<FourCharge> pendingCharge() {
-        return progress.pendingCharge();
-    }
-
-    public boolean isChargedBy(PlayerId player) {
-        return progress.pendingCharge()
-                .filter(charge -> charge.isBy(player))
-                .isPresent();
-    }
-
-    public void clearCharge() {
-        progress.clearCharge();
-    }
-
-    public Optional<ChallengeReveal> revealFor(PlayerId viewer) {
-        return progress.revealFor(viewer);
-    }
-
-    // R22: 도전 처리 직후 상태에서만 공개한다. R25: 외치기·잡기는 차례 행동이 아니므로 공개를 지우지 않는다.
-    void forgetRevealUnless(EventBatch batch) {
-        if (batch.has(UnoEventType.CHALLENGE) || batch.has(UnoEventType.UNO_CALL) || batch.has(UnoEventType.UNO_CAUGHT)) {
-            return;
-        }
-        progress.forgetReveal();
-    }
-
     private void skipNext(EventBatch events) {
         events.add(UnoEvent.skip(players.nextOf(players.current())));
         passTurn(SKIP_ONE);
@@ -271,6 +186,12 @@ public class UnoRound {
 
     private void drawTwoNext(EventBatch events) {
         penalize(players.nextOf(players.current()), DRAW_TWO_COUNT, UnoEventReason.DRAW_TWO, events);
+        passTurn(SKIP_ONE);
+    }
+
+    // R18: 다음 사람이 4장을 뽑고 차례를 잃는다(도전 없음, 언제든 낼 수 있다).
+    private void drawFourNext(EventBatch events) {
+        penalize(players.nextOf(players.current()), FOUR, UnoEventReason.WILD_DRAW_FOUR, events);
         passTurn(SKIP_ONE);
     }
 
@@ -308,7 +229,7 @@ public class UnoRound {
         passTurn(NEXT);
     }
 
-    // R29·R30: 마지막 카드의 뽑기 효과만 적용하고 끝낸다(SKIP·REVERSE·WILD는 효과 없음). 마지막 +4는 도전 없이 4장.
+    // R29·R30: 마지막 카드의 뽑기 효과만 적용하고 끝낸다(SKIP·REVERSE·WILD는 효과 없음). 마지막 +4도 4장.
     private void applyLastCard(UnoCard card, EventBatch events) {
         players.endTurn();
         PlayerId next = players.nextOf(players.current());
@@ -337,7 +258,7 @@ public class UnoRound {
         paintIfChoosing(player, acting, events);
         Hand hand = players.remove(player);
         table.bury(hand.cards());
-        afterLeaving(player, acting);
+        afterLeaving(acting);
     }
 
     // R36: 첫 카드 WILD 색 고르기 중이었다면 기권자의 손패로 자동 색(R40)을 먼저 정한다.
@@ -350,18 +271,13 @@ public class UnoRound {
         events.add(UnoEvent.color(player, color));
     }
 
-    // R36·R37(D13)·R39
-    private void afterLeaving(PlayerId player, boolean acting) {
-        if (acting) {
-            progress.clearCharge();
-            players.endTurn();
-            progress.begin(Turn.play(players.current()));
+    // R36·R39
+    private void afterLeaving(boolean acting) {
+        if (!acting) {
             return;
         }
-        if (isChargedBy(player)) {
-            progress.clearCharge();
-            progress.begin(Turn.play(players.current()));
-        }
+        players.endTurn();
+        progress.begin(Turn.play(players.current()));
     }
 
     // R40: 지금 단계의 행동을 대신 한다. 우노 외치기·잡기는 하지 않는다.
@@ -371,7 +287,6 @@ public class UnoRound {
             case PLAY -> drawAndKeep(actor, events);
             case DRAWN -> keep(actor, events);
             case CHOOSE_COLOR -> chooseColor(actor, ChosenColor.of(players.mostHeldColor(actor)), events);
-            case CHALLENGE -> accept(actor, events);
         }
     }
 
@@ -462,7 +377,7 @@ public class UnoRound {
         return players.catchTarget();
     }
 
-    // D19: 보는 사람이 지금 낼 수 있는 카드. PLAY면 R8, DRAWN이면 뽑은 카드만, 그 밖·남의 차례는 없음. 불법 +4도 들어간다(R11).
+    // D19: 보는 사람이 지금 낼 수 있는 카드. PLAY면 R8, DRAWN이면 뽑은 카드만, 그 밖·남의 차례는 없음. +4는 언제든 들어간다(R11).
     public List<CardId> playableFor(PlayerId viewer) {
         if (progress.isActorIn(viewer, UnoStage.DRAWN)) {
             return progress.drawnCard().stream().toList();
@@ -471,14 +386,6 @@ public class UnoRound {
             return List.of();
         }
         return players.playable(viewer, table.top(), table.color().orElse(null));
-    }
-
-    // 지금 +4를 내면 불법인지(현재 색 카드를 갖고 있음). 내 차례(PLAY/DRAWN)에만 참일 수 있다.
-    public boolean isRiskyFour(PlayerId viewer) {
-        if (!progress.isActorIn(viewer, UnoStage.PLAY, UnoStage.DRAWN)) {
-            return false;
-        }
-        return !holdsNoActiveColor(viewer);
     }
 
     public Optional<CardId> drawnFor(PlayerId viewer) {

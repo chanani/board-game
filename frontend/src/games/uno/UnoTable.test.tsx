@@ -242,7 +242,7 @@ describe('UnoTable 배치', () => {
     expect(screen.queryByTestId('turn-tag')).not.toBeInTheDocument();
   });
 
-  it.each(['DRAWN', 'CHOOSE_COLOR', 'CHALLENGE'] as const)('%s 단계에서도 내가 결정할 차례면 리본이 뜬다', (stage) => {
+  it.each(['DRAWN', 'CHOOSE_COLOR'] as const)('%s 단계에서도 내가 결정할 차례면 리본이 뜬다', (stage) => {
     renderTable({ stage, deadline: 8_000, serverNow: 0 });
 
     expect(screen.getByTestId('my-turn-ribbon')).toHaveTextContent('내 차례 · 8초');

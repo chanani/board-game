@@ -233,20 +233,4 @@ class UnoCallTest {
         assertThat(game.cardCount(A)).isEqualTo(2);
         assertThat(game.isDeclared(A)).isFalse();
     }
-
-    @Test
-    void R11_도전_전에_잡혀_받은_카드는_판정에_쓰지_않는다() {
-        List<UnoCard> pile = new ArrayList<>(List.of(num(RED, 9), num(RED, 8)));
-        pile.addAll(filler(10));
-        UnoGame game = game(List.of(A, B, C), List.of(
-                List.of(wildFour(0), num(GREEN, 1)), List.of(num(GREEN, 2), num(GREEN, 3)), List.of(num(GREEN, 4), num(GREEN, 6))), FIRST, pile);
-        game.play(A, wildFour(0).id(), ChosenColor.of(BLUE));
-        game.catchUno(C, A);
-        assertThat(game.handOf(A)).contains(num(RED, 9), num(RED, 8));
-
-        game.challenge(B);
-
-        assertThat(game.latestEvents().get(0).reason()).isEqualTo(UnoEventReason.INNOCENT);
-        assertThat(game.revealFor(B)).hasValueSatisfying(reveal -> assertThat(reveal.cards()).containsExactly(num(GREEN, 1)));
-    }
 }

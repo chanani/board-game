@@ -88,35 +88,6 @@ class UnoForfeitTest {
     }
 
     @Test
-    void R37_와일드_4를_받은_사람이_기권하면_효과가_사라지고_그_다음_사람이_한다() {
-        UnoGame game = threePlayers(List.of(wildFour(0), num(RED, 1)), filler(10));
-        game.play(A, wildFour(0).id(), ChosenColor.of(GREEN));
-
-        game.forfeit(B);
-
-        assertThat(game.actor()).isEqualTo(C);
-        assertThat(game.stage()).isEqualTo(UnoStage.PLAY);
-        assertThat(game.pendingCharge()).isEmpty();
-        assertThat(game.cardCount(A)).isEqualTo(1);
-        assertThat(game.cardCount(C)).isEqualTo(2);
-    }
-
-    @Test
-    void R37_와일드_4를_낸_사람이_기권하면_받는_사람이_벌칙_없이_정상_차례를_한다() {
-        UnoGame game = threePlayers(List.of(wildFour(0), num(RED, 1)), filler(10));
-        game.play(A, wildFour(0).id(), ChosenColor.of(GREEN));
-        StageSeq before = game.stageSeq();
-
-        game.forfeit(A);
-
-        assertThat(game.actor()).isEqualTo(B);
-        assertThat(game.stage()).isEqualTo(UnoStage.PLAY);
-        assertThat(game.stageSeq()).isNotEqualTo(before);
-        assertThat(game.cardCount(B)).isEqualTo(2);
-        assertThat(game.pendingCharge()).isEmpty();
-    }
-
-    @Test
     void R35_잡기_대상이_기권하면_창이_닫힌다() {
         UnoGame game = threePlayers();
         game.play(A, num(RED, 1).id(), ChosenColor.none());

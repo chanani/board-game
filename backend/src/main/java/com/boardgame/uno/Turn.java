@@ -18,10 +18,6 @@ public record Turn(PlayerId actor, UnoStage stage, CardId drawn) {
         return new Turn(actor, UnoStage.CHOOSE_COLOR, null);
     }
 
-    public static Turn challenge(PlayerId actor) {
-        return new Turn(actor, UnoStage.CHALLENGE, null);
-    }
-
     public boolean isActor(PlayerId player) {
         return actor.equals(player);
     }

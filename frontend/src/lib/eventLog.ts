@@ -1,5 +1,5 @@
 export type LogKind = 'draw-deck' | 'draw-discard' | 'place' | 'undo' | 'peek' | 'start' | 'result' | 'timeout' | 'leave' | 'other'
-  | 'play' | 'skip' | 'reverse' | 'color' | 'challenge' | 'uno' | 'catch' | 'reshuffle' | 'pair' | 'shuffle' | 'finish' | 'thief';
+  | 'play' | 'skip' | 'reverse' | 'color' | 'uno' | 'catch' | 'reshuffle' | 'pair' | 'shuffle' | 'finish' | 'thief';
 export type LogDraft = { kind: LogKind; actorId?: number; text: string };
 export type LogEntry = LogDraft & { id: number; at: number };
 

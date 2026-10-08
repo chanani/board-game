@@ -4,7 +4,6 @@ import com.boardgame.uno.UnoColor;
 import com.boardgame.uno.UnoStage;
 import com.boardgame.uno.view.UnoCardView;
 import com.boardgame.uno.view.UnoCatchView;
-import com.boardgame.uno.view.UnoChallengeView;
 import com.boardgame.uno.view.UnoEventView;
 import com.boardgame.uno.view.UnoPlayerView;
 import com.boardgame.uno.view.UnoSessionView;
@@ -15,7 +14,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.ToIntFunction;
 
-// R16: 컴퓨터의 시야 = 그 자리 사람이 받는 화면(UnoView) 그대로. 남의 손패·뽑을 더미·+4 합법 여부는 여기에 없다.
+// R16: 컴퓨터의 시야 = 그 자리 사람이 받는 화면(UnoView) 그대로. 남의 손패·뽑을 더미는 여기에 없다.
 public record UnoSight(UnoView game) {
 
     public static UnoSight of(Object view) {
@@ -47,11 +46,6 @@ public record UnoSight(UnoView game) {
                 .toList();
     }
 
-    /** 지금 +4를 내면 허세(현재 색 카드를 가짐)인지. */
-    public boolean riskyFour() {
-        return game.wildDrawFourRisky();
-    }
-
     public Optional<UnoCardView> drawn() {
         Integer drawnId = game.drawnCardId();
         return hand().stream()
@@ -70,10 +64,6 @@ public record UnoSight(UnoView game) {
     public Optional<Long> catchTarget() {
         return Optional.ofNullable(game.unoCatch())
                 .map(UnoCatchView::playerId);
-    }
-
-    public Optional<UnoChallengeView> challenge() {
-        return Optional.ofNullable(game.challenge());
     }
 
     public Optional<UnoColor> currentColor() {

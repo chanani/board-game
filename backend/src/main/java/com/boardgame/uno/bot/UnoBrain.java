@@ -6,7 +6,7 @@ import com.boardgame.game.bot.BotDifficulty;
 import com.boardgame.game.bot.BotMind;
 import org.springframework.stereotype.Component;
 
-// 우노 컴퓨터 머리(R29~R32). 컴퓨터 한 명·한 판마다 새 판단(상은 새 기억)을 만든다.
+// 우노 컴퓨터 머리(R29~R32). 컴퓨터 한 명·한 판마다 새 판단을 만든다.
 @Component
 public class UnoBrain implements BotBrain {
 
@@ -24,7 +24,7 @@ public class UnoBrain implements BotBrain {
         return switch (difficulty) {
             case EASY -> new EasyUno();
             case MEDIUM -> new MediumUno();
-            case HARD -> new HardUno(new UnoMemory());
+            case HARD -> new HardUno();
         };
     }
 }

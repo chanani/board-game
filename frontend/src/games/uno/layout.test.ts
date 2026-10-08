@@ -95,12 +95,10 @@ describe('차례 안내 문구', () => {
     expect(unoInstruction(unoView({ stage: 'DRAWN' }), 1, nick, false)).toBe('뽑은 카드를 낼까요?');
     expect(unoInstruction(unoView({ stage: 'CHOOSE_COLOR' }), 1, nick, true)).toBe('첫 카드가 와일드예요. 색을 골라 주세요.');
     expect(unoInstruction(unoView({ stage: 'CHOOSE_COLOR' }), 1, nick, false)).toBe('색을 골라 주세요');
-    expect(unoInstruction(unoView({ stage: 'CHALLENGE' }), 1, nick, true)).toBe('와일드 +4에 도전할지 골라 주세요.');
-    expect(unoInstruction(unoView({ stage: 'CHALLENGE' }), 1, nick, false)).toBe('도전할지 골라 주세요');
   });
 
   it('남의 차례와 끝난 게임', () => {
-    expect(unoInstruction(unoView({ stage: 'CHALLENGE', currentPlayerId: 2 }), 1, nick, true)).toBe('밥님이 도전할지 고르는 중…');
+    expect(unoInstruction(unoView({ stage: 'PLAY', currentPlayerId: 2 }), 1, nick, true)).toBe('밥님의 차례예요.');
     expect(unoInstruction(unoView({ stage: 'PLAY', currentPlayerId: 3 }), 1, nick, false)).toBe('캐롤님의 차례예요.');
     expect(unoInstruction(unoView({ status: 'GAME_OVER', stage: null, currentPlayerId: null }), 1, nick, true)).toBe('게임이 끝났어요.');
   });

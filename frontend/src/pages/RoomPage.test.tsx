@@ -663,8 +663,8 @@ describe('RoomPage 우노', () => {
     viewerId: 3, status: 'IN_PROGRESS', startedAt: 1000, stage: 'PLAY', currentPlayerId: 1, direction: 'CLOCKWISE', currentColor: 'RED',
     discardTop: { id: 9, kind: 'NUMBER', color: 'RED', number: 5 }, discardCount: 1, drawPileCount: 80, participantIds: [1, 2, 3],
     players: [{ playerId: 1, cardCount: 7, unoDeclared: false }, { playerId: 2, cardCount: 7, unoDeclared: false }, { playerId: 3, cardCount: 7, unoDeclared: false }],
-    hand: [{ id: 3, kind: 'NUMBER', color: 'RED', number: 2 }], playableCardIds: [], wildDrawFourRisky: false, drawnCardId: null,
-    canCallUno: false, unoCatch: null, canCatch: false, challenge: null, reveal: null, result: null, winnerId: null,
+    hand: [{ id: 3, kind: 'NUMBER', color: 'RED', number: 2 }], playableCardIds: [], drawnCardId: null,
+    canCallUno: false, unoCatch: null, canCatch: false, result: null, winnerId: null,
     deadline: null, serverNow: 0, lastAutoActorIds: [], autoActSeq: 0, events: [],
   };
 

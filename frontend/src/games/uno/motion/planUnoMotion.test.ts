@@ -27,7 +27,7 @@ describe('planUnoMotion', () => {
   it('여러 장 뽑기는 장당 0.25초·0.08초 간격, 최대 6장만 날리고 소리는 0.12초 간격 최대 4번', () => {
     const plan = planUnoMotion(before, unoView({ events: [
       unoEvent(5, 'PLAY', { actorId: 1, card: num('RED', 7, 13) }),
-      unoEvent(6, 'PENALTY', { targetId: 2, count: 8, reason: 'CHALLENGE_FAILED' }),
+      unoEvent(6, 'PENALTY', { targetId: 2, count: 8, reason: 'UNO_CAUGHT' }),
     ] }), 1);
 
     const draws = plan.flights.filter((flight) => flight.from === 'draw');

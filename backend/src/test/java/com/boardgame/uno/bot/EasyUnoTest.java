@@ -1,6 +1,5 @@
 package com.boardgame.uno.bot;
 
-import static com.boardgame.uno.bot.UnoViews.LEFT;
 import static com.boardgame.uno.bot.UnoViews.number;
 import static com.boardgame.uno.bot.UnoViews.view;
 import static com.boardgame.uno.bot.UnoViews.wild;
@@ -60,13 +59,6 @@ class EasyUnoTest {
 
         assertThat(action.cardId()).isEqualTo(card.id());
         assertThat(action.color()).isEqualTo("GREEN");
-    }
-
-    @Test
-    void R29_도전은_늘_받기() {
-        UnoSight sight = view().held(number(UnoColor.BLUE, 1)).challenge(LEFT, UnoColor.RED).left(9).sight();
-
-        assertThat(easy.turn(sight, new FixedRandom(0)).type()).isEqualTo("ACCEPT");
     }
 
     @Test

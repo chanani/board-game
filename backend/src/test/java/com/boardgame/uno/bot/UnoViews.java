@@ -9,7 +9,6 @@ import com.boardgame.uno.UnoStage;
 import com.boardgame.uno.UnoStatus;
 import com.boardgame.uno.view.UnoCardView;
 import com.boardgame.uno.view.UnoCatchView;
-import com.boardgame.uno.view.UnoChallengeView;
 import com.boardgame.uno.view.UnoEventView;
 import com.boardgame.uno.view.UnoPlayerView;
 import com.boardgame.uno.view.UnoSessionView;
@@ -34,12 +33,10 @@ final class UnoViews {
     private final List<Integer> playable = new ArrayList<>();
     private int leftCards = 7;
     private int rightCards = 7;
-    private boolean risky;
     private Integer drawn;
     private boolean canCall;
     private UnoCatchView unoCatch;
     private boolean canCatch;
-    private UnoChallengeView challenge;
     private final List<UnoEventView> events = new ArrayList<>();
 
     static UnoViews view() {
@@ -115,11 +112,6 @@ final class UnoViews {
         return this;
     }
 
-    UnoViews risky() {
-        this.risky = true;
-        return this;
-    }
-
     /** DRAWN 단계: 방금 뽑은 낼 수 있는 카드. */
     UnoViews drawn(UnoCardView card) {
         this.stage = UnoStage.DRAWN;
@@ -142,12 +134,6 @@ final class UnoViews {
         return this;
     }
 
-    UnoViews challenge(long by, UnoColor previous) {
-        this.stage = UnoStage.CHALLENGE;
-        this.challenge = new UnoChallengeView(by, ME, previous);
-        return this;
-    }
-
     UnoViews events(UnoEventView... events) {
         this.events.addAll(List.of(events));
         return this;
@@ -160,7 +146,7 @@ final class UnoViews {
                 new UnoPlayerView(RIGHT, rightCards, false));
         return new UnoView(ME, UnoStatus.IN_PROGRESS, 0L, stage, current, direction, color,
                 number(color, 0), 1, 80, List.of(ME, LEFT, RIGHT), seats, List.copyOf(hand),
-                List.copyOf(playable), risky, drawn, canCall, unoCatch, canCatch, challenge, null, null, null,
+                List.copyOf(playable), drawn, canCall, unoCatch, canCatch, null, null,
                 null, 0L, List.of(), 0L, List.copyOf(events));
     }
 

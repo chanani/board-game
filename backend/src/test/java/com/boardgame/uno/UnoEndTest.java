@@ -66,13 +66,12 @@ class UnoEndTest {
     }
 
     @Test
-    void R30_마지막_와일드_4는_도전_없이_받는_사람이_4장을_뽑고_끝난다() {
+    void R30_마지막_와일드_4는_받는_사람이_4장을_뽑고_끝난다() {
         UnoGame game = lastCardReady(wildFour(0));
 
         game.play(A, wildFour(0).id(), ChosenColor.of(GREEN));
 
         assertThat(game.isFinished()).isTrue();
-        assertThat(game.pendingCharge()).isEmpty();
         assertThat(game.cardCount(B)).isEqualTo(7);
         assertThat(game.latestEvents()).extracting(UnoEvent::type).containsExactly(UnoEventType.PLAY, UnoEventType.PENALTY, UnoEventType.GAME_END);
         assertThat(game.latestEvents().get(1).reason()).isEqualTo(UnoEventReason.WILD_DRAW_FOUR);
@@ -119,15 +118,14 @@ class UnoEndTest {
     }
 
     @Test
-    void D12_마지막_와일드_4는_도전_단계를_거치지_않고_점수까지_정산된다() {
+    void D12_마지막_와일드_4는_다음_사람에게_4장을_주고_점수까지_정산된다() {
         UnoGame game = lastCardReady(wildFour(0));
         StageSeq before = game.stageSeq();
 
         game.play(A, wildFour(0).id(), ChosenColor.of(GREEN));
 
-        assertThat(game.stage()).isNotEqualTo(UnoStage.CHALLENGE);
         assertThat(game.stageSeq()).isEqualTo(before);
-        assertThat(game.latestEvents()).extracting(UnoEvent::type).doesNotContain(UnoEventType.CHALLENGE);
+        assertThat(game.latestEvents()).extracting(UnoEvent::type).contains(UnoEventType.PENALTY);
         assertThat(game.result()).hasValueSatisfying(result -> assertThat(result.points()).isEqualTo(game.pointsOf(B).plus(game.pointsOf(C))));
     }
 }

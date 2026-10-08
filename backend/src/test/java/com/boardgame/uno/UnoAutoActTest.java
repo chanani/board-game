@@ -99,18 +99,6 @@ class UnoAutoActTest {
     }
 
     @Test
-    void R40_도전_시간_초과면_도전하지_않고_4장을_받는다() {
-        UnoGame game = threePlayers(List.of(wildFour(0), num(RED, 1)), FIRST, filler(10));
-        game.play(A, wildFour(0).id(), ChosenColor.of(GREEN));
-
-        PlayerId acted = game.autoAct();
-
-        assertThat(acted).isEqualTo(B);
-        assertThat(game.cardCount(B)).isEqualTo(6);
-        assertThat(game.actor()).isEqualTo(C);
-    }
-
-    @Test
     void R25_시간_초과_자동_행동도_잡기_창을_닫는다() {
         UnoGame game = threePlayers(List.of(num(RED, 1), num(RED, 2)), FIRST, filler(10));
         game.play(A, num(RED, 1).id(), ChosenColor.none());

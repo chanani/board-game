@@ -137,17 +137,14 @@ class UnoSessionTimerTest {
     }
 
     @Test
-    void R20_도전_성공_뒤_같은_사람의_PLAY도_15초부터() {
+    void R18_와일드_4로_건너뛴_다음_사람의_PLAY도_15초부터() {
         UnoSession session = session(List.of(A, B, C), List.of(
                 List.of(wildFour(0), num(RED, 1)), List.of(num(GREEN, 2), num(GREEN, 3)), List.of(num(GREEN, 4), num(GREEN, 6))), filler(10));
         after(3);
+
         session.act(A, new GameAction("PLAY", null, null, wildFour(0).id().value(), "GREEN", null));
+
         assertThat(session.deadline()).contains(at(18));
-        after(4);
-
-        session.act(B, action("CHALLENGE"));
-
-        assertThat(session.deadline()).contains(at(22));
     }
 
     @Test
