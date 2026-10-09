@@ -186,6 +186,8 @@ export type OldMaidView = {
   lastAutoActorIds: number[];
   autoActSeq: number;
   events: OldMaidEvent[];
+  /** 손패를 비우고 끝낸 참가자에게만: 지금 뽑히는 사람의 손패 앞면(그 사람 순서대로). 그 밖에는 null(옛 서버는 없음). */
+  targetHand?: PlayingCard[] | null;
 };
 export type OldMaidSessionView = { gameType: 'OLD_MAID'; game: OldMaidView };
 /** /user/queue/signal: 뽑는 사람이 고르는 카드(스펙 4.3). index = null이면 고르지 않음. */

@@ -13,7 +13,7 @@ import com.boardgame.oldmaid.view.OldMaidView;
 import java.time.Instant;
 import java.util.List;
 
-// 컴퓨터 자리 화면을 손으로 만든다(23필드 순서는 OldMaidView).
+// 컴퓨터 자리 화면을 손으로 만든다(24필드 순서는 OldMaidView).
 final class OldMaidViews {
 
     static final long ME = -1L;
@@ -27,7 +27,7 @@ final class OldMaidViews {
                                    boolean canShuffle, boolean canDiscard) {
         OldMaidView game = new OldMaidView(me, OldMaidStatus.IN_PROGRESS, stage, 0L, current, target, turnSeq,
                 players.stream().map(OldMaidPlayerView::playerId).toList(), players, hand, null,
-                canShuffle, canDiscard, 0, List.of(), List.of(), null, null, null, 0L, List.of(), 0L, List.of());
+                canShuffle, canDiscard, 0, List.of(), List.of(), null, null, null, 0L, List.of(), 0L, List.of(), null);
         return new OldMaidSessionView(game);
     }
 
@@ -69,7 +69,7 @@ final class OldMaidViews {
         OldMaidView game = new OldMaidView(g.viewerId(), g.status(), g.stage(), g.startedAt(), g.currentPlayerId(),
                 g.targetId(), g.turnSeq(), g.participantIds(), g.players(), g.hand(), g.peek(), g.canShuffle(),
                 g.canDiscard(), g.discardCount(), g.recentPairs(), g.discards(), g.result(), g.winnerId(), g.deadline(),
-                at.toEpochMilli(), g.lastAutoActorIds(), g.autoActSeq(), List.of(shuffle));
+                at.toEpochMilli(), g.lastAutoActorIds(), g.autoActSeq(), List.of(shuffle), g.targetHand());
         return new OldMaidSessionView(game);
     }
 }

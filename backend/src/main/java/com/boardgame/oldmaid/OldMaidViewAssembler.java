@@ -44,7 +44,8 @@ final class OldMaidViewAssembler {
                 context.timing().serverNow(),
                 context.autoActors().ids(),
                 context.autoActors().sequence(),
-                events(game));
+                events(game),
+                turning ? targetHand(game, viewer) : null);
     }
 
     // 신호 내용(스펙 4.3): 지금 차례와 고르는 자리.
@@ -67,6 +68,18 @@ final class OldMaidViewAssembler {
             return null;
         }
         return OldMaidCardView.listOf(game.handOf(viewer));
+    }
+
+    // 손패를 비우고 끝낸 참가자는 뽑히는 사람 시점으로 관전한다. 아직 하는 사람·관전자·기권자에게는 숨은 정보라 null.
+    private static List<OldMaidCardView> targetHand(OldMaidGame game, PlayerId viewer) {
+        if (!watchesTarget(game, viewer)) {
+            return null;
+        }
+        return OldMaidCardView.listOf(game.handOf(game.target()));
+    }
+
+    private static boolean watchesTarget(OldMaidGame game, PlayerId viewer) {
+        return game.isParticipant(viewer) && game.finishRankOf(viewer).isPresent();
     }
 
     private static OldMaidPeekView peek(OldMaidGame game) {

@@ -19,7 +19,7 @@ export function oldMaidView(overrides: Partial<OldMaidView> = {}): OldMaidView {
     ],
     hand: [card('SPADES', 'THREE'), card('HEARTS', 'SEVEN')], peek: { index: null, seq: 0 }, canShuffle: false, canDiscard: false,
     discardCount: 0, recentPairs: [], discards: [], result: null, winnerId: null, deadline: null, serverNow: 0,
-    lastAutoActorIds: [], autoActSeq: 0, events: [],
+    lastAutoActorIds: [], autoActSeq: 0, events: [], targetHand: null,
     ...overrides,
   };
 }

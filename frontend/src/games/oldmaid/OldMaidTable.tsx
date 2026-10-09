@@ -28,6 +28,7 @@ import { TargetFan } from './TargetFan';
 import { effectivePeek, usePeekSender } from './usePeek';
 import { useShuffleEffects } from './useShuffleEffects';
 import { useSuddenDeath } from './suddenDeath';
+import { EyeIcon } from '../../components/icons';
 import { EmoteBubble } from '../../emote/EmoteBubble';
 import { EMOTE_DOCK, EmoteDock } from '../../emote/EmoteDock';
 
@@ -217,15 +218,24 @@ export function OldMaidTable({ view, room, meId, log, receivedAt, now, errorSeq,
   // 짝 버리기 단계에 상대의 마지막 카드를 뽑았으면 그 상대는 이미 끝냈으므로 빈 부채를 그리지 않는다.
   const targetEmptied = game.stage === 'DISCARD' && targetPlayer?.cardCount === 0;
   const showFan = live && targetPlayer !== undefined && game.targetId !== meId && !targetEmptied;
+  // 손패를 비우고 끝낸 사람은 뽑히는 사람 시점으로 관전한다: 서버가 끝낸 사람에게만 주는 그 사람 손패 앞면을 가운데 부채에 편다.
+  const targetFaces = showFan ? game.targetHand ?? null : null;
   const center = (
-    <div data-testid="center" className="flex w-full min-w-0 flex-col items-center gap-2">
-      {caption ? <p data-testid="pick-caption" className="felt-ink text-xs font-bold">{caption}</p> : null}
+    <div data-testid="center" className="relative flex w-full min-w-0 flex-col items-center gap-2">
+      {/* 끝낸 사람에게는 고르는 중 안내 대신 시점 안내. 눕힌 6명 판(위 줄 배치)은 높이가 빠듯해 부채 위에 겹쳐 띄운다. */}
+      {caption && !targetFaces ? <p data-testid="pick-caption" className="felt-ink text-xs font-bold">{caption}</p> : null}
+      {targetFaces && targetPlayer ? (
+        <p data-testid="target-view-label"
+          className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-black/55 px-2.5 py-0.5 text-[11px] font-bold text-cream-50 ${seatsOnTop ? 'absolute left-1/2 top-0 z-20 -translate-x-1/2' : ''}`}>
+          <EyeIcon className="h-3.5 w-3.5" />고름 당하는 {nicknameOf(targetPlayer.playerId)}님 시점
+        </p>
+      ) : null}
       <div className="flex w-full min-w-0 items-end justify-center gap-4">
         {showFan && targetPlayer ? (
           // 상대나 차례가 바뀌면 고르던(올린·누른) 카드 기억을 새로 시작한다.
           <TargetFan key={`${targetPlayer.playerId}:${turnKey}`} ownerName={nicknameOf(targetPlayer.playerId)} count={targetPlayer.cardCount} cardWidth={sizes.pick}
             minVisible={sizes.pickMinVisible} liftIndex={drawing ? liftIndex : null} layout={layout} interactive={myTurn && drawing} onPeek={sendPeek} onDraw={draw}
-            tremble={sudden.active} />
+            tremble={sudden.active} faces={targetFaces} />
         ) : null}
         <DiscardPairs pairs={game.recentPairs} count={game.discardCount} cardWidth={sizes.pair} discards={game.discards ?? []} nicknameOf={nicknameOf} />
       </div>

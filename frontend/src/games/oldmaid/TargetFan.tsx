@@ -1,3 +1,4 @@
+import type { PlayingCard } from '../../api/types';
 import { Fragment, useCallback, useEffect, useRef, useState, type FocusEvent, type KeyboardEvent } from 'react';
 import { useMediaQuery } from '../../lib/useMediaQuery';
 import type { TableLayout } from '../../lib/useTableLayout';
@@ -20,6 +21,8 @@ type Props = {
   onDraw?: (index: number) => void;
   /** 서든데스: 카드가 저마다 다른 박자로 살짝 떨린다(움직임 줄이기면 가만히). */
   tremble?: boolean;
+  /** 끝낸 사람의 "뽑히는 사람 시점": 자리마다 그 사람 손패의 앞면(없으면 뒷면). */
+  faces?: PlayingCard[] | null;
 };
 
 /** 떨리는 카드끼리 박자를 어긋나게 하는 간격(초). */
@@ -30,7 +33,7 @@ const TREMBLE_STAGGER_S = 0.35;
  * 정밀 포인터는 올리면 신호·누르면 뽑기, 터치는 첫 탭에 고르고(신호) 다시 탭하거나 "뽑기"로 뽑는다, 키보드는 초점에 신호·Enter/Space로 뽑기.
  * 부채 밖을 누르거나 초점이 부채 밖으로 나가면 고르기를 풀고 null 신호를 보낸다(들림이 남지 않게, F-b11).
  */
-export function TargetFan({ ownerName, count, cardWidth, minVisible, liftIndex, layout, interactive = false, onPeek, onDraw, tremble = false }: Props) {
+export function TargetFan({ ownerName, count, cardWidth, minVisible, liftIndex, layout, interactive = false, onPeek, onDraw, tremble = false, faces = null }: Props) {
   const fine = useMediaQuery('(pointer: fine)');
   const boxRef = useRef<HTMLDivElement>(null);
   const width = useElementWidth(boxRef);
@@ -107,20 +110,20 @@ export function TargetFan({ ownerName, count, cardWidth, minVisible, liftIndex, 
   };
 
   return (
-    <div ref={boxRef} role="group" aria-label={`${ownerName}님의 카드 ${count}장`} data-testid="target-fan" data-oldmaid-zone="target"
+    <div ref={boxRef} role="group" aria-label={`${ownerName}님의 카드 ${count}장${faces ? ', 앞면' : ''}`} data-testid="target-fan" data-oldmaid-zone="target"
       className={`w-full min-w-0 ${scroll ? 'overflow-x-auto' : 'overflow-x-clip'}`}
       style={scroll ? { maskImage: EDGE_FADE, WebkitMaskImage: EDGE_FADE } : undefined} onPointerLeave={leave} onBlur={blur}>
       <div className="relative" style={{ width: innerWidth, height: top + cardWidth * 1.5 + room, margin: scroll ? undefined : '0 auto' }}>
         {angles.map((angle, index) => {
           const lifted = index === shown;
           const style = { left: inset + index * step, top, zIndex: index, transform: `translateY(${fanDrop(cardWidth, angle, radius) - (lifted ? lift : 0)}px) rotate(${angle}deg)` };
-          const back = <PlayingCardFace card={null} width={cardWidth} decorative className={lifted ? 'rounded-lg ring-4 ring-(--accent)' : undefined} />;
+          const back = <PlayingCardFace card={faces?.[index] ?? null} width={cardWidth} decorative className={lifted ? 'rounded-lg ring-4 ring-(--accent)' : undefined} />;
           const face = tremble ? (
             <span data-testid="tremble" className="sudden-tremble" style={{ animationDelay: `${-index * TREMBLE_STAGGER_S}s` }}>{back}</span>
           ) : back;
           if (!interactive) {
             return (
-              <span key={index} data-testid="target-card" data-index={index} data-lifted={lifted ? 'true' : undefined} aria-hidden="true"
+              <span key={index} data-testid="target-card" data-index={index} data-lifted={lifted ? 'true' : undefined} data-face={faces?.[index] ? 'true' : undefined} aria-hidden="true"
                 className="absolute transition-transform duration-150 motion-reduce:transition-none" style={style}>{face}</span>
             );
           }

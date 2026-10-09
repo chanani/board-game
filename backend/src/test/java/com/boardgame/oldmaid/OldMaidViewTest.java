@@ -284,4 +284,75 @@ class OldMaidViewTest {
         assertThat(spectator.at("/game/result/thiefId").asLong()).isEqualTo(2L);
         assertThat(cardIds(spectator)).doesNotContain(52);
     }
+
+    // A: 스페이드 5, B: 하트 5·스페이드 9, C: 하트 9·다이아몬드 7·조커, D: 클로버 7·스페이드 8. A가 B의 하트 5를 뽑아 짝을 버리고 끝낸다.
+    private OldMaidSession finishedA() {
+        OldMaidGame game = game(A, hands(
+                List.of(s(Rank.FIVE)),
+                List.of(h(Rank.FIVE), s(Rank.NINE)),
+                List.of(h(Rank.NINE), d(Rank.SEVEN), JOKER),
+                List.of(c(Rank.SEVEN), s(Rank.EIGHT))));
+        OldMaidSession session = new OldMaidSession(List.of(1L, 2L, 3L, 4L), game, clock);
+        session.act(1L, draw(0));
+        session.act(1L, discard(s(Rank.FIVE), h(Rank.FIVE)));
+        return session;
+    }
+
+    private static int id(PlayingCard card) {
+        return card.id().value();
+    }
+
+    @Test
+    void 끝낸_사람은_뽑히는_사람_시점으로_그_손패_앞면을_그_순서대로_본다() {
+        OldMaidSession session = finishedA();
+
+        JsonNode finished = json(session, 1L);
+
+        // B가 C에게서 뽑을 차례: 끝낸 A는 C의 손패(조커 포함)를 C의 순서대로 본다.
+        assertThat(finished.at("/game/currentPlayerId").asLong()).isEqualTo(2L);
+        assertThat(finished.at("/game/targetId").asLong()).isEqualTo(3L);
+        assertThat(cardIds(finished.at("/game/targetHand")))
+                .containsExactly(id(h(Rank.NINE)), id(d(Rank.SEVEN)), id(JOKER));
+        assertThat(finished.at("/game/targetHand/2/rank").asText()).isEqualTo("JOKER");
+    }
+
+    @Test
+    void 뽑히는_사람이_바뀌면_끝낸_사람의_시점도_따라간다() {
+        OldMaidSession session = finishedA();
+        session.act(2L, draw(0));
+        session.act(2L, discard(s(Rank.NINE), h(Rank.NINE)));
+
+        JsonNode finished = json(session, 1L);
+
+        // B도 끝내 C가 D에게서 뽑는다: A는 이제 D의 손패를 본다.
+        assertThat(finished.at("/game/targetId").asLong()).isEqualTo(4L);
+        assertThat(cardIds(finished.at("/game/targetHand"))).containsExactly(id(c(Rank.SEVEN)), id(s(Rank.EIGHT)));
+    }
+
+    @Test
+    void 숨은_정보_아직_하는_사람_관전자_기권자는_뽑히는_사람_손패를_받지_않는다() {
+        OldMaidSession session = finishedA();
+        session.forfeit(4L);
+
+        // 기권한 D의 카드는 다음 사람(A는 끝냈으므로 B)에게 넘어간다. B가 C에게서 뽑을 차례는 그대로.
+        List<Integer> cHand = List.of(id(h(Rank.NINE)), id(d(Rank.SEVEN)), id(JOKER));
+        for (long viewer : List.of(2L, 3L, 4L, 99L)) {
+            JsonNode view = json(session, viewer);
+            assertThat(view.at("/game/targetHand").isNull()).isTrue();
+        }
+        assertThat(cardIds(json(session, 2L))).doesNotContainAnyElementsOf(cHand);
+        assertThat(cardIds(json(session, 99L))).doesNotContainAnyElementsOf(cHand);
+        assertThat(cardIds(json(session, 4L))).doesNotContainAnyElementsOf(cHand);
+        assertThat(cardIds(json(session, 1L).at("/game/targetHand"))).containsExactlyElementsOf(cHand);
+    }
+
+    @Test
+    void 처음_버리기_단계와_끝난_게임에는_뽑히는_사람_손패가_없다() {
+        OldMaidGame game = game(A, hands(List.of(s(Rank.FIVE)), List.of(h(Rank.FIVE), JOKER)));
+        OldMaidSession session = new OldMaidSession(List.of(1L, 2L), game, clock);
+        session.act(1L, draw(0));
+        session.act(1L, discard(s(Rank.FIVE), h(Rank.FIVE)));
+
+        assertThat(json(session, 1L).at("/game/targetHand").isNull()).isTrue();
+    }
 }
