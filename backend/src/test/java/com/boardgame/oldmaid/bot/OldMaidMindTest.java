@@ -94,6 +94,36 @@ class OldMaidMindTest {
     }
 
     @Test
+    void 서든데스에서_뽑을_때는_1초_더_머뭇거린다() {
+        // 카드 가진 사람이 나(1장)와 상대(2장)뿐: 이번 뽑기에 승부가 걸렸다.
+        BotPlan sudden = plan(brain.mind(BotDifficulty.EASY), OldMaidViews.drawing(2), PendingKind.TURN,
+                new FixedRandom(0));
+        // 세 번째 사람도 카드를 들고 있으면 서든데스가 아니다.
+        Object crowded = OldMaidViews.view(OldMaidViews.ME, OldMaidStage.DRAW, OldMaidViews.ME, OldMaidViews.OTHER, 3L,
+                List.of(OldMaidViews.card(1)), List.of(OldMaidViews.player(OldMaidViews.ME, 1),
+                        OldMaidViews.player(OldMaidViews.OTHER, 2), OldMaidViews.player(-3L, 2)), false, false);
+        BotPlan calm = plan(brain.mind(BotDifficulty.EASY), crowded, PendingKind.TURN, new FixedRandom(0));
+
+        assertThat(sudden.first().delay().toMillis()).isEqualTo(1800);
+        assertThat(calm.first().delay().toMillis()).isEqualTo(800);
+    }
+
+    @Test
+    void 서든데스는_두_사람이_1장과_2장을_들고_1장_쪽이_뽑을_때만이다() {
+        OldMaidSight sudden = OldMaidSight.of(OldMaidViews.drawing(2));
+        // 2장 쪽이 1장 쪽에서 뽑으면 결과가 이미 정해져 있다.
+        OldMaidSight settled = OldMaidSight.of(OldMaidViews.view(OldMaidViews.ME, OldMaidStage.DRAW, OldMaidViews.ME,
+                OldMaidViews.OTHER, 3L, List.of(OldMaidViews.card(1), OldMaidViews.card(2)),
+                List.of(OldMaidViews.player(OldMaidViews.ME, 2), OldMaidViews.player(OldMaidViews.OTHER, 1)), false, false));
+        OldMaidSight discarding = OldMaidSight.of(OldMaidViews.discarding(OldMaidStage.DISCARD));
+
+        assertThat(sudden.isSuddenDeath()).isTrue();
+        assertThat(settled.isSuddenDeath()).isFalse();
+        assertThat(discarding.isSuddenDeath()).isFalse();
+        assertThat(OldMaidSight.of(OldMaidViews.drawing(5)).isSuddenDeath()).isFalse();
+    }
+
+    @Test
     void R35_상도_화면에_추적_정보가_없으면_무작위로_뽑는다() {
         BotPlan hard = plan(brain.mind(BotDifficulty.HARD), OldMaidViews.drawing(5), PendingKind.TURN,
                 new FixedRandom(1));

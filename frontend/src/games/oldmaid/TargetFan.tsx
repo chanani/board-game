@@ -18,14 +18,19 @@ type Props = {
   interactive?: boolean;
   onPeek?: (index: number | null) => void;
   onDraw?: (index: number) => void;
+  /** 서든데스: 카드가 저마다 다른 박자로 살짝 떨린다(움직임 줄이기면 가만히). */
+  tremble?: boolean;
 };
+
+/** 떨리는 카드끼리 박자를 어긋나게 하는 간격(초). */
+const TREMBLE_STAGGER_S = 0.35;
 
 /**
  * 뽑히는 상대의 손패를 가운데에 크게 펼친 뒷면 부채(D17: 모두에게 보인다).
  * 정밀 포인터는 올리면 신호·누르면 뽑기, 터치는 첫 탭에 고르고(신호) 다시 탭하거나 "뽑기"로 뽑는다, 키보드는 초점에 신호·Enter/Space로 뽑기.
  * 부채 밖을 누르거나 초점이 부채 밖으로 나가면 고르기를 풀고 null 신호를 보낸다(들림이 남지 않게, F-b11).
  */
-export function TargetFan({ ownerName, count, cardWidth, minVisible, liftIndex, layout, interactive = false, onPeek, onDraw }: Props) {
+export function TargetFan({ ownerName, count, cardWidth, minVisible, liftIndex, layout, interactive = false, onPeek, onDraw, tremble = false }: Props) {
   const fine = useMediaQuery('(pointer: fine)');
   const boxRef = useRef<HTMLDivElement>(null);
   const width = useElementWidth(boxRef);
@@ -109,7 +114,10 @@ export function TargetFan({ ownerName, count, cardWidth, minVisible, liftIndex, 
         {angles.map((angle, index) => {
           const lifted = index === shown;
           const style = { left: inset + index * step, top, zIndex: index, transform: `translateY(${fanDrop(cardWidth, angle, radius) - (lifted ? lift : 0)}px) rotate(${angle}deg)` };
-          const face = <PlayingCardFace card={null} width={cardWidth} decorative className={lifted ? 'rounded-lg ring-4 ring-(--accent)' : undefined} />;
+          const back = <PlayingCardFace card={null} width={cardWidth} decorative className={lifted ? 'rounded-lg ring-4 ring-(--accent)' : undefined} />;
+          const face = tremble ? (
+            <span data-testid="tremble" className="sudden-tremble" style={{ animationDelay: `${-index * TREMBLE_STAGGER_S}s` }}>{back}</span>
+          ) : back;
           if (!interactive) {
             return (
               <span key={index} data-testid="target-card" data-index={index} data-lifted={lifted ? 'true' : undefined} aria-hidden="true"

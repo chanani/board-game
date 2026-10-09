@@ -375,6 +375,24 @@ body {
 @keyframes live-dot { 50% { opacity: .3; } }
 .live-dot { animation: live-dot 1.2s infinite; }
 
+/* 도둑잡기 서든데스: 남은 두 사람 자리는 붉게 심장처럼 두 번씩 뛰고(움직임을 줄이면 고정 테두리), 2장 손패는 살짝 떨리며, 펠트 가장자리는 어두워진다. */
+.sudden-pulse { box-shadow: 0 0 0 2px rgb(244 63 94 / 0.85), 0 0 14px 2px rgb(225 29 72 / 0.55); }
+@keyframes sudden-pulse {
+  0%, 40%, 100% { box-shadow: 0 0 0 2px rgb(244 63 94 / 0.6), 0 0 6px 0 rgb(225 29 72 / 0.35); }
+  10% { box-shadow: 0 0 0 3px rgb(244 63 94 / 0.95), 0 0 22px 6px rgb(225 29 72 / 0.7); }
+  25% { box-shadow: 0 0 0 3px rgb(244 63 94 / 0.85), 0 0 16px 4px rgb(225 29 72 / 0.55); }
+}
+@keyframes sudden-tremble {
+  0%, 100% { transform: rotate(0deg) translateX(0); }
+  25% { transform: rotate(-1.6deg) translateX(-1px); }
+  75% { transform: rotate(1.6deg) translateX(1px); }
+}
+.sudden-vignette { background: radial-gradient(ellipse at center, transparent 40%, rgb(40 0 8 / 0.6) 100%); }
+@media (prefers-reduced-motion: no-preference) {
+  .sudden-pulse { animation: sudden-pulse 1.1s ease-out infinite; }
+  .sudden-tremble { display: inline-block; transform-origin: 50% 90%; animation: sudden-tremble 0.9s ease-in-out infinite; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .card-inner, .press-3d { transition: none; }
   .turn-glow, .turn-ring, .float-hint, .gold-sparkle, .live-dot { animation: none; }

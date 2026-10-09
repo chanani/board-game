@@ -2,6 +2,7 @@ import { botOf } from '../../lib/bots';
 import { useEffect, useRef, useState } from 'react';
 import type { GameAction, OldMaidSessionView } from '../../api/types';
 import { Felt } from '../../components/Felt';
+import { StageCallout } from '../../components/StageCallout';
 import { useSound } from '../../lib/sound';
 import { roomAvatarOf } from '../../lib/avatars';
 import { offlineSecondsNow } from '../../lib/format';
@@ -26,6 +27,7 @@ import { drawnPairIds, keepInHand, pickCard } from './pairPick';
 import { TargetFan } from './TargetFan';
 import { effectivePeek, usePeekSender } from './usePeek';
 import { useShuffleEffects } from './useShuffleEffects';
+import { useSuddenDeath } from './suddenDeath';
 import { EmoteBubble } from '../../emote/EmoteBubble';
 import { EMOTE_DOCK, EmoteDock } from '../../emote/EmoteDock';
 
@@ -64,6 +66,9 @@ export function OldMaidTable({ view, room, meId, log, receivedAt, now, errorSeq,
   // 처음 버리기 단계에는 버릴 짝이 있는 모두가, 그 밖에는 뽑는 사람이 할 일이 있다(리본·5초 경고 소리).
   const acting = myTurn || (opening && game.canDiscard);
   const liftIndex = effectivePeek(game, signal);
+  // 서든데스: 남은 두 사람만 비추고(나머지 자리는 흐리게) 두 손을 붉게 맥박치게 한다.
+  const sudden = useSuddenDeath(game);
+  const spotlit = (playerId: number) => playerId === game.currentPlayerId || playerId === game.targetId;
 
   // 뽑기는 보낸 뒤 차례가 바뀌거나(새 판 포함) 오류가 오기 전까지 다시 보내지 않는다. 섞기는 이 잠금을 쓰지 않는다.
   // 남의 섞기처럼 같은 차례 안의 화면 갱신으로는 풀지 않는다(풀면 두 번 눌러 DRAW가 두 번 가고 NOT_YOUR_TURN이 뜬다).
@@ -193,8 +198,10 @@ export function OldMaidTable({ view, room, meId, log, receivedAt, now, errorSeq,
     const member = room.members.find((candidate) => candidate.id === player.playerId);
     const active = live && game.currentPlayerId === player.playerId;
     const targeted = drawing && game.targetId === player.playerId;
+    const pulse = sudden.active && spotlit(player.playerId) ? 'sudden-pulse' : '';
+    const dim = sudden.active && !spotlit(player.playerId) ? 'opacity-40 saturate-50' : '';
     return (
-      <div key={player.playerId} className="relative z-10">
+      <div key={player.playerId} data-spotlit={pulse ? 'true' : undefined} className={`relative z-10 rounded-2xl transition-opacity duration-500 ${pulse} ${dim}`}>
         <OldMaidSeat player={player} nickname={nicknameOf(player.playerId)} avatar={roomAvatarOf(room, player.playerId)}
           active={active} targeted={targeted} liftIndex={targeted ? liftIndex : null} backWidth={backWidth} maxBacks={maxBacks}
           timer={active && game.deadline !== null ? { deadline: game.deadline, serverNow: game.serverNow } : undefined}
@@ -217,7 +224,8 @@ export function OldMaidTable({ view, room, meId, log, receivedAt, now, errorSeq,
         {showFan && targetPlayer ? (
           // 상대나 차례가 바뀌면 고르던(올린·누른) 카드 기억을 새로 시작한다.
           <TargetFan key={`${targetPlayer.playerId}:${turnKey}`} ownerName={nicknameOf(targetPlayer.playerId)} count={targetPlayer.cardCount} cardWidth={sizes.pick}
-            minVisible={sizes.pickMinVisible} liftIndex={drawing ? liftIndex : null} layout={layout} interactive={myTurn && drawing} onPeek={sendPeek} onDraw={draw} />
+            minVisible={sizes.pickMinVisible} liftIndex={drawing ? liftIndex : null} layout={layout} interactive={myTurn && drawing} onPeek={sendPeek} onDraw={draw}
+            tremble={sudden.active} />
         ) : null}
         <DiscardPairs pairs={game.recentPairs} count={game.discardCount} cardWidth={sizes.pair} discards={game.discards ?? []} nicknameOf={nicknameOf} />
       </div>
@@ -225,6 +233,7 @@ export function OldMaidTable({ view, room, meId, log, receivedAt, now, errorSeq,
   );
   const felt = (
     <Felt shape="oval" className={`mx-auto flex w-full ${feltClass}`}>
+      {sudden.active ? <div aria-hidden="true" data-testid="sudden-vignette" className="sudden-vignette pointer-events-none absolute inset-0 rounded-[inherit]" /> : null}
       {wide ? (
         <>
           {rows.top.length > 0 ? (
@@ -249,7 +258,8 @@ export function OldMaidTable({ view, room, meId, log, receivedAt, now, errorSeq,
   // 할 일이 있으면(내 차례·짝 버리기·처음 버리기) 손패 위에 공통 리본으로 할 일과 남은 시간을 보인다.
   const ribbon = ribbonText(game, meId);
   const mine = game.hand === null ? <SpectatorNotice /> : (
-    <div data-testid="my-area" data-active={acting ? 'true' : undefined} className="relative -my-1 rounded-2xl px-1 py-1">
+    <div data-testid="my-area" data-active={acting ? 'true' : undefined}
+      className={`relative -my-1 rounded-2xl px-1 py-1 ${sudden.active && spotlit(meId) ? 'sudden-pulse' : ''}`}>
       {ribbon ? <TurnRibbon deadline={game.deadline} serverNow={game.serverNow} label={ribbon.label} showSeconds={ribbon.showSeconds} /> : null}
       <EmoteDock meId={meId} className={EMOTE_DOCK} />
       <MyHand cards={game.hand} liftIndex={drawing && game.targetId === meId ? liftIndex : null} layout={layout} sizes={sizes} zoneId={meId}
@@ -277,6 +287,10 @@ export function OldMaidTable({ view, room, meId, log, receivedAt, now, errorSeq,
       )}
       <OldMaidGhostLayer ghosts={ghosts} />
       {finale === 'banner' ? <GameEndBanner subtitle="순위를 정하고 있어요" /> : null}
+      {sudden.callout ? (
+        <StageCallout testId="sudden-death-callout" label="서든데스! 남은 두 사람, 조커를 피하면 끝나요" shoutKey="sudden-death"
+          shout="서든데스" above="남은 두 사람" below="조커를 피하면 끝나요" size="text" tone="danger" />
+      ) : null}
     </div>
   );
 }

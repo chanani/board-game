@@ -2,11 +2,14 @@ import type { OldMaidEvent, OldMaidView, PlayingCard } from '../../../api/types'
 import { FINALE_DELAY_MS } from '../../../table/useFinalePhase';
 import type { FlightPlan } from '../../../table/useGhostFlights';
 import { latestSeq } from '../describe';
+import { isSuddenDeath } from '../suddenDeath';
 
 export type OldMaidZone = 'discard' | 'target' | `hand:${number}`;
 export type OldMaidPlan = FlightPlan<OldMaidZone, PlayingCard | null>;
 
 export const DRAW_MS = 350;
+/** 서든데스의 뽑기는 천천히 날아와(뽑은 사람 화면에서는 천천히 뒤집혀) 결과를 늦게 드러낸다. */
+export const SUDDEN_DEATH_DRAW_MS = 1100;
 export const PAIR_MS = 300;
 export const PAIR_GAP_MS = 60;
 export const TRANSFER_MS = 400;
@@ -37,7 +40,7 @@ function drawnByMe(from: OldMaidView, to: OldMaidView, fresh: OldMaidEvent[], me
   return paired?.cards.find((one) => !before.has(one.id)) ?? null;
 }
 
-type Context = { from: OldMaidView; meId: number; drawn: PlayingCard | null; fastPairs: boolean };
+type Context = { from: OldMaidView; meId: number; drawn: PlayingCard | null; fastPairs: boolean; drawMs: number };
 
 /** 짝 한 쌍: 두 장이 손패/자리에서 버린 더미로 앞면으로. 짝이 많으면 겹쳐 날리고 소리는 첫 짝에서만. */
 function addPair(plan: OldMaidPlan, event: OldMaidEvent, actor: number, clock: number, fast: boolean): number {
@@ -49,7 +52,7 @@ function addPair(plan: OldMaidPlan, event: OldMaidEvent, actor: number, clock: n
 }
 
 /** 이벤트 하나를 계획에 더하고 다음 비행 시작 시각을 돌려준다. */
-function add(plan: OldMaidPlan, event: OldMaidEvent, clock: number, { from, meId, drawn, fastPairs }: Context): number {
+function add(plan: OldMaidPlan, event: OldMaidEvent, clock: number, { from, meId, drawn, fastPairs, drawMs }: Context): number {
   const actor = event.actorId;
   const target = event.targetId;
   if (event.type === 'DRAW' && actor !== null && target !== null) {
@@ -57,9 +60,9 @@ function add(plan: OldMaidPlan, event: OldMaidEvent, clock: number, { from, meId
     const source: OldMaidZone = target === meId ? `hand:${meId}` : 'target';
     // 내가 뽑으면 날아오며 뒷면에서 앞면으로 뒤집혀 내 손패에 앞면으로 들어온다. 남이 뽑는 카드는 끝까지 뒷면(숨김 정보).
     const face = actor === meId ? drawn : null;
-    plan.flights.push({ card: face, from: source, to: `hand:${actor}`, delay: clock, duration: DRAW_MS, flip: face !== null });
+    plan.flights.push({ card: face, from: source, to: `hand:${actor}`, delay: clock, duration: drawMs, flip: face !== null });
     plan.sounds.push({ name: 'draw', delay: clock });
-    return clock + DRAW_MS;
+    return clock + drawMs;
   }
   if (event.type === 'PAIR' && actor !== null) {
     return addPair(plan, event, actor, clock, fastPairs);
@@ -90,7 +93,8 @@ export function planOldMaidMotion(from: OldMaidView | null, to: OldMaidView, meI
   const lastSeq = latestSeq(from.events);
   const plan = empty();
   const fresh = to.events.filter((event) => event.seq > lastSeq);
-  const context: Context = { from, meId, drawn: drawnByMe(from, to, fresh, meId), fastPairs: fresh.filter((event) => event.type === 'PAIR').length >= FAST_PAIRS_FROM };
+  const context: Context = { from, meId, drawn: drawnByMe(from, to, fresh, meId), fastPairs: fresh.filter((event) => event.type === 'PAIR').length >= FAST_PAIRS_FROM,
+    drawMs: isSuddenDeath(from) ? SUDDEN_DEATH_DRAW_MS : DRAW_MS };
   fresh.reduce((clock, event) => add(plan, event, clock, context), 0);
   return plan;
 }

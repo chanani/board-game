@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
-export type SoundName = 'draw' | 'place' | 'flip' | 'myTurn' | 'roundWin' | 'roundLose' | 'click' | 'tick' | 'uno' | 'chat' | 'gameOverWin' | 'gameOverEnd';
+export type SoundName = 'draw' | 'place' | 'flip' | 'myTurn' | 'roundWin' | 'roundLose' | 'click' | 'tick' | 'uno' | 'chat' | 'gameOverWin' | 'gameOverEnd' | 'heartbeat' | 'suddenDeath';
 /** 카드를 가져오거나 내려놓을 때(그리고 사이트 버튼을 누를 때) 나는 소리. 닉네임 메뉴에서 고른다. */
 export type DrawSound = 'swish' | 'pop' | 'tock' | 'chime';
 export type SoundApi = {
@@ -194,7 +194,22 @@ const RECIPES: Record<Exclude<SoundName, CardMoveSound>, Recipe> = {
   chat: (ctx, out) => { glide(ctx, out, 988, 1319, 0, 0.08, 0.11); tone(ctx, out, 2637, 0.01, 0.04, 'sine', 0.025); },
   gameOverWin,
   gameOverEnd,
+  heartbeat,
+  suddenDeath,
 };
+
+/** 도둑잡기 서든데스 동안 되풀이하는 심장 소리: 낮게 떨어지는 두 번의 쿵(쿵-쿵), 약 0.4초. */
+function heartbeat(ctx: AudioContext, out: AudioNode) {
+  glide(ctx, out, 90, 48, 0, 0.16, 0.32);
+  glide(ctx, out, 80, 44, 0.2, 0.18, 0.24);
+}
+
+/** 서든데스 알림: 낮은 두 음이 겹쳐 내려가는 무거운 울림(약 1초). */
+function suddenDeath(ctx: AudioContext, out: AudioNode) {
+  glide(ctx, out, 220, 110, 0, 0.9, 0.16);
+  glide(ctx, out, 233, 116, 0.02, 0.9, 0.09);
+  glide(ctx, out, 70, 40, 0, 0.5, 0.3);
+}
 
 /** 게임 끝 · 이긴 사람: 밝게 올라가는 아르페지오(C5·E5·G5 → C6)에 위로 반짝이는 음을 얹어 약 1.3초 울린다. */
 function gameOverWin(ctx: AudioContext, out: AudioNode) {

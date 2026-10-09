@@ -4,6 +4,7 @@ import type { OldMaidView, Room } from '../../api/types';
 import { SILENT_SOUND, SoundContext } from '../../lib/sound';
 import { setMediaMatches } from '../../test/media';
 import { BANNER_MS, FINALE_DELAY_MS } from '../../table/useFinalePhase';
+import { FINALE_GAP_MS, PAIR_GAP_MS, PAIR_MS, SUDDEN_DEATH_DRAW_MS } from './motion/planOldMaidMotion';
 import { OldMaidTable } from './OldMaidTable';
 import { card, oldMaidEvent, oldMaidView } from './oldMaidFixtures';
 
@@ -53,7 +54,10 @@ describe('도둑잡기 게임 끝 연출', () => {
     render(table(ended('NORMAL'), play));
     expect(screen.queryByTestId('game-end-banner')).not.toBeInTheDocument();
 
+    // 마지막 뽑기는 1장 대 2장의 서든데스라 천천히 날아온 뒤에 배너.
     act(() => vi.advanceTimersByTime(FINALE_DELAY_MS));
+    expect(screen.queryByTestId('game-end-banner')).not.toBeInTheDocument();
+    act(() => vi.advanceTimersByTime(SUDDEN_DEATH_DRAW_MS + FINALE_GAP_MS - FINALE_DELAY_MS));
     expect(screen.getByTestId('game-end-banner')).toBeInTheDocument();
     expect(screen.getByText('순위를 정하고 있어요')).toBeInTheDocument();
     expect(screen.queryByText('점수를 계산하고 있어요')).not.toBeInTheDocument();
@@ -74,9 +78,10 @@ describe('도둑잡기 게임 끝 연출', () => {
     ] };
     render(table(withPair));
 
-    act(() => vi.advanceTimersByTime(FINALE_DELAY_MS));
+    const landed = SUDDEN_DEATH_DRAW_MS + PAIR_GAP_MS + PAIR_MS + FINALE_GAP_MS;
+    act(() => vi.advanceTimersByTime(landed - 1));
     expect(screen.queryByTestId('game-end-banner')).not.toBeInTheDocument();
-    act(() => vi.advanceTimersByTime(810 - FINALE_DELAY_MS));
+    act(() => vi.advanceTimersByTime(1));
     expect(screen.getByTestId('game-end-banner')).toBeInTheDocument();
   });
 

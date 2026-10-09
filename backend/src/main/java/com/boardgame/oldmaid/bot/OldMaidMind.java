@@ -12,6 +12,9 @@ import java.util.Random;
 
 final class OldMaidMind implements BotMind {
 
+    /** 서든데스에서 뽑을 때 더 머뭇거리는 시간. 모두가 긴장을 느낄 틈을 준다. */
+    static final Duration SUDDEN_DEATH_PAUSE = Duration.ofMillis(1000);
+
     private final OldMaidPlayer player;
 
     OldMaidMind(OldMaidPlayer player) {
@@ -40,10 +43,17 @@ final class OldMaidMind implements BotMind {
     }
 
     private BotPlan drawing(OldMaidSight sight, Random random) {
-        Duration think = ThinkTime.standard(random);
+        Duration think = ThinkTime.standard(random).plus(suspense(sight));
         int count = sight.targetCardCount();
         int chosen = random.nextInt(count);
         return OldMaidMoves.drawPlan(think, player.lifts(count, chosen, random), chosen, random);
+    }
+
+    private static Duration suspense(OldMaidSight sight) {
+        if (sight.isSuddenDeath()) {
+            return SUDDEN_DEATH_PAUSE;
+        }
+        return Duration.ZERO;
     }
 
     private Optional<BotPlan> shuffling(BotSituation situation, OldMaidSight sight) {
