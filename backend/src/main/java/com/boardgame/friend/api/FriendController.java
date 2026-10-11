@@ -3,6 +3,7 @@ package com.boardgame.friend.api;
 import com.boardgame.common.security.LoginMember;
 import com.boardgame.friend.application.FriendRequestQueryService;
 import com.boardgame.friend.application.FriendRequestService;
+import com.boardgame.friend.application.FriendSearchService;
 import com.boardgame.friend.application.FriendService;
 import java.util.List;
 import org.springframework.http.HttpStatus;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -23,17 +25,26 @@ public class FriendController {
     private final FriendService friendService;
     private final FriendRequestService requestService;
     private final FriendRequestQueryService requestQueryService;
+    private final FriendSearchService searchService;
 
     public FriendController(FriendService friendService, FriendRequestService requestService,
-                            FriendRequestQueryService requestQueryService) {
+                            FriendRequestQueryService requestQueryService, FriendSearchService searchService) {
         this.friendService = friendService;
         this.requestService = requestService;
         this.requestQueryService = requestQueryService;
+        this.searchService = searchService;
     }
 
     @GetMapping
     public List<FriendResponse> friends(@AuthenticationPrincipal LoginMember member) {
         return friendService.friends(member.id());
+    }
+
+    /** 닉네임이 정확히 같은 회원을 찾는다. 요청은 보내지 않는다. */
+    @GetMapping("/search")
+    public FriendSearchResponse search(@AuthenticationPrincipal LoginMember member,
+                                       @RequestParam(defaultValue = "") String nickname) {
+        return searchService.search(member.id(), nickname);
     }
 
     @DeleteMapping("/{friendId}")

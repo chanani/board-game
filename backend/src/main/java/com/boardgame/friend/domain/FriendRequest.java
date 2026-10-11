@@ -61,6 +61,14 @@ public class FriendRequest extends BaseTimeEntity {
         }
     }
 
+    /** 이 요청의 당사자인 memberId가 보기에, 보낸 요청인지 받은 요청인지. */
+    public FriendRelation relationFor(long memberId) {
+        if (parties.isSentBy(memberId)) {
+            return FriendRelation.REQUEST_SENT;
+        }
+        return FriendRelation.REQUEST_RECEIVED;
+    }
+
     public Long id() {
         return id;
     }

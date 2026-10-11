@@ -14,7 +14,7 @@ vi.mock('../auth/AuthContext', () => ({ useAuth: () => ({ member: { id: 1, login
 vi.mock('../api/records', () => ({ recordsApi: { member: vi.fn() } }));
 vi.mock('../api/friends', () => ({
   friendsApi: {
-    list: vi.fn(), requests: vi.fn(), requestByNickname: vi.fn(), requestById: vi.fn(),
+    list: vi.fn(), requests: vi.fn(), search: vi.fn(), requestById: vi.fn(),
     accept: vi.fn(), decline: vi.fn(), cancel: vi.fn(), remove: vi.fn(),
   },
 }));

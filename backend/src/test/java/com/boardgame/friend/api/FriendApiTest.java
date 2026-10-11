@@ -83,6 +83,10 @@ class FriendApiTest {
         return mockMvc.perform(delete("/api/friends/" + friendId).session(user.session()));
     }
 
+    private ResultActions search(User user, String nickname) throws Exception {
+        return mockMvc.perform(get("/api/friends/search").session(user.session()).param("nickname", nickname));
+    }
+
     private void befriend(User alice, User bob) throws Exception {
         requestById(alice, bob.id()).andExpect(status().isCreated());
         accept(bob, incomingRequestId(bob)).andExpect(status().isNoContent());
@@ -343,7 +347,74 @@ class FriendApiTest {
     }
 
     @Test
+    void 닉네임으로_찾으면_그_사람의_정보를_보여_주고_요청은_보내지_않는다() throws Exception {
+        User alice = ApiUsers.create(mockMvc);
+        User bob = ApiUsers.create(mockMvc);
+
+        search(alice, " " + bob.nickname() + " ")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.memberId").value(bob.id()))
+                .andExpect(jsonPath("$.nickname").value(bob.nickname()))
+                .andExpect(jsonPath("$.avatar").isNotEmpty())
+                .andExpect(jsonPath("$.relation").value("NONE"));
+
+        requestsOf(alice).andExpect(jsonPath("$.outgoing.length()").value(0));
+        requestsOf(bob).andExpect(jsonPath("$.incoming.length()").value(0));
+    }
+
+    @Test
+    void 찾은_사람과의_사이를_요청_보냄_요청_받음_친구로_알려_준다() throws Exception {
+        User alice = ApiUsers.create(mockMvc);
+        User bob = ApiUsers.create(mockMvc);
+
+        requestById(alice, bob.id()).andExpect(status().isCreated());
+        search(alice, bob.nickname()).andExpect(jsonPath("$.relation").value("REQUEST_SENT"));
+        search(bob, alice.nickname()).andExpect(jsonPath("$.relation").value("REQUEST_RECEIVED"));
+
+        accept(bob, incomingRequestId(bob)).andExpect(status().isNoContent());
+        search(alice, bob.nickname()).andExpect(jsonPath("$.relation").value("FRIEND"));
+        search(bob, alice.nickname()).andExpect(jsonPath("$.relation").value("FRIEND"));
+
+        remove(alice, bob.id()).andExpect(status().isNoContent());
+        search(alice, bob.nickname()).andExpect(jsonPath("$.relation").value("NONE"));
+    }
+
+    @Test
+    void 내_닉네임을_찾으면_나라고_알려_준다() throws Exception {
+        User alice = ApiUsers.create(mockMvc);
+
+        search(alice, alice.nickname())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.memberId").value(alice.id()))
+                .andExpect(jsonPath("$.relation").value("SELF"));
+    }
+
+    @Test
+    void 없는_닉네임이나_일부만_맞는_닉네임은_찾지_못한다() throws Exception {
+        User alice = ApiUsers.create(mockMvc);
+        User bob = ApiUsers.create(mockMvc);
+
+        search(alice, "없는사람")
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.code").value("MEMBER_NOT_FOUND"))
+                .andExpect(jsonPath("$.message").isNotEmpty());
+        search(alice, bob.nickname().substring(0, 3))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("MEMBER_NOT_FOUND"));
+        search(alice, " ")
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("MEMBER_NOT_FOUND"));
+        mockMvc.perform(get("/api/friends/search").session(alice.session()))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("MEMBER_NOT_FOUND"));
+    }
+
+    @Test
     void 로그인하지_않으면_쓸_수_없다() throws Exception {
+        mockMvc.perform(get("/api/friends/search").param("nickname", "누구"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
         mockMvc.perform(get("/api/friends"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));

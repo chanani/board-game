@@ -1,27 +1,45 @@
-import { useState, type FormEvent, type ReactNode } from 'react';
-import type { FriendRequest, SendFriendResult } from '../api/friends';
+import { useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { friendsApi, type FriendRequest, type FriendSearchRelation, type FriendSearchResult } from '../api/friends';
 import { ApiError, messageOf } from '../api/http';
 import { MemberAvatar } from '../components/Avatar';
 import { CheckIcon, CloseIcon } from '../components/icons';
 import { useToast } from '../components/Toast';
 import { Button } from '../components/ui';
-import type { FriendsState } from './FriendsContext';
-
-type Notice = { tone: 'ok' | 'error'; text: string };
+import { FriendSearchCard } from './FriendSearchCard';
+import { relationOf, type FriendRelation, type FriendsState } from './FriendsContext';
 
 const NICKNAME_MAX = 10;
 
-/** 요청이 잘 갔을 때의 안내. 상대가 먼저 보낸 요청이 있었다면 바로 친구가 된다. */
-export function sentMessage(result: SendFriendResult): string {
-  return result.status === 'ACCEPTED' ? `${result.nickname}님과 친구가 됐어요.` : `${result.nickname}님에게 친구 요청을 보냈어요.`;
-}
-
 /** 닉네임으로 찾지 못했을 때는 서버의 일반 문구("회원을 찾을 수 없습니다") 대신 무엇을 고치면 되는지 알려 준다. */
-function sendErrorMessage(error: unknown): string {
+function searchErrorMessage(error: unknown): string {
   if (error instanceof ApiError && error.code === 'MEMBER_NOT_FOUND') {
     return '닉네임을 다시 확인해주세요.';
   }
   return messageOf(error);
+}
+
+const LIVE_RELATION: Record<FriendRelation, FriendSearchRelation> = {
+  me: 'SELF', friend: 'FRIEND', incoming: 'REQUEST_RECEIVED', outgoing: 'REQUEST_SENT', none: 'NONE',
+};
+
+type Lists = Pick<FriendsState, 'friends' | 'incoming' | 'outgoing'>;
+
+/** 찾은 사람과, 찾은 그때 내가 들고 있던 목록(그 뒤로 목록을 새로 받았는지 가리는 데 쓴다). */
+type Found = { member: FriendSearchResult; lists: Lists };
+
+function sameLists(seen: Lists, now: Lists): boolean {
+  return seen.friends === now.friends && seen.incoming === now.incoming && seen.outgoing === now.outgoing;
+}
+
+/**
+ * 카드에 보여 줄 사이. 검색 응답은 찾은 그때의 사이라, 그 뒤에 목록을 새로 받았으면(요청·수락·취소·알림·주기적 갱신)
+ * 더 새것인 목록을 따른다. 그래서 카드와 아래 "보낸 요청" 목록이 어긋나지 않는다.
+ */
+function relationFor(found: Found, friends: FriendsState): FriendSearchRelation {
+  if (sameLists(found.lists, friends)) {
+    return found.member.relation;
+  }
+  return LIVE_RELATION[relationOf(friends, found.member.memberId)];
 }
 
 const iconButton = 'grid h-8 w-8 shrink-0 place-items-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-mustard-300 disabled:opacity-45';
@@ -45,29 +63,44 @@ function Section({ title, count, empty, children }: { title: string; count: numb
   );
 }
 
-/** 닉네임으로 친구 요청을 보내고, 받은 요청(수락·거절)과 보낸 요청(취소)을 본다. */
+/** 닉네임으로 사람을 찾아 친구 요청을 보내고, 받은 요청(수락·거절)과 보낸 요청(취소)을 본다. */
 export function FriendAddTab({ friends }: { friends: FriendsState }) {
   const toast = useToast();
   const [nickname, setNickname] = useState('');
-  const [sending, setSending] = useState(false);
-  const [notice, setNotice] = useState<Notice | null>(null);
+  const [searching, setSearching] = useState(false);
+  const [found, setFound] = useState<Found | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<number | null>(null);
   const trimmed = nickname.trim();
+  // 검색 응답이 도착한 때의 목록을 기억해 두려고, 늘 지금 목록을 가리키게 둔다.
+  const listsRef = useRef<Lists>(friends);
+  listsRef.current = friends;
 
-  const send = async (event: FormEvent) => {
+  // 입력을 고치면 안내를 지우고, 다 지우면 찾아 둔 카드도 치운다.
+  const edit = (value: string) => {
+    setNickname(value);
+    setError(null);
+    if (!value.trim()) {
+      setFound(null);
+    }
+  };
+
+  // 찾기만 한다. 요청은 카드의 버튼을 눌러야 간다.
+  const search = async (event: FormEvent) => {
     event.preventDefault();
-    if (!trimmed || sending) {
+    if (!trimmed || searching) {
       return;
     }
-    setSending(true);
+    setSearching(true);
+    setError(null);
     try {
-      const result = await friends.requestByNickname(trimmed);
-      setNotice({ tone: 'ok', text: sentMessage(result) });
-      setNickname('');
-    } catch (error) {
-      setNotice({ tone: 'error', text: sendErrorMessage(error) });
+      const member = await friendsApi.search(trimmed);
+      setFound({ member, lists: listsRef.current });
+    } catch (failure) {
+      setFound(null);
+      setError(searchErrorMessage(failure));
     } finally {
-      setSending(false);
+      setSearching(false);
     }
   };
 
@@ -85,19 +118,16 @@ export function FriendAddTab({ friends }: { friends: FriendsState }) {
 
   return (
     <div className="flex flex-col gap-3">
-      <form onSubmit={send} className="flex flex-col gap-1.5">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col gap-2">
+        <form onSubmit={search} role="search" aria-label="닉네임으로 친구 찾기" className="flex items-center gap-2">
           <input aria-label="친구로 추가할 닉네임" value={nickname} maxLength={NICKNAME_MAX} placeholder="닉네임을 입력해 주세요" autoComplete="off"
-            onChange={(event) => { setNickname(event.target.value); setNotice(null); }}
+            onChange={(event) => edit(event.target.value)}
             className="min-w-0 flex-1 rounded-xl border border-cream-300 bg-cream px-3 py-2 text-sm shadow-[inset_0_2px_4px_rgb(0_0_0/0.12)] outline-none focus:border-mustard-400 focus:ring-2 focus:ring-mustard-300/50" />
-          <Button type="submit" disabled={!trimmed || sending} className="shrink-0">요청</Button>
-        </div>
-        {notice ? (
-          <p role={notice.tone === 'error' ? 'alert' : 'status'} className={`px-1 text-xs font-bold ${notice.tone === 'error' ? 'text-red-700' : 'text-green-700'}`}>
-            {notice.text}
-          </p>
-        ) : null}
-      </form>
+          <Button type="submit" disabled={!trimmed || searching} className="shrink-0">검색</Button>
+        </form>
+        {error ? <p role="alert" className="px-1 text-xs font-bold text-red-700">{error}</p> : null}
+        {found ? <FriendSearchCard member={found.member} relation={relationFor(found, friends)} onRequest={friends.requestById} /> : null}
+      </div>
       <hr className="border-wood-700/15" />
       <div className="flex max-h-[min(45vh,300px)] flex-col gap-3 overflow-y-auto">
         <Section title="받은 요청" count={friends.incoming.length} empty="받은 요청이 없어요.">

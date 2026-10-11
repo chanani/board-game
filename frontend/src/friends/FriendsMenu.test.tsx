@@ -2,7 +2,7 @@ import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { friendsApi, type Friend, type FriendRequest } from '../api/friends';
+import { friendsApi, type Friend, type FriendRequest, type FriendSearchResult } from '../api/friends';
 import { ApiError } from '../api/http';
 import { recordsApi } from '../api/records';
 import { FRIENDS_POLL_MS, FriendsProvider } from './FriendsContext';
@@ -25,7 +25,7 @@ vi.mock('../auth/AuthContext', () => ({ useAuth: () => ({ member: { id: 1, login
 vi.mock('../api/records', () => ({ recordsApi: { member: vi.fn() } }));
 vi.mock('../api/friends', () => ({
   friendsApi: {
-    list: vi.fn(), requests: vi.fn(), requestByNickname: vi.fn(), requestById: vi.fn(),
+    list: vi.fn(), requests: vi.fn(), search: vi.fn(), requestById: vi.fn(),
     accept: vi.fn(), decline: vi.fn(), cancel: vi.fn(), remove: vi.fn(),
   },
 }));
@@ -313,54 +313,169 @@ describe('친구 추가 탭', () => {
 
     await waitFor(() => expect(toast.show).toHaveBeenCalledWith('친구 목록이 가득 찼어요. 친구는 100명까지 만들 수 있어요.'));
   });
+});
 
-  it('닉네임을 넣고 요청을 누르면 요청을 보내고 보낸 요청에 보인다', async () => {
-    const toGrace: FriendRequest = { requestId: 22, memberId: 7, nickname: '그레이스' };
-    vi.mocked(friendsApi.requestByNickname).mockImplementation(() => {
-      server.outgoing = [toGrace, toFrank];
-      return Promise.resolve({ status: 'REQUESTED', memberId: 7, nickname: '그레이스' });
+describe('닉네임 검색', () => {
+  const grace: FriendSearchResult = { memberId: 7, nickname: '그레이스', avatar: 'OWL', relation: 'NONE' };
+  const nicknameInput = (panel: HTMLElement) => within(panel).getByRole('textbox', { name: '친구로 추가할 닉네임' });
+  const card = (panel: HTMLElement) => within(panel).getByTestId('friend-search-card');
+
+  async function searchFor(found: FriendSearchResult) {
+    vi.mocked(friendsApi.search).mockResolvedValue(found);
+    renderMenu();
+    const panel = await openAddTab();
+    await userEvent.type(nicknameInput(panel), `${found.nickname}{Enter}`);
+    await within(panel).findByTestId('friend-search-card');
+    return panel;
+  }
+
+  it('검색을 누르면 찾은 사람의 그림·닉네임·전적을 카드로 보여 주고 요청은 보내지 않는다', async () => {
+    vi.mocked(friendsApi.search).mockResolvedValue(grace);
+    vi.mocked(recordsApi.member).mockResolvedValue({
+      memberId: 7, nickname: '그레이스', avatar: 'OWL',
+      stats: [
+        { gameType: 'PAPER_SAFARI', gameTypeName: '페이퍼 사파리', matches: 6, wins: 3, draws: 0, losses: 3 },
+        { gameType: 'UNO', gameTypeName: '우노', matches: 4, wins: 2, draws: 0, losses: 2 },
+      ] as never,
     });
     renderMenu();
     const panel = await openAddTab();
-    const input = within(panel).getByRole('textbox', { name: '친구로 추가할 닉네임' });
-    expect(within(panel).getByRole('button', { name: '요청' })).toBeDisabled();
+    expect(within(panel).getByRole('button', { name: '검색' })).toBeDisabled();
+    expect(within(panel).queryByTestId('friend-search-card')).not.toBeInTheDocument();
 
-    await userEvent.type(input, ' 그레이스 ');
-    await userEvent.click(within(panel).getByRole('button', { name: '요청' }));
+    await userEvent.type(nicknameInput(panel), ' 그레이스 ');
+    await userEvent.click(within(panel).getByRole('button', { name: '검색' }));
 
-    expect(friendsApi.requestByNickname).toHaveBeenCalledWith('그레이스');
-    expect(await within(panel).findByRole('status')).toHaveTextContent('그레이스님에게 친구 요청을 보냈어요.');
-    expect(input).toHaveValue('');
-    expect(within(within(panel).getByRole('region', { name: '보낸 요청' })).getByText('그레이스')).toBeInTheDocument();
+    expect(friendsApi.search).toHaveBeenCalledWith('그레이스');
+    const found = await within(panel).findByTestId('friend-search-card');
+    expect(within(found).getByText('그레이스')).toBeInTheDocument();
+    expect(found.querySelector('[data-avatar], img, svg')).not.toBeNull();
+    expect(recordsApi.member).toHaveBeenCalledWith(7);
+    expect(await within(found).findByText('10판 5승 · 승률 50.0%')).toBeInTheDocument();
+    expect(within(found).getByRole('button', { name: '친구 요청' })).toBeEnabled();
+    expect(friendsApi.requestById).not.toHaveBeenCalled();
   });
 
-  it('상대가 먼저 보낸 요청이 있었다면 바로 친구가 됐다고 알려 준다', async () => {
-    vi.mocked(friendsApi.requestByNickname).mockResolvedValue({ status: 'ACCEPTED', memberId: 4, nickname: '데이브' });
-    renderMenu();
-    const panel = await openAddTab();
+  it('기록이 없는 사람은 아직 기록이 없다고 보여 주고, 전적을 못 불러와도 카드는 그대로 보인다', async () => {
+    const panel = await searchFor(grace);
+    expect(await within(card(panel)).findByText('아직 기록이 없어요')).toBeInTheDocument();
 
-    await userEvent.type(within(panel).getByRole('textbox', { name: '친구로 추가할 닉네임' }), '데이브{Enter}');
+    vi.mocked(recordsApi.member).mockRejectedValue(new ApiError(500, 'INTERNAL_ERROR', '일시적인 오류가 발생했습니다.'));
+    vi.mocked(friendsApi.search).mockResolvedValue({ memberId: 8, nickname: '헨리', relation: 'NONE' });
+    await userEvent.clear(nicknameInput(panel));
+    await userEvent.type(nicknameInput(panel), '헨리{Enter}');
 
-    expect(await within(panel).findByRole('status')).toHaveTextContent('데이브님과 친구가 됐어요.');
+    expect(await within(panel).findByRole('group', { name: '헨리님 검색 결과' })).toBeInTheDocument();
+    expect(within(card(panel)).getByTestId('friend-search-stats')).toBeEmptyDOMElement();
+    expect(within(card(panel)).getByRole('button', { name: '친구 요청' })).toBeEnabled();
+  });
+
+  it('카드의 친구 요청을 누르면 회원 번호로 요청을 보내고, 카드는 "요청 보냄"으로 바뀌며 보낸 요청에 보인다', async () => {
+    const toGrace: FriendRequest = { requestId: 22, memberId: 7, nickname: '그레이스' };
+    vi.mocked(friendsApi.requestById).mockImplementation(() => {
+      server.outgoing = [toGrace, toFrank];
+      return Promise.resolve({ status: 'REQUESTED', memberId: 7, nickname: '그레이스' });
+    });
+    const panel = await searchFor(grace);
+
+    await userEvent.click(within(card(panel)).getByRole('button', { name: '친구 요청' }));
+
+    expect(friendsApi.requestById).toHaveBeenCalledWith(7);
+    const sent = await within(card(panel)).findByRole('button', { name: '요청 보냄' });
+    expect(sent).toBeDisabled();
+    expect(sent.className).not.toMatch(/opacity/);
+    expect(within(card(panel)).queryByRole('button', { name: '친구 요청' })).not.toBeInTheDocument();
+    expect(toast.show).toHaveBeenCalledWith('그레이스님에게 친구 요청을 보냈어요.', 'info');
+    expect(within(within(panel).getByRole('region', { name: '보낸 요청' })).getByText('그레이스')).toBeInTheDocument();
+    expect(nicknameInput(panel)).toHaveValue('그레이스');
+  });
+
+  it('보낸 요청을 아래 목록에서 취소하면 카드가 다시 "친구 요청"으로 돌아온다', async () => {
+    const panel = await searchFor({ memberId: 6, nickname: '프랭크', avatar: 'BEAR', relation: 'REQUEST_SENT' });
+    expect(within(card(panel)).getByRole('button', { name: '요청 보냄' })).toBeDisabled();
+    vi.mocked(friendsApi.cancel).mockImplementation(() => {
+      server.outgoing = [];
+      return Promise.resolve();
+    });
+
+    await userEvent.click(within(panel).getByRole('button', { name: '프랭크님에게 보낸 요청 취소' }));
+
+    expect(await within(card(panel)).findByRole('button', { name: '친구 요청' })).toBeEnabled();
+  });
+
+  it('나에게 요청을 보낸 사람이면 "요청 수락"을 보여 주고, 누르면 친구가 된다', async () => {
+    vi.mocked(friendsApi.requestById).mockImplementation(() => {
+      server.friends = [bob, carol, { memberId: 4, nickname: '데이브', avatar: 'DOG', online: false }];
+      server.incoming = [fromErin];
+      return Promise.resolve({ status: 'ACCEPTED', memberId: 4, nickname: '데이브' });
+    });
+    const panel = await searchFor({ memberId: 4, nickname: '데이브', avatar: 'DOG', relation: 'REQUEST_RECEIVED' });
+
+    await userEvent.click(within(card(panel)).getByRole('button', { name: '요청 수락' }));
+
+    expect(friendsApi.requestById).toHaveBeenCalledWith(4);
+    expect(await within(card(panel)).findByText('이미 친구예요')).toBeInTheDocument();
+    expect(toast.show).toHaveBeenCalledWith('데이브님과 친구가 됐어요.', 'info');
+    expect(within(card(panel)).queryByRole('button')).not.toBeInTheDocument();
   });
 
   it.each([
-    ['MEMBER_NOT_FOUND', 404, '회원을 찾을 수 없습니다.', '닉네임을 다시 확인해주세요.'],
-    ['CANNOT_FRIEND_SELF', 400, '나에게는 친구 요청을 보낼 수 없어요.', '나에게는 친구 요청을 보낼 수 없어요.'],
-    ['ALREADY_FRIENDS', 409, '이미 친구예요.', '이미 친구예요.'],
-    ['FRIEND_REQUEST_ALREADY_SENT', 409, '이미 친구 요청을 보냈어요.', '이미 친구 요청을 보냈어요.'],
-  ])('요청할 수 없으면 까닭을 알려 준다(%s)', async (code, status, serverMessage, shown) => {
-    vi.mocked(friendsApi.requestByNickname).mockImplementation(() => Promise.reject(new ApiError(status, code, serverMessage)));
-    renderMenu();
-    const panel = await openAddTab();
-    const input = within(panel).getByRole('textbox', { name: '친구로 추가할 닉네임' });
+    ['FRIEND', '이미 친구예요'],
+    ['SELF', '내 닉네임이에요'],
+  ] as const)('%s이면 버튼 없이 "%s"라고 알려 준다', async (relation, text) => {
+    const panel = await searchFor({ memberId: 9, nickname: '누군가', relation });
 
-    await userEvent.type(input, '누군가{Enter}');
+    expect(within(card(panel)).getByText(text)).toBeInTheDocument();
+    expect(within(card(panel)).queryByRole('button')).not.toBeInTheDocument();
+  });
 
-    expect(await within(panel).findByRole('alert')).toHaveTextContent(shown);
-    expect(input).toHaveValue('누군가');
+  it('요청에 실패하면 서버 안내를 토스트로 보여 주고 카드는 그대로 둔다', async () => {
+    vi.mocked(friendsApi.requestById).mockImplementation(() => Promise.reject(new ApiError(409, 'FRIEND_LIMIT_REACHED', '친구 목록이 가득 찼어요. 친구는 100명까지 만들 수 있어요.')));
+    const panel = await searchFor(grace);
+
+    await userEvent.click(within(card(panel)).getByRole('button', { name: '친구 요청' }));
+
+    await waitFor(() => expect(toast.show).toHaveBeenCalledWith('친구 목록이 가득 찼어요. 친구는 100명까지 만들 수 있어요.'));
+    expect(within(card(panel)).getByRole('button', { name: '친구 요청' })).toBeEnabled();
+  });
+
+  it('다시 검색하면 카드가 바뀌고, 입력을 지우면 카드가 사라진다', async () => {
+    const panel = await searchFor(grace);
+    vi.mocked(friendsApi.search).mockResolvedValue({ memberId: 8, nickname: '헨리', relation: 'FRIEND' });
+
+    await userEvent.clear(nicknameInput(panel));
+    expect(within(panel).queryByTestId('friend-search-card')).not.toBeInTheDocument();
+    await userEvent.type(nicknameInput(panel), '헨리{Enter}');
+
+    expect(await within(panel).findByRole('group', { name: '헨리님 검색 결과' })).toBeInTheDocument();
+    expect(within(panel).getAllByTestId('friend-search-card')).toHaveLength(1);
+    expect(within(panel).queryByText('그레이스')).not.toBeInTheDocument();
+  });
+
+  it('찾지 못하면 닉네임을 다시 확인하라고 알려 주고, 앞서 찾은 카드는 치운다', async () => {
+    const panel = await searchFor(grace);
+    vi.mocked(friendsApi.search).mockImplementation(() => Promise.reject(new ApiError(404, 'MEMBER_NOT_FOUND', '회원을 찾을 수 없습니다.')));
+    const input = nicknameInput(panel);
+
+    await userEvent.clear(input);
+    await userEvent.type(input, '없는사람{Enter}');
+
+    expect(await within(panel).findByRole('alert')).toHaveTextContent(/^닉네임을 다시 확인해주세요\.$/);
+    expect(within(panel).queryByTestId('friend-search-card')).not.toBeInTheDocument();
+    expect(input).toHaveValue('없는사람');
+    expect(friendsApi.requestById).not.toHaveBeenCalled();
     await userEvent.type(input, '요');
     expect(within(panel).queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('그 밖의 검색 실패는 서버 안내를 그대로 보여 준다', async () => {
+    vi.mocked(friendsApi.search).mockImplementation(() => Promise.reject(new ApiError(500, 'INTERNAL_ERROR', '일시적인 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.')));
+    renderMenu();
+    const panel = await openAddTab();
+
+    await userEvent.type(nicknameInput(panel), '누군가{Enter}');
+
+    expect(await within(panel).findByRole('alert')).toHaveTextContent('일시적인 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');
   });
 });
 

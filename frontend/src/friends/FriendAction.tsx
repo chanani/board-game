@@ -4,7 +4,7 @@ import { UserPlusIcon } from '../components/icons';
 import { Modal } from '../components/Modal';
 import { useToast } from '../components/Toast';
 import { Button } from '../components/ui';
-import { sentMessage } from './FriendAddTab';
+import { sentMessage } from './FriendSearchCard';
 import { relationOf, useFriends, type FriendsState } from './FriendsContext';
 
 type Target = { id: number; nickname: string };

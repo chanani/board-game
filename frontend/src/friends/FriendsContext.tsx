@@ -12,7 +12,6 @@ export type FriendsState = {
   incoming: FriendRequest[];
   outgoing: FriendRequest[];
   refresh: () => Promise<void>;
-  requestByNickname: (nickname: string) => Promise<SendFriendResult>;
   requestById: (memberId: number) => Promise<SendFriendResult>;
   accept: (requestId: number) => Promise<void>;
   decline: (requestId: number) => Promise<void>;
@@ -72,7 +71,6 @@ export function FriendsProvider({ children }: { children: ReactNode }) {
       meId: member.id,
       ...lists,
       refresh,
-      requestByNickname: (nickname) => synced(friendsApi.requestByNickname(nickname)),
       requestById: (memberId) => synced(friendsApi.requestById(memberId)),
       accept: (requestId) => synced(friendsApi.accept(requestId)),
       decline: (requestId) => synced(friendsApi.decline(requestId)),
