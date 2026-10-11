@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { NavLink, useLocation, useOutlet } from 'react-router-dom';
 import { useRealtime } from '../realtime/RealtimeContext';
+import { FriendsMenu } from '../friends/FriendsMenu';
 import { ActiveRoomBar } from '../room/ActiveRoomBar';
 import { LogoMark } from './LogoMark';
 import { GridIcon, TrophyIcon } from './icons';
@@ -52,7 +53,8 @@ export function Layout() {
         ) : null}
       </AnimatePresence>
       <header className="wood-rail">
-        <div className="mx-auto flex min-w-0 max-w-6xl items-center justify-between gap-2 px-3 py-2.5 sm:px-4">
+        {/* relative: 좁은 화면에서 친구 패널이 헤더 폭에 맞춰 펼쳐지는 기준이다. */}
+        <div className="relative mx-auto flex min-w-0 max-w-6xl items-center justify-between gap-2 px-3 py-2.5 sm:px-4">
           <div className="flex min-w-0 items-center gap-1.5 sm:gap-4">
             <NavLink to="/" aria-label="오, 유니버스" className="flex shrink-0 items-center gap-2 whitespace-nowrap text-lg font-black text-cream-50 drop-shadow">
               <LogoMark /><span className="hidden sm:inline">오, 유니버스</span>
@@ -62,7 +64,8 @@ export function Layout() {
               <NavLink to="/records" aria-label="내 전적" className={linkClass}><TrophyIcon /><NavLabel full="내 전적" short="전적" /></NavLink>
             </nav>
           </div>
-          <div className="flex min-w-0 items-center gap-1.5 text-sm sm:gap-3">
+          <div className="flex min-w-0 items-center gap-1 text-sm sm:gap-2">
+            <FriendsMenu />
             <UserMenu />
           </div>
         </div>

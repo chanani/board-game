@@ -4,6 +4,7 @@ import { recordsApi } from '../api/records';
 import type { GameStat, MemberStats } from '../api/types';
 import { MemberAvatar } from '../components/Avatar';
 import { Modal } from '../components/Modal';
+import { FriendAction, FriendRemoveConfirmModal } from '../friends/FriendAction';
 import { GAME_ORDER, findGame } from '../games/registry';
 import { percent } from '../lib/format';
 
@@ -51,24 +52,38 @@ function useMemberStats(memberId: number | null): State {
   return state;
 }
 
-/** 대기실에서 다른 사람을 누르면 뜨는 승률 정보. 배경·Esc·닫기 버튼으로 닫는다(Modal 공통 동작). */
+/**
+ * 다른 사람(대기실 자리·관전자, 친구 목록의 친구)을 누르면 뜨는 승률 정보. 배경·Esc·닫기 버튼으로 닫는다(Modal 공통 동작).
+ * 아래에는 그 사람과의 사이에 맞는 친구 버튼(친구 추가 / 요청 보냄 / 친구 삭제)이 붙고, 삭제는 한 번 더 묻는다.
+ */
 export function MemberStatsModal({ target, onClose }: Props) {
   const state = useMemberStats(target?.id ?? null);
+  const [confirming, setConfirming] = useState(false);
+  const removing = confirming && target !== null;
+  const closeAll = () => {
+    setConfirming(false);
+    onClose();
+  };
   return (
-    <Modal open={target !== null} title={target ? `${target.nickname}님 전적` : '전적'} onClose={onClose}>
-      {target ? (
-        <div className="space-y-4">
-          <div className="flex items-center gap-3 pr-8">
-            <MemberAvatar memberId={target.id} avatar={target.avatar} size={56} />
-            <div className="min-w-0">
-              <h2 className="truncate text-lg font-black text-wood-800">{target.nickname}</h2>
-              <p className="text-xs text-stone-500">게임별 승률</p>
+    <>
+      {/* 삭제를 묻는 동안에는 뒤에 깔린 전적 창이 Esc·배경 누르기에 같이 닫히지 않게 한다. */}
+      <Modal open={target !== null} title={target ? `${target.nickname}님 전적` : '전적'} onClose={removing ? undefined : closeAll}>
+        {target ? (
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 pr-8">
+              <MemberAvatar memberId={target.id} avatar={target.avatar} size={56} />
+              <div className="min-w-0">
+                <h2 className="truncate text-lg font-black text-wood-800">{target.nickname}</h2>
+                <p className="text-xs text-stone-500">게임별 승률</p>
+              </div>
             </div>
+            <StatsBody state={state} />
+            <FriendAction target={target} onAskRemove={() => setConfirming(true)} />
           </div>
-          <StatsBody state={state} />
-        </div>
-      ) : null}
-    </Modal>
+        ) : null}
+      </Modal>
+      <FriendRemoveConfirmModal target={removing ? target : null} onCancel={() => setConfirming(false)} onRemoved={closeAll} />
+    </>
   );
 }
 

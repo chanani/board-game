@@ -1,4 +1,5 @@
 import { Navigate, Outlet } from 'react-router-dom';
+import { FriendsProvider } from '../friends/FriendsContext';
 import { RealtimeProvider } from '../realtime/RealtimeContext';
 import { useAuth } from './AuthContext';
 
@@ -12,7 +13,9 @@ export function RequireAuth() {
   }
   return (
     <RealtimeProvider>
-      <Outlet />
+      <FriendsProvider>
+        <Outlet />
+      </FriendsProvider>
     </RealtimeProvider>
   );
 }

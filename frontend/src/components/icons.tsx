@@ -85,6 +85,11 @@ export const PeopleIcon = ({ className }: IconProps) => (
   <Svg className={className ?? 'h-3.5 w-3.5'}><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20a6.5 6.5 0 0 1 13 0" /><path d="M16 4.5a3.5 3.5 0 0 1 0 7" /><path d="M18 14a6.5 6.5 0 0 1 3.5 6" /></Svg>
 );
 
+/** 친구 추가: 사람 한 명과 더하기. */
+export const UserPlusIcon = ({ className }: IconProps) => (
+  <Svg className={className ?? 'h-4 w-4'}><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20a6.5 6.5 0 0 1 13 0" /><path d="M19 8v6" /><path d="M16 11h6" /></Svg>
+);
+
 export const CopyIcon = ({ className }: IconProps) => (
   <Svg className={className ?? 'h-3.5 w-3.5'}><rect x="8" y="8" width="12" height="12" rx="2" /><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3" /></Svg>
 );

@@ -17,7 +17,7 @@ function escapeIsMine(event: KeyboardEvent): boolean {
 }
 
 /** 열려 있는 동안 Esc·바깥 누르기·페이지 이동으로 닫는다. */
-function useDismiss(open: boolean, close: () => void, inside: React.RefObject<HTMLElement | null>) {
+export function useDismiss(open: boolean, close: () => void, inside: React.RefObject<HTMLElement | null>) {
   const { pathname } = useLocation();
 
   useEffect(() => close(), [pathname, close]);

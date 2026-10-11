@@ -79,6 +79,10 @@ describe('AuthProvider 세션 만료', () => {
 vi.mock('../realtime/RealtimeContext', () => ({
   RealtimeProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
+// 친구 목록은 로그인하면 바로 불러오므로(여기서는 fetch가 모두 401), 이 테스트에서는 그대로 통과시킨다.
+vi.mock('../friends/FriendsContext', () => ({
+  FriendsProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
 
 function LoginProbe() {
   const location = useLocation();
