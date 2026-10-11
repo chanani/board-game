@@ -19,6 +19,13 @@ public enum ErrorCode {
     INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED, "아이디 또는 비밀번호가 올바르지 않습니다."),
     INVALID_AVATAR(HttpStatus.BAD_REQUEST, "고를 수 없는 프로필 사진이에요."),
 
+    FRIEND_NOT_FOUND(HttpStatus.NOT_FOUND, "친구 목록에 없는 사람이에요."),
+    FRIEND_REQUEST_NOT_FOUND(HttpStatus.NOT_FOUND, "친구 요청을 찾을 수 없어요."),
+    ALREADY_FRIENDS(HttpStatus.CONFLICT, "이미 친구예요."),
+    FRIEND_REQUEST_ALREADY_SENT(HttpStatus.CONFLICT, "이미 친구 요청을 보냈어요."),
+    CANNOT_FRIEND_SELF(HttpStatus.BAD_REQUEST, "나에게는 친구 요청을 보낼 수 없어요."),
+    FRIEND_LIMIT_REACHED(HttpStatus.CONFLICT, "친구 목록이 가득 찼어요. 친구는 100명까지 만들 수 있어요."),
+
     ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "방을 찾을 수 없습니다."),
     ROOM_FULL(HttpStatus.CONFLICT, "방이 가득 찼습니다."),
     ALREADY_IN_ROOM(HttpStatus.CONFLICT, "이미 다른 방에 참여 중입니다."),

@@ -5,7 +5,7 @@
 -- 이 스크립트로 만든 DB에서 spring.jpa.hibernate.ddl-auto=update로 띄워도 중복 제약이 생기지 않는다.
 --
 -- 사용: mysql -u <user> -p <database> < sql/schema.sql
--- 방·게임 진행 상태는 서버 메모리에만 있으므로 테이블이 없다(회원과 전적만 저장).
+-- 방·게임 진행 상태는 서버 메모리에만 있으므로 테이블이 없다(회원·전적·친구만 저장).
 
 SET NAMES utf8mb4;
 
@@ -84,6 +84,28 @@ CREATE TABLE IF NOT EXISTS member_game_stat (
     round_score_sum BIGINT      NOT NULL,
     PRIMARY KEY (member_id, game_type),
     INDEX idx_member_game_stat_game_type (game_type)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
+
+-- 친구 요청(아직 답하지 않은 것만 남는다. 수락·거절·취소하면 지운다)
+CREATE TABLE IF NOT EXISTS friend_request (
+    id           BIGINT      NOT NULL AUTO_INCREMENT,
+    requester_id BIGINT      NOT NULL,
+    receiver_id  BIGINT      NOT NULL,
+    created_at   DATETIME(6) NOT NULL,
+    PRIMARY KEY (id),
+    CONSTRAINT uk_friend_request_parties UNIQUE (requester_id, receiver_id),
+    INDEX idx_friend_request_receiver (receiver_id)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
+
+-- 친구 관계(두 사람당 한 줄. 회원 번호가 작은 쪽이 member_low_id)
+CREATE TABLE IF NOT EXISTS friendship (
+    id             BIGINT      NOT NULL AUTO_INCREMENT,
+    member_low_id  BIGINT      NOT NULL,
+    member_high_id BIGINT      NOT NULL,
+    created_at     DATETIME(6) NOT NULL,
+    PRIMARY KEY (id),
+    CONSTRAINT uk_friendship_pair UNIQUE (member_low_id, member_high_id),
+    INDEX idx_friendship_high (member_high_id)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
 -- ───────── 이미 만든 DB에 나중에 더한 컬럼 ─────────
