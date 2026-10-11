@@ -19,7 +19,7 @@ export function sentMessage(result: SendFriendResult): string {
 /** 닉네임으로 찾지 못했을 때는 서버의 일반 문구("회원을 찾을 수 없습니다") 대신 무엇을 고치면 되는지 알려 준다. */
 function sendErrorMessage(error: unknown): string {
   if (error instanceof ApiError && error.code === 'MEMBER_NOT_FOUND') {
-    return '그 닉네임을 쓰는 사람을 찾지 못했어요. 닉네임을 다시 확인해 주세요.';
+    return '닉네임을 다시 확인해주세요.';
   }
   return messageOf(error);
 }
