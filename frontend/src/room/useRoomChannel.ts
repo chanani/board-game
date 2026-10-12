@@ -8,6 +8,7 @@ import type { ViewTransition } from '../games/gameModule';
 import { findGame, sessionGameType } from '../games/registry';
 import { prependLog, type LogDraft, type LogEntry } from '../lib/eventLog';
 import { useRealtime } from '../realtime/RealtimeContext';
+import { useActionWatchdog } from './useActionWatchdog';
 
 // 여러 명이 동시에 잡기를 누르면 늦은 사람은 이 오류를 받는다. 정상 상황이라 알림을 띄우지 않는다(D25).
 // 섞기를 빠르게 거듭 누르면 쿨다운 오류가, 차례가 바뀌는 순간 누르면 섞을 수 없다는 오류가 온다. 이것도 알림 없이 보내기 잠금만 푼다.
@@ -23,6 +24,9 @@ const POLL_MS = 5000;
 type Options = { poll?: boolean; meId?: number };
 
 const LEFT_MESSAGE = '방에서 나왔어요.';
+/** 보낸 행동에 답이 없어 연결을 버리고 다시 붙을 때의 안내. 오류가 아니라 알림 색으로 띄운다. */
+export const UNSTABLE_MESSAGE = '연결이 불안정해요. 다시 연결하고 있어요.';
+const DISCONNECTED_MESSAGE = '연결이 끊겨 있어요. 잠시 후 다시 시도해 주세요.';
 
 // 방이 사라졌거나(404) 내가 더 이상 그 방에 없으면(403 NOT_IN_ROOM, 예: 오프라인 중 기권 처리) 다시 시도해도 소용없다.
 const isRoomGone = (error: unknown) =>
@@ -60,6 +64,14 @@ export function useRoomChannel(code: string, { poll = false, meId = 0 }: Options
   const lastSentRef = useRef<{ action: GameAction; view: SessionView } | null>(null);
   // "방에서 나왔어요"를 알린 방 코드. 방 확인·동기화 오류·화면의 나감 확인이 함께 와도 방마다 한 번만 알린다.
   const leftNotifiedRef = useRef<string | null>(null);
+
+  // 보낸 행동에 화면도 오류도 오지 않으면(멈춘 연결) 조용히 기다리지 않는다. 알리고, 연결을 버려 다시 붙으며 화면을 맞춘다.
+  // errorSeq를 올려 게임 테이블의 보내기 잠금·카드 이동 대기를 풀어 두면, 다시 붙은 뒤 받은 화면에서 바로 이어 할 수 있다.
+  const watchdog = useActionWatchdog(() => {
+    toast.show(UNSTABLE_MESSAGE, 'info');
+    setErrorSeq((current) => current + 1);
+    realtime.reconnect();
+  });
 
   const appendLog = useCallback((lines: LogDraft[]) => {
     if (lines.length === 0) {
@@ -110,6 +122,7 @@ export function useRoomChannel(code: string, { poll = false, meId = 0 }: Options
 
   const acceptView = useCallback(
     (next: SessionView) => {
+      watchdog.settle();
       const type = sessionGameType(next);
       const prev = viewRef.current;
       // 게임 종류가 다른 화면(오래된 화면이 섞여 온 경우)과는 비교하지 않는다.
@@ -123,7 +136,7 @@ export function useRoomChannel(code: string, { poll = false, meId = 0 }: Options
       setView(next);
       appendLog(lines);
     },
-    [nicknameOf, appendLog],
+    [nicknameOf, appendLog, watchdog],
   );
 
   /** 이 방에서 나왔다고 알린다. 이 방에서 이미 알렸으면 알리지 않고 false(모든 게임·모든 경로가 이 한 곳을 지난다). */
@@ -161,7 +174,15 @@ export function useRoomChannel(code: string, { poll = false, meId = 0 }: Options
     setTransition(null);
     syncPendingRef.current = false;
     lastSentRef.current = null;
-  }, [code]);
+    watchdog.settle();
+  }, [code, watchdog]);
+
+  // 연결이 끊기면 끊김 안내가 이미 떠 있고, 보낸 행동의 답은 그 연결로는 오지 않는다. 더 기다리지 않는다.
+  useEffect(() => {
+    if (!connected) {
+      watchdog.settle();
+    }
+  }, [connected, watchdog]);
 
   useEffect(() => {
     if (!connected && roomRef.current) {
@@ -213,6 +234,7 @@ export function useRoomChannel(code: string, { poll = false, meId = 0 }: Options
         const error = body as ApiErrorBody;
         // 채팅 오류는 게임 행동과 무관하므로 카드 이동·중복 전송 방지를 풀지 않는다.
         if (!CHAT_ERROR_CODES.has(error.code)) {
+          watchdog.settle();
           setErrorSeq((current) => current + 1);
         }
         if (error.code === 'NOT_IN_ROOM') {
@@ -229,7 +251,7 @@ export function useRoomChannel(code: string, { poll = false, meId = 0 }: Options
       }),
     ];
     return () => offs.forEach((off) => off());
-  }, [code, realtime, acceptRoom, acceptView, toast, isStaleRejection, notifyLeft]);
+  }, [code, realtime, acceptRoom, acceptView, toast, isStaleRejection, notifyLeft, watchdog]);
 
   useEffect(() => {
     if (!connected) {
@@ -305,12 +327,19 @@ export function useRoomChannel(code: string, { poll = false, meId = 0 }: Options
 
   const send = useCallback(
     (action: GameAction) => {
+      // 같은 행동이 아직 답을 못 받았으면 또 보내지 않는다(멈춘 연결에 쌓였다가 한꺼번에 가서 거절되지 않게).
+      if (watchdog.isWaiting(action)) {
+        return;
+      }
       lastSentRef.current = viewRef.current ? { action, view: viewRef.current } : null;
       if (!realtime.publish(`/app/rooms/${code}/actions`, action)) {
-        toast.show('연결이 끊겨 있어요. 잠시 후 다시 시도해 주세요.');
+        // 끊김 안내 배너가 이미 떠 있으므로 오류 색이 아니라 알림 색으로 띄운다.
+        toast.show(DISCONNECTED_MESSAGE, 'info');
+        return;
       }
+      watchdog.watch(action);
     },
-    [code, realtime, toast],
+    [code, realtime, toast, watchdog],
   );
 
   // 신호는 마우스 움직임마다 오가므로 끊겨 있으면 알림 없이 버린다(D15).

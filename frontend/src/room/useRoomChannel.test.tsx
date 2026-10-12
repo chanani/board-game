@@ -1,16 +1,18 @@
 import { act, renderHook } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from '../api/http';
 import { roomsApi } from '../api/rooms';
 import type { OldMaidPeekSignal, PaperSafariSessionView, PaperSafariView, Room } from '../api/types';
 import { card, oldMaidSession } from '../games/oldmaid/oldMaidFixtures';
-import { useRoomChannel } from './useRoomChannel';
+import { ACTION_ANSWER_MS } from './useActionWatchdog';
+import { UNSTABLE_MESSAGE, useRoomChannel } from './useRoomChannel';
 
 type Handler = (body: unknown) => void;
 const state = vi.hoisted(() => ({
   connected: false,
   handlers: new Map<string, (body: unknown) => void>(),
   publish: vi.fn(() => true),
+  reconnect: vi.fn(() => true),
   realtime: undefined as unknown,
 }));
 
@@ -21,6 +23,7 @@ vi.mock('../realtime/RealtimeContext', () => {
       return () => state.handlers.delete(destination);
     },
     publish: state.publish,
+    reconnect: state.reconnect,
   };
   return { useRealtime: () => ({ realtime: state.realtime, connected: state.connected }) };
 });
@@ -52,6 +55,9 @@ describe('useRoomChannel', () => {
     state.connected = false;
     state.handlers.clear();
     state.publish.mockClear();
+    state.publish.mockImplementation(() => true);
+    state.reconnect.mockClear();
+    toast.show.mockClear();
     vi.restoreAllMocks();
   });
 
@@ -532,6 +538,130 @@ describe('useRoomChannel', () => {
       act(() => state.handlers.get('/user/queue/game')?.(oldMaidSession({ stage: 'DRAW', turnSeq: 1, hand: [other] })));
       act(() => state.handlers.get('/user/queue/errors')?.(rejected));
       expect(toast.show).toHaveBeenCalledWith('지금은 할 수 없는 행동이에요.');
+    });
+  });
+
+  describe('보낸 행동에 답이 없을 때(멈춘 연결)', () => {
+    const draw = { type: 'DRAW_DECK' } as const;
+    const actionsSent = () => (state.publish.mock.calls as unknown[][]).filter(([destination]) => destination === '/app/rooms/ABCDEF/actions').length;
+
+    const playing = () => {
+      vi.useFakeTimers();
+      vi.spyOn(roomsApi, 'get').mockReturnValue(new Promise<Room>(() => {}));
+      state.connected = true;
+      const hook = renderHook(() => useRoomChannel('ABCDEF'));
+      act(() => state.handlers.get('/user/queue/game')?.(sessionView(1)));
+      toast.show.mockClear();
+      state.publish.mockClear();
+      return hook;
+    };
+
+    afterEach(() => vi.useRealTimers());
+
+    it('2.5초 안에 화면도 오류도 오지 않으면 불안정하다고 알리고 연결을 버려 다시 붙게 하며 보내기 잠금을 푼다', () => {
+      const { result } = playing();
+
+      act(() => result.current.send(draw));
+      act(() => { vi.advanceTimersByTime(ACTION_ANSWER_MS - 1); });
+      expect(toast.show).not.toHaveBeenCalled();
+      expect(state.reconnect).not.toHaveBeenCalled();
+
+      act(() => { vi.advanceTimersByTime(1); });
+
+      expect(toast.show).toHaveBeenCalledTimes(1);
+      expect(toast.show).toHaveBeenCalledWith(UNSTABLE_MESSAGE, 'info');
+      expect(state.reconnect).toHaveBeenCalledTimes(1);
+      expect(result.current.errorSeq).toBe(1);
+    });
+
+    it('답을 기다리는 동안 같은 행동을 또 누르면 보내지 않는다', () => {
+      const { result } = playing();
+
+      act(() => result.current.send(draw));
+      act(() => { vi.advanceTimersByTime(1000); });
+      act(() => result.current.send(draw));
+      act(() => result.current.send({ type: 'DRAW_DECK' }));
+
+      expect(actionsSent()).toBe(1);
+    });
+
+    it('답을 기다리는 동안에도 다른 행동은 보낸다(짝 여러 개 버리기, 내고 바로 우노 외치기)', () => {
+      const { result } = playing();
+
+      act(() => result.current.send({ type: 'DISCARD', cardIds: [1, 2] }));
+      act(() => result.current.send({ type: 'DISCARD', cardIds: [3, 4] }));
+
+      expect(actionsSent()).toBe(2);
+    });
+
+    it('새 화면이 오면 답을 받은 것이라 알리지 않고, 같은 행동을 다시 보낼 수 있다', () => {
+      const { result } = playing();
+
+      act(() => result.current.send(draw));
+      act(() => { vi.advanceTimersByTime(300); });
+      act(() => state.handlers.get('/user/queue/game')?.(sessionView(1)));
+      act(() => { vi.advanceTimersByTime(ACTION_ANSWER_MS * 2); });
+      act(() => result.current.send(draw));
+
+      expect(toast.show).not.toHaveBeenCalled();
+      expect(state.reconnect).not.toHaveBeenCalled();
+      expect(actionsSent()).toBe(2);
+    });
+
+    it('거절 오류가 와도 답을 받은 것이라 연결을 버리지 않는다', () => {
+      const { result } = playing();
+
+      act(() => result.current.send(draw));
+      act(() => state.handlers.get('/user/queue/errors')?.({ status: 409, code: 'DECK_EXHAUSTED', message: '덱이 비었어요.' }));
+      act(() => { vi.advanceTimersByTime(ACTION_ANSWER_MS * 2); });
+
+      expect(state.reconnect).not.toHaveBeenCalled();
+      expect(toast.show).toHaveBeenCalledTimes(1);
+      expect(toast.show).toHaveBeenCalledWith('덱이 비었어요.');
+    });
+
+    it('채팅 오류는 게임 행동의 답이 아니라 계속 기다린다', () => {
+      const { result } = playing();
+
+      act(() => result.current.send(draw));
+      act(() => state.handlers.get('/user/queue/errors')?.({ status: 429, code: 'CHAT_TOO_FAST', message: '천천히 보내 주세요.' }));
+      act(() => { vi.advanceTimersByTime(ACTION_ANSWER_MS); });
+
+      expect(state.reconnect).toHaveBeenCalledTimes(1);
+    });
+
+    it('하트비트가 먼저 끊김을 알아채면 끊김 안내가 이미 떠 있으므로 따로 알리지 않는다', () => {
+      const { result, rerender } = playing();
+
+      act(() => result.current.send(draw));
+      state.connected = false;
+      rerender();
+      act(() => { vi.advanceTimersByTime(ACTION_ANSWER_MS * 2); });
+
+      expect(toast.show).not.toHaveBeenCalled();
+      expect(state.reconnect).not.toHaveBeenCalled();
+    });
+
+    it('끊겨 있을 때 누르면 보내지 못했다고 알림 색으로 알리고, 답을 기다리지 않는다', () => {
+      const { result } = playing();
+      state.publish.mockImplementation(() => false);
+
+      act(() => result.current.send(draw));
+      act(() => { vi.advanceTimersByTime(ACTION_ANSWER_MS * 2); });
+
+      expect(toast.show).toHaveBeenCalledTimes(1);
+      expect(toast.show).toHaveBeenCalledWith('연결이 끊겨 있어요. 잠시 후 다시 시도해 주세요.', 'info');
+      expect(state.reconnect).not.toHaveBeenCalled();
+    });
+
+    it('방을 나가면(화면이 내려가면) 더 기다리지 않는다', () => {
+      const { result, unmount } = playing();
+
+      act(() => result.current.send(draw));
+      unmount();
+      act(() => { vi.advanceTimersByTime(ACTION_ANSWER_MS * 2); });
+
+      expect(state.reconnect).not.toHaveBeenCalled();
     });
   });
 });
