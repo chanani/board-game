@@ -5,7 +5,7 @@ import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { authApi } from '../api/auth';
 import { request } from '../api/http';
-import { AuthProvider, SignupLoginError, useAuth } from './AuthContext';
+import { AuthProvider, SESSION_LOST_NOTICE, SignupLoginError, useAuth } from './AuthContext';
 import { RequireAuth } from './RequireAuth';
 
 function Consumer() {
@@ -121,15 +121,29 @@ describe('다른 곳에서 로그인해서 끊김', () => {
     expect(await screen.findByText('로그인 화면 다른 곳에서 로그인해서 로그아웃됐어요.')).toBeInTheDocument();
   });
 
-  it('보통의 401이면 안내 없이 로그인 화면으로 간다', async () => {
+  it('로그인해 있다가 보통의 401을 받으면(서버가 새로 시작돼 세션이 사라짐) 까닭을 알리며 로그인 화면으로 간다', async () => {
     vi.spyOn(authApi, 'me').mockResolvedValue(alice);
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({ status: 401, code: 'UNAUTHORIZED', message: 'x' }), { status: 401 }));
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async () => new Response(JSON.stringify({ status: 401, code: 'UNAUTHORIZED', message: 'x' }), { status: 401 }));
     renderProtected();
     expect(await screen.findByText('목록 화면')).toBeInTheDocument();
 
     await request('/api/rooms/me').catch(() => undefined);
+    expect(await screen.findByText(`로그인 화면 ${SESSION_LOST_NOTICE}`)).toBeInTheDocument();
 
+    // 주기적으로 부르던 요청의 401이 뒤따라와도 안내는 그대로다.
+    await request('/api/friends').catch(() => undefined);
+    expect(screen.getByText(`로그인 화면 ${SESSION_LOST_NOTICE}`)).toBeInTheDocument();
+  });
+
+  it('로그인하지 않은 채 받은 401(스스로 로그아웃한 뒤 늦게 온 응답 등)에는 안내를 붙이지 않는다', async () => {
+    vi.spyOn(authApi, 'me').mockResolvedValue(null);
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async () => new Response(JSON.stringify({ status: 401, code: 'UNAUTHORIZED', message: 'x' }), { status: 401 }));
+    renderProtected();
     expect(await screen.findByText('로그인 화면 안내 없음')).toBeInTheDocument();
+
+    await act(async () => { await request('/api/rooms/me').catch(() => undefined); });
+
+    expect(screen.getByText('로그인 화면 안내 없음')).toBeInTheDocument();
   });
 
   it('웹소켓이 4001로 닫혔다고 알리면 같은 안내로 로그인 화면에 간다', async () => {
