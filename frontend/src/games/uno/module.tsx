@@ -27,6 +27,8 @@ export const unoModule: GameModule<UnoSessionView> = {
   wasParticipant: (view, meId) => view.game.participantIds.includes(meId),
   // D26: 서버가 경기 id를 주지 않으므로 방 코드 + 시작 시각.
   gameOverKey: (code, view) => `${code}:UNO:${view.game.startedAt}`,
+  // 낸 카드 수(discardCount)까지 넣어, 둘이서 건너뛰기·방향 바꾸기로 같은 사람 차례가 이어져도 걸음을 가른다.
+  stepKey: ({ game }) => [game.status, game.startedAt, game.stage ?? '', game.currentPlayerId ?? '', game.deadline ?? '', game.autoActSeq, game.discardCount].join(':'),
   rules: { title: '우노 규칙', summary: UNO_RULE_SUMMARY, slides: UNO_RULE_SLIDES, renderArt },
   BoxArt: UnoBoxArt,
   averageScoreLabel: '평균 획득 점수',

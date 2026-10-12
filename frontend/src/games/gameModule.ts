@@ -58,8 +58,14 @@ export type GameModule<V extends SessionView> = {
   /** 전적의 라운드 점수 글자. 없으면 "N점". */
   roundScoreText?: (score: number) => string;
   /**
-   * 보낸 행동(action, 보낼 때 화면 sent)이 code로 거절됐는데 지금 화면(current)이 이미 그 행동을 지나쳤으면 true.
-   * 마감 자동 처리와 겹친 늦은 요청처럼 정상 경합이라 알림을 띄우지 않는다. 없으면 늘 알린다.
+   * 지금 기다리는 한 걸음(판·차례·단계·마감)을 가리키는 글자. 보낸 행동이 거절됐을 때 그사이 이 값이 바뀌었으면
+   * (마감 자동 처리·남의 행동·게임 끝과 겹친 늦은 요청) 화면이 이미 그 행동을 지나친 정상 경합이라 알림을 띄우지 않는다.
+   * 같은 걸음 안의 화면 갱신(남의 감정 표현·우노 외침 등)으로는 바뀌지 않아야, 지금 화면에 대한 진짜 거절은 그대로 알린다.
+   */
+  stepKey: (view: V) => string;
+  /**
+   * 걸음은 그대로인데도 보낸 행동(action, 보낼 때 화면 sent)이 code로 거절된 것이 정상 경합이면 true
+   * (지금 화면 current가 이미 그 행동을 지나친 경우. 예: 도둑잡기에서 고른 카드가 이미 손에 없다). 없으면 걸음만 본다.
    */
   isStaleRejection?: (action: GameAction, sent: V, current: V, code: string) => boolean;
 };

@@ -23,6 +23,7 @@ export const paperSafariModule: GameModule<PaperSafariSessionView> = {
   isGameOver: (view) => view.game.status === 'GAME_OVER',
   wasParticipant: (view, meId) => view.game.round.boards.some((board) => board.playerId === meId),
   gameOverKey: (code, view) => gameOverKey(code, view.game),
+  stepKey: ({ game }) => [game.status, game.roundNumber, game.round.phase, game.round.currentPlayerId, game.deadline ?? '', game.autoActSeq ?? 0].join(':'),
   rules: { title: '페이퍼 사파리 규칙', summary: RULE_SUMMARY, slides: RULE_SLIDES, renderArt },
   BoxArt: PaperSafariBoxArt,
   averageScoreLabel: '평균 점수',

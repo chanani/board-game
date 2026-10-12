@@ -11,11 +11,18 @@ import { useRealtime } from '../realtime/RealtimeContext';
 import { useActionWatchdog } from './useActionWatchdog';
 
 // 여러 명이 동시에 잡기를 누르면 늦은 사람은 이 오류를 받는다. 정상 상황이라 알림을 띄우지 않는다(D25).
+// 우노 외치기도 잡기와 겨루다 지면(이미 잡혔거나 차례가 넘어감) 거절된다. 버튼은 외칠 수 있을 때만 보이므로 늘 경합이다.
 // 섞기를 빠르게 거듭 누르면 쿨다운 오류가, 차례가 바뀌는 순간 누르면 섞을 수 없다는 오류가 온다. 이것도 알림 없이 보내기 잠금만 푼다.
-// 화면이 이미 지나친 행동의 거절(도둑잡기 마감 직전 버리기 등)은 게임 모듈의 isStaleRejection이 가린다.
+// 게임이 막 끝난 순간(상대가 나감·마지막 카드)에 누른 행동은 "시작되지 않았다/이미 끝났다"로 거절된다. 곧 끝 화면이 오므로 알리지 않는다.
+// 화면이 이미 지나친 행동의 거절(마감 자동 처리에 밀린 행동 등)은 isStaleRejection이 모든 게임에서 가린다.
 // 감정 표현을 잇달아 눌러 막힌 것은 버튼이 이미 잠겨 있어 따로 알리지 않는다.
-const QUIET_ERROR_CODES = new Set(['UNO_CATCH_CLOSED', 'OLD_MAID_SHUFFLE_TOO_FAST', 'OLD_MAID_SHUFFLE_NOT_ALLOWED', 'EMOTE_TOO_FAST']);
+const QUIET_ERROR_CODES = new Set([
+  'UNO_CATCH_CLOSED', 'UNO_CALL_NOT_ALLOWED', 'OLD_MAID_SHUFFLE_TOO_FAST', 'OLD_MAID_SHUFFLE_NOT_ALLOWED',
+  'GAME_NOT_STARTED', 'GAME_ALREADY_OVER', 'EMOTE_TOO_FAST',
+]);
 const CHAT_ERROR_CODES = new Set(['INVALID_CHAT_MESSAGE', 'CHAT_TOO_FAST', 'INVALID_EMOTE', 'EMOTE_TOO_FAST']);
+// 서버 쪽 고장은 화면이 지나쳤더라도 늘 알린다.
+const LOUD_ERROR_CODES = new Set(['INTERNAL_ERROR']);
 
 const SYNC_RETRY_MS = 1000;
 const SYNC_MAX_TRIES = 5;
@@ -212,6 +219,7 @@ export function useRoomChannel(code: string, { poll = false, meId = 0 }: Options
   }, [code, connected, acceptRoom, showFailure]);
 
   // 마감 자동 처리 등에 밀려 이미 지나간 행동의 거절이면 알리지 않는다. 한 번 물은 행동은 지운다(다음 오류는 따로 본다).
+  // 보낼 때 화면과 지금 화면의 걸음(판·차례·단계·마감)이 다르면 어느 게임이든 지나간 것이고, 걸음이 같으면 게임 모듈에 더 묻는다.
   const isStaleRejection = useCallback((errorCode: string) => {
     const sent = lastSentRef.current;
     const current = viewRef.current;
@@ -219,8 +227,29 @@ export function useRoomChannel(code: string, { poll = false, meId = 0 }: Options
     if (!sent || !current || sessionGameType(sent.view) !== sessionGameType(current)) {
       return false;
     }
-    return findGame(sessionGameType(current))?.isStaleRejection?.(sent.action, sent.view, current, errorCode) ?? false;
+    const game = findGame(sessionGameType(current));
+    if (!game) {
+      return false;
+    }
+    if (game.stepKey(sent.view) !== game.stepKey(current)) {
+      return true;
+    }
+    return game.isStaleRejection?.(sent.action, sent.view, current, errorCode) ?? false;
   }, []);
+
+  // 채팅·감정 표현 오류는 게임 행동의 답이 아니므로 보낸 행동과 견주지 않는다(보낸 행동 기억도 지우지 않는다).
+  const isQuietError = useCallback(
+    (errorCode: string) => {
+      if (QUIET_ERROR_CODES.has(errorCode)) {
+        return true;
+      }
+      if (CHAT_ERROR_CODES.has(errorCode) || LOUD_ERROR_CODES.has(errorCode)) {
+        return false;
+      }
+      return isStaleRejection(errorCode);
+    },
+    [isStaleRejection],
+  );
 
   useEffect(() => {
     const offs = [
@@ -242,7 +271,7 @@ export function useRoomChannel(code: string, { poll = false, meId = 0 }: Options
           setMissing(true);
           return;
         }
-        if (!QUIET_ERROR_CODES.has(error.code) && !isStaleRejection(error.code)) {
+        if (!isQuietError(error.code)) {
           toast.show(error.message);
         }
         if (error.code === 'ROOM_NOT_FOUND') {
@@ -251,7 +280,7 @@ export function useRoomChannel(code: string, { poll = false, meId = 0 }: Options
       }),
     ];
     return () => offs.forEach((off) => off());
-  }, [code, realtime, acceptRoom, acceptView, toast, isStaleRejection, notifyLeft, watchdog]);
+  }, [code, realtime, acceptRoom, acceptView, toast, isQuietError, notifyLeft, watchdog]);
 
   useEffect(() => {
     if (!connected) {

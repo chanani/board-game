@@ -4,6 +4,7 @@ import { ApiError } from '../api/http';
 import { roomsApi } from '../api/rooms';
 import type { OldMaidPeekSignal, PaperSafariSessionView, PaperSafariView, Room } from '../api/types';
 import { card, oldMaidSession } from '../games/oldmaid/oldMaidFixtures';
+import { unoSession } from '../games/uno/unoFixtures';
 import { ACTION_ANSWER_MS } from './useActionWatchdog';
 import { UNSTABLE_MESSAGE, useRoomChannel } from './useRoomChannel';
 
@@ -538,6 +539,139 @@ describe('useRoomChannel', () => {
       act(() => state.handlers.get('/user/queue/game')?.(oldMaidSession({ stage: 'DRAW', turnSeq: 1, hand: [other] })));
       act(() => state.handlers.get('/user/queue/errors')?.(rejected));
       expect(toast.show).toHaveBeenCalledWith('지금은 할 수 없는 행동이에요.');
+    });
+  });
+
+  describe('화면이 이미 지나친 행동의 거절(모든 게임)', () => {
+    const NOT_YOUR_TURN = { status: 409, code: 'NOT_YOUR_TURN', message: '지금은 당신의 차례가 아닙니다.' };
+    const INVALID_PHASE = { status: 409, code: 'INVALID_PHASE', message: '지금은 할 수 없는 행동입니다.' };
+    const game = (view: unknown) => act(() => state.handlers.get('/user/queue/game')?.(view));
+    const reject = (error: unknown) => act(() => state.handlers.get('/user/queue/errors')?.(error));
+
+    const safari = (phase: 'DRAW' | 'PLACE', currentPlayerId: number, deadline: number): PaperSafariSessionView => {
+      const base = sessionView(1);
+      return { game: { ...base.game, deadline, autoActSeq: 0, round: { ...base.game.round, phase, currentPlayerId } } };
+    };
+
+    const start = (first: unknown) => {
+      vi.spyOn(roomsApi, 'get').mockReturnValue(new Promise<Room>(() => {}));
+      const hook = renderHook(() => useRoomChannel('ABCDEF'));
+      game(first);
+      toast.show.mockClear();
+      return hook;
+    };
+
+    it('우노: 마감에 밀려 차례가 넘어간 뒤 닿은 뽑기의 거절은 알리지 않는다', () => {
+      const { result } = start(unoSession({ currentPlayerId: 1, deadline: 15000 }));
+
+      act(() => result.current.send({ type: 'DRAW' }));
+      game(unoSession({ currentPlayerId: 2, deadline: 30000, autoActSeq: 1 }));
+      reject(NOT_YOUR_TURN);
+
+      expect(toast.show).not.toHaveBeenCalled();
+      expect(result.current.errorSeq).toBe(1);
+    });
+
+    it('우노: 둘이서 건너뛰기로 다시 내 차례가 돼도 그사이 카드가 나갔으면 지나간 것으로 본다', () => {
+      const { result } = start(unoSession({ currentPlayerId: 1, discardCount: 4 }));
+
+      act(() => result.current.send({ type: 'PLAY', cardId: 3 }));
+      game(unoSession({ currentPlayerId: 1, discardCount: 6 }));
+      reject({ status: 400, code: 'UNO_CARD_NOT_IN_HAND', message: '내 손에 없는 카드예요.' });
+
+      expect(toast.show).not.toHaveBeenCalled();
+    });
+
+    it('우노: 화면이 그대로인 거절은 알린다', () => {
+      const { result } = start(unoSession({ currentPlayerId: 1, deadline: 15000 }));
+
+      act(() => result.current.send({ type: 'PLAY', cardId: 88 }));
+      reject({ status: 409, code: 'UNO_CARD_NOT_PLAYABLE', message: '지금 낼 수 없는 카드예요.' });
+
+      expect(toast.show).toHaveBeenCalledWith('지금 낼 수 없는 카드예요.');
+    });
+
+    it('우노: 같은 걸음 안의 화면 갱신(남이 우노를 외침)만 있었으면 거절을 그대로 알린다', () => {
+      const { result } = start(unoSession({ currentPlayerId: 1, deadline: 15000 }));
+
+      act(() => result.current.send({ type: 'PLAY', cardId: 88 }));
+      game(unoSession({ currentPlayerId: 1, deadline: 15000, players: [{ playerId: 1, cardCount: 3, unoDeclared: false }, { playerId: 2, cardCount: 1, unoDeclared: true }] }));
+      reject({ status: 409, code: 'UNO_CARD_NOT_PLAYABLE', message: '지금 낼 수 없는 카드예요.' });
+
+      expect(toast.show).toHaveBeenCalledWith('지금 낼 수 없는 카드예요.');
+    });
+
+    it('페이퍼 사파리: 멈춘 연결에 쌓였던 같은 뽑기가 한꺼번에 가서 두 번째가 거절돼도 알리지 않는다', () => {
+      const { result } = start(safari('DRAW', 1, 15000));
+
+      act(() => result.current.send({ type: 'DRAW_DECK' }));
+      game(safari('PLACE', 1, 15000));
+      reject(INVALID_PHASE);
+
+      expect(toast.show).not.toHaveBeenCalled();
+    });
+
+    it('페이퍼 사파리: 마감 자동 행동으로 차례가 넘어간 뒤의 거절은 알리지 않는다', () => {
+      const { result } = start(safari('PLACE', 1, 15000));
+
+      act(() => result.current.send({ type: 'SWAP', column: 0, row: 0 }));
+      game(safari('DRAW', 2, 30000));
+      reject(NOT_YOUR_TURN);
+
+      expect(toast.show).not.toHaveBeenCalled();
+    });
+
+    it('페이퍼 사파리: 화면이 그대로인 거절은 알린다', () => {
+      const { result } = start(safari('PLACE', 1, 15000));
+
+      act(() => result.current.send({ type: 'DISCARD' }));
+      reject({ status: 400, code: 'MUST_SWAP_TARZAN', message: '타잔 카드는 반드시 교체해야 합니다.' });
+
+      expect(toast.show).toHaveBeenCalledWith('타잔 카드는 반드시 교체해야 합니다.');
+    });
+
+    it('도둑잡기: 뽑힐 사람이 기권으로 바뀐 뒤 닿은 뽑기의 거절은 알리지 않는다', () => {
+      const { result } = start(oldMaidSession({ targetId: 2 }));
+
+      act(() => result.current.send({ type: 'DRAW', index: 2 }));
+      game(oldMaidSession({ targetId: 3 }));
+      reject({ status: 400, code: 'OLD_MAID_INVALID_SLOT', message: '고를 수 없는 카드 자리예요.' });
+
+      expect(toast.show).not.toHaveBeenCalled();
+    });
+
+    it('화면이 지나쳤어도 서버 고장(INTERNAL_ERROR)은 알린다', () => {
+      const { result } = start(unoSession({ currentPlayerId: 1 }));
+
+      act(() => result.current.send({ type: 'DRAW' }));
+      game(unoSession({ currentPlayerId: 2 }));
+      reject({ status: 500, code: 'INTERNAL_ERROR', message: '일시적인 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.' });
+
+      expect(toast.show).toHaveBeenCalledWith('일시적인 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');
+    });
+
+    it('채팅 오류는 그사이 화면이 바뀌었어도 알린다(게임 행동의 답이 아니다)', () => {
+      const { result } = start(unoSession({ currentPlayerId: 1 }));
+
+      act(() => result.current.send({ type: 'DRAW' }));
+      game(unoSession({ currentPlayerId: 2 }));
+      reject({ status: 429, code: 'CHAT_TOO_FAST', message: '메시지를 너무 빨리 보내고 있어요.' });
+
+      expect(toast.show).toHaveBeenCalledWith('메시지를 너무 빨리 보내고 있어요.');
+    });
+
+    it.each([
+      ['UNO_CALL_NOT_ALLOWED', '지금은 우노를 외칠 수 없어요.'],
+      ['GAME_NOT_STARTED', '게임이 시작되지 않았습니다.'],
+      ['GAME_ALREADY_OVER', '이미 끝난 게임입니다.'],
+    ])('경합에서 진 %s는 화면이 그대로여도 알림 없이 보내기 잠금만 푼다', (code, message) => {
+      const { result } = start(unoSession({ currentPlayerId: 1 }));
+
+      act(() => result.current.send({ type: 'CALL_UNO' }));
+      reject({ status: 409, code, message });
+
+      expect(toast.show).not.toHaveBeenCalled();
+      expect(result.current.errorSeq).toBe(1);
     });
   });
 

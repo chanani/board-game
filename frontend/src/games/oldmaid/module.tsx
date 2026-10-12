@@ -28,6 +28,8 @@ export const oldMaidModule: GameModule<OldMaidSessionView> = {
   wasParticipant: (view, meId) => view.game.participantIds.includes(meId),
   // 서버가 경기 id를 주지 않으므로 방 코드 + 시작 시각(우노 D26과 같다).
   gameOverKey: (code, view) => `${code}:OLD_MAID:${view.game.startedAt}`,
+  // 뽑힐 사람(targetId)이 기권으로 바뀌면 고르던 자리도 달라지므로 걸음에 넣는다.
+  stepKey: ({ game }) => [game.status, game.startedAt, game.stage ?? '', game.turnSeq, game.currentPlayerId ?? '', game.targetId ?? '', game.deadline ?? '', game.autoActSeq].join(':'),
   rules: { title: '도둑잡기 규칙', summary: OLD_MAID_RULE_SUMMARY, slides: OLD_MAID_RULE_SLIDES, renderArt },
   BoxArt: OldMaidBoxArt,
   // D10: 라운드 점수 = 등수.
