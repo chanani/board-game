@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { Realtime, type StompLike } from './Realtime';
+import { createStompClient, HEARTBEAT_MS, Realtime, type StompLike } from './Realtime';
 
 class FakeStomp implements StompLike {
   connected = false;
   onConnect: () => void = () => {};
-  onWebSocketClose: (event?: { code?: number }) => void = () => {};
+  onWebSocketClose: (event?: { code?: number; reason?: string }) => void = () => {};
   subscriptions: { destination: string; callback: (message: { body: string }) => void; active: boolean }[] = [];
   published: { destination: string; body: string }[] = [];
 
@@ -22,11 +22,23 @@ class FakeStomp implements StompLike {
     this.connected = true;
     this.onConnect();
   }
-  drop(code = 1006) {
+  drop(code = 1006, reason = '') {
     this.connected = false;
-    this.onWebSocketClose({ code });
+    this.onWebSocketClose({ code, reason });
   }
 }
+
+describe('createStompClient', () => {
+  it('하트비트를 서버와 같은 간격(2.5초)으로 주고받고, 세 번 놓치면 멈춘 연결을 기다리지 않고 버린다', () => {
+    const client = createStompClient() as unknown as Record<string, unknown>;
+
+    expect(HEARTBEAT_MS).toBe(2500);
+    expect(client.heartbeatIncoming).toBe(HEARTBEAT_MS);
+    expect(client.heartbeatOutgoing).toBe(HEARTBEAT_MS);
+    expect(client.heartbeatToleranceMultiplier).toBe(3);
+    expect(client.discardWebsocketOnCommFailure).toBe(true);
+  });
+});
 
 describe('Realtime', () => {
   it('연결되면 등록된 구독을 붙이고 메시지를 JSON으로 넘긴다', () => {
@@ -81,12 +93,27 @@ describe('Realtime', () => {
     fake.drop(1006);
     expect(replaced).toEqual([]);
     fake.connect();
-    fake.drop(4001);
+    fake.drop(4001, 'SESSION_REPLACED');
     expect(replaced).toEqual([1]);
 
     off();
     fake.connect();
-    fake.drop(4001);
+    fake.drop(4001, 'SESSION_REPLACED');
     expect(replaced).toEqual([1]);
+  });
+
+  it('멈춘 연결을 버릴 때 stompjs가 쓰는 4001은 다른 곳 로그인으로 보지 않는다', () => {
+    const fake = new FakeStomp();
+    const realtime = new Realtime(() => fake);
+    const replaced: number[] = [];
+    const states: boolean[] = [];
+    realtime.onSessionReplaced(() => replaced.push(1));
+    realtime.onConnectionChange((connected) => states.push(connected));
+    fake.connect();
+
+    fake.drop(4001, 'Quick discarding socket (#123456) without waiting for the shutdown sequence.');
+
+    expect(replaced).toEqual([]);
+    expect(states).toEqual([true, false]);
   });
 });

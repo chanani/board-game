@@ -1,4 +1,4 @@
-import { Client } from '@stomp/stompjs';
+import { Client, TickerStrategy } from '@stomp/stompjs';
 
 type Message = { body: string };
 type Subscription = { unsubscribe: () => void };
@@ -6,7 +6,7 @@ type Subscription = { unsubscribe: () => void };
 export interface StompLike {
   connected: boolean;
   onConnect: () => void;
-  onWebSocketClose: (event?: { code?: number }) => void;
+  onWebSocketClose: (event?: { code?: number; reason?: string }) => void;
   activate(): void;
   deactivate(): void;
   subscribe(destination: string, callback: (message: Message) => void): Subscription;
@@ -15,8 +15,17 @@ export interface StompLike {
 
 type Handler = (body: unknown) => void;
 
-/** 서버가 같은 계정의 새 로그인으로 이전 웹소켓을 닫을 때 쓰는 닫힘 코드. */
+/** 서버가 같은 계정의 새 로그인으로 이전 웹소켓을 닫을 때 쓰는 닫힘 코드와 이유. */
 export const SESSION_REPLACED_CLOSE_CODE = 4001;
+export const SESSION_REPLACED_REASON = 'SESSION_REPLACED';
+
+/**
+ * 하트비트 간격(ms). 서버(WebSocketConfig.HEARTBEAT)와 같은 값이다.
+ * 서버는 이 간격마다 "그동안 보낸 게 없으면" 하트비트를 보내므로 정상일 때도 공백이 5초까지 벌어진다.
+ * 그래서 세 배(7.5초) 넘게 조용할 때만 끊긴 것으로 보고, 확인도 이 간격마다 하므로 멈춘 연결은 7.5~10초 안에 알아챈다.
+ */
+export const HEARTBEAT_MS = 2500;
+const HEARTBEAT_TOLERANCE = 3;
 type Entry = { destination: string; handler: Handler; subscription?: Subscription };
 
 export function createStompClient(): StompLike {
@@ -24,8 +33,13 @@ export function createStompClient(): StompLike {
   return new Client({
     brokerURL: `${protocol}://${window.location.host}/ws`,
     reconnectDelay: 3000,
-    heartbeatIncoming: 10000,
-    heartbeatOutgoing: 10000,
+    heartbeatIncoming: HEARTBEAT_MS,
+    heartbeatOutgoing: HEARTBEAT_MS,
+    heartbeatToleranceMultiplier: HEARTBEAT_TOLERANCE,
+    // 가려진 탭은 타이머가 느려져 하트비트를 제때 못 보낸다. 워커에서 보내 서버가 살아 있는 연결을 닫지 않게 한다.
+    heartbeatStrategy: TickerStrategy.Worker,
+    // 멈춘 연결은 닫기 인사를 기다려도 답이 없다. 기다리지 않고 버린 뒤 바로 다시 연결한다.
+    discardWebsocketOnCommFailure: true,
   }) as unknown as StompLike;
 }
 
@@ -44,7 +58,8 @@ export class Realtime {
     };
     this.client.onWebSocketClose = (event) => {
       this.emit(false);
-      if (event?.code === SESSION_REPLACED_CLOSE_CODE) {
+      // 멈춘 연결을 버릴 때 stompjs도 4001을 쓰므로 서버가 보낸 이유까지 본다.
+      if (event?.code === SESSION_REPLACED_CLOSE_CODE && event.reason === SESSION_REPLACED_REASON) {
         this.replacedListeners.forEach((listener) => listener());
       }
     };
