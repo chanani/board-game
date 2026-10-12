@@ -79,6 +79,26 @@ describe('useRoomChannel', () => {
     expect(get).toHaveBeenCalledTimes(2);
   });
 
+  it('끊겼다 다시 연결되면 방을 다시 가져오고 게임 화면 동기화를 다시 요청한다', async () => {
+    const get = vi.spyOn(roomsApi, 'get').mockResolvedValue(room('방', 'PLAYING'));
+    state.connected = true;
+    const { rerender } = renderHook(() => useRoomChannel('ABCDEF'));
+    await act(async () => {});
+    act(() => state.handlers.get('/user/queue/game')?.(sessionView(1)));
+
+    state.connected = false;
+    rerender();
+    await act(async () => {});
+    get.mockClear();
+    state.publish.mockClear();
+    state.connected = true;
+    rerender();
+    await act(async () => {});
+
+    expect(get).toHaveBeenCalledTimes(1);
+    expect(state.publish).toHaveBeenCalledWith('/app/rooms/ABCDEF/sync', {});
+  });
+
   it('게임 중인 방을 받았는데 화면이 없으면 동기화를 요청한다', async () => {
     vi.spyOn(roomsApi, 'get').mockResolvedValue(room('방'));
     state.connected = true;

@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { createStompClient, HEARTBEAT_MS, Realtime, type StompLike } from './Realtime';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { createStompClient, HEARTBEAT_MS, Realtime, STALE_AFTER_MS, type StompLike } from './Realtime';
 
 class FakeStomp implements StompLike {
   connected = false;
@@ -8,8 +8,15 @@ class FakeStomp implements StompLike {
   subscriptions: { destination: string; callback: (message: { body: string }) => void; active: boolean }[] = [];
   published: { destination: string; body: string }[] = [];
 
+  webSocket: { addEventListener: (type: 'message', listener: () => void) => void; frame: () => void } | undefined;
+  forced = 0;
+
   activate() {}
   deactivate() {}
+  forceDisconnect() {
+    this.forced += 1;
+    this.drop(4001, 'Quick discarding socket (#1) without waiting for the shutdown sequence.');
+  }
   subscribe(destination: string, callback: (message: { body: string }) => void) {
     const entry = { destination, callback, active: true };
     this.subscriptions.push(entry);
@@ -19,6 +26,8 @@ class FakeStomp implements StompLike {
     this.published.push(frame);
   }
   connect() {
+    const listeners: (() => void)[] = [];
+    this.webSocket = { addEventListener: (_type, listener) => listeners.push(listener), frame: () => listeners.forEach((listener) => listener()) };
     this.connected = true;
     this.onConnect();
   }
@@ -37,6 +46,13 @@ describe('createStompClient', () => {
     expect(client.heartbeatOutgoing).toBe(HEARTBEAT_MS);
     expect(client.heartbeatToleranceMultiplier).toBe(3);
     expect(client.discardWebsocketOnCommFailure).toBe(true);
+  });
+
+  it('끊기면 1초 뒤 다시 연결하고, 연결 시도가 4초 안에 끝나지 않으면 버리고 다시 시도한다', () => {
+    const client = createStompClient() as unknown as Record<string, unknown>;
+
+    expect(client.reconnectDelay).toBe(1000);
+    expect(client.connectionTimeout).toBe(4000);
   });
 });
 
@@ -115,5 +131,72 @@ describe('Realtime', () => {
 
     expect(replaced).toEqual([]);
     expect(states).toEqual([true, false]);
+  });
+
+  describe('멈춘 연결 되살리기', () => {
+    afterEach(() => vi.useRealTimers());
+
+    const connected = () => {
+      vi.useFakeTimers();
+      const fake = new FakeStomp();
+      const realtime = new Realtime(() => fake);
+      const states: boolean[] = [];
+      realtime.onConnectionChange((state) => states.push(state));
+      fake.connect();
+      return { fake, realtime, states };
+    };
+
+    it('프레임(하트비트 포함)이 최근에 왔으면 그대로 둔다', () => {
+      const { fake, realtime, states } = connected();
+      vi.advanceTimersByTime(STALE_AFTER_MS - 1000);
+      fake.webSocket?.frame();
+      vi.advanceTimersByTime(STALE_AFTER_MS - 1000);
+
+      expect(realtime.isStale()).toBe(false);
+      expect(realtime.recover()).toBe(false);
+      expect(fake.forced).toBe(0);
+      expect(states).toEqual([true]);
+    });
+
+    it('한동안 아무 프레임도 없었으면 연결을 버려 끊김을 바로 알리고 다시 연결하게 한다', () => {
+      const { fake, realtime, states } = connected();
+      vi.advanceTimersByTime(STALE_AFTER_MS + 1);
+
+      expect(realtime.isStale()).toBe(true);
+      expect(realtime.recover()).toBe(true);
+      expect(fake.forced).toBe(1);
+      expect(states).toEqual([true, false]);
+    });
+
+    it('버려진 옛 소켓에 늦게 온 프레임은 새 연결의 것으로 세지 않는다', () => {
+      const { fake, realtime } = connected();
+      const old = fake.webSocket;
+      fake.drop();
+      fake.connect();
+      vi.advanceTimersByTime(STALE_AFTER_MS + 1);
+
+      old?.frame();
+
+      expect(realtime.isStale()).toBe(true);
+    });
+
+    it('이미 끊겨 다시 연결하는 중이면 또 버리지 않는다', () => {
+      const { fake, realtime } = connected();
+      fake.drop();
+
+      expect(realtime.isStale()).toBe(true);
+      expect(realtime.recover()).toBe(false);
+      expect(realtime.reconnect()).toBe(false);
+      expect(fake.forced).toBe(0);
+    });
+
+    it('reconnect는 방금 프레임이 왔어도 연결을 버린다(네트워크 끊김·응답 없는 행동)', () => {
+      const { fake, realtime, states } = connected();
+
+      expect(realtime.reconnect()).toBe(true);
+      expect(states).toEqual([true, false]);
+      fake.connect();
+      expect(states).toEqual([true, false, true]);
+    });
   });
 });
