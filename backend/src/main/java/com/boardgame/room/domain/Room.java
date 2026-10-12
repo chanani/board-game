@@ -58,6 +58,30 @@ public class Room {
         occupants.addPlayer(participant, profile.capacity());
     }
 
+    /** 참가자가 대기 중인 방으로 친구를 부를 수 있는지 확인한다. 자리가 없거나 이미 앉아 있는 사람은 부르지 못한다. */
+    public void requireInvitable(long inviterId, long inviteeId) {
+        occupants.requirePlayer(inviterId);
+        requireWaiting();
+        if (occupants.isPlayer(inviteeId)) {
+            throw new BusinessException(ErrorCode.INVITE_ALREADY_IN_ROOM);
+        }
+        if (profile.capacity().isFull(occupants.playerCount())) {
+            throw new BusinessException(ErrorCode.ROOM_FULL);
+        }
+    }
+
+    /** 참가자의 초대를 받은 사람을 들인다. 초대가 곧 허락이라 잠금(비밀번호)은 묻지 않는다. 초대한 사람이 방을 떠났으면 초대도 끝난다. */
+    public void admitInvited(Participant participant, long inviterId) {
+        if (occupants.isPlayer(participant.memberId())) {
+            return;
+        }
+        requireWaiting();
+        if (!occupants.isPlayer(inviterId)) {
+            throw new BusinessException(ErrorCode.INVITE_EXPIRED);
+        }
+        occupants.addPlayer(participant, profile.capacity());
+    }
+
     public void watch(Participant participant) {
         if (occupants.isOccupant(participant.memberId())) {
             return;

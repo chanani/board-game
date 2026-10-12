@@ -186,6 +186,28 @@ public class RoomService {
         return broadcast(room);
     }
 
+    /** 참가자가 친구를 부를 수 있는 방이면 초대장에 실을 방 정보를 돌려준다. 부를 수 없으면 그 이유로 막는다. */
+    public synchronized RoomSummaryResponse invitable(String rawCode, long inviterId, long inviteeId) {
+        Room room = find(rawCode);
+        room.requireInvitable(inviterId, inviteeId);
+        return RoomSummaryResponse.from(room);
+    }
+
+    // 초대받은 사람은 비밀번호 확인 없이 들어온다. 프로필 그림(DB)은 잠금 밖에서 읽어 둔다.
+    public RoomResponse joinInvited(String rawCode, LoginMember member, long inviterId) {
+        avatars.load(member.id());
+        return admitInvited(rawCode, member, inviterId);
+    }
+
+    private synchronized RoomResponse admitInvited(String rawCode, LoginMember member, long inviterId) {
+        Room room = find(rawCode);
+        requireNotInOtherRoom(member.id(), room);
+        room.admitInvited(participantOf(member), inviterId);
+        saveAndNotifyClosed(room);
+        presence.baseline(room.humanIds(), clock.instant());
+        return broadcast(room);
+    }
+
     // 프로필 그림(DB)은 잠금 밖에서 읽어 둔다.
     public RoomResponse watch(String rawCode, LoginMember member) {
         avatars.load(member.id());
