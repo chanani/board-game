@@ -48,7 +48,7 @@ function RelationButton({ friends, target, onAskRemove }: { friends: FriendsStat
     return <Button variant="muted" className="w-full" disabled>요청 보냄</Button>;
   }
   return (
-    <Button variant="secondary" className="flex w-full items-center justify-center gap-1.5" disabled={sending} onClick={() => void add()}>
+    <Button variant="success" className="flex w-full items-center justify-center gap-1.5" disabled={sending} onClick={() => void add()}>
       <UserPlusIcon />{relation === 'incoming' ? '친구 요청 수락' : '친구 추가'}
     </Button>
   );
