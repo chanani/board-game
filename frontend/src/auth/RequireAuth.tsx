@@ -1,5 +1,6 @@
 import { Navigate, Outlet } from 'react-router-dom';
 import { FriendsProvider } from '../friends/FriendsContext';
+import { InviteCards } from '../invite/InviteCards';
 import { RealtimeProvider } from '../realtime/RealtimeContext';
 import { useAuth } from './AuthContext';
 
@@ -15,6 +16,7 @@ export function RequireAuth() {
     <RealtimeProvider>
       <FriendsProvider>
         <Outlet />
+        <InviteCards />
       </FriendsProvider>
     </RealtimeProvider>
   );

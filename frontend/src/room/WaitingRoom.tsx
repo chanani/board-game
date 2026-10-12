@@ -10,6 +10,8 @@ import { PC_QUERY, useMediaQuery } from '../lib/useMediaQuery';
 import { ChatPanel } from './ChatPanel';
 import { BotDifficultyModal } from './BotDifficultyModal';
 import { BotInfoModal } from './BotInfoModal';
+import { InviteFriendsModal } from './InviteFriendsModal';
+import { useFriends } from '../friends/FriendsContext';
 import { KickConfirmModal } from './KickConfirmModal';
 import { MemberList, statsLabelOf } from './MemberList';
 import { MemberStatsModal, type StatsTarget } from './MemberStatsModal';
@@ -67,6 +69,8 @@ export function WaitingRoom({ room, meId, receivedAt, now, onStart, onReady, onF
   const [botInfo, setBotInfo] = useState<RoomMember | null>(null);
   const [addingBot, setAddingBot] = useState(false);
   const [changingBot, setChangingBot] = useState<RoomMember | null>(null);
+  const [inviting, setInviting] = useState(false);
+  const friends = useFriends();
   const wide = useMediaQuery(PC_QUERY);
   const [rulesOpen, setRulesOpen] = useState(false);
   const rules = findGame(room.gameType)?.rules;
@@ -74,6 +78,8 @@ export function WaitingRoom({ room, meId, receivedAt, now, onStart, onReady, onF
   const canEmote = useEmotes() !== null;
   const canKick = !spectating && room.status === 'WAITING' && room.hostId === meId;
   const canManageBots = canKick && onAddBot !== undefined;
+  // 친구 초대는 방장이 아니어도, 대기 중인 방에 앉아 있는 사람이면 누구나 할 수 있다(관전자는 못 한다).
+  const canInvite = friends !== null && room.status === 'WAITING' && room.members.some((member) => member.id === meId);
   // 컴퓨터는 확인 창 없이 바로 내보낸다. 사람만 한 번 더 묻는다.
   const askKick = (memberId: number) => {
     const target = room.members.find((member) => member.id === memberId) ?? null;
@@ -109,6 +115,7 @@ export function WaitingRoom({ room, meId, receivedAt, now, onStart, onReady, onF
         <Felt shape="round" className="aspect-square w-full max-w-[640px] sm:aspect-[3/2]">
           <MemberList members={room.members} maxPlayers={room.maxPlayers} meId={meId} receivedAt={receivedAt} now={now} bubbles={bubbles}
             onForfeit={spectating ? undefined : onForfeit} onKick={canKick ? askKick : undefined} onShowStats={showStats}
+            onInvite={canInvite ? () => setInviting(true) : undefined}
             onAddBot={canManageBots ? () => setAddingBot(true) : undefined} gameMaxPlayers={findGame(room.gameType)?.maxPlayers}
             onChangeBot={canManageBots && onChangeBot ? setChangingBot : undefined} />
         </Felt>
@@ -153,6 +160,7 @@ export function WaitingRoom({ room, meId, receivedAt, now, onStart, onReady, onF
       {rules ? <RulesCarousel open={rulesOpen} onClose={() => setRulesOpen(false)} title={rules.title} slides={rules.slides} renderArt={rules.renderArt} /> : null}
       <MemberStatsModal target={statsTarget} onClose={() => setStatsTarget(null)} />
       <BotInfoModal target={botInfo} onClose={() => setBotInfo(null)} />
+      {friends ? <InviteFriendsModal open={inviting && canInvite} room={room} friends={friends} onClose={() => setInviting(false)} /> : null}
       <BotDifficultyModal open={addingBot} title="빈자리에 컴퓨터 추가" onPick={addBot} onClose={() => setAddingBot(false)} />
       <BotDifficultyModal open={changingBot !== null} title={`${changingBot?.nickname ?? '컴퓨터'} 난이도 바꾸기`} current={changingBot?.difficulty}
         onPick={changeBot} onClose={() => setChangingBot(null)} />

@@ -83,6 +83,8 @@ vi.mock('../realtime/RealtimeContext', () => ({
 vi.mock('../friends/FriendsContext', () => ({
   FriendsProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
+// 초대 카드는 실시간 연결을 구독하므로(여기서는 연결을 흉내 내지 않는다) 그리지 않는다.
+vi.mock('../invite/InviteCards', () => ({ InviteCards: () => null }));
 
 function LoginProbe() {
   const location = useLocation();

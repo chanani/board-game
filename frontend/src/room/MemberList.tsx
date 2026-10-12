@@ -7,7 +7,8 @@ import { canForfeit, offlineSecondsNow } from '../lib/format';
 import { Button } from '../components/ui';
 import { KickBadge } from '../components/KickBadge';
 import { PC_QUERY, useMediaQuery } from '../lib/useMediaQuery';
-import { CheckIcon, CrownIcon, RobotIcon } from '../components/icons';
+import { CheckIcon, CrownIcon, PlusIcon, RobotIcon } from '../components/icons';
+import { SeatMenu, type MenuAlign } from './SeatMenu';
 import { SeatBubble, type SeatBubbles } from './useSeatBubbles';
 import { AvatarFace } from '../components/Avatar';
 import { avatarOf } from '../lib/avatars';
@@ -29,7 +30,9 @@ type Props = {
   bubbles?: SeatBubbles;
   /** 있으면 참가자의 아바타가 전적 보기 버튼이 된다. 감정 표현을 쓸 수 있으면(방 화면) 내 아바타는 대신 표정 패널을 연다. */
   onShowStats?: (member: RoomMember) => void;
-  /** 있으면(대기 중인 방장) 빈자리가 "컴퓨터 추가" 버튼이 된다. */
+  /** 있으면(대기 중에 앉아 있는 사람) 빈자리를 누르면 뜨는 메뉴에 "친구 초대"가 있다. */
+  onInvite?: () => void;
+  /** 있으면(대기 중인 방장) 빈자리 메뉴에 "컴퓨터와 하기"가 있다. */
   onAddBot?: () => void;
   /** 게임이 받는 최대 인원. 정원이 다 찼어도 이보다 작으면 컴퓨터 추가 자리를 하나 더 둔다. */
   gameMaxPlayers?: number;
@@ -68,7 +71,7 @@ export function seatCountOf(members: RoomMember[], maxPlayers: number, gameMaxPl
   return growable ? maxPlayers + 1 : maxPlayers;
 }
 
-export function MemberList({ members, maxPlayers, meId, receivedAt, now, onForfeit, onKick, bubbles, onShowStats, onAddBot, gameMaxPlayers, onChangeBot }: Props) {
+export function MemberList({ members, maxPlayers, meId, receivedAt, now, onForfeit, onKick, bubbles, onShowStats, onInvite, onAddBot, gameMaxPlayers, onChangeBot }: Props) {
   const pc = useMediaQuery(PC_QUERY);
   const seatCount = seatCountOf(members, maxPlayers, gameMaxPlayers, onAddBot !== undefined);
   const seats = Array.from({ length: seatCount }, (_, index) => members[index] ?? null);
@@ -81,11 +84,15 @@ export function MemberList({ members, maxPlayers, meId, receivedAt, now, onForfe
         const { left, top } = positionOf(seatCount, index);
         const remove = member ? removeActionOf({ member, meId, receivedAt, now, onForfeit, onKick }) : null;
         const mine = canEmote && member?.id === meId;
+        // 정원 밖에 하나 더 놓인 의자는 컴퓨터만 앉을 수 있다(정원은 컴퓨터를 앉힐 때만 서버가 늘린다).
+        const extra = index >= maxPlayers;
+        const fillable = !member && !extra && (onInvite !== undefined || onAddBot !== undefined);
         return (
           <li key={member ? member.id : `empty-${index}`} data-testid="chair"
             style={{ left: `${left}%`, top: `${top}%` }}
             // 표정 패널이 열린 내 자리는 뒤에 그려지는 다른 자리보다 위에 놓는다.
-            className={`absolute flex w-24 -translate-x-1/2 -translate-y-6 flex-col items-center gap-1 sm:-translate-y-7 ${mine && emoting ? 'z-30' : ''}`}>
+            // 메뉴가 열린 빈자리도 마찬가지다(has-: 메뉴가 그 자리 안에 있을 때).
+            className={`absolute flex w-24 -translate-x-1/2 -translate-y-6 flex-col items-center gap-1 has-[[data-testid=seat-menu]]:z-30 sm:-translate-y-7 ${mine && emoting ? 'z-30' : ''}`}>
             {member ? <SeatBubble memberId={member.id} bubble={bubbles?.get(member.id)} lines={top < 20 ? 1 : 2} /> : null}
             <AnimatePresence mode="wait">
               {member ? (
@@ -111,8 +118,10 @@ export function MemberList({ members, maxPlayers, meId, receivedAt, now, onForfe
                   ) : null}
                   {remove && !pc ? <KickBadge label={`${member.nickname}님 내보내기`} onClick={remove} className="absolute -right-2 -top-2" /> : null}
                 </motion.div>
+              ) : fillable ? (
+                <EmptySeat key="empty-fill" onInvite={onInvite} onAddBot={onAddBot} placement={top < 50 ? 'down' : 'up'} align={panelAlignOf(left)} />
               ) : (
-                onAddBot ? (
+                onAddBot && extra ? (
                   <motion.button key="empty-bot" type="button" aria-label="빈자리에 컴퓨터 추가" onClick={onAddBot} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                     className="felt-ink-muted flex h-12 w-12 cursor-pointer items-center justify-center rounded-full border-2 border-dashed border-cream-50/45 outline-none transition-transform hover:scale-105 focus-visible:ring-[3px] focus-visible:ring-mustard-300 motion-reduce:transition-none motion-reduce:hover:scale-100 sm:h-14 sm:w-14">
                     <RobotIcon className="h-6 w-6" />
@@ -126,7 +135,7 @@ export function MemberList({ members, maxPlayers, meId, receivedAt, now, onForfe
             {member ? (
               <Seated member={member} meId={meId} receivedAt={receivedAt} now={now} remove={pc ? remove : null} onChangeBot={onChangeBot} />
             ) : (
-              <span aria-hidden="true" className="felt-ink-muted text-xs font-semibold">{onAddBot ? '컴퓨터 추가' : '빈자리'}</span>
+              <span aria-hidden="true" className="felt-ink-muted text-xs font-semibold">{onAddBot && extra ? '컴퓨터 추가' : '빈자리'}</span>
             )}
           </li>
         );
@@ -135,7 +144,26 @@ export function MemberList({ members, maxPlayers, meId, receivedAt, now, onForfe
   );
 }
 
-/** 표정 패널이 펠트 양옆 자리에서 화면 밖으로 나가지 않게, 왼쪽 자리는 왼쪽 끝·오른쪽 자리는 오른쪽 끝에 맞춘다. */
+const EMPTY_SEAT = 'flex h-12 w-12 items-center justify-center rounded-full border-2 border-dashed border-cream-50/45 sm:h-14 sm:w-14';
+
+type EmptySeatProps = { onInvite?: () => void; onAddBot?: () => void; placement: 'up' | 'down'; align: MenuAlign };
+
+/** 누를 수 있는 빈자리(+). 누르면 "친구 초대"·"컴퓨터와 하기" 메뉴가 그 자리 옆에 뜬다. */
+function EmptySeat({ onInvite, onAddBot, placement, align }: EmptySeatProps) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  return (
+    <motion.div ref={ref} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="relative">
+      <button type="button" aria-label="빈자리 채우기" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((current) => !current)}
+        className={`felt-ink-muted ${EMPTY_SEAT} cursor-pointer outline-none transition-transform hover:scale-105 focus-visible:ring-[3px] focus-visible:ring-mustard-300 motion-reduce:transition-none motion-reduce:hover:scale-100`}>
+        <PlusIcon className="h-6 w-6" />
+      </button>
+      {open ? <SeatMenu anchorRef={ref} onClose={() => setOpen(false)} onInvite={onInvite} onAddBot={onAddBot} placement={placement} align={align} /> : null}
+    </motion.div>
+  );
+}
+
+/** 표정 패널·빈자리 메뉴가 펠트 양옆 자리에서 화면 밖으로 나가지 않게, 왼쪽 자리는 왼쪽 끝·오른쪽 자리는 오른쪽 끝에 맞춘다. */
 function panelAlignOf(left: number): PanelAlign {
   if (left < 35) {
     return 'start';

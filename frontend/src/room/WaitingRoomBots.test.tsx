@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { BotDifficulty, Room } from '../api/types';
@@ -36,15 +36,18 @@ describe('WaitingRoom 컴퓨터', () => {
     vi.mocked(recordsApi.member).mockClear();
   });
 
-  it('방장 화면의 빈자리는 "빈자리에 컴퓨터 추가" 버튼이고 손님 화면은 그대로 빈자리다', () => {
+  it('방장 화면의 빈자리는 누르면 "컴퓨터와 하기"가 뜨는 버튼이고 손님 화면은 그대로 빈자리다', async () => {
     const { unmount } = renderRoom();
-    expect(screen.getAllByRole('button', { name: '빈자리에 컴퓨터 추가' })).toHaveLength(3);
-    expect(screen.getAllByText('컴퓨터 추가').length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('button', { name: '빈자리 채우기' })).toHaveLength(3);
+    expect(screen.getAllByText('빈자리')).toHaveLength(3);
+    expect(screen.queryByText('컴퓨터 추가')).toBeNull();
+    await userEvent.click(screen.getAllByRole('button', { name: '빈자리 채우기' })[0]);
+    expect(within(screen.getByRole('menu')).getByRole('menuitem', { name: '컴퓨터와 하기' })).toBeInTheDocument();
     unmount();
 
     const guestRoom: Room = { ...room, members: [{ ...human, id: 2, nickname: '밥' }, { ...room.members[0] }], hostId: 1 };
     renderRoom({ room: guestRoom, meId: 2 });
-    expect(screen.queryByRole('button', { name: '빈자리에 컴퓨터 추가' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '빈자리 채우기' })).toBeNull();
     expect(screen.getAllByLabelText('빈자리')).toHaveLength(2);
   });
 
@@ -52,7 +55,9 @@ describe('WaitingRoom 컴퓨터', () => {
     const onAddBot = vi.fn();
     renderRoom({ onAddBot });
 
-    await userEvent.click(screen.getAllByRole('button', { name: '빈자리에 컴퓨터 추가' })[0]);
+    await userEvent.click(screen.getAllByRole('button', { name: '빈자리 채우기' })[0]);
+    await userEvent.click(screen.getByRole('menuitem', { name: '컴퓨터와 하기' }));
+    expect(screen.queryByRole('menu')).toBeNull();
     await userEvent.click(await screen.findByRole('button', { name: '상 · 어려움' }));
 
     expect(onAddBot).toHaveBeenCalledWith('HARD');
@@ -63,7 +68,8 @@ describe('WaitingRoom 컴퓨터', () => {
     const onAddBot = vi.fn();
     renderRoom({ onAddBot });
 
-    await userEvent.click(screen.getAllByRole('button', { name: '빈자리에 컴퓨터 추가' })[0]);
+    await userEvent.click(screen.getAllByRole('button', { name: '빈자리 채우기' })[0]);
+    await userEvent.click(screen.getByRole('menuitem', { name: '컴퓨터와 하기' }));
     await screen.findByRole('button', { name: '중 · 보통' });
     await userEvent.keyboard('{Escape}');
 
@@ -71,11 +77,19 @@ describe('WaitingRoom 컴퓨터', () => {
     expect(onAddBot).not.toHaveBeenCalled();
   });
 
-  it('정원이 다 찼어도 게임 최대보다 작으면 의자 끝에 추가 자리가 하나 더 있다', () => {
+  it('정원이 다 찼어도 게임 최대보다 작으면 의자 끝에 컴퓨터만 앉힐 수 있는 추가 자리가 하나 더 있다', async () => {
+    const onAddBot = vi.fn();
     const full: Room = { ...withBot, maxPlayers: 2 };
-    renderRoom({ room: full });
+    renderRoom({ room: full, onAddBot });
     expect(screen.getAllByTestId('chair')).toHaveLength(3);
     expect(screen.getAllByRole('button', { name: '빈자리에 컴퓨터 추가' })).toHaveLength(1);
+    expect(screen.getByText('컴퓨터 추가')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '빈자리 채우기' })).toBeNull();
+
+    // 정원 밖 자리는 친구를 부를 수 없으니 메뉴 없이 바로 난이도 창을 연다.
+    await userEvent.click(screen.getByRole('button', { name: '빈자리에 컴퓨터 추가' }));
+    await userEvent.click(await screen.findByRole('button', { name: '하 · 쉬움' }));
+    expect(onAddBot).toHaveBeenCalledWith('EASY');
   });
 
   it('게임 최대 인원이면 추가 자리가 없다', () => {
@@ -83,6 +97,7 @@ describe('WaitingRoom 컴퓨터', () => {
     renderRoom({ room: { ...room, maxPlayers: 5, members } });
     expect(screen.getAllByTestId('chair')).toHaveLength(5);
     expect(screen.queryByRole('button', { name: '빈자리에 컴퓨터 추가' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '빈자리 채우기' })).toBeNull();
   });
 
   it('컴퓨터 자리는 "컴퓨터 · 하" 칩이고 연결 점·연결 끊김 문구가 없다', () => {
