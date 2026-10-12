@@ -2,6 +2,7 @@ import { MotionConfig } from 'motion/react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './auth/AuthContext';
 import { RequireAuth } from './auth/RequireAuth';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { Layout } from './components/Layout';
 import { ToastProvider } from './components/Toast';
 import { ClickSound } from './lib/clickSound';
@@ -15,6 +16,7 @@ import { SignupPage } from './pages/SignupPage';
 
 export default function App() {
   return (
+    <ErrorBoundary>
     <MotionConfig reducedMotion="user">
       <SoundProvider>
         <ClickSound />
@@ -38,5 +40,6 @@ export default function App() {
         </ToastProvider>
       </SoundProvider>
     </MotionConfig>
+    </ErrorBoundary>
   );
 }
