@@ -115,6 +115,8 @@ export function RoomPage() {
   const endingGame = !playing && gameView !== null && !game.isGameOver(gameView) && (wasPlayer || spectating || watched);
   const showGame = gameView !== null && (playing || showGameOver || endingGame);
   const Table = game.Table;
+  // R36: 컴퓨터를 받지 않는 게임(과일 쌓기)의 대기실에는 컴퓨터를 앉히는 길을 넘기지 않는다.
+  const botsAllowed = game.supportsBots !== false;
 
   const run = async (action: () => Promise<unknown>) => {
     try {
@@ -200,8 +202,8 @@ export function RoomPage() {
               onForfeit={(memberId) => run(() => roomsApi.forfeit(code, memberId))}
               onKick={(memberId) => run(() => roomsApi.kick(code, memberId))}
               onSeat={() => run(() => roomsApi.seat(code))}
-              onAddBot={(difficulty) => run(() => roomsApi.addBot(code, difficulty))}
-              onChangeBot={(botId, difficulty) => run(() => roomsApi.changeBot(code, botId, difficulty))}
+              onAddBot={botsAllowed ? (difficulty) => run(() => roomsApi.addBot(code, difficulty)) : undefined}
+              onChangeBot={botsAllowed ? (botId, difficulty) => run(() => roomsApi.changeBot(code, botId, difficulty)) : undefined}
               chat={{ messages: chat.messages, onSend: chat.send, latest: chat.latest }}
             />
           )}

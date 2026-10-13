@@ -707,6 +707,42 @@ describe('RoomPage 우노', () => {
   });
 });
 
+describe('RoomPage 컴퓨터를 받지 않는 게임', () => {
+  // 로그인한 캐롤(3)이 방장인 대기 중인 방. 빈자리가 둘 있다.
+  const hostRoom = (gameType: Room['gameType'], gameTypeName: string): Room => ({
+    ...baseRoom, gameType, gameTypeName, status: 'WAITING', hostId: 3, maxPlayers: 4, spectators: [],
+    members: [
+      { id: 3, nickname: '캐롤', host: true, connected: true, offlineSeconds: 0, ready: false },
+      { id: 1, nickname: '앨리스', host: false, connected: true, offlineSeconds: 0, ready: false },
+    ],
+  });
+
+  it('R36 과일 쌓기 방의 대기실에는 컴퓨터를 앉히는 길이 없다', async () => {
+    setChannel({ room: hostRoom('FRUIT_STACK', '과일 쌓기') });
+    renderRoom();
+
+    // 이 테스트 화면에는 친구 목록이 없어 "친구 초대"도 없다. 컴퓨터를 앉히는 길까지 없으니 빈자리는 누를 수 없는 그냥 빈자리다.
+    expect(screen.getAllByLabelText('빈자리')).toHaveLength(2);
+    for (const seat of screen.queryAllByRole('button', { name: '빈자리 채우기' })) {
+      await userEvent.click(seat);
+    }
+
+    expect(screen.queryByRole('button', { name: '빈자리 채우기' })).toBeNull();
+    expect(screen.queryByText('컴퓨터와 하기')).toBeNull();
+    expect(screen.queryByLabelText('빈자리에 컴퓨터 추가')).toBeNull();
+    expect(screen.queryByText('컴퓨터 추가')).toBeNull();
+  });
+
+  it('우노 방의 대기실에는 그대로 컴퓨터를 앉히는 길이 있다', async () => {
+    setChannel({ room: hostRoom('UNO', '우노') });
+    renderRoom();
+
+    await userEvent.click(screen.getAllByRole('button', { name: '빈자리 채우기' })[0]);
+
+    expect(screen.getByRole('menuitem', { name: '컴퓨터와 하기' })).toBeInTheDocument();
+  });
+});
+
 describe('RoomPage 모르는 게임', () => {
   it('나가기 버튼으로 방을 떠나 목록으로 간다', async () => {
     const { roomsApi } = await import('../api/rooms');

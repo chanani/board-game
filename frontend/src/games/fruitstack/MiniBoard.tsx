@@ -34,16 +34,16 @@ export function MiniBoard({ width, player, nickname, avatar, getFrame, hasFrame,
       <div data-testid="board-box" className={`relative overflow-hidden rounded-lg ring-2 ${alarmed ? 'ring-red-500' : 'ring-white/25'}`}
         style={{ width, height: width * 1.5 }}>
         <BoardCanvas width={width} getFrame={getFrame} dimmed={out} everyOtherFrame={!large} label={label} />
-        {hasFrame ? null : <span className="felt-ink-muted pointer-events-none absolute inset-0 flex items-center justify-center text-center text-[10px] font-bold">불러오는 중…</span>}
+        {hasFrame ? null : <span className="pointer-events-none absolute inset-0 text-cream-50/75 flex items-center justify-center text-center text-[10px] font-bold">불러오는 중…</span>}
         {out ? (
           <span data-testid="out-badge" className={`pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap rounded-full bg-stone-700 font-black text-white shadow-[0_2px_0_rgb(0_0_0/0.3)] ${small ? 'px-1.5 py-0.5 text-[10px]' : 'px-3 py-1 text-sm'}`}>탈락</span>
         ) : null}
       </div>
       <EmoteBubble memberId={playerId} className="absolute -right-2 -top-4" />
-      <div className="felt-ink flex h-[22px] items-center gap-1 text-[11px] font-bold leading-none">
+      <div className="flex h-[22px] items-center gap-1 text-[11px] font-bold leading-none">
         {small ? null : <MemberAvatar memberId={playerId} avatar={avatar} size={16} />}
         {connected === false
-          ? <span className="felt-ink-muted min-w-0 flex-1 truncate">연결 끊김 {offlineSeconds ?? 0}초</span>
+          ? <span className="min-w-0 flex-1 truncate opacity-75">연결 끊김 {offlineSeconds ?? 0}초</span>
           : <span className="min-w-0 flex-1 truncate">{nickname}</span>}
         <span className="shrink-0 tabular-nums">{points}</span>
       </div>
