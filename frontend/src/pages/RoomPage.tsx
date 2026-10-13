@@ -36,7 +36,7 @@ export function RoomPage() {
   // 게임이 끝나면 관전자는 자동으로 자리에 앉으므로, 게임을 지켜봤는지 따로 기억해 결과 창을 보여 준다.
   const [watched, setWatched] = useState(false);
   // 관전자는 마지막 참가자가 나가 방이 사라져도 알림을 받지 못하므로 주기적으로 방을 확인한다.
-  const { room: channelRoom, receivedAt, view, transition, log, missing, send, sendSignal, signal, nicknameOf, errorSeq, notifyLeft } = useRoomChannel(code, { poll: spectating, meId });
+  const { room: channelRoom, receivedAt, view, transition, log, missing, send, sendSignal, subscribeSignal, signal, nicknameOf, errorSeq, notifyLeft } = useRoomChannel(code, { poll: spectating, meId });
   // 방금 바꾼 내 프로필 그림은 다음 방 갱신을 기다리지 않고 바로 보인다.
   const room = useMemo(() => withMyAvatar(channelRoom, meId, member?.avatar), [channelRoom, meId, member?.avatar]);
   const [now, setNow] = useState(() => Date.now());
@@ -115,6 +115,8 @@ export function RoomPage() {
   const endingGame = !playing && gameView !== null && !game.isGameOver(gameView) && (wasPlayer || spectating || watched);
   const showGame = gameView !== null && (playing || showGameOver || endingGame);
   const Table = game.Table;
+  // R36: 컴퓨터를 받지 않는 게임(과일 쌓기)의 대기실에는 컴퓨터를 앉히는 길을 넘기지 않는다.
+  const botsAllowed = game.supportsBots !== false;
 
   const run = async (action: () => Promise<unknown>) => {
     try {
@@ -179,6 +181,7 @@ export function RoomPage() {
               send={send}
               signal={signal}
               sendSignal={sendSignal}
+              subscribeSignal={subscribeSignal}
               onCloseGameOver={gameOver.dismiss}
               onReadyNext={() => run(async () => {
                 await roomsApi.ready(code, true);
@@ -199,8 +202,8 @@ export function RoomPage() {
               onForfeit={(memberId) => run(() => roomsApi.forfeit(code, memberId))}
               onKick={(memberId) => run(() => roomsApi.kick(code, memberId))}
               onSeat={() => run(() => roomsApi.seat(code))}
-              onAddBot={(difficulty) => run(() => roomsApi.addBot(code, difficulty))}
-              onChangeBot={(botId, difficulty) => run(() => roomsApi.changeBot(code, botId, difficulty))}
+              onAddBot={botsAllowed ? (difficulty) => run(() => roomsApi.addBot(code, difficulty)) : undefined}
+              onChangeBot={botsAllowed ? (botId, difficulty) => run(() => roomsApi.changeBot(code, botId, difficulty)) : undefined}
               chat={{ messages: chat.messages, onSend: chat.send, latest: chat.latest }}
             />
           )}

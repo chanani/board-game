@@ -27,6 +27,8 @@ export type TableProps<V extends SessionView> = {
   /** 상태를 바꾸지 않는 가벼운 신호(도둑잡기 고르는 카드). 쓰지 않는 게임은 무시한다. */
   signal?: GameSignal | null;
   sendSignal?: (action: GameAction) => void;
+  /** 잦은 신호(과일 쌓기 판 모습)를 React 상태를 거치지 않고 바로 받는다. 구독자가 있는 동안 signal은 바뀌지 않는다. 돌려준 함수로 끊는다. */
+  subscribeSignal?: (listener: (signal: GameSignal) => void) => () => void;
   aside?: ReactNode;
   asideFooter?: ReactNode;
 };
@@ -47,6 +49,8 @@ export type GameModule<V extends SessionView> = {
   tagline: string;
   minPlayers: number;
   maxPlayers: number;
+  /** 컴퓨터 플레이어를 받는지. 없으면 받는다. 과일 쌓기만 false(서버도 거절한다). */
+  supportsBots?: boolean;
   Table: ComponentType<TableProps<V>>;
   describeChanges: (prev: V | null, next: V, nicknameOf: Nickname) => LogDraft[];
   isGameOver: (view: V) => boolean;

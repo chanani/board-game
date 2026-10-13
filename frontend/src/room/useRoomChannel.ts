@@ -16,9 +16,10 @@ import { useActionWatchdog } from './useActionWatchdog';
 // 게임이 막 끝난 순간(상대가 나감·마지막 카드)에 누른 행동은 "시작되지 않았다/이미 끝났다"로 거절된다. 곧 끝 화면이 오므로 알리지 않는다.
 // 화면이 이미 지나친 행동의 거절(마감 자동 처리에 밀린 행동 등)은 isStaleRejection이 모든 게임에서 가린다.
 // 감정 표현을 잇달아 눌러 막힌 것은 버튼이 이미 잠겨 있어 따로 알리지 않는다.
+// 과일 쌓기 점수·탈락 보고의 거절은 사용자가 누른 행동이 아니라 알리지 않는다.
 const QUIET_ERROR_CODES = new Set([
   'UNO_CATCH_CLOSED', 'UNO_CALL_NOT_ALLOWED', 'OLD_MAID_SHUFFLE_TOO_FAST', 'OLD_MAID_SHUFFLE_NOT_ALLOWED',
-  'GAME_NOT_STARTED', 'GAME_ALREADY_OVER', 'EMOTE_TOO_FAST',
+  'GAME_NOT_STARTED', 'GAME_ALREADY_OVER', 'EMOTE_TOO_FAST', 'FRUIT_STACK_SCORE_REJECTED',
 ]);
 const CHAT_ERROR_CODES = new Set(['INVALID_CHAT_MESSAGE', 'CHAT_TOO_FAST', 'INVALID_EMOTE', 'EMOTE_TOO_FAST']);
 // 서버 쪽 고장은 화면이 지나쳤더라도 늘 알린다.
@@ -79,6 +80,23 @@ export function useRoomChannel(code: string, { poll = false, meId = 0 }: Options
     setErrorSeq((current) => current + 1);
     realtime.reconnect();
   });
+
+  // 잦은 신호를 상태 없이 넘겨받는 구독자들(D9). 있는 동안에는 signal 상태를 건드리지 않아 방 화면이 신호마다 다시 그려지지 않는다.
+  const signalListenersRef = useRef(new Set<(signal: GameSignal) => void>());
+  const subscribeSignal = useCallback((listener: (signal: GameSignal) => void) => {
+    signalListenersRef.current.add(listener);
+    return () => {
+      signalListenersRef.current.delete(listener);
+    };
+  }, []);
+  const acceptSignal = useCallback((next: GameSignal) => {
+    const listeners = signalListenersRef.current;
+    if (listeners.size === 0) {
+      setSignal(next);
+      return;
+    }
+    listeners.forEach((listener) => listener(next));
+  }, []);
 
   const appendLog = useCallback((lines: LogDraft[]) => {
     if (lines.length === 0) {
@@ -258,7 +276,7 @@ export function useRoomChannel(code: string, { poll = false, meId = 0 }: Options
         acceptRoom(body as Room, { live: true });
       }),
       realtime.subscribe('/user/queue/game', (body) => acceptView(body as SessionView)),
-      realtime.subscribe('/user/queue/signal', (body) => setSignal(body as GameSignal)),
+      realtime.subscribe('/user/queue/signal', (body) => acceptSignal(body as GameSignal)),
       realtime.subscribe('/user/queue/errors', (body) => {
         const error = body as ApiErrorBody;
         // 채팅 오류는 게임 행동과 무관하므로 카드 이동·중복 전송 방지를 풀지 않는다.
@@ -280,7 +298,7 @@ export function useRoomChannel(code: string, { poll = false, meId = 0 }: Options
       }),
     ];
     return () => offs.forEach((off) => off());
-  }, [code, realtime, acceptRoom, acceptView, toast, isQuietError, notifyLeft, watchdog]);
+  }, [code, realtime, acceptRoom, acceptView, acceptSignal, toast, isQuietError, notifyLeft, watchdog]);
 
   useEffect(() => {
     if (!connected) {
@@ -379,5 +397,5 @@ export function useRoomChannel(code: string, { poll = false, meId = 0 }: Options
     [code, realtime],
   );
 
-  return { room, receivedAt, view, transition, log, missing, send, sendSignal, signal, nicknameOf, errorSeq, notifyLeft };
+  return { room, receivedAt, view, transition, log, missing, send, sendSignal, subscribeSignal, signal, nicknameOf, errorSeq, notifyLeft };
 }
