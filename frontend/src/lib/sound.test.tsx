@@ -49,6 +49,17 @@ describe('sound', () => {
     expect(screen.getByRole('button', { name: '재생' })).toBeInTheDocument();
   });
 
+  it('합치기 소리(merge)를 재생해도 오류가 없다', async () => {
+    let play: (name: 'merge') => void = () => {};
+    function Player() {
+      play = useSound().play;
+      return null;
+    }
+    render(<SoundProvider><Player /></SoundProvider>);
+
+    expect(() => play('merge')).not.toThrow();
+  });
+
   it('Provider 밖에서도 useSound를 쓸 수 있다', () => {
     const { result } = renderHook(() => useSound());
 

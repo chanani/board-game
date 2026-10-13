@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
-export type SoundName = 'draw' | 'place' | 'flip' | 'myTurn' | 'roundWin' | 'roundLose' | 'click' | 'tick' | 'uno' | 'chat' | 'gameOverWin' | 'gameOverEnd' | 'heartbeat' | 'suddenDeath';
+export type SoundName = 'draw' | 'place' | 'flip' | 'myTurn' | 'roundWin' | 'roundLose' | 'click' | 'tick' | 'uno' | 'chat' | 'gameOverWin' | 'gameOverEnd' | 'heartbeat' | 'suddenDeath' | 'merge';
 /** 카드를 가져오거나 내려놓을 때(그리고 사이트 버튼을 누를 때) 나는 소리. 닉네임 메뉴에서 고른다. */
 export type DrawSound = 'swish' | 'pop' | 'tock' | 'chime';
 export type SoundApi = {
@@ -192,6 +192,8 @@ const RECIPES: Record<Exclude<SoundName, CardMoveSound>, Recipe> = {
   tick: (ctx, out) => { tone(ctx, out, 660, 0, 0.09, 'square', 0.06); tone(ctx, out, 660, 0.16, 0.09, 'square', 0.06); },
   // 남의 채팅 도착: 짧고 부드러운 '톡'(사인파가 살짝 올라가며 0.08초에 사라지고, 위에 아주 작은 맑은 음을 얹는다).
   chat: (ctx, out) => { glide(ctx, out, 988, 1319, 0, 0.08, 0.11); tone(ctx, out, 2637, 0.01, 0.04, 'sine', 0.025); },
+  // 과일 쌓기 합치기: 짧게 올라가는 맑은 음(사인파 520 → 780 Hz, 0.09초).
+  merge: (ctx, out) => glide(ctx, out, 520, 780, 0, 0.09, 0.14),
   gameOverWin,
   gameOverEnd,
   heartbeat,

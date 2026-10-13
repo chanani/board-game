@@ -470,6 +470,47 @@ describe('useRoomChannel', () => {
     expect(result.current.signal).toEqual(peek);
   });
 
+  it('신호 구독자가 있으면 구독자에게만 넘기고 signal 상태는 그대로 둔다', async () => {
+    vi.spyOn(roomsApi, 'get').mockResolvedValue(room('방'));
+    const board = { gameType: 'FRUIT_STACK', type: 'BOARD', startedAt: 1, playerId: 2, seq: 1, board: 'WAAAAGAPqA' } as const;
+    const { result } = renderHook(() => useRoomChannel('ABCDEF'));
+    await act(async () => {});
+    const seen: unknown[] = [];
+    let off = () => {};
+    act(() => { off = result.current.subscribeSignal((signal) => seen.push(signal)); });
+
+    act(() => state.handlers.get('/user/queue/signal')?.(board));
+    act(() => state.handlers.get('/user/queue/signal')?.({ ...board, seq: 2 }));
+
+    expect(seen).toEqual([board, { ...board, seq: 2 }]);
+    expect(result.current.signal).toBeNull();
+
+    act(() => off());
+    act(() => state.handlers.get('/user/queue/signal')?.({ ...board, seq: 3 }));
+    expect(seen).toHaveLength(2);
+    expect(result.current.signal).toEqual({ ...board, seq: 3 });
+  });
+
+  it('subscribeSignal은 렌더가 바뀌어도 같은 함수다', async () => {
+    vi.spyOn(roomsApi, 'get').mockResolvedValue(room('방'));
+    const { result, rerender } = renderHook(() => useRoomChannel('ABCDEF'));
+    await act(async () => {});
+    const first = result.current.subscribeSignal;
+    rerender();
+    expect(result.current.subscribeSignal).toBe(first);
+  });
+
+  it('과일 쌓기 점수 거절은 알림을 띄우지 않는다', async () => {
+    vi.spyOn(roomsApi, 'get').mockResolvedValue(room('방'));
+    renderHook(() => useRoomChannel('ABCDEF'));
+    await act(async () => {});
+    toast.show.mockClear();
+
+    act(() => state.handlers.get('/user/queue/errors')?.({ status: 409, code: 'FRUIT_STACK_SCORE_REJECTED', message: '점수를 반영할 수 없어요.' }));
+
+    expect(toast.show).not.toHaveBeenCalled();
+  });
+
   it('신호는 signals 경로로 보내고 끊겨 있어도 알림을 띄우지 않는다', async () => {
     vi.spyOn(roomsApi, 'get').mockResolvedValue(room('방'));
     const { result } = renderHook(() => useRoomChannel('ABCDEF'));
