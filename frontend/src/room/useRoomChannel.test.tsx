@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from '../api/http';
 import { roomsApi } from '../api/rooms';
 import type { OldMaidPeekSignal, PaperSafariSessionView, PaperSafariView, Room } from '../api/types';
+import { fruitPlayer, fruitSession } from '../games/fruitstack/fruitStackFixtures';
 import { card, oldMaidSession } from '../games/oldmaid/oldMaidFixtures';
 import { unoSession } from '../games/uno/unoFixtures';
 import { ACTION_ANSWER_MS } from './useActionWatchdog';
@@ -378,6 +379,30 @@ describe('useRoomChannel', () => {
     act(() => state.handlers.get('/user/queue/errors')?.({ status: 404, code: 'ROOM_NOT_FOUND', message: '방을 찾을 수 없어요.' }));
 
     expect(result.current.missing).toBe(true);
+  });
+
+  it('과일 쌓기에서 이미 탈락한 사람이 나가면 기권이라고 알리지 않는다', () => {
+    const member = (id: number, nickname: string) => ({ id, nickname, host: id === 1, connected: true, offlineSeconds: 0, ready: false });
+    const withMembers = (ids: number[]): Room => ({
+      ...room('방', 'PLAYING'), gameType: 'FRUIT_STACK',
+      members: [member(1, '앨리스'), member(2, '밥'), member(3, '캐롤')].filter((m) => ids.includes(m.id)),
+    });
+    toast.show.mockClear();
+    vi.spyOn(roomsApi, 'get').mockReturnValue(new Promise(() => {}));
+    const { result } = renderHook(() => useRoomChannel('ABCDEF', { meId: 1 }));
+
+    act(() => state.handlers.get('/topic/rooms/ABCDEF')?.(withMembers([1, 2, 3])));
+    act(() => state.handlers.get('/user/queue/game')?.(fruitSession({
+      participantIds: [1, 2, 3], players: [fruitPlayer(1, 10), fruitPlayer(2, 40, 'OUT'), fruitPlayer(3, 5)],
+    })));
+    act(() => state.handlers.get('/topic/rooms/ABCDEF')?.(withMembers([1, 3])));
+
+    expect(toast.show).toHaveBeenCalledWith('밥님이 나갔어요', 'info');
+    expect(result.current.log.some((entry) => entry.kind === 'leave' && entry.text === '밥님이 나갔어요')).toBe(true);
+
+    toast.show.mockClear();
+    act(() => state.handlers.get('/topic/rooms/ABCDEF')?.(withMembers([1])));
+    expect(toast.show).toHaveBeenCalledWith('캐롤님이 기권하고 나갔어요', 'info');
   });
 
   it('게임 중 다른 참가자가 빠진 방 방송이 오면 알림과 진행 기록을 남긴다', () => {

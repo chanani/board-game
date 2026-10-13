@@ -112,7 +112,9 @@ export function useRoomChannel(code: string, { poll = false, meId = 0 }: Options
       if (!prev || prev.code !== next.code || meId === 0) {
         return;
       }
-      const left = departures(prev, next, meId);
+      const view = viewRef.current;
+      const game = view ? findGame(sessionGameType(view)) : undefined;
+      const left = departures(prev, next, meId, (memberId) => (view !== null && game?.leavesWithoutForfeit?.(view, memberId)) ?? false);
       left.forEach(({ text }) => toast.show(text, 'info'));
       appendLog(left.map(({ memberId, text }) => ({ kind: 'leave', actorId: memberId, text })));
     },

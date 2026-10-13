@@ -55,6 +55,8 @@ export type GameModule<V extends SessionView> = {
   describeChanges: (prev: V | null, next: V, nicknameOf: Nickname) => LogDraft[];
   isGameOver: (view: V) => boolean;
   wasParticipant: (view: V, meId: number) => boolean;
+  /** 그 사람이 이미 자기 판을 끝내, 게임 중에 나가도 기권이 아닌지(과일 쌓기에서 탈락한 사람). 없으면 게임 중에 나간 사람은 모두 기권으로 알린다. */
+  leavesWithoutForfeit?: (view: V, memberId: number) => boolean;
   gameOverKey: (code: string, view: V) => string;
   rules: GameRules;
   BoxArt: ComponentType;

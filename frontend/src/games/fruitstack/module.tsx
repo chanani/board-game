@@ -23,6 +23,8 @@ export const fruitStackModule: GameModule<FruitStackSessionView> = {
   describeChanges: describeFruitStack,
   isGameOver: (view) => view.game.status === 'GAME_OVER',
   wasParticipant: (view, meId) => view.game.participantIds.includes(meId),
+  // R29: 탈락한 사람은 나가도 기권이 아니고 탈락 때의 점수로 겨룬다.
+  leavesWithoutForfeit: ({ game }, memberId) => game.players.some((player) => player.playerId === memberId && player.state === 'OUT'),
   gameOverKey: (code, view) => `${code}:FRUIT_STACK:${view.game.startedAt}`,
   // 이 게임의 행동(SCORE·OUT)은 훅이 보내는 보고라 거절은 모두 조용한 코드다. 걸음은 경기 하나다.
   stepKey: ({ game }) => `${game.status}:${game.startedAt}`,
