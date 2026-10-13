@@ -71,9 +71,10 @@ describe('CreateRoomModal', () => {
     const group = screen.getByRole('radiogroup', { name: '테마' });
     const tiles = within(group).getAllByRole('radio');
 
-    expect(tiles.map((tile) => tile.textContent)).toEqual(['원목 라운지', '사바나 노을', '달빛 정글', '설원 오로라', '열대 해변']);
+    expect(tiles.map((tile) => tile.textContent)).toEqual(['원목 라운지', '사바나 노을', '달빛 정글', '설원 오로라', '벚꽃 언덕']);
     expect(within(group).getByRole('radio', { name: '원목 라운지' })).toHaveAttribute('aria-checked', 'true');
-    expect(group.querySelector('[data-theme="BEACH"]')).not.toBeNull();
+    expect(group.querySelector('[data-theme="BLOSSOM"]')).not.toBeNull();
+    expect(group.querySelector('[data-theme="BEACH"]')).toBeNull();
 
     await userEvent.click(within(group).getByRole('radio', { name: '달빛 정글' }));
     expect(within(group).getByRole('radio', { name: '달빛 정글' })).toHaveAttribute('aria-checked', 'true');
@@ -84,7 +85,7 @@ describe('CreateRoomModal', () => {
 
   it('다시 열면 테마도 원목 라운지로 돌아간다', async () => {
     const { rerender } = render(<CreateRoomModal open defaultName="방" onClose={vi.fn()} onCreate={vi.fn()} />);
-    await userEvent.click(screen.getByRole('radio', { name: '열대 해변' }));
+    await userEvent.click(screen.getByRole('radio', { name: '벚꽃 언덕' }));
 
     rerender(<CreateRoomModal open={false} defaultName="방" onClose={vi.fn()} onCreate={vi.fn()} />);
     rerender(<CreateRoomModal open defaultName="방" onClose={vi.fn()} onCreate={vi.fn()} />);

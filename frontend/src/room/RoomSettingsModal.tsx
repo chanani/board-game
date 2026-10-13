@@ -4,6 +4,7 @@ import { Modal } from '../components/Modal';
 import { Button } from '../components/ui';
 import { findGame } from '../games/registry';
 import { SeatPicker, seatOptions } from './SeatPicker';
+import { resolveRoomTheme } from './roomTheme';
 import { ThemePicker } from './ThemePicker';
 
 type Props = {
@@ -17,7 +18,7 @@ type Props = {
 /** 대기 중인 방장이 최대 인원과 테마를 바꾸는 창. 지금 있는 인원보다 적게는 줄일 수 없다. */
 export function RoomSettingsModal({ open, room, onClose, onSave }: Props) {
   const [capacity, setCapacity] = useState(room.maxPlayers);
-  const [theme, setTheme] = useState<RoomTheme>(room.theme);
+  const [theme, setTheme] = useState<RoomTheme>(() => resolveRoomTheme(room.theme));
   const [pending, setPending] = useState(false);
   const game = findGame(room.gameType);
   const minPlayers = game?.minPlayers ?? 2;
@@ -27,7 +28,7 @@ export function RoomSettingsModal({ open, room, onClose, onSave }: Props) {
   useEffect(() => {
     if (open) {
       setCapacity(room.maxPlayers);
-      setTheme(room.theme);
+      setTheme(resolveRoomTheme(room.theme));
     }
     // 열릴 때만 현재 설정으로 되돌린다. 열려 있는 동안 방송이 와도 고르던 값을 덮어쓰지 않는다.
   }, [open]);

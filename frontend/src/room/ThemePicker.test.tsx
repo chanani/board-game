@@ -31,8 +31,8 @@ describe('ThemePicker 키보드', () => {
     await userEvent.keyboard('{ArrowUp}{ArrowLeft}');
     expect(radio('원목 라운지')).toHaveFocus();
     await userEvent.keyboard('{ArrowLeft}');
-    expect(radio('열대 해변')).toHaveFocus();
-    expect(radio('열대 해변')).toHaveAttribute('aria-checked', 'true');
+    expect(radio('벚꽃 언덕')).toHaveFocus();
+    expect(radio('벚꽃 언덕')).toHaveAttribute('aria-checked', 'true');
   });
 
   it('여러 개를 그려도 그룹 이름표 id가 겹치지 않는다', () => {

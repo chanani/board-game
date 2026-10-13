@@ -9,13 +9,26 @@ export const ROOM_THEMES: { value: RoomTheme; name: string; dot: string }[] = [
   { value: 'SUNSET', name: '사바나 노을', dot: '#ea580c' },
   { value: 'MOONLIT', name: '달빛 정글', dot: '#1e3a8a' },
   { value: 'AURORA', name: '설원 오로라', dot: '#7dd3fc' },
-  { value: 'BEACH', name: '열대 해변', dot: '#0ea5e9' },
+  { value: 'BLOSSOM', name: '벚꽃 언덕', dot: '#f48fb1' },
 ];
 
 export const DEFAULT_ROOM_THEME: RoomTheme = 'WOOD';
 
-export function roomThemeOf(theme: RoomTheme | undefined) {
-  return ROOM_THEMES.find((item) => item.value === theme) ?? ROOM_THEMES[0];
+/** 없어진 테마 값 → 그 자리를 이은 테마. 열대 해변(BEACH)은 벚꽃 언덕이 되었다. */
+const RETIRED_THEMES: Record<string, RoomTheme> = { BEACH: 'BLOSSOM' };
+
+/**
+ * 서버가 준 테마 값을 지금 있는 테마로 맞춘다. 배포가 엇갈려 예전 값(BEACH)이나 모르는 값이 와도 화면이 깨지지 않게,
+ * 없어진 테마는 그 자리를 이은 테마로, 모르는 값은 기본(원목)으로 본다.
+ */
+export function resolveRoomTheme(theme: string | null | undefined): RoomTheme {
+  const known = RETIRED_THEMES[theme ?? ''] ?? theme;
+  return ROOM_THEMES.find((item) => item.value === known)?.value ?? DEFAULT_ROOM_THEME;
+}
+
+export function roomThemeOf(theme: string | null | undefined) {
+  const resolved = resolveRoomTheme(theme);
+  return ROOM_THEMES.find((item) => item.value === resolved) ?? ROOM_THEMES[0];
 }
 
 const RoomThemeContext = createContext<RoomTheme>(DEFAULT_ROOM_THEME);
@@ -40,7 +53,7 @@ export function RoomBackdrop({ theme }: { theme: RoomTheme }) {
 }
 
 /** 목록에 쓰는 테마 색 점 + 이름. */
-export function ThemeBadge({ theme }: { theme: RoomTheme | undefined }) {
+export function ThemeBadge({ theme }: { theme: string | undefined }) {
   const info = roomThemeOf(theme);
   return (
     <span className="inline-flex items-center gap-1">

@@ -17,7 +17,7 @@ import { LeaveConfirmModal } from '../room/LeaveConfirmModal';
 import { RoomSettingsModal } from '../room/RoomSettingsModal';
 import { WaitingRoom } from '../room/WaitingRoom';
 import { StartCountdownOverlay } from '../room/StartCountdownOverlay';
-import { RoomBackdrop, RoomThemeProvider } from '../room/roomTheme';
+import { RoomBackdrop, RoomThemeProvider, resolveRoomTheme } from '../room/roomTheme';
 import { PC_QUERY, useMediaQuery } from '../lib/useMediaQuery';
 import { useTableLayout } from '../lib/useTableLayout';
 import { withMyAvatar } from '../lib/avatars';
@@ -106,6 +106,7 @@ export function RoomPage() {
   }
 
   const playing = room.status === 'PLAYING';
+  const theme = resolveRoomTheme(room.theme);
   const canEditSettings = !playing && !spectating && room.hostId === meId;
   const wasPlayer = gameView !== null && game.wasParticipant(gameView, meId);
   // 관전자(게임이 끝나 자동으로 앉은 사람 포함)도 누가 이겼는지 볼 수 있게 결과 창을 띄운다.
@@ -158,11 +159,11 @@ export function RoomPage() {
   const chatOrder = chatOrderOf(room);
 
   return (
-    <RoomThemeProvider value={room.theme}>
+    <RoomThemeProvider value={theme}>
     <ChatColorProvider order={chatOrder}>
     <EmoteContext.Provider value={emotes}>
-    <div data-theme={room.theme} className="space-y-4">
-      <RoomBackdrop theme={room.theme} />
+    <div data-theme={theme} className="space-y-4">
+      <RoomBackdrop theme={theme} />
       {landscapeGame ? null : statusBar}
       <div className={chatBeside ? 'flex items-start gap-4' : undefined}>
         <div className={chatBeside ? 'min-w-0 flex-1' : undefined}>

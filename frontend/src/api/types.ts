@@ -7,7 +7,7 @@ export type GameType = 'PAPER_SAFARI' | 'UNO' | 'OLD_MAID' | 'FRUIT_STACK';
 export type ResultType = 'WIN' | 'DRAW' | 'LOSE';
 
 export type RoomStatus = 'WAITING' | 'PLAYING';
-export type RoomTheme = 'WOOD' | 'SUNSET' | 'MOONLIT' | 'AURORA' | 'BEACH';
+export type RoomTheme = 'WOOD' | 'SUNSET' | 'MOONLIT' | 'AURORA' | 'BLOSSOM';
 export type BotDifficulty = 'EASY' | 'MEDIUM' | 'HARD';
 export type RoomMember = { id: number; nickname: string; avatar?: string; host: boolean; connected: boolean; offlineSeconds: number; ready: boolean; bot?: boolean; difficulty?: BotDifficulty | null };
 export type Room = {

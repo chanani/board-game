@@ -17,7 +17,7 @@ const base = { gameType: 'PAPER_SAFARI', gameTypeName: '페이퍼 사파리', pl
 const rooms = [
   { ...base, code: 'WAIT01', name: '열린방', status: 'WAITING' },
   { ...base, code: 'LOCK01', name: '잠긴방', status: 'WAITING', locked: true, theme: 'SUNSET' },
-  { ...base, code: 'PLAY01', name: '공개판', status: 'PLAYING', roundNumber: 3, spectatorCount: 2, theme: 'BEACH' },
+  { ...base, code: 'PLAY01', name: '공개판', status: 'PLAYING', roundNumber: 3, spectatorCount: 2, theme: 'BLOSSOM' },
   { ...base, code: 'PLAY02', name: '비밀판', status: 'PLAYING', locked: true, roundNumber: 1 },
 ];
 
@@ -98,7 +98,8 @@ describe('GameLobbyPage', () => {
 
     expect(within(waitingItem).getByText('사바나 노을')).toBeInTheDocument();
     expect(waitingItem.querySelector('[data-testid="theme-dot"]')).toHaveStyle({ backgroundColor: '#ea580c' });
-    expect(within(playingItem).getByText('열대 해변')).toBeInTheDocument();
+    expect(within(playingItem).getByText('벚꽃 언덕')).toBeInTheDocument();
+    expect(playingItem.querySelector('[data-testid="theme-dot"]')).toHaveStyle({ backgroundColor: '#f48fb1' });
     expect(within(screen.getByText('열린방').closest('li') as HTMLElement).getByText('원목 라운지')).toBeInTheDocument();
   });
 

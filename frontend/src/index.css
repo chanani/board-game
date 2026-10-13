@@ -37,7 +37,7 @@ body {
   background-attachment: fixed;
 }
 
-/* ───────── 방 테마 (원목·노을·달빛·오로라·해변) ─────────
+/* ───────── 방 테마 (원목·노을·달빛·오로라·벚꽃) ─────────
  * RoomPage가 방 화면 최상위에 data-theme를 달고, 아래 변수들을 테마마다 바꾼다.
  * :root 값은 원목(WOOD)과 같아서 방 밖 화면(로비 등)은 지금 모습 그대로다. */
 :root,
@@ -182,39 +182,41 @@ body {
   --timer-ring: #fecdd3;
 }
 
-[data-theme="BEACH"] {
-  --room-bg: linear-gradient(180deg, #7dd3fc 0%, #38bdf8 45%, #0ea5e9 46%, #0369a1 70%, #fde68a 71%, #fcd34d 100%);
-  --felt-bg: radial-gradient(ellipse at 50% 40%, #fef3c7, #e9c98a);
-  --rim-1: #f97316;
-  --rim-2: #c2410c;
-  --table-shadow: rgb(8 47 73 / 0.35);
-  --felt-ink: #082f49;
-  --back-a: #0ea5e9;
-  --back-b: #38bdf8;
-  --back-angle: 0deg;
-  --back-frame: #ffffff;
-  --seal-fill: #ffffff;
-  --seal-ring: #f97316;
-  --turn-ring: #facc15;
-  --turn-ring-edge: #a16207;
-  --turn-halo: #facc15;
-  --turn-tag-bg: #facc15;
-  --turn-tag-ink: #422006;
-  --accent: #f97316;
-  --accent-hover: #fb923c;
-  --accent-text: #431407;
-  --accent-shadow: #c2410c;
-  --status-bg: rgb(8 47 73 / 0.6);
-  --status-border: rgb(255 255 255 / 0.25);
-  --plate-bg: #f97316;
-  --plate-text: #431407;
-  --felt-ink-muted: #5b4a2a;
-  --pill-bg: rgb(8 47 73 / 0.85);
-  --pill-bg-strong: rgb(8 47 73 / 0.9);
-  --pill-ink: #f0f9ff;
-  --timer-bg: #9f1239;
+[data-theme="BLOSSOM"] {
+  --room-bg:
+    radial-gradient(ellipse at 78% 10%, rgb(255 255 255 / 0.75), transparent 46%),
+    linear-gradient(180deg, #fdeaf0 0%, #fbd5e0 55%, #f7bfd0 100%);
+  --felt-bg: radial-gradient(ellipse at 50% 40%, #fbd0dc, #e795ae);
+  --rim-1: #7a4b3a;
+  --rim-2: #4f2d22;
+  --table-shadow: rgb(90 30 55 / 0.35);
+  --felt-ink: #4a1230;
+  --felt-ink-muted: #6b2142;
+  --back-a: #9d174d;
+  --back-b: #be185d;
+  --back-angle: 60deg;
+  --back-frame: #fff5f8;
+  --seal-fill: #fff5f8;
+  --seal-ring: #f9a8d4;
+  --turn-ring: #ffffff;
+  --turn-ring-edge: #9d174d;
+  --turn-halo: #ffffff;
+  --turn-tag-bg: #9d174d;
+  --turn-tag-ink: #fff1f5;
+  --accent: #be185d;
+  --accent-hover: #c9245f;
+  --accent-text: #fff5f8;
+  --accent-shadow: #831843;
+  --status-bg: rgb(80 20 50 / 0.76);
+  --status-border: rgb(255 241 245 / 0.3);
+  --plate-bg: #9d174d;
+  --plate-text: #fff1f5;
+  --pill-bg: rgb(80 20 50 / 0.85);
+  --pill-bg-strong: rgb(80 20 50 / 0.9);
+  --pill-ink: #fff1f5;
+  --timer-bg: #5b0f2e;
   --timer-ink: #ffffff;
-  --timer-ring: #fecdd3;
+  --timer-ring: #ffe4ec;
 }
 
 /* 방 배경 장면. 방 화면 뒤(고정)와 방 만들기 미리보기 타일이 함께 쓴다. 장식 크기는 장면 크기(cq 단위)에 맞춘다. */
@@ -278,9 +280,26 @@ body {
       radial-gradient(ellipse at 70% 40%, rgb(129 140 248 / 0.5), transparent 60%);
     filter: blur(2cqmin);
   }
+  /* 벚꽃: 왼쪽 위에서 뻗은 꽃가지와 흩날리는 꽃잎(인라인 SVG), 아래에는 분홍 언덕 */
+  .room-scene[data-theme="BLOSSOM"]::before {
+    content: '';
+    inset: 0;
+    background:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 190 112'%3E%3Cg fill='none' stroke='%236b4033' stroke-linecap='round'%3E%3Cpath d='M-6 12 C 40 18 82 28 118 56 S 160 84 178 82' stroke-width='5'/%3E%3Cpath d='M50 20 C 64 8 82 6 98 5' stroke-width='3'/%3E%3Cpath d='M96 42 C 105 62 109 78 104 97' stroke-width='3'/%3E%3Cpath d='M130 66 C 146 57 160 52 173 44' stroke-width='2.5'/%3E%3C/g%3E%3Cellipse cx='28' cy='9.4' rx='4.4' ry='6.0' transform='rotate(0 28 15)' fill='%23f59ab8' stroke='%23e87aa0' stroke-width='0.6'/%3E%3Cellipse cx='28' cy='9.4' rx='4.4' ry='6.0' transform='rotate(72 28 15)' fill='%23f59ab8' stroke='%23e87aa0' stroke-width='0.6'/%3E%3Cellipse cx='28' cy='9.4' rx='4.4' ry='6.0' transform='rotate(144 28 15)' fill='%23f59ab8' stroke='%23e87aa0' stroke-width='0.6'/%3E%3Cellipse cx='28' cy='9.4' rx='4.4' ry='6.0' transform='rotate(216 28 15)' fill='%23f59ab8' stroke='%23e87aa0' stroke-width='0.6'/%3E%3Cellipse cx='28' cy='9.4' rx='4.4' ry='6.0' transform='rotate(288 28 15)' fill='%23f59ab8' stroke='%23e87aa0' stroke-width='0.6'/%3E%3Ccircle cx='28' cy='15' r='2.4' fill='%23fff3c4' stroke='%23d6457a' stroke-width='0.7'/%3E%3Cellipse cx='62' cy='8.5' rx='3.5' ry='4.8' transform='rotate(0 62 13)' fill='%23f9b4ca' stroke='%23e87aa0' stroke-width='0.6'/%3E%3Cellipse cx='62' cy='8.5' rx='3.5' ry='4.8' transform='rotate(72 62 13)' fill='%23f9b4ca' stroke='%23e87aa0' stroke-width='0.6'/%3E%3Cellipse cx='62' cy='8.5' rx='3.5' ry='4.8' transform='rotate(144 62 13)' fill='%23f9b4ca' stroke='%23e87aa0' stroke-width='0.6'/%3E%3Cellipse cx='62' cy='8.5' rx='3.5' ry='4.8' transform='rotate(216 62 13)' fill='%23f9b4ca' stroke='%23e87aa0' stroke-width='0.6'/%3E%3Cellipse cx='62' cy='8.5' rx='3.5' ry='4.8' transform='rotate(288 62 13)' fill='%23f9b4ca' stroke='%23e87aa0' stroke-width='0.6'/%3E%3Ccircle cx='62' cy='13' r='1.9' fill='%23fff3c4' stroke='%23d6457a' stroke-width='0.7'/%3E%3Cellipse cx='98' cy='-0.0' rx='4.0' ry='5.4' transform='rotate(0 98 5)' fill='%23f59ab8' stroke='%23e87aa0' stroke-width='0.6'/%3E%3Cellipse cx='98' cy='-0.0' rx='4.0' ry='5.4' transform='rotate(72 98 5)' fill='%23f59ab8' stroke='%23e87aa0' stroke-width='0.6'/%3E%3Cellipse cx='98' cy='-0.0' rx='4.0' ry='5.4' transform='rotate(144 98 5)' fill='%23f59ab8' stroke='%23e87aa0' stroke-width='0.6'/%3E%3Cellipse cx='98' cy='-0.0' rx='4.0' ry='5.4' transform='rotate(216 98 5)' fill='%23f59ab8' stroke='%23e87aa0' stroke-width='0.6'/%3E%3Cellipse cx='98' cy='-0.0' rx='4.0' ry='5.4' transform='rotate(288 98 5)' fill='%23f59ab8' stroke='%23e87aa0' stroke-width='0.6'/%3E%3Ccircle cx='98' cy='5' r='2.2' fill='%23fff3c4' stroke='%23d6457a' stroke-width='0.7'/%3E%3Cellipse cx='78' cy='23.8' rx='4.8' ry='6.6' transform='rotate(0 78 30)' fill='%23f9b4ca' stroke='%23e87aa0' stroke-width='0.6'/%3E%3Cellipse cx='78' cy='23.8' rx='4.8' ry='6.6' transform='rotate(72 78 30)' fill='%23f9b4ca' stroke='%23e87aa0' stroke-width='0.6'/%3E%3Cellipse cx='78' cy='23.8' rx='4.8' ry='6.6' transform='rotate(144 78 30)' fill='%23f9b4ca' stroke='%23e87aa0' stroke-width='0.6'/%3E%3Cellipse cx='78' cy='23.8' rx='4.8' ry='6.6' transform='rotate(216 78 30)' fill='%23f9b4ca' stroke='%23e87aa0' stroke-width='0.6'/%3E%3Cellipse cx='78' cy='23.8' rx='4.8' ry='6.6' transform='rotate(288 78 30)' fill='%23f9b4ca' stroke='%23e87aa0' stroke-width='0.6'/%3E%3Ccircle cx='78' cy='30' r='2.6' fill='%23fff3c4' stroke='%23d6457a' stroke-width='0.7'/%3E%3Cellipse cx='104' cy='44.5' rx='3.5' ry='4.8' transform='rotate(0 104 49)' fill='%23f59ab8' stroke='%23e87aa0' stroke-width='0.6'/%3E%3Cellipse cx='104' cy='44.5' rx='3.5' ry='4.8' transform='rotate(72 104 49)' fill='%23f59ab8' stroke='%23e87aa0' stroke-width='0.6'/%3E%3Cellipse cx='104' cy='44.5' rx='3.5' ry='4.8' transform='rotate(144 104 49)' fill='%23f59ab8' stroke='%23e87aa0' stroke-width='0.6'/%3E%3Cellipse cx='104' cy='44.5' rx='3.5' ry='4.8' transform='rotate(216 104 49)' fill='%23f59ab8' stroke='%23e87aa0' stroke-width='0.6'/%3E%3Cellipse cx='104' cy='44.5' rx='3.5' ry='4.8' transform='rotate(288 104 49)' fill='%23f59ab8' stroke='%23e87aa0' stroke-width='0.6'/%3E%3Ccircle cx='104' cy='49' r='1.9' fill='%23fff3c4' stroke='%23d6457a' stroke-width='0.7'/%3E%3Cellipse cx='104' cy='91.4' rx='4.4' ry='6.0' transform='rotate(0 104 97)' fill='%23f9b4ca' stroke='%23e87aa0' stroke-width='0.6'/%3E%3Cellipse cx='104' cy='91.4' rx='4.4' ry='6.0' transform='rotate(72 104 97)' fill='%23f9b4ca' stroke='%23e87aa0' stroke-width='0.6'/%3E%3Cellipse cx='104' cy='91.4' rx='4.4' ry='6.0' transform='rotate(144 104 97)' fill='%23f9b4ca' stroke='%23e87aa0' stroke-width='0.6'/%3E%3Cellipse cx='104' cy='91.4' rx='4.4' ry='6.0' transform='rotate(216 104 97)' fill='%23f9b4ca' stroke='%23e87aa0' stroke-width='0.6'/%3E%3Cellipse cx='104' cy='91.4' rx='4.4' ry='6.0' transform='rotate(288 104 97)' fill='%23f9b4ca' stroke='%23e87aa0' stroke-width='0.6'/%3E%3Ccircle cx='104' cy='97' r='2.4' fill='%23fff3c4' stroke='%23d6457a' stroke-width='0.7'/%3E%3Cellipse cx='110' cy='70.1' rx='3.1' ry='4.2' transform='rotate(0 110 74)' fill='%23f59ab8' stroke='%23e87aa0' stroke-width='0.6'/%3E%3Cellipse cx='110' cy='70.1' rx='3.1' ry='4.2' transform='rotate(72 110 74)' fill='%23f59ab8' stroke='%23e87aa0' stroke-width='0.6'/%3E%3Cellipse cx='110' cy='70.1' rx='3.1' ry='4.2' transform='rotate(144 110 74)' fill='%23f59ab8' stroke='%23e87aa0' stroke-width='0.6'/%3E%3Cellipse cx='110' cy='70.1' rx='3.1' ry='4.2' transform='rotate(216 110 74)' fill='%23f59ab8' stroke='%23e87aa0' stroke-width='0.6'/%3E%3Cellipse cx='110' cy='70.1' rx='3.1' ry='4.2' transform='rotate(288 110 74)' fill='%23f59ab8' stroke='%23e87aa0' stroke-width='0.6'/%3E%3Ccircle cx='110' cy='74' r='1.7' fill='%23fff3c4' stroke='%23d6457a' stroke-width='0.7'/%3E%3Cellipse cx='142' cy='66.4' rx='4.4' ry='6.0' transform='rotate(0 142 72)' fill='%23f9b4ca' stroke='%23e87aa0' stroke-width='0.6'/%3E%3Cellipse cx='142' cy='66.4' rx='4.4' ry='6.0' transform='rotate(72 142 72)' fill='%23f9b4ca' stroke='%23e87aa0' stroke-width='0.6'/%3E%3Cellipse cx='142' cy='66.4' rx='4.4' ry='6.0' transform='rotate(144 142 72)' fill='%23f9b4ca' stroke='%23e87aa0' stroke-width='0.6'/%3E%3Cellipse cx='142' cy='66.4' rx='4.4' ry='6.0' transform='rotate(216 142 72)' fill='%23f9b4ca' stroke='%23e87aa0' stroke-width='0.6'/%3E%3Cellipse cx='142' cy='66.4' rx='4.4' ry='6.0' transform='rotate(288 142 72)' fill='%23f9b4ca' stroke='%23e87aa0' stroke-width='0.6'/%3E%3Ccircle cx='142' cy='72' r='2.4' fill='%23fff3c4' stroke='%23d6457a' stroke-width='0.7'/%3E%3Cellipse cx='173' cy='39.0' rx='4.0' ry='5.4' transform='rotate(0 173 44)' fill='%23f59ab8' stroke='%23e87aa0' stroke-width='0.6'/%3E%3Cellipse cx='173' cy='39.0' rx='4.0' ry='5.4' transform='rotate(72 173 44)' fill='%23f59ab8' stroke='%23e87aa0' stroke-width='0.6'/%3E%3Cellipse cx='173' cy='39.0' rx='4.0' ry='5.4' transform='rotate(144 173 44)' fill='%23f59ab8' stroke='%23e87aa0' stroke-width='0.6'/%3E%3Cellipse cx='173' cy='39.0' rx='4.0' ry='5.4' transform='rotate(216 173 44)' fill='%23f59ab8' stroke='%23e87aa0' stroke-width='0.6'/%3E%3Cellipse cx='173' cy='39.0' rx='4.0' ry='5.4' transform='rotate(288 173 44)' fill='%23f59ab8' stroke='%23e87aa0' stroke-width='0.6'/%3E%3Ccircle cx='173' cy='44' r='2.2' fill='%23fff3c4' stroke='%23d6457a' stroke-width='0.7'/%3E%3Cellipse cx='178' cy='77.5' rx='3.5' ry='4.8' transform='rotate(0 178 82)' fill='%23f9b4ca' stroke='%23e87aa0' stroke-width='0.6'/%3E%3Cellipse cx='178' cy='77.5' rx='3.5' ry='4.8' transform='rotate(72 178 82)' fill='%23f9b4ca' stroke='%23e87aa0' stroke-width='0.6'/%3E%3Cellipse cx='178' cy='77.5' rx='3.5' ry='4.8' transform='rotate(144 178 82)' fill='%23f9b4ca' stroke='%23e87aa0' stroke-width='0.6'/%3E%3Cellipse cx='178' cy='77.5' rx='3.5' ry='4.8' transform='rotate(216 178 82)' fill='%23f9b4ca' stroke='%23e87aa0' stroke-width='0.6'/%3E%3Cellipse cx='178' cy='77.5' rx='3.5' ry='4.8' transform='rotate(288 178 82)' fill='%23f9b4ca' stroke='%23e87aa0' stroke-width='0.6'/%3E%3Ccircle cx='178' cy='82' r='1.9' fill='%23fff3c4' stroke='%23d6457a' stroke-width='0.7'/%3E%3Ccircle cx='46' cy='8' r='3' fill='%23ee6f9a'/%3E%3Ccircle cx='88' cy='16' r='2.6' fill='%23ee6f9a'/%3E%3Ccircle cx='120' cy='40' r='3' fill='%23ee6f9a'/%3E%3Ccircle cx='92' cy='62' r='2.6' fill='%23ee6f9a'/%3E%3Ccircle cx='158' cy='60' r='3' fill='%23ee6f9a'/%3E%3Ccircle cx='164' cy='90' r='2.6' fill='%23ee6f9a'/%3E%3C/svg%3E") left -1cqmin top 7cqh / 34cqmin auto no-repeat,
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200' preserveAspectRatio='xMidYMid slice'%3E%3Cellipse cx='68' cy='54' rx='1.7' ry='0.9' transform='rotate(166 68 54)' fill='%23f48fb1' opacity='0.8'/%3E%3Cellipse cx='159' cy='45' rx='1.7' ry='0.9' transform='rotate(149 159 45)' fill='%23f9b4ca' opacity='0.8'/%3E%3Cellipse cx='101' cy='36' rx='2.1' ry='1.2' transform='rotate(111 101 36)' fill='%23ffffff' opacity='0.8'/%3E%3Cellipse cx='52' cy='118' rx='2.6' ry='1.4' transform='rotate(15 52 118)' fill='%23f48fb1' opacity='0.8'/%3E%3Cellipse cx='31' cy='66' rx='2.3' ry='1.3' transform='rotate(160 31 66)' fill='%23f9b4ca' opacity='0.8'/%3E%3Cellipse cx='19' cy='124' rx='2.8' ry='1.5' transform='rotate(12 19 124)' fill='%23ffffff' opacity='0.8'/%3E%3Cellipse cx='17' cy='167' rx='2.1' ry='1.2' transform='rotate(74 17 167)' fill='%23f48fb1' opacity='0.8'/%3E%3Cellipse cx='107' cy='121' rx='2.6' ry='1.4' transform='rotate(143 107 121)' fill='%23f9b4ca' opacity='0.8'/%3E%3Cellipse cx='41' cy='123' rx='1.8' ry='1.0' transform='rotate(163 41 123)' fill='%23ffffff' opacity='0.8'/%3E%3Cellipse cx='26' cy='144' rx='1.7' ry='0.9' transform='rotate(144 26 144)' fill='%23f48fb1' opacity='0.8'/%3E%3Cellipse cx='46' cy='139' rx='2.5' ry='1.4' transform='rotate(109 46 139)' fill='%23f9b4ca' opacity='0.8'/%3E%3Cellipse cx='94' cy='178' rx='2.0' ry='1.1' transform='rotate(92 94 178)' fill='%23ffffff' opacity='0.8'/%3E%3Cellipse cx='154' cy='142' rx='1.7' ry='0.9' transform='rotate(62 154 142)' fill='%23f48fb1' opacity='0.8'/%3E%3Cellipse cx='63' cy='109' rx='2.5' ry='1.4' transform='rotate(87 63 109)' fill='%23f9b4ca' opacity='0.8'/%3E%3Cellipse cx='61' cy='187' rx='2.2' ry='1.2' transform='rotate(30 61 187)' fill='%23ffffff' opacity='0.8'/%3E%3Cellipse cx='38' cy='85' rx='2.1' ry='1.2' transform='rotate(125 38 85)' fill='%23f48fb1' opacity='0.8'/%3E%3C/svg%3E") center / cover no-repeat;
+  }
+  .room-scene[data-theme="BLOSSOM"]::after {
+    content: '';
+    left: -2%;
+    right: -2%;
+    bottom: 0;
+    height: 24%;
+    background: linear-gradient(180deg, #f2a3bb, #e58aa5);
+    clip-path: polygon(0 46%, 8% 34%, 18% 24%, 28% 22%, 38% 30%, 48% 44%, 58% 52%, 68% 46%, 78% 32%, 88% 22%, 96% 24%, 100% 30%, 100% 100%, 0 100%);
+  }
 }
 
-/* 펠트 위에 바탕 없이 놓이는 글자. 밝은 펠트(노을·해변)에서는 어두운 글자가 된다. */
+/* 펠트 위에 바탕 없이 놓이는 글자. 밝은 펠트(노을·벚꽃)에서는 어두운 글자가 된다. */
 @utility felt-ink {
   color: var(--felt-ink);
   text-shadow: var(--felt-ink-shadow);
@@ -292,7 +311,7 @@ body {
   text-shadow: var(--felt-ink-shadow);
 }
 
-/* 배경·펠트 위에 뜨는 작은 알약(관전 중, 안내, 덱 장수, 예상 점수 등). 오로라 눈밭·해변 모래에서도 읽히게 테마별 바탕을 쓴다. */
+/* 배경·펠트 위에 뜨는 작은 알약(관전 중, 안내, 덱 장수, 예상 점수 등). 오로라 눈밭·벚꽃 하늘에서도 읽히게 테마별 바탕을 쓴다. */
 @utility pill {
   background: var(--pill-bg);
   color: var(--pill-ink);

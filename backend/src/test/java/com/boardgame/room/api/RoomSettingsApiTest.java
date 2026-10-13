@@ -51,12 +51,12 @@ class RoomSettingsApiTest {
         User host = ApiUsers.create(mockMvc);
         String code = open(host);
 
-        update(host, code, "{\"maxPlayers\":3,\"theme\":\"BEACH\"}")
+        update(host, code, "{\"maxPlayers\":3,\"theme\":\"BLOSSOM\"}")
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.maxPlayers").value(3))
-                .andExpect(jsonPath("$.theme").value("BEACH"));
+                .andExpect(jsonPath("$.theme").value("BLOSSOM"));
         mockMvc.perform(get("/api/rooms").session(host.session()))
-                .andExpect(jsonPath("$[?(@.code == '%s')].theme".formatted(code)).value("BEACH"));
+                .andExpect(jsonPath("$[?(@.code == '%s')].theme".formatted(code)).value("BLOSSOM"));
         leave(host, code);
     }
 
@@ -99,7 +99,7 @@ class RoomSettingsApiTest {
         String code = open(host);
 
         update(host, code, "{\"maxPlayers\":9,\"theme\":\"WOOD\"}").andExpect(jsonPath("$.code").value("INVALID_CAPACITY"));
-        update(host, code, "{\"maxPlayers\":3,\"theme\":\"BLOSSOM\"}").andExpect(jsonPath("$.code").value("INVALID_THEME"));
+        update(host, code, "{\"maxPlayers\":3,\"theme\":\"NEON\"}").andExpect(jsonPath("$.code").value("INVALID_THEME"));
         update(host, code, "{\"theme\":\"WOOD\"}").andExpect(jsonPath("$.code").value("INVALID_INPUT"));
         update(host, code, "{\"maxPlayers\":3}").andExpect(jsonPath("$.code").value("INVALID_INPUT"));
         leave(host, code);

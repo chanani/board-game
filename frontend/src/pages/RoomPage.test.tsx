@@ -212,8 +212,22 @@ describe('RoomPage 테마', () => {
     expect(screen.getByTestId('room-backdrop')).toHaveAttribute('data-theme', 'MOONLIT');
   });
 
-  it('방을 떠나면 테마 배경도 함께 사라진다', async () => {
+  it('예전 테마 값(열대 해변)은 벚꽃 언덕으로, 모르는 값은 원목으로 그린다', async () => {
     setChannel({ room: { ...baseRoom, theme: 'BEACH' } });
+    const first = renderRoom();
+    await act(async () => {});
+    expect(first.container.firstElementChild).toHaveAttribute('data-theme', 'BLOSSOM');
+    expect(screen.getByTestId('room-backdrop')).toHaveAttribute('data-theme', 'BLOSSOM');
+    first.unmount();
+
+    setChannel({ room: { ...baseRoom, theme: 'NEON' } });
+    const second = renderRoom();
+    await act(async () => {});
+    expect(second.container.firstElementChild).toHaveAttribute('data-theme', 'WOOD');
+  });
+
+  it('방을 떠나면 테마 배경도 함께 사라진다', async () => {
+    setChannel({ room: { ...baseRoom, theme: 'BLOSSOM' } });
     const { unmount } = renderRoom();
     await act(async () => {});
 

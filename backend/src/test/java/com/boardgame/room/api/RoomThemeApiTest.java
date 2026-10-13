@@ -40,7 +40,7 @@ class RoomThemeApiTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"WOOD", "SUNSET", "MOONLIT", "AURORA", "BEACH"})
+    @ValueSource(strings = {"WOOD", "SUNSET", "MOONLIT", "AURORA", "BLOSSOM"})
     void 고른_테마가_방_응답과_목록에_담긴다(String theme) throws Exception {
         User host = ApiUsers.create(mockMvc);
         String body = create(host, ",\"theme\":\"" + theme + "\"").andExpect(status().isCreated())
@@ -63,9 +63,17 @@ class RoomThemeApiTest {
     }
 
     @Test
+    void 없어진_열대_해변_값을_보내면_벚꽃_언덕으로_받는다() throws Exception {
+        User host = ApiUsers.create(mockMvc);
+        String body = create(host, ",\"theme\":\"BEACH\"").andExpect(status().isCreated())
+                .andExpect(jsonPath("$.theme").value("BLOSSOM")).andReturn().getResponse().getContentAsString();
+        leave(host, JsonPath.read(body, "$.code"));
+    }
+
+    @Test
     void 모르는_테마는_400이다() throws Exception {
         User host = ApiUsers.create(mockMvc);
-        create(host, ",\"theme\":\"BLOSSOM\"").andExpect(status().isBadRequest())
+        create(host, ",\"theme\":\"NEON\"").andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_THEME"))
                 .andExpect(jsonPath("$.message").value("지원하지 않는 테마예요."));
     }

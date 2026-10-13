@@ -23,10 +23,20 @@ describe('RoomSettingsModal', () => {
     const onClose = vi.fn();
     render(<RoomSettingsModal open room={room} onClose={onClose} onSave={onSave} />);
     await userEvent.click(await screen.findByRole('radio', { name: '5' }));
-    await userEvent.click(screen.getByRole('radio', { name: /열대 해변/ }));
+    await userEvent.click(screen.getByRole('radio', { name: /벚꽃 언덕/ }));
     await userEvent.click(screen.getByRole('button', { name: '저장' }));
-    expect(onSave).toHaveBeenCalledWith(5, 'BEACH');
+    expect(onSave).toHaveBeenCalledWith(5, 'BLOSSOM');
     await waitFor(() => expect(onClose).toHaveBeenCalled());
+  });
+
+  it('예전 테마 값(열대 해변)을 가진 방은 벚꽃 언덕이 골라진 채로 열리고, 모르는 값이면 원목 라운지다', async () => {
+    const stale = (theme: string) => ({ ...room, theme } as unknown as typeof room);
+    const { unmount } = render(<RoomSettingsModal open room={stale('BEACH')} onClose={vi.fn()} onSave={vi.fn()} />);
+    expect(await screen.findByRole('radio', { name: /벚꽃 언덕/ })).toHaveAttribute('aria-checked', 'true');
+    unmount();
+
+    render(<RoomSettingsModal open room={stale('NEON')} onClose={vi.fn()} onSave={vi.fn()} />);
+    expect(await screen.findByRole('radio', { name: /원목 라운지/ })).toHaveAttribute('aria-checked', 'true');
   });
 
   it('저장이 실패하면 창을 닫지 않고 다시 누를 수 있다', async () => {

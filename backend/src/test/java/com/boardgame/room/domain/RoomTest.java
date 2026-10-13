@@ -588,10 +588,10 @@ class RoomTest {
         Room room = openRoom();
         room.join(bob, null, new FakeRoomPasswordHasher());
 
-        room.reconfigure(1L, Capacity.of(GameType.PAPER_SAFARI, 3), RoomTheme.BEACH);
+        room.reconfigure(1L, Capacity.of(GameType.PAPER_SAFARI, 3), RoomTheme.BLOSSOM);
 
         assertThat(room.capacity()).isEqualTo(3);
-        assertThat(room.theme()).isEqualTo(RoomTheme.BEACH);
+        assertThat(room.theme()).isEqualTo(RoomTheme.BLOSSOM);
         assertThat(room.memberIds()).containsExactly(1L, 2L);
     }
 
