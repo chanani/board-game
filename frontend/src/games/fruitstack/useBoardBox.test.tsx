@@ -1,10 +1,10 @@
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { TableLayout } from '../../lib/useTableLayout';
-import { useBoardBox } from './useBoardBox';
+import { REMEASURE_MS, useBoardBox } from './useBoardBox';
 
-function Probe({ layout = 'landscape', remeasureKey = '' }: { layout?: TableLayout; remeasureKey?: string }) {
-  const { ref, box } = useBoardBox(layout, 6, remeasureKey);
+function Probe({ layout = 'landscape' }: { layout?: TableLayout }) {
+  const { ref, box } = useBoardBox(layout, 6);
   return <div ref={ref} data-testid="probe">{`${box.w}x${box.h}`}</div>;
 }
 
@@ -37,19 +37,26 @@ describe('useBoardBox', () => {
     expect(measureAt(54, 0, 'pc')).toBe('632x306');
   });
 
-  it('요소 크기는 그대로인데 위치만 바뀌면(머리줄이 숨음·연결 끊김 알림) 다시 재라는 값이 바뀔 때 다시 잰다', () => {
+  it('요소 크기는 그대로인데 위치만 바뀌어도(연결 끊김 알림이 떴다 사라짐) 0.5초 안에 다시 잰다', () => {
+    vi.useFakeTimers();
     vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(632);
     const rect = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue(rectAt(54));
     vi.stubGlobal('innerHeight', 390);
     vi.stubGlobal('scrollY', 0);
-    const { rerender } = render(<Probe remeasureKey="a" />);
+    const { unmount } = render(<Probe />);
     expect(screen.getByTestId('probe')).toHaveTextContent('632x326');
 
-    rect.mockReturnValue(rectAt(9));
-    rerender(<Probe remeasureKey="a" />);
+    rect.mockReturnValue(rectAt(86));
+    act(() => { vi.advanceTimersByTime(REMEASURE_MS); });
+    expect(screen.getByTestId('probe')).toHaveTextContent('632x294');
+
+    rect.mockReturnValue(rectAt(54));
+    act(() => { vi.advanceTimersByTime(REMEASURE_MS); });
     expect(screen.getByTestId('probe')).toHaveTextContent('632x326');
-    rerender(<Probe remeasureKey="b" />);
-    expect(screen.getByTestId('probe')).toHaveTextContent('632x371');
+
+    unmount();
+    expect(vi.getTimerCount()).toBe(0);
+    vi.useRealTimers();
   });
 
   it('페이지가 스크롤되어 있어도 맨 위에서 잰 것과 같다(스크롤만큼 판이 커지지 않는다)', () => {

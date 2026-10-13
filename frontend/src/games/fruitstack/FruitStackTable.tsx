@@ -196,8 +196,8 @@ export function FruitStackTable({ view, room, meId, receivedAt, now, errorSeq, n
   useGameFocus(focused);
 
   const pad = SURFACE_PAD[layout];
-  // 몸통 아래에는 바닥 판의 안쪽 여백과 테두리(1px)가 더 있다. 머리줄이 숨거나 연결 끊김 알림이 뜨면 몸통 위치가 바뀌므로 다시 잰다.
-  const { ref: bodyRef, box } = useBoardBox(layout, pad + SURFACE_BORDER, `${focused}:${connected}`);
+  // 몸통 아래에는 바닥 판의 안쪽 여백과 테두리(1px)가 더 있다.
+  const { ref: bodyRef, box } = useBoardBox(layout, pad + SURFACE_BORDER);
   const fit = fitBoard({ layout, box, mode, big: bigIds.length, mini: miniIds.length });
 
   useGameOverCue(liveGameEnd(game, transition), finale === 'banner' || finale === 'done', game.winnerId === meId);

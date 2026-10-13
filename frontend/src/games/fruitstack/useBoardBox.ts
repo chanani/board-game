@@ -9,13 +9,15 @@ const DEFAULT_BOX: Record<TableLayout, Box> = { pc: { w: 844, h: 660 }, portrait
 const BOTTOM_MARGIN: Record<TableLayout, number> = { pc: 24, portrait: 4, landscape: 4 };
 /** 화면이 아주 낮아도 판이 사라지지 않게 하는 가장 낮은 상자 높이(그때는 페이지가 조금 스크롤된다). */
 const MIN_HEIGHT = 240;
+/** 위치만 바뀐 것을 알아채려고 다시 재는 간격. 값이 같으면 다시 그리지 않는다. */
+export const REMEASURE_MS = 500;
 
 /**
  * 테이블 몸통이 쓸 수 있는 상자(스펙 6.4): 폭은 ref를 단 요소의 폭, 높이는 (스크롤하지 않은) 화면 아래까지 남은 높이.
  * inset은 몸통 아래쪽에 더 비워 둘 높이(바닥 판의 안쪽 여백). 게임이 끝났다 다시 시작해 요소가 바뀌어도 다시 잰다.
- * 요소 크기는 그대로인데 위치만 바뀌는 일(머리줄이 숨음, 연결 끊김 알림이 뜸)은 remeasureKey를 바꿔 알린다.
+ * 요소 크기는 그대로인데 위치만 바뀌는 일(연결 끊김 알림이 떴다 사라짐, 휴대폰 브라우저의 도구 막대)은 크기 변화로 알 수 없어 가끔 다시 잰다.
  */
-export function useBoardBox(layout: TableLayout, inset = 0, remeasureKey = ''): { ref: (element: HTMLDivElement | null) => void; box: Box } {
+export function useBoardBox(layout: TableLayout, inset = 0): { ref: (element: HTMLDivElement | null) => void; box: Box } {
   const [element, setElement] = useState<HTMLDivElement | null>(null);
   const [measured, setMeasured] = useState<Box | null>(null);
 
@@ -40,11 +42,13 @@ export function useBoardBox(layout: TableLayout, inset = 0, remeasureKey = ''): 
     const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure);
     observer?.observe(element);
     window.addEventListener('resize', measure);
+    const timer = window.setInterval(measure, REMEASURE_MS);
     return () => {
+      window.clearInterval(timer);
       observer?.disconnect();
       window.removeEventListener('resize', measure);
     };
-  }, [element, layout, inset, remeasureKey]);
+  }, [element, layout, inset]);
 
   return { ref: setElement, box: measured ?? DEFAULT_BOX[layout] };
 }
