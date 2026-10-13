@@ -43,7 +43,7 @@ export function Layout() {
   const outlet = useOutlet();
 
   return (
-    <div className="min-h-screen">
+    <div data-site-frame className="min-h-screen">
       <AnimatePresence>
         {disconnected ? (
           <motion.div role="status" initial={{ y: -40 }} animate={{ y: 0 }} exit={{ y: -40 }}
@@ -52,7 +52,7 @@ export function Layout() {
           </motion.div>
         ) : null}
       </AnimatePresence>
-      <header className="wood-rail">
+      <header data-site-header className="wood-rail">
         {/* relative: 좁은 화면에서 친구 패널이 헤더 폭에 맞춰 펼쳐지는 기준이다. */}
         <div className="relative mx-auto flex min-w-0 max-w-6xl items-center justify-between gap-2 px-3 py-2.5 sm:px-4">
           <div className="flex min-w-0 items-center gap-1.5 sm:gap-4">
@@ -70,7 +70,7 @@ export function Layout() {
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-6xl px-4 py-6">
+      <main data-site-main className="mx-auto max-w-6xl px-4 py-6">
         <AnimatePresence mode="wait">
           <motion.div key={location.pathname} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}>
             {outlet}

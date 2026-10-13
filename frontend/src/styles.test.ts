@@ -10,6 +10,13 @@ describe('index.css', () => {
     expect(css).toMatch(/\[aria-disabled="true"\]/);
   });
 
+  it('화면을 가득 쓰는 게임 동안(html[data-game-focus])은 머리줄을 숨기고 여백을 줄이며 보이는 높이(100dvh)까지만 쓴다', () => {
+    expect(css).toMatch(/html\[data-game-focus\] \[data-site-header\] \{\s*display: none;/);
+    expect(css).toMatch(/html\[data-game-focus\] \[data-site-main\] \{\s*padding: 4px;/);
+    expect(css).toMatch(/html\[data-game-focus\] body,\s*html\[data-game-focus\] \[data-site-frame\] \{\s*min-height: 100dvh;/);
+    expect(css).toMatch(/html\[data-game-focus\] \{\s*overscroll-behavior: none;/);
+  });
+
   it('차례 링 색 변수는 :root에 있고 벚꽃만 따로 정한다(분홍 펠트 위에서 보이게 흰 링에 짙은 테두리)', () => {
     expect(css).toMatch(/--turn-ring:\s*var\(--accent\)/);
     const blossom = css.match(/\[data-theme="BLOSSOM"\]\s*\{[^}]*\}/)?.[0] ?? '';

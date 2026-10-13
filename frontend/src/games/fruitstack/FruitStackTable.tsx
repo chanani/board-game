@@ -5,6 +5,7 @@ import { EMOTE_DOCK, EmoteDock } from '../../emote/EmoteDock';
 import { roomAvatarOf } from '../../lib/avatars';
 import { offlineSecondsNow } from '../../lib/format';
 import { useSound } from '../../lib/sound';
+import { useGameFocus } from '../../lib/useGameFocus';
 import { useTableLayout, type TableLayout } from '../../lib/useTableLayout';
 import { useRealtime } from '../../realtime/RealtimeContext';
 import { GameEndBanner } from '../../table/GameEndBanner';
@@ -33,7 +34,7 @@ const TICK_FROM_MS = 3000;
 /** 합치기 소리는 이 간격에 한 번까지(연쇄 합치기). */
 const MERGE_SOUND_GAP_MS = 80;
 /** 바닥 판의 안쪽 여백(px). */
-const SURFACE_PAD: Record<TableLayout, number> = { pc: 12, portrait: 8, landscape: 6 };
+const SURFACE_PAD: Record<TableLayout, number> = { pc: 12, portrait: 8, landscape: 4 };
 const SURFACE_BORDER = 1;
 
 type BoardStatus = { hasFrame: boolean; danger: boolean };
@@ -185,15 +186,20 @@ export function FruitStackTable({ view, room, meId, receivedAt, now, errorSeq, n
     return getter;
   };
 
+  const finale = useFinalePhase(game, transition, game.result?.reason === 'FORFEIT');
+  const showPanel = finale === 'done' && game.status === 'GAME_OVER';
+  // 휴대폰에서는 게임 동안 사이트 머리줄을 숨기고 페이지 여백을 줄여 판이 화면을 가득 쓴다. 결과 창에서는 되돌린다.
+  const focused = !wide && !showPanel;
+  useGameFocus(focused);
+
   const pad = SURFACE_PAD[layout];
-  // 몸통 아래에는 바닥 판의 안쪽 여백과 테두리(1px)가 더 있다.
-  const { ref: bodyRef, box } = useBoardBox(layout, pad + SURFACE_BORDER);
+  // 몸통 아래에는 바닥 판의 안쪽 여백과 테두리(1px)가 더 있다. 머리줄이 숨거나 연결 끊김 알림이 뜨면 몸통 위치가 바뀌므로 다시 잰다.
+  const { ref: bodyRef, box } = useBoardBox(layout, pad + SURFACE_BORDER, `${focused}:${connected}`);
   const fit = fitBoard({ layout, box, mode, big: bigIds.length, mini: miniIds.length });
 
-  const finale = useFinalePhase(game, transition, game.result?.reason === 'FORFEIT');
   useGameOverCue(liveGameEnd(game, transition), finale === 'banner' || finale === 'done', game.winnerId === meId);
 
-  if (finale === 'done' && game.status === 'GAME_OVER') {
+  if (showPanel) {
     return <FruitStackGameOverPanel game={game} room={room} meId={meId} nicknameOf={nicknameOf} onReady={onReadyNext} onClose={onCloseGameOver} />;
   }
 
@@ -216,9 +222,10 @@ export function FruitStackTable({ view, room, meId, receivedAt, now, errorSeq, n
   };
   const minis = miniIds.map((id) => board(id, false));
 
+  const dockInRail = layout === 'landscape';
   const myBoard = (
     <div className="relative">
-      <EmoteDock meId={meId} className={EMOTE_DOCK} />
+      {dockInRail ? null : <EmoteDock meId={meId} className={EMOTE_DOCK} />}
       <MyBoard width={fit.bigWidth} getFrame={fruit.getFrame} getEffects={fruit.getEffects} getAutoDropLeftMs={fruit.getAutoDropLeftMs}
         score={fruit.hud.score} held={fruit.hud.held} out={fruit.hud.out} catchingUp={fruit.hud.catchingUp}
         interactive={inProgress && !fruit.hud.out && !fruit.hud.catchingUp} onAim={fruit.aim} onDrop={fruit.drop} />
@@ -251,7 +258,11 @@ export function FruitStackTable({ view, room, meId, receivedAt, now, errorSeq, n
     ),
     landscape: () => (
       <div className="flex items-start justify-center gap-3">
-        {hud}
+        {/* 판이 화면 높이를 다 써서 판 모서리 위에 걸칠 자리가 없다. 감정 표현 버튼은 점수 띠 아래에 둔다. */}
+        <div className="flex shrink-0 flex-col items-center gap-2">
+          {hud}
+          <div data-testid="emote-slot" className="relative h-8 w-8"><EmoteDock meId={meId} className="left-0 top-0" /></div>
+        </div>
         {myBoard}
         {minis.length > 0 ? <div className="grid gap-2" style={columns(fit.miniCols)}>{minis}</div> : null}
       </div>
@@ -293,9 +304,10 @@ export function FruitStackTable({ view, room, meId, receivedAt, now, errorSeq, n
   );
 
   return (
-    <div inert={finale !== 'playing'} data-testid="fruit-table" data-layout={layout} data-mode={mode}>
+    // 방 화면은 칸 사이를 16px씩 띄우는데, 화면을 가득 쓸 때는 그 아래 간격을 지운다.
+    <div inert={finale !== 'playing'} data-testid="fruit-table" data-layout={layout} data-mode={mode} className={focused ? '-mb-4' : undefined}>
       {layout === 'landscape' ? (
-        <div data-testid="landscape-table" className="-my-5 grid grid-cols-[10.5rem_minmax(0,1fr)] items-start gap-3">
+        <div data-testid="landscape-table" className="grid grid-cols-[10.5rem_minmax(0,1fr)] items-start gap-2">
           <div data-testid="table-aside" className="sticky top-1 space-y-0.5">{aside}{turnBar}{asideFooter}</div>
           <div className="min-w-0">{body}</div>
         </div>

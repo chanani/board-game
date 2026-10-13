@@ -95,6 +95,26 @@ describe('FruitStackTable', () => {
     absent();
   });
 
+  it('휴대폰에서는 게임 동안 화면을 가득 쓰고(html[data-game-focus]), PC와 결과 창에서는 쓰지 않는다', () => {
+    const focus = () => document.documentElement.dataset.gameFocus;
+    const { rerender } = renderTable();
+    expect(focus()).toBeUndefined();
+    expect(table()).not.toHaveClass('-mb-4');
+
+    setMediaMatches(false);
+    rerender({});
+    expect(focus()).toBe('on');
+    expect(table()).toHaveClass('-mb-4');
+
+    setMediaMatches((query) => query === LANDSCAPE_PHONE_QUERY);
+    rerender({});
+    expect(focus()).toBe('on');
+
+    rerender({ game: OVER });
+    expect(screen.getByTestId('fruit-game-over')).toBeInTheDocument();
+    expect(focus()).toBeUndefined();
+  });
+
   it('PC: 내 판이 크게, 상대는 작은 판으로 보인다', () => {
     renderTable();
 
@@ -150,6 +170,9 @@ describe('FruitStackTable', () => {
     expect(screen.getByTestId('fruit-hud')).toHaveAttribute('data-vertical', 'true');
     expect(screen.getByTestId('table-aside')).toHaveTextContent('상태 바');
     expect(screen.getByTestId('my-board')).toHaveStyle({ width: '217px' });
+    // 머리줄이 숨어 페이지 여백을 당겨 쓸 일이 없고, 감정 표현 버튼 자리는 점수 띠 아래다.
+    expect(screen.getByTestId('landscape-table')).not.toHaveClass('-my-5');
+    expect(screen.getByTestId('fruit-hud').parentElement).toContainElement(screen.getByTestId('emote-slot'));
   });
 
   it('상대 4명이면 작은 판이 4개다', () => {

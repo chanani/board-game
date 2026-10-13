@@ -62,6 +62,14 @@ describe('Layout 상단바', () => {
 });
 
 describe('Layout 모바일 상단바', () => {
+  it('화면을 가득 쓰는 게임이 숨기고 줄일 수 있게 머리줄·본문·바깥 틀에 표시가 있다', () => {
+    const { container } = render(ui());
+
+    expect(container.querySelector('header[data-site-header]')).toBe(screen.getByRole('banner'));
+    expect(container.querySelector('main[data-site-main]')).toBe(screen.getByRole('main'));
+    expect(container.querySelector('[data-site-frame]')).toHaveClass('min-h-screen');
+  });
+
   it('좁은 화면에서는 로고 그림, 아이콘 메뉴와 짧은 글자만 남겨 넘치지 않는다', () => {
     render(ui());
 
