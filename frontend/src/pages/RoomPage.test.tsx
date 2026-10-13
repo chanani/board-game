@@ -7,6 +7,7 @@ import type { PaperSafariSessionView, Room } from '../api/types';
 import { RoomPage } from './RoomPage';
 import { setMediaMatches } from '../test/media';
 import { PC_QUERY } from '../lib/useMediaQuery';
+import { fruitPlayer, fruitView } from '../games/fruitstack/fruitStackFixtures';
 
 const channel = vi.hoisted(() => ({ value: {} as Record<string, unknown>, options: undefined as unknown }));
 vi.mock('../room/useRoomChannel', () => ({
@@ -15,6 +16,7 @@ vi.mock('../room/useRoomChannel', () => ({
     return channel.value;
   },
 }));
+vi.mock('../realtime/RealtimeContext', () => ({ useRealtime: () => ({ connected: true, realtime: {} }) }));
 const toast = vi.hoisted(() => ({ show: vi.fn() }));
 vi.mock('../components/Toast', () => ({ useToast: () => toast }));
 vi.mock('../auth/AuthContext', () => ({ useAuth: () => ({ member: { id: 3, loginId: 'carol01', nickname: '캐롤' } }) }));
@@ -536,6 +538,10 @@ describe('RoomPage 준비와 채팅', () => {
 
     expect(screen.getByTestId('chat-strip')).toBeInTheDocument();
     expect(screen.queryByTestId('game-chat-panel')).not.toBeInTheDocument();
+    // 방 상태 바도 그대로 위에 있고, 화면을 가득 쓰는 게임(과일 쌓기)의 채팅 버튼·머리줄 숨김은 쓰지 않는다.
+    expect(screen.getByTestId('room-status-bar')).toBeInTheDocument();
+    expect(screen.queryByTestId('game-chat-button')).toBeNull();
+    expect(document.documentElement.dataset.gameFocus).toBeUndefined();
     await userEvent.click(screen.getByRole('button', { name: /채팅 전체 보기/ }));
     expect(screen.getByRole('dialog', { name: '채팅' })).toHaveAttribute('data-variant', 'sheet');
   });
@@ -745,6 +751,44 @@ describe('RoomPage 컴퓨터를 받지 않는 게임', () => {
     expect(screen.queryByText('컴퓨터와 하기')).toBeNull();
     expect(screen.queryByLabelText('빈자리에 컴퓨터 추가')).toBeNull();
     expect(screen.queryByText('컴퓨터 추가')).toBeNull();
+  });
+
+  // 캐롤(3)과 앨리스(1)가 과일 쌓기를 하는 중.
+  const fruitRoom: Room = { ...hostRoom('FRUIT_STACK', '과일 쌓기'), status: 'PLAYING' };
+  const fruitGame = { gameType: 'FRUIT_STACK', game: fruitView({ viewerId: 3, participantIds: [3, 1], players: [fruitPlayer(3), fruitPlayer(1)] }) };
+
+  it('과일 쌓기는 세로 휴대폰에서 방 상태 바와 채팅 줄 대신 맨 위 한 줄(나가기·채팅 버튼)을 테이블이 그린다', async () => {
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null);
+    setMediaMatches(false);
+    setChannel({ room: fruitRoom, view: fruitGame });
+    renderRoom();
+    await act(async () => {});
+
+    expect(screen.queryByTestId('room-status-bar')).toBeNull();
+    expect(screen.queryByTestId('chat-strip')).toBeNull();
+    const bar = screen.getByTestId('fruit-phone-bar');
+
+    await userEvent.click(within(bar).getByRole('button', { name: '채팅 열기' }));
+    expect(screen.getByRole('dialog', { name: '채팅' })).toHaveTextContent('잘 부탁해요');
+    await userEvent.click(screen.getByRole('button', { name: '채팅 닫기' }));
+
+    // 게임 중에 나가면 기권이므로 확인 창을 거친다.
+    await userEvent.click(within(bar).getByRole('button', { name: '나가기' }));
+    expect(screen.getByRole('dialog', { name: '정말 나갈까요?' })).toBeInTheDocument();
+    vi.restoreAllMocks();
+  });
+
+  it('과일 쌓기도 PC에서는 방 상태 바와 오른쪽 채팅 칸을 방 화면이 그린다', async () => {
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null);
+    setMediaMatches(true);
+    setChannel({ room: fruitRoom, view: fruitGame });
+    renderRoom();
+    await act(async () => {});
+
+    expect(screen.getByTestId('room-status-bar')).toBeInTheDocument();
+    expect(screen.getByTestId('game-chat-panel')).toBeInTheDocument();
+    expect(screen.queryByTestId('fruit-phone-bar')).toBeNull();
+    vi.restoreAllMocks();
   });
 
   it('우노 방의 대기실에는 그대로 컴퓨터를 앉히는 길이 있다', async () => {

@@ -145,6 +145,8 @@ export function RoomPage() {
 
   // 휴대폰을 눕힌 게임 화면은 상태 바를 테이블 왼쪽 칸으로 옮긴다.
   const landscapeGame = showGame && layout === 'landscape';
+  // 세로 휴대폰에서도 상태 바와 채팅을 스스로 그리는 게임(과일 쌓기)에는 눕힌 화면처럼 테이블에 넘긴다.
+  const tableChrome = landscapeGame || (showGame && layout === 'portrait' && game.ownsPhoneChrome === true);
   const statusBar = <RoomStatusBar room={room} playing={playing} onLeave={requestLeave} onSettings={canEditSettings ? () => setEditingSettings(true) : undefined} stacked={landscapeGame} />;
 
   // 게임 중 채팅: 눕힌 화면은 왼쪽 칸 맨 아래, PC는 테이블 오른쪽 칸, 그 밖에는 테이블 아래.
@@ -152,8 +154,8 @@ export function RoomPage() {
   const chatShown = playing || showGame;
   const chatVariant = pcChat && layout !== 'landscape' ? 'panel' : 'strip';
   const gameChat = chatShown ? <GameChat variant={chatVariant} messages={chat.messages} meId={meId} onSend={chat.send} compact={landscapeGame} /> : null;
-  const chatBeside = chatShown && !landscapeGame && chatVariant === 'panel';
-  const chatBelow = chatShown && !landscapeGame && chatVariant === 'strip';
+  const chatBeside = chatShown && !tableChrome && chatVariant === 'panel';
+  const chatBelow = chatShown && !tableChrome && chatVariant === 'strip';
 
   // 채팅 이름·말풍선 색은 방에 들어온 순서로 정한다(대기실·게임 채팅 모두).
   const chatOrder = chatOrderOf(room);
@@ -164,13 +166,15 @@ export function RoomPage() {
     <EmoteContext.Provider value={emotes}>
     <div data-theme={theme} className="space-y-4">
       <RoomBackdrop theme={theme} />
-      {landscapeGame ? null : statusBar}
+      {tableChrome ? null : statusBar}
       <div className={chatBeside ? 'flex items-start gap-4' : undefined}>
         <div className={chatBeside ? 'min-w-0 flex-1' : undefined}>
           {showGame && gameView ? (
             <Table
-              aside={landscapeGame ? statusBar : undefined}
-              asideFooter={landscapeGame ? gameChat : undefined}
+              aside={tableChrome ? statusBar : undefined}
+              asideFooter={tableChrome ? gameChat : undefined}
+              onLeave={requestLeave}
+              chat={{ messages: chat.messages, onSend: chat.send, latest: chat.latest }}
               view={gameView}
               room={room}
               meId={meId}

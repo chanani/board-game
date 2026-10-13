@@ -6,7 +6,7 @@ import type { LogEntry } from '../../lib/eventLog';
 import { SILENT_SOUND, SoundContext } from '../../lib/sound';
 import { LANDSCAPE_PHONE_QUERY } from '../../lib/useTableLayout';
 import { setMediaMatches } from '../../test/media';
-import type { ViewTransition } from '../gameModule';
+import type { TableChat, ViewTransition } from '../gameModule';
 import { FRUIT_STARTED_AT, fruitPlayer, fruitSession, fruitView } from './fruitStackFixtures';
 import { FruitStackTable } from './FruitStackTable';
 
@@ -18,7 +18,7 @@ const room: Room = {
   locked: false, spectators: [], theme: 'WOOD', members: [member(1, true), member(2), member(3), member(4), member(5)],
 };
 
-type Options = { game?: Partial<FruitStackView>; /** 전환(transition.to)과 같은 객체여야 할 때 화면을 그대로 넘긴다. */ full?: FruitStackView; meId?: number; transition?: ViewTransition<FruitStackView> | null; aside?: ReactElement; log?: LogEntry[] };
+type Options = { game?: Partial<FruitStackView>; /** 전환(transition.to)과 같은 객체여야 할 때 화면을 그대로 넘긴다. */ full?: FruitStackView; meId?: number; transition?: ViewTransition<FruitStackView> | null; aside?: ReactElement; asideFooter?: ReactElement; log?: LogEntry[]; onLeave?: () => void; chat?: TableChat };
 
 function renderTable(options: Options = {}) {
   const send = vi.fn();
@@ -29,10 +29,10 @@ function renderTable(options: Options = {}) {
     listener = next;
     return () => { listener = () => {}; };
   };
-  const tree = ({ game, full, meId = 1, transition = null, aside, log = [] }: Options) => (
+  const tree = ({ game, full, meId = 1, transition = null, aside, asideFooter, log = [], onLeave, chat }: Options) => (
     <SoundContext.Provider value={{ ...SILENT_SOUND, play }}>
       <FruitStackTable view={full ? { gameType: 'FRUIT_STACK', game: full } : fruitSession(game)} room={room} meId={meId} log={log} receivedAt={0} now={0} errorSeq={0} nicknameOf={(id) => `P${id}`}
-        send={send} sendSignal={sendSignal} subscribeSignal={subscribe} onCloseGameOver={vi.fn()} onReadyNext={vi.fn()} transition={transition} aside={aside} />
+        send={send} sendSignal={sendSignal} subscribeSignal={subscribe} onCloseGameOver={vi.fn()} onReadyNext={vi.fn()} transition={transition} aside={aside} asideFooter={asideFooter} onLeave={onLeave} chat={chat} />
     </SoundContext.Provider>
   );
   const view = render(tree(options));
@@ -160,6 +160,45 @@ describe('FruitStackTable', () => {
     expect(screen.getByText('끌어서 놓으면 떨어져요')).toBeInTheDocument();
     expect(screen.getByTestId('my-board')).toHaveStyle({ width: '220px' });
     expect(minis()[0]).toHaveStyle({ width: '53px' });
+  });
+
+  it('세로 배치의 맨 위 한 줄: 나가기, 안내 문구, 채팅 버튼(방 상태 바와 채팅 줄은 그리지 않는다)', () => {
+    setMediaMatches(false);
+    const onLeave = vi.fn();
+    const chat: TableChat = { messages: [], onSend: vi.fn(() => true), latest: null };
+    const { rerender } = renderTable({ aside: <p>상태 바</p>, asideFooter: <p>채팅 줄</p>, onLeave, chat });
+    const bar = screen.getByTestId('fruit-phone-bar');
+
+    expect(bar.compareDocumentPosition(screen.getByTestId('fruit-surface')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(within(bar).getByTestId('instruction')).toHaveTextContent('끌어서 놓으면 떨어져요');
+    expect(table()).not.toHaveTextContent('상태 바');
+    expect(table()).not.toHaveTextContent('채팅 줄');
+    expect(screen.queryByTestId('table-aside')).toBeNull();
+
+    fireEvent.click(within(bar).getByRole('button', { name: '나가기' }));
+    expect(onLeave).toHaveBeenCalledTimes(1);
+
+    expect(within(bar).getByRole('button', { name: '채팅 열기' })).toBeInTheDocument();
+    rerender({ chat: { ...chat, latest: { id: 9, memberId: 2, nickname: 'P2', text: '안녕하세요', sentAt: '' } } });
+    expect(within(bar).getByRole('button', { name: '채팅 열기, 새 메시지 1개' })).toBeInTheDocument();
+    fireEvent.click(within(bar).getByRole('button', { name: /채팅 열기/ }));
+    expect(screen.getByRole('dialog', { name: '채팅' })).toHaveAttribute('data-variant', 'sheet');
+  });
+
+  it('세로 배치의 결과 창은 방 화면이 그리던 대로 위에 방 상태 바, 아래에 채팅 줄을 둔다(가로·PC는 결과 창만)', () => {
+    setMediaMatches(false);
+    const view = renderTable({ game: OVER, aside: <p data-testid="bar">상태 바</p>, asideFooter: <p data-testid="strip">채팅 줄</p> });
+    const panel = screen.getByTestId('fruit-game-over');
+
+    expect(screen.queryByTestId('fruit-phone-bar')).toBeNull();
+    expect(screen.getByTestId('bar').compareDocumentPosition(panel) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(panel.compareDocumentPosition(screen.getByTestId('strip')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+    setMediaMatches((query) => query === LANDSCAPE_PHONE_QUERY);
+    view.rerender({});
+    expect(screen.getByTestId('fruit-game-over')).toBeInTheDocument();
+    expect(screen.queryByTestId('bar')).toBeNull();
+    expect(screen.queryByTestId('strip')).toBeNull();
   });
 
   it('가로 배치는 세로 점수 띠와 왼쪽 칸을 쓴다', () => {

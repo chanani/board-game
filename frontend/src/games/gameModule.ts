@@ -1,4 +1,5 @@
 import type { ComponentType, ReactNode } from 'react';
+import type { ChatMessage } from '../api/chat';
 import type { GameAction, GameSignal, GameType, PaperSafariView, Room, SessionView } from '../api/types';
 import type { LogDraft, LogEntry } from '../lib/eventLog';
 
@@ -9,6 +10,9 @@ export type Nickname = (memberId: number) => string;
  * 기본 타입 인자는 페이퍼 사파리(PaperSafariTable·useCardMotion·useFinale가 타입 인자 없이 쓴다).
  */
 export type ViewTransition<G = PaperSafariView> = { seq: number; from: G | null; to: G; animate: boolean };
+
+/** 방 채팅. latest는 지금 막 받은 메시지(기록 불러오기로는 바뀌지 않는다). */
+export type TableChat = { messages: ChatMessage[]; onSend: (text: string) => boolean; latest: ChatMessage | null };
 
 /** 게임 테이블 컴포넌트가 받는 props(페이퍼 사파리 테이블 props와 같다). */
 export type TableProps<V extends SessionView> = {
@@ -31,6 +35,9 @@ export type TableProps<V extends SessionView> = {
   subscribeSignal?: (listener: (signal: GameSignal) => void) => () => void;
   aside?: ReactNode;
   asideFooter?: ReactNode;
+  /** 방 나가기(게임 중이면 확인 창을 거친다)와 방 채팅. 세로 휴대폰의 방 상태 바·채팅을 스스로 그리는 게임(ownsPhoneChrome)이 쓴다. */
+  onLeave?: () => void;
+  chat?: TableChat;
 };
 
 export type RuleSlideBase = { title: string; body: string[] };
@@ -52,6 +59,11 @@ export type GameModule<V extends SessionView> = {
   /** 컴퓨터 플레이어를 받는지. 없으면 받는다. 과일 쌓기만 false(서버도 거절한다). */
   supportsBots?: boolean;
   Table: ComponentType<TableProps<V>>;
+  /**
+   * 세로 휴대폰에서도 방 상태 바(aside)와 채팅(asideFooter)을 방 화면이 그리지 않고 테이블에 넘길지(과일 쌓기).
+   * 판이 화면을 가득 써야 하는 게임이 켜고, 테이블이 onLeave·chat으로 나가기와 채팅을 작게 그린다. 없으면 방 화면이 위아래에 그린다.
+   */
+  ownsPhoneChrome?: boolean;
   describeChanges: (prev: V | null, next: V, nicknameOf: Nickname) => LogDraft[];
   isGameOver: (view: V) => boolean;
   wasParticipant: (view: V, meId: number) => boolean;

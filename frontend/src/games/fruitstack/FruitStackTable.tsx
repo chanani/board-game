@@ -20,6 +20,7 @@ import { FruitStackGameOverPanel } from './FruitStackGameOverPanel';
 import { Hud } from './Hud';
 import { MiniBoard } from './MiniBoard';
 import { MyBoard } from './MyBoard';
+import { PhoneBar } from './PhoneBar';
 import { instructionOf } from './texts';
 import { useBoardBox } from './useBoardBox';
 import { useBoardSignals } from './useBoardSignals';
@@ -102,7 +103,7 @@ function useAutoDropWarning(getAutoDropLeftMs: () => number | null, enabled: boo
 
 const columns = (count: number) => ({ gridTemplateColumns: `repeat(${Math.max(1, count)}, max-content)` });
 
-export function FruitStackTable({ view, room, meId, receivedAt, now, errorSeq, nicknameOf, send, sendSignal, subscribeSignal, aside, asideFooter, transition, onCloseGameOver, onReadyNext }: TableProps<FruitStackSessionView>) {
+export function FruitStackTable({ view, room, meId, receivedAt, now, errorSeq, nicknameOf, send, sendSignal, subscribeSignal, aside, asideFooter, onLeave, chat, transition, onCloseGameOver, onReadyNext }: TableProps<FruitStackSessionView>) {
   const game = view.game;
   const layout = useTableLayout();
   const wide = layout === 'pc';
@@ -200,7 +201,9 @@ export function FruitStackTable({ view, room, meId, receivedAt, now, errorSeq, n
   useGameOverCue(liveGameEnd(game, transition), finale === 'banner' || finale === 'done', game.winnerId === meId);
 
   if (showPanel) {
-    return <FruitStackGameOverPanel game={game} room={room} meId={meId} nicknameOf={nicknameOf} onReady={onReadyNext} onClose={onCloseGameOver} />;
+    const panel = <FruitStackGameOverPanel game={game} room={room} meId={meId} nicknameOf={nicknameOf} onReady={onReadyNext} onClose={onCloseGameOver} />;
+    // 세로 휴대폰은 방 화면이 그리던 대로 결과 창 위에 방 상태 바, 아래에 채팅 줄을 둔다(게임 동안에는 맨 위 한 줄이 대신했다).
+    return layout === 'portrait' && aside ? <div className="space-y-4">{aside}{panel}{asideFooter}</div> : panel;
   }
 
   const board = (id: number, large: boolean) => {
@@ -298,8 +301,11 @@ export function FruitStackTable({ view, room, meId, receivedAt, now, errorSeq, n
       <div ref={bodyRef}>{mode === 'play' ? playBody[layout]() : watchBody()}</div>
     </div>
   );
-  const turnBar = (
-    <TurnBar instruction={instructionOf(game, meId, nicknameOf, wide, fruit.getLocal()?.score ?? null)} myTurn={false}
+  const instruction = instructionOf(game, meId, nicknameOf, wide, fruit.getLocal()?.score ?? null);
+  const turnBar = layout === 'portrait' ? (
+    <PhoneBar instruction={instruction} deadline={game.deadline} serverNow={game.serverNow} meId={meId} onLeave={onLeave} chat={chat} />
+  ) : (
+    <TurnBar instruction={instruction} myTurn={false}
       deadline={game.deadline} serverNow={game.serverNow} compact={!wide} stacked={layout === 'landscape'} locked={finale !== 'playing'} />
   );
 

@@ -19,6 +19,7 @@ export const fruitStackModule: GameModule<FruitStackSessionView> = {
   // R35·R36: 물리가 브라우저에서 돌아 컴퓨터가 대신 둘 수 없다.
   supportsBots: false,
   Table: FruitStackTable,
+  ownsPhoneChrome: true,
   // 이 게임은 진행 기록을 보이지 않는다(판이 화면을 다 쓴다). 탈락·결과는 판과 결과 창이 알린다.
   describeChanges: () => [],
   isGameOver: (view) => view.game.status === 'GAME_OVER',
