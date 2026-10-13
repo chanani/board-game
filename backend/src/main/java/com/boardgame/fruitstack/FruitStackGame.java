@@ -6,12 +6,14 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalLong;
 
 // 한 경기. 물리는 모른다: 보고받은 점수·탈락·기권과 경기 상한만 다룬다.
 public class FruitStackGame {
 
     private final FruitStackMatch match;
     private final Contest contest;
+    private final SnapshotGates gates = new SnapshotGates();
 
     private FruitStackGame(FruitStackMatch match, Contest contest) {
         this.match = match;
@@ -48,6 +50,21 @@ public class FruitStackGame {
         }
         contest.timeUp();
         return true;
+    }
+
+    // R24: 받아 주면 그 사람의 신호 순번, 아니면 빈 값. 점수·상태·끝은 바뀌지 않는다.
+    public OptionalLong relay(PlayerId player, String board) {
+        BoardSnapshot snapshot = new BoardSnapshot(board);
+        if (!mayRelay(player) || !snapshot.isValid()) {
+            return OptionalLong.empty();
+        }
+        return gates.tryPass(player, now());
+    }
+
+    // 게임 중이고 기권하지 않은 참가자(살아 있거나 탈락)만 판을 보낸다.
+    private boolean mayRelay(PlayerId player) {
+        Stackers stackers = contest.stackers();
+        return !isFinished() && stackers.contains(player) && stackers.isContender(player);
     }
 
     public boolean isFinished() {
