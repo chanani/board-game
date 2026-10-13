@@ -3,7 +3,7 @@ export type ApiErrorBody = { status: number; code: string; message: string };
 /** avatar: 프로필 그림 키(CAT 등). 서버가 늘 채워 주지만 예전 응답·테스트를 위해 없을 수 있고, 그때는 id로 정한 기본 그림. */
 export type Member = { id: number; loginId: string; nickname: string; avatar?: string };
 
-export type GameType = 'PAPER_SAFARI' | 'UNO' | 'OLD_MAID';
+export type GameType = 'PAPER_SAFARI' | 'UNO' | 'OLD_MAID' | 'FRUIT_STACK';
 export type ResultType = 'WIN' | 'DRAW' | 'LOSE';
 
 export type RoomStatus = 'WAITING' | 'PLAYING';
@@ -47,8 +47,9 @@ export type RoomSummary = {
 export type GameActionType = 'FLIP' | 'DRAW_DECK' | 'DRAW_DISCARD' | 'SWAP' | 'DISCARD' | 'PEEK' | 'CANCEL_DRAW';
 export type UnoActionType = 'PLAY' | 'DRAW' | 'KEEP' | 'CHOOSE_COLOR' | 'CALL_UNO' | 'CATCH_UNO';
 export type OldMaidActionType = 'SHUFFLE' | 'PEEK' | 'DISCARD_ALL';
+export type FruitStackActionType = 'SCORE' | 'OUT' | 'BOARD';
 export type GameAction = {
-  type: GameActionType | UnoActionType | OldMaidActionType;
+  type: GameActionType | UnoActionType | OldMaidActionType | FruitStackActionType;
   column?: number;
   row?: number;
   cardId?: number;
@@ -57,6 +58,10 @@ export type GameAction = {
   index?: number | null;
   /** 도둑잡기 DISCARD: 짝으로 버릴 서로 다른 두 장. */
   cardIds?: number[];
+  /** 과일 쌓기 SCORE·OUT: 지금 내 총점. */
+  score?: number;
+  /** 과일 쌓기 BOARD: 판 모습(R23). */
+  board?: string;
 };
 
 export type CardKind = 'NUMBER' | 'ELEPHANT' | 'TARZAN' | 'FOX' | 'WILD';
@@ -195,9 +200,32 @@ export type OldMaidPeekSignal = {
   gameType: 'OLD_MAID'; type: 'PEEK'; startedAt: number; turnSeq: number; drawerId: number; targetId: number;
   index: number | null; seq: number;
 };
-export type GameSignal = OldMaidPeekSignal;
+export type FruitStackPlayerState = 'PLAYING' | 'OUT' | 'FORFEITED';
+export type FruitStackPlayerView = { playerId: number; score: number; state: FruitStackPlayerState };
+export type FruitStackEndReason = 'ALL_OUT' | 'DECIDED' | 'TIME_UP' | 'FORFEIT';
+export type FruitStackStanding = { playerId: number; score: number; outcome: ResultType; rank: number; state: FruitStackPlayerState };
+export type FruitStackResult = { reason: FruitStackEndReason; standings: FruitStackStanding[] };
+export type FruitStackView = {
+  viewerId: number;
+  status: 'IN_PROGRESS' | 'GAME_OVER';
+  /** 경기 시작 시각(epoch ms). 판의 시계·저장 무효화·신호 가리기·결과 창 닫음 기억 키에 쓴다. */
+  startedAt: number;
+  /** 과일 순서의 씨앗(R4). */
+  seed: number;
+  participantIds: number[];
+  players: FruitStackPlayerView[];
+  result: FruitStackResult | null;
+  winnerId: number | null;
+  /** 경기 상한 시각(epoch ms). 끝나면 null. */
+  deadline: number | null;
+  serverNow: number;
+};
+export type FruitStackSessionView = { gameType: 'FRUIT_STACK'; game: FruitStackView };
+/** /user/queue/signal: 한 참가자의 판 모습(R23 인코딩). */
+export type FruitStackBoardSignal = { gameType: 'FRUIT_STACK'; type: 'BOARD'; startedAt: number; playerId: number; seq: number; board: string };
+export type GameSignal = OldMaidPeekSignal | FruitStackBoardSignal;
 /** /user/queue/game으로 오는 세션 화면. */
-export type SessionView = PaperSafariSessionView | UnoSessionView | OldMaidSessionView;
+export type SessionView = PaperSafariSessionView | UnoSessionView | OldMaidSessionView | FruitStackSessionView;
 
 export type GameStat = {
   gameType: GameType;

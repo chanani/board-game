@@ -31,7 +31,7 @@ describe('statLines', () => {
   it('등록된 게임 순서대로 판 수·승 수·승률을 만들고 전체 합계를 더한다', () => {
     const { games, total } = statLines([stat('UNO', 6, 3), stat('PAPER_SAFARI', 4, 3)]);
     expect(games.map((line) => [line.name, line.matches, line.wins, line.winRate])).toEqual([
-      ['페이퍼 사파리', 4, 3, 0.75], ['우노', 6, 3, 0.5], ['도둑잡기', 0, 0, null],
+      ['페이퍼 사파리', 4, 3, 0.75], ['우노', 6, 3, 0.5], ['도둑잡기', 0, 0, null], ['과일 쌓기', 0, 0, null],
     ]);
     expect(total).toMatchObject({ name: '전체', matches: 10, wins: 6, winRate: 0.6 });
   });

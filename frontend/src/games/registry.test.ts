@@ -59,10 +59,26 @@ describe('게임 등록부', () => {
   it('도둑잡기를 세 번째 게임으로 등록한다', () => {
     const game = gameOf('OLD_MAID');
 
-    expect(GAME_ORDER).toEqual(['PAPER_SAFARI', 'UNO', 'OLD_MAID']);
+    expect(GAME_ORDER.slice(0, 3)).toEqual(['PAPER_SAFARI', 'UNO', 'OLD_MAID']);
     expect(game.name).toBe('도둑잡기');
     expect(game.rules.slides).toHaveLength(8);
     expect(sessionGameType({ gameType: 'OLD_MAID' })).toBe('OLD_MAID');
     expect(game.gameOverKey('OLDMAD', { gameType: 'OLD_MAID', game: { startedAt: 7 } } as never)).toBe('OLDMAD:OLD_MAID:7');
+  });
+
+  it('과일 쌓기 모듈이 네 번째로 등록되어 있다', () => {
+    expect(GAME_ORDER).toEqual(['PAPER_SAFARI', 'UNO', 'OLD_MAID', 'FRUIT_STACK']);
+    const game = gameOf('FRUIT_STACK');
+    expect(game).toMatchObject({ name: '과일 쌓기', slug: 'fruit-stack', minPlayers: 2, maxPlayers: 5, supportsBots: false, averageScoreLabel: '평균 점수' });
+    expect(game.rules.title).toBe('과일 쌓기 규칙');
+    expect(game.rules.slides).toHaveLength(6);
+    expect(game.roundScoreText).toBeUndefined();
+    const view = { gameType: 'FRUIT_STACK', game: { status: 'GAME_OVER', startedAt: 77, participantIds: [1, 2] } };
+    expect(game.isGameOver(view)).toBe(true);
+    expect(game.wasParticipant(view, 2)).toBe(true);
+    expect(game.wasParticipant(view, 9)).toBe(false);
+    expect(game.gameOverKey('ABCDEF', view)).toBe('ABCDEF:FRUIT_STACK:77');
+    expect(game.stepKey(view)).toBe('GAME_OVER:77');
+    expect(gameOf('UNO').supportsBots).toBeUndefined();
   });
 });

@@ -144,8 +144,16 @@ public class Room {
     public Participant addBot(long requesterId, BotDifficulty difficulty, Avatar avatar) {
         requireHost(requesterId);
         requireWaiting();
+        requireBotsSupported();
         makeSeatForBot();
         return occupants.addBot(difficulty, avatar, profile.capacity());
+    }
+
+    // 과일 쌓기 R35: 컴퓨터를 받지 않는 게임의 방에는 앉히지 않는다.
+    private void requireBotsSupported() {
+        if (!gameType().supportsBots()) {
+            throw new BusinessException(ErrorCode.BOTS_NOT_SUPPORTED);
+        }
     }
 
     /** R10: 대기 중에 방장이 앉아 있는 컴퓨터의 난이도를 바꾼다. */
