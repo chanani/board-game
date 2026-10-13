@@ -30,8 +30,14 @@ describe('fitBoard 확인 값(스펙 6.4)', () => {
 
   it('지켜보기: 살아 있는 사람 수에 따라 큰 판 칸 수가 정해진다', () => {
     const cols = (layout: TableLayout, big: number) => fitBoard({ layout, box: { w: 844, h: 660 }, mode: 'watch', big, mini: 1 }).bigCols;
-    expect([1, 2, 3, 4, 5].map((big) => cols('pc', big))).toEqual([1, 2, 3, 2, 3]);
-    expect([1, 2, 3, 4, 5].map((big) => cols('portrait', big))).toEqual([1, 2, 2, 2, 2]);
+    // 넓고 낮은 상자(844×660)에서는 2줄로 접는 것보다 한 줄이 판이 더 커서 한 줄로 놓는다.
+    expect([1, 2, 3, 4, 5].map((big) => cols('pc', big))).toEqual([1, 2, 3, 4, 5]);
+    expect(fitBoard({ layout: 'pc', box: { w: 844, h: 660 }, mode: 'watch', big: 4, mini: 1 }).bigWidth).toBe(202);
+    // 좁고 높은 상자에서는 접는 쪽이 더 크다(PC 4명 → 2칸 2줄).
+    expect(fitBoard({ layout: 'pc', box: { w: 500, h: 1200 }, mode: 'watch', big: 4, mini: 1 }).bigCols).toBe(2);
+    expect(fitBoard({ layout: 'pc', box: { w: 700, h: 900 }, mode: 'watch', big: 5, mini: 0 }).bigCols).toBe(3);
+    const phone = (big: number) => fitBoard({ layout: 'portrait', box: { w: 328, h: 500 }, mode: 'watch', big, mini: 1 }).bigCols;
+    expect([1, 2, 3, 4, 5].map(phone)).toEqual([1, 2, 3, 2, 3]);
     expect([1, 2, 3, 4, 5].map((big) => cols('landscape', big))).toEqual([1, 2, 3, 4, 5]);
     expect(fitBoard({ layout: 'pc', box: { w: 844, h: 660 }, mode: 'watch', big: 1, mini: 1 })).toEqual({ bigWidth: 317, miniWidth: 48, bigCols: 1, miniCols: 1 });
     expect(fitBoard({ layout: 'pc', box: { w: 844, h: 660 }, mode: 'watch', big: 2, mini: 0 }).bigWidth).toBe(388);

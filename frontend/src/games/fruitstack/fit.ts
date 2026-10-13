@@ -62,6 +62,7 @@ function watchLandscape({ box, big, mini }: FitInput): BoardFit {
 }
 
 // 위에서부터: 점수 띠, (작은 판 줄), 큰 판 줄들. 사이마다 GAP.
+// 칸 수는 스펙 표의 값에서 시작하되, 다른 칸 수가 판을 더 크게 하면 그쪽을 쓴다(넓은 화면에서 2줄로 접으면 판이 작아진다).
 function watch(input: FitInput): BoardFit {
   if (input.layout === 'landscape') {
     return watchLandscape(input);
@@ -69,13 +70,17 @@ function watch(input: FitInput): BoardFit {
   const { layout, box, big, mini } = input;
   const count = clamp(big, 1, 5);
   const pc = layout === 'pc';
-  const cols = pc ? WATCH_PC_COLS[count - 1] : Math.min(count, 2);
-  const rows = Math.ceil(count / cols);
   const miniHeight = pc ? 72 : 60;
   const miniRow = mini > 0 ? miniHeight + LABEL + GAP : 0;
-  const cell = (box.h - HUD - GAP - miniRow - (rows - 1) * GAP) / rows - LABEL;
-  const bigWidth = Math.min(pc ? 400 : box.w, Math.floor((box.w - (cols - 1) * GAP) / cols), widthOf(cell));
-  return { bigWidth, miniWidth: mini > 0 ? widthOf(miniHeight) : 0, bigCols: cols, miniCols: mini };
+  const widthWith = (cols: number) => {
+    const rows = Math.ceil(count / cols);
+    const cell = (box.h - HUD - GAP - miniRow - (rows - 1) * GAP) / rows - LABEL;
+    return Math.min(pc ? 400 : box.w, Math.floor((box.w - (cols - 1) * GAP) / cols), widthOf(cell));
+  };
+  const preferred = pc ? WATCH_PC_COLS[count - 1] : Math.min(count, 2);
+  const cols = Array.from({ length: count }, (_, index) => index + 1)
+    .reduce((best, candidate) => (widthWith(candidate) > widthWith(best) ? candidate : best), preferred);
+  return { bigWidth: widthWith(cols), miniWidth: mini > 0 ? widthOf(miniHeight) : 0, bigCols: cols, miniCols: mini };
 }
 
 const PLAY: Record<TableLayout, (input: FitInput) => BoardFit> = { pc: playPc, portrait: playPortrait, landscape: playLandscape };
