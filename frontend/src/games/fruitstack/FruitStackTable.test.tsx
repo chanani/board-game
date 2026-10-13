@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import type { ReactElement } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { FruitStackView, GameSignal, Room } from '../../api/types';
+import type { LogEntry } from '../../lib/eventLog';
 import { SILENT_SOUND, SoundContext } from '../../lib/sound';
 import { LANDSCAPE_PHONE_QUERY } from '../../lib/useTableLayout';
 import { setMediaMatches } from '../../test/media';
@@ -17,7 +18,7 @@ const room: Room = {
   locked: false, spectators: [], theme: 'WOOD', members: [member(1, true), member(2), member(3), member(4), member(5)],
 };
 
-type Options = { game?: Partial<FruitStackView>; /** 전환(transition.to)과 같은 객체여야 할 때 화면을 그대로 넘긴다. */ full?: FruitStackView; meId?: number; transition?: ViewTransition<FruitStackView> | null; aside?: ReactElement };
+type Options = { game?: Partial<FruitStackView>; /** 전환(transition.to)과 같은 객체여야 할 때 화면을 그대로 넘긴다. */ full?: FruitStackView; meId?: number; transition?: ViewTransition<FruitStackView> | null; aside?: ReactElement; log?: LogEntry[] };
 
 function renderTable(options: Options = {}) {
   const send = vi.fn();
@@ -28,9 +29,9 @@ function renderTable(options: Options = {}) {
     listener = next;
     return () => { listener = () => {}; };
   };
-  const tree = ({ game, full, meId = 1, transition = null, aside }: Options) => (
+  const tree = ({ game, full, meId = 1, transition = null, aside, log = [] }: Options) => (
     <SoundContext.Provider value={{ ...SILENT_SOUND, play }}>
-      <FruitStackTable view={full ? { gameType: 'FRUIT_STACK', game: full } : fruitSession(game)} room={room} meId={meId} log={[]} receivedAt={0} now={0} errorSeq={0} nicknameOf={(id) => `P${id}`}
+      <FruitStackTable view={full ? { gameType: 'FRUIT_STACK', game: full } : fruitSession(game)} room={room} meId={meId} log={log} receivedAt={0} now={0} errorSeq={0} nicknameOf={(id) => `P${id}`}
         send={send} sendSignal={sendSignal} subscribeSignal={subscribe} onCloseGameOver={vi.fn()} onReadyNext={vi.fn()} transition={transition} aside={aside} />
     </SoundContext.Provider>
   );
@@ -73,6 +74,25 @@ describe('FruitStackTable', () => {
 
     expect(scrollTo).toHaveBeenCalledWith(0, 0);
     vi.unstubAllGlobals();
+  });
+
+  it('진행 기록은 어느 배치에서도 보이지 않는다(방이 남긴 기록이 있어도)', () => {
+    const log: LogEntry[] = [{ id: 1, kind: 'leave', actorId: 3, text: 'P3님이 나갔어요', at: 0 }];
+    const { rerender } = renderTable({ log });
+    const absent = () => {
+      expect(screen.queryByTestId('last-log')).toBeNull();
+      expect(screen.queryByRole('button', { name: '진행 기록 보기' })).toBeNull();
+      expect(table()).not.toHaveTextContent('나갔어요');
+    };
+    absent();
+    setMediaMatches(false);
+    rerender({ log });
+    expect(table()).toHaveAttribute('data-layout', 'portrait');
+    absent();
+    setMediaMatches((query) => query === LANDSCAPE_PHONE_QUERY);
+    rerender({ log });
+    expect(table()).toHaveAttribute('data-layout', 'landscape');
+    absent();
   });
 
   it('PC: 내 판이 크게, 상대는 작은 판으로 보인다', () => {

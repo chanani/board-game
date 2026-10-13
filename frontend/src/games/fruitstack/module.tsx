@@ -1,6 +1,5 @@
 import type { FruitStackSessionView } from '../../api/types';
 import type { GameModule, RuleSlideBase } from '../gameModule';
-import { describeFruitStack } from './describe';
 import { FruitIcon } from './FruitIcon';
 import { FruitStackBoxArt } from './FruitStackBoxArt';
 import { FruitStackTable } from './FruitStackTable';
@@ -20,7 +19,8 @@ export const fruitStackModule: GameModule<FruitStackSessionView> = {
   // R35·R36: 물리가 브라우저에서 돌아 컴퓨터가 대신 둘 수 없다.
   supportsBots: false,
   Table: FruitStackTable,
-  describeChanges: describeFruitStack,
+  // 이 게임은 진행 기록을 보이지 않는다(판이 화면을 다 쓴다). 탈락·결과는 판과 결과 창이 알린다.
+  describeChanges: () => [],
   isGameOver: (view) => view.game.status === 'GAME_OVER',
   wasParticipant: (view, meId) => view.game.participantIds.includes(meId),
   // R29: 탈락한 사람은 나가도 기권이 아니고 탈락 때의 점수로 겨룬다.

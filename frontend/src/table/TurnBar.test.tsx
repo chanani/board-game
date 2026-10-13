@@ -46,6 +46,13 @@ describe('차례 안내 바', () => {
     render(<TurnBar instruction="안내" myTurn={false} log={[]} deadline={null} serverNow={0} />);
     expect(screen.getByTestId('last-log')).toBeEmptyDOMElement();
   });
+
+  it('진행 기록을 넘기지 않으면(쓰지 않는 게임) 최근 진행 칸도 진행 기록 버튼도 없다', () => {
+    render(<TurnBar instruction="안내" myTurn={false} deadline={null} serverNow={0} />);
+    expect(screen.getByTestId('instruction')).toHaveTextContent('안내');
+    expect(screen.queryByTestId('last-log')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '진행 기록 보기' })).not.toBeInTheDocument();
+  });
 });
 
 describe('진행 기록 창', () => {

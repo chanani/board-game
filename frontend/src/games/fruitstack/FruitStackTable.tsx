@@ -101,7 +101,7 @@ function useAutoDropWarning(getAutoDropLeftMs: () => number | null, enabled: boo
 
 const columns = (count: number) => ({ gridTemplateColumns: `repeat(${Math.max(1, count)}, max-content)` });
 
-export function FruitStackTable({ view, room, meId, log, receivedAt, now, errorSeq, nicknameOf, send, sendSignal, subscribeSignal, aside, asideFooter, transition, onCloseGameOver, onReadyNext }: TableProps<FruitStackSessionView>) {
+export function FruitStackTable({ view, room, meId, receivedAt, now, errorSeq, nicknameOf, send, sendSignal, subscribeSignal, aside, asideFooter, transition, onCloseGameOver, onReadyNext }: TableProps<FruitStackSessionView>) {
   const game = view.game;
   const layout = useTableLayout();
   const wide = layout === 'pc';
@@ -288,7 +288,7 @@ export function FruitStackTable({ view, room, meId, log, receivedAt, now, errorS
     </div>
   );
   const turnBar = (
-    <TurnBar instruction={instructionOf(game, meId, nicknameOf, wide, fruit.getLocal()?.score ?? null)} myTurn={false} log={log} nicknameOf={nicknameOf}
+    <TurnBar instruction={instructionOf(game, meId, nicknameOf, wide, fruit.getLocal()?.score ?? null)} myTurn={false}
       deadline={game.deadline} serverNow={game.serverNow} compact={!wide} stacked={layout === 'landscape'} locked={finale !== 'playing'} />
   );
 

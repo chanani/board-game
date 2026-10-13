@@ -8,7 +8,8 @@ import { LogModal } from './LogModal';
 type Props = {
   instruction: string;
   myTurn: boolean;
-  log: LogEntry[];
+  /** 없으면(진행 기록을 쓰지 않는 게임) 최근 진행 칸도 진행 기록 창도 그리지 않는다. */
+  log?: LogEntry[];
   nicknameOf?: (memberId: number) => string;
   deadline: number | null | undefined;
   serverNow: number | undefined;
@@ -31,7 +32,7 @@ export function TurnBar({ instruction, myTurn, log, nicknameOf, deadline, server
   const size = compact ? 'mb-4 h-8 gap-1.5 px-2 text-xs' : 'mb-8 h-10 gap-2 px-4 text-sm';
   const shape = stacked ? 'flex-col items-start gap-1 px-2.5 py-2 text-xs' : `flex-nowrap items-center justify-center-safe whitespace-nowrap ${size}`;
   const tone = myTurn ? 'turn-glow border-transparent bg-(--accent) text-(--accent-text)' : 'border-(--status-border) bg-(--status-bg) text-cream-50';
-  const latest = log[0];
+  const latest = log?.[0];
   const [open, setOpen] = useState(false);
   if (locked && open) {
     setOpen(false);
@@ -57,13 +58,13 @@ export function TurnBar({ instruction, myTurn, log, nicknameOf, deadline, server
           <span className={stacked ? 'break-keep' : 'truncate'}>{instruction}</span>
         </p>
         <Countdown deadline={deadline} serverNow={serverNow} onWarn={onWarn} />
-        <p data-testid="last-log" className={`min-w-0 shrink-[1000] truncate opacity-85 ${stacked ? 'max-w-full whitespace-nowrap' : ''}`}>
+        {log ? <p data-testid="last-log" className={`min-w-0 shrink-[1000] truncate opacity-85 ${stacked ? 'max-w-full whitespace-nowrap' : ''}`}>
           {line ? (
             <button type="button" aria-label="진행 기록 보기" onClick={() => setOpen(true)} className="inline-flex max-w-full cursor-pointer items-center rounded underline decoration-dotted underline-offset-2 opacity-90 hover:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-current"><span className="min-w-0 truncate">{line}</span><ChevronRightIcon className="ml-0.5 h-3 w-3 shrink-0" /></button>
           ) : null}
-        </p>
+        </p> : null}
       </div>
-      <LogModal open={open} onClose={() => setOpen(false)} log={log} nicknameOf={nicknameOf} />
+      {log ? <LogModal open={open} onClose={() => setOpen(false)} log={log} nicknameOf={nicknameOf} /> : null}
     </>
   );
 }

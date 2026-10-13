@@ -79,6 +79,8 @@ describe('게임 등록부', () => {
     expect(game.wasParticipant(view, 9)).toBe(false);
     expect(game.gameOverKey('ABCDEF', view)).toBe('ABCDEF:FRUIT_STACK:77');
     expect(game.stepKey(view)).toBe('GAME_OVER:77');
+    // 과일 쌓기는 진행 기록을 쓰지 않는다.
+    expect(game.describeChanges(null, view, () => '이름')).toEqual([]);
     expect(gameOf('UNO').supportsBots).toBeUndefined();
   });
 });
