@@ -227,7 +227,7 @@ export function FruitStackTable({ view, room, meId, log, receivedAt, now, errorS
   // 관전자는 점수·다음 대신 "관전 중", 탈락한 사람은 점수만.
   const hud = (
     <Hud score={contender ? fruit.hud.score : null} next={contender && !fruit.hud.out && fruit.hud.next > 0 ? fruit.hud.next : null}
-      deadline={game.deadline} serverNow={game.serverNow} vertical={layout === 'landscape' && mode === 'play'} compact={layout === 'landscape' && mode === 'watch'} />
+      deadline={game.deadline} serverNow={game.serverNow} vertical={layout === 'landscape' && mode === 'play'} compact={layout === 'landscape' && mode === 'watch'} locked={finale !== 'playing'} />
   );
 
   const playBody: Record<TableLayout, () => ReactNode> = {

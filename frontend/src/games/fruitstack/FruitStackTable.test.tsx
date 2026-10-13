@@ -91,6 +91,27 @@ describe('FruitStackTable', () => {
     expect(screen.getByText('끌어서 자리를 정하고 놓으면 떨어져요.')).toBeInTheDocument();
   });
 
+  it('과일 순서표: 점수 띠의 버튼으로 열고, 판을 누르면 닫히며 판 크기는 그대로다', () => {
+    renderTable();
+    const size = { width: '400px', height: '600px' };
+
+    fireEvent.click(within(screen.getByTestId('fruit-hud')).getByRole('button', { name: '과일 순서 보기' }));
+    expect(screen.getByRole('dialog', { name: '과일 순서' })).toHaveTextContent('수박');
+    expect(screen.getByTestId('my-board')).toHaveStyle(size);
+    expect(screen.getByTestId('match-clock')).toBeInTheDocument();
+
+    fireEvent.pointerDown(screen.getByTestId('my-board'), { clientX: 100, pointerId: 1 });
+    expect(screen.queryByRole('dialog', { name: '과일 순서' })).toBeNull();
+    expect(screen.getByTestId('my-board')).toHaveStyle(size);
+  });
+
+  it('과일 순서 버튼은 관전자에게도 있다', () => {
+    renderTable({ meId: 9 });
+
+    expect(screen.getByTestId('fruit-hud')).toHaveTextContent('관전 중');
+    expect(within(screen.getByTestId('fruit-hud')).getByRole('button', { name: '과일 순서 보기' })).toBeInTheDocument();
+  });
+
   it('세로 배치', () => {
     setMediaMatches(false);
     renderTable();

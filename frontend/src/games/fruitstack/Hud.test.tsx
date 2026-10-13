@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { Hud } from './Hud';
 
@@ -48,6 +48,17 @@ describe('Hud', () => {
     expect(hud).not.toHaveTextContent('점수');
     expect(hud).not.toHaveTextContent('다음');
     expect(hud).toHaveTextContent('남은 시간');
+  });
+
+  it('과일 순서 버튼은 겨루는 사람에게도 관전자에게도 있다', () => {
+    const { rerender } = render(<Hud score={128} next={5} deadline={NOW + 61_000} serverNow={NOW} />);
+    expect(within(screen.getByTestId('fruit-hud')).getByRole('button', { name: '과일 순서 보기' })).toBeInTheDocument();
+
+    rerender(<Hud score={128} next={null} deadline={NOW + 61_000} serverNow={NOW} />);
+    expect(within(screen.getByTestId('fruit-hud')).getByRole('button', { name: '과일 순서 보기' })).toBeInTheDocument();
+
+    rerender(<Hud score={null} next={null} deadline={NOW + 61_000} serverNow={NOW} />);
+    expect(within(screen.getByTestId('fruit-hud')).getByRole('button', { name: '과일 순서 보기' })).toBeInTheDocument();
   });
 
   it('세로 띠와 낮은 한 줄', () => {

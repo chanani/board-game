@@ -368,6 +368,11 @@ body {
   45% { transform: translateY(-8px); }
   100% { transform: translateY(0); }
 }
+/* 작은 창(과일 순서표)이 뜰 때 살짝 커지며 나타난다. */
+@keyframes pop-in { from { opacity: 0; transform: translateY(-6px) scale(0.94); } }
+@media (prefers-reduced-motion: no-preference) {
+  .pop-in { animation: pop-in 0.15s ease-out; }
+}
 @keyframes float-hint { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
 .float-hint { animation: float-hint 1.6s ease-in-out infinite; }
 @keyframes gold-sparkle { 0% { box-shadow: 0 0 0 0 rgb(251 191 36 / .9); } 100% { box-shadow: 0 0 0 12px rgb(251 191 36 / 0); } }

@@ -2,15 +2,16 @@ import { useRemaining } from '../../components/Countdown';
 import { RollingNumber } from '../../components/RollingNumber';
 import { fruitName } from './engine/constants';
 import { FruitIcon } from './FruitIcon';
+import { FruitOrderChart } from './FruitOrderChart';
 import { formatClock, formatScore } from './texts';
 
-type Props = { score: number | null; next: number | null; deadline: number | null; serverNow: number; compact?: boolean; vertical?: boolean };
+type Props = { score: number | null; next: number | null; deadline: number | null; serverNow: number; compact?: boolean; vertical?: boolean; locked?: boolean };
 
 const URGENT_MS = 10_000;
-const LABEL = 'text-[10px] font-bold opacity-75';
+const LABEL = 'text-[10px] font-bold whitespace-nowrap opacity-75';
 
-/** 점수 띠: 내 점수, 다음 과일, 경기의 남은 시간. 관전자에게는 점수·다음 대신 "관전 중". */
-export function Hud({ score, next, deadline, serverNow, compact = false, vertical = false }: Props) {
+/** 점수 띠: 내 점수, 다음 과일, 경기의 남은 시간, 과일 순서표를 여는 버튼. 관전자에게는 점수·다음 대신 "관전 중". */
+export function Hud({ score, next, deadline, serverNow, compact = false, vertical = false, locked = false }: Props) {
   const remaining = useRemaining(deadline, serverNow);
   const urgent = remaining !== null && remaining <= URGENT_MS;
   const cell = vertical ? 'flex flex-col items-center gap-0.5' : 'flex items-center gap-1.5';
@@ -37,6 +38,7 @@ export function Hud({ score, next, deadline, serverNow, compact = false, vertica
         <span className={LABEL}>남은 시간</span>
         <span data-testid="match-clock" data-urgent={urgent ? 'true' : undefined} className={`tabular-nums ${urgent ? 'text-red-400' : ''}`}>{formatClock(remaining)}</span>
       </span>
+      <FruitOrderChart shape={vertical ? 'rail' : compact ? 'compact' : 'pill'} locked={locked} />
     </div>
   );
 }
