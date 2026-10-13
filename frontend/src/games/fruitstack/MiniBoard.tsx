@@ -40,13 +40,21 @@ export function MiniBoard({ width, player, nickname, avatar, getFrame, hasFrame,
         ) : null}
       </div>
       <EmoteBubble memberId={playerId} className="absolute -right-2 -top-4" />
-      <div className="flex h-[22px] items-center gap-1 text-[11px] font-bold leading-none">
-        {small ? null : <MemberAvatar memberId={playerId} avatar={avatar} size={16} />}
-        {connected === false
-          ? <span className="min-w-0 flex-1 truncate opacity-75">연결 끊김 {offlineSeconds ?? 0}초</span>
-          : <span className="min-w-0 flex-1 truncate">{nickname}</span>}
-        <span className="shrink-0 tabular-nums">{points}</span>
-      </div>
+      {small ? (
+        // 좁은 판은 이름과 점수를 한 줄에 둘 수 없어 두 줄로 쓴다(높이는 같은 22px).
+        <div className="flex h-[22px] flex-col justify-center text-center text-[10px] font-bold leading-[11px]">
+          <span className={`truncate ${connected === false ? 'opacity-75' : ''}`}>{connected === false ? `끊김 ${offlineSeconds ?? 0}초` : nickname}</span>
+          <span className="truncate tabular-nums">{points}</span>
+        </div>
+      ) : (
+        <div className="flex h-[22px] items-center gap-1 text-[11px] font-bold leading-none">
+          <MemberAvatar memberId={playerId} avatar={avatar} size={16} />
+          {connected === false
+            ? <span className="min-w-0 flex-1 truncate opacity-75">연결 끊김 {offlineSeconds ?? 0}초</span>
+            : <span className="min-w-0 flex-1 truncate">{nickname}</span>}
+          <span className="shrink-0 tabular-nums">{points}</span>
+        </div>
+      )}
     </div>
   );
 }

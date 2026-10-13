@@ -62,4 +62,17 @@ describe('MiniBoard', () => {
 
     expect(screen.getByTestId('board-box')).toHaveStyle({ width: '180px', height: '270px' });
   });
+  it('좁은 판(폭 72 미만)은 이름과 점수를 두 줄로 모두 보여 준다', () => {
+    mini({ width: 48 });
+
+    expect(screen.getByText('P2')).toBeInTheDocument();
+    expect(screen.getByText('1,250점')).toBeInTheDocument();
+  });
+
+  it('좁은 판에서 연결이 끊긴 사람은 이름 자리에 끊긴 시간을 쓴다', () => {
+    mini({ width: 48, connected: false, offlineSeconds: 12 });
+
+    expect(screen.getByText('끊김 12초')).toBeInTheDocument();
+    expect(screen.getByText('1,250점')).toBeInTheDocument();
+  });
 });
