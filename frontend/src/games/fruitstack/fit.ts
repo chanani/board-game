@@ -9,6 +9,9 @@ const LABEL = 22;
 const HUD = 44;
 const COMPACT_HUD = 28;
 const RAIL = 64;
+/** 지켜보기 모드 가로 휴대폰: 줄인 점수 띠와 판 사이 간격, 작은 판 폭. */
+const WATCH_LANDSCAPE_GAP = 4;
+const WATCH_MINI_LANDSCAPE = 40;
 const widthOf = (height: number) => Math.max(0, Math.floor((height * 2) / 3));
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
@@ -47,20 +50,30 @@ function playLandscape({ box, mini }: FitInput): BoardFit {
 
 const WATCH_PC_COLS = [1, 2, 3, 2, 3];
 
-function watch({ layout, box, big, mini }: FitInput): BoardFit {
+/** 지켜보기 모드의 가로 휴대폰: 작은 판 세로 줄이 높이를 넘으면 줄을 나눈다. */
+function watchLandscape({ box, big, mini }: FitInput): BoardFit {
   const count = clamp(big, 1, 5);
-  if (layout === 'landscape') {
-    const side = mini > 0 ? 40 + GAP : 0;
-    const cell = box.h - LABEL - COMPACT_HUD;
-    const bigWidth = Math.min(Math.floor((box.w - side - (count - 1) * GAP) / count), widthOf(cell));
-    return { bigWidth, miniWidth: mini > 0 ? 40 : 0, bigCols: count, miniCols: mini > 0 ? 1 : 0 };
+  const room = box.h - COMPACT_HUD - WATCH_LANDSCAPE_GAP;
+  const perColumn = Math.max(1, Math.floor((room + MINI_GAP) / (WATCH_MINI_LANDSCAPE * 1.5 + LABEL + MINI_GAP)));
+  const miniCols = Math.ceil(mini / perColumn);
+  const side = miniCols > 0 ? miniCols * WATCH_MINI_LANDSCAPE + (miniCols - 1) * MINI_GAP + GAP : 0;
+  const bigWidth = Math.min(Math.floor((box.w - side - (count - 1) * GAP) / count), widthOf(room - LABEL));
+  return { bigWidth, miniWidth: mini > 0 ? WATCH_MINI_LANDSCAPE : 0, bigCols: count, miniCols };
+}
+
+// 위에서부터: 점수 띠, (작은 판 줄), 큰 판 줄들. 사이마다 GAP.
+function watch(input: FitInput): BoardFit {
+  if (input.layout === 'landscape') {
+    return watchLandscape(input);
   }
+  const { layout, box, big, mini } = input;
+  const count = clamp(big, 1, 5);
   const pc = layout === 'pc';
   const cols = pc ? WATCH_PC_COLS[count - 1] : Math.min(count, 2);
   const rows = Math.ceil(count / cols);
   const miniHeight = pc ? 72 : 60;
   const miniRow = mini > 0 ? miniHeight + LABEL + GAP : 0;
-  const cell = (box.h - HUD - miniRow - (rows - 1) * GAP) / rows - LABEL;
+  const cell = (box.h - HUD - GAP - miniRow - (rows - 1) * GAP) / rows - LABEL;
   const bigWidth = Math.min(pc ? 400 : box.w, Math.floor((box.w - (cols - 1) * GAP) / cols), widthOf(cell));
   return { bigWidth, miniWidth: mini > 0 ? widthOf(miniHeight) : 0, bigCols: cols, miniCols: mini };
 }

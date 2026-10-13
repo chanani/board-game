@@ -34,6 +34,7 @@ const TICK_FROM_MS = 3000;
 const MERGE_SOUND_GAP_MS = 80;
 /** 바닥 판의 안쪽 여백(px). */
 const SURFACE_PAD: Record<TableLayout, number> = { pc: 12, portrait: 8, landscape: 6 };
+const SURFACE_BORDER = 1;
 
 type BoardStatus = { hasFrame: boolean; danger: boolean };
 
@@ -179,7 +180,8 @@ export function FruitStackTable({ view, room, meId, log, receivedAt, now, errorS
   };
 
   const pad = SURFACE_PAD[layout];
-  const { ref: bodyRef, box } = useBoardBox(layout, pad);
+  // 몸통 아래에는 바닥 판의 안쪽 여백과 테두리(1px)가 더 있다.
+  const { ref: bodyRef, box } = useBoardBox(layout, pad + SURFACE_BORDER);
   const fit = fitBoard({ layout, box, mode, big: bigIds.length, mini: miniIds.length });
 
   const finale = useFinalePhase(game, transition, game.result?.reason === 'FORFEIT');
@@ -257,7 +259,7 @@ export function FruitStackTable({ view, room, meId, log, receivedAt, now, errorS
           {hud}
           <div className="flex items-start justify-center gap-3">
             {bigGrid}
-            {minis.length > 0 ? <div className="flex flex-col gap-2">{minis}</div> : null}
+            {minis.length > 0 ? <div className="grid grid-flow-col gap-2" style={{ gridTemplateRows: `repeat(${Math.ceil(minis.length / Math.max(1, fit.miniCols))}, max-content)` }}>{minis}</div> : null}
           </div>
         </div>
       );

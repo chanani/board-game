@@ -33,8 +33,8 @@ describe('fitBoard 확인 값(스펙 6.4)', () => {
     expect([1, 2, 3, 4, 5].map((big) => cols('pc', big))).toEqual([1, 2, 3, 2, 3]);
     expect([1, 2, 3, 4, 5].map((big) => cols('portrait', big))).toEqual([1, 2, 2, 2, 2]);
     expect([1, 2, 3, 4, 5].map((big) => cols('landscape', big))).toEqual([1, 2, 3, 4, 5]);
-    expect(fitBoard({ layout: 'pc', box: { w: 844, h: 660 }, mode: 'watch', big: 1, mini: 1 })).toEqual({ bigWidth: 325, miniWidth: 48, bigCols: 1, miniCols: 1 });
-    expect(fitBoard({ layout: 'pc', box: { w: 844, h: 660 }, mode: 'watch', big: 2, mini: 0 }).bigWidth).toBe(396);
+    expect(fitBoard({ layout: 'pc', box: { w: 844, h: 660 }, mode: 'watch', big: 1, mini: 1 })).toEqual({ bigWidth: 317, miniWidth: 48, bigCols: 1, miniCols: 1 });
+    expect(fitBoard({ layout: 'pc', box: { w: 844, h: 660 }, mode: 'watch', big: 2, mini: 0 }).bigWidth).toBe(388);
   });
 
   it('어느 배치·모드·인원에서도 전체가 상자 안에 들어간다', () => {
@@ -56,6 +56,28 @@ describe('fitBoard 확인 값(스펙 6.4)', () => {
         expect(fit.bigWidth).toBeGreaterThan(40);
         expect(fit.bigCols * fit.bigWidth + (fit.bigCols - 1) * 12).toBeLessThanOrEqual(boxes[layout].w);
       });
+    });
+  });
+
+  it('지켜보기: 점수 띠·작은 판 줄·큰 판 줄과 그 사이 간격까지 더한 높이가 상자 안이다', () => {
+    const boxes: Record<TableLayout, { w: number; h: number }> = { pc: { w: 844, h: 660 }, portrait: { w: 328, h: 500 }, landscape: { w: 632, h: 326 } };
+    const cases = [1, 2, 3, 4, 5].flatMap((big) => [0, 1, 2, 3, 4].filter((mini) => big + mini <= 5).map((mini) => ({ big, mini })));
+    (['pc', 'portrait'] as TableLayout[]).forEach((layout) => {
+      cases.forEach(({ big, mini }) => {
+        const fit = fitBoard({ layout, box: boxes[layout], mode: 'watch', big, mini });
+        const rows = Math.ceil(big / fit.bigCols);
+        const miniRow = mini > 0 ? fit.miniWidth * 1.5 + 22 + 12 : 0;
+        expect(44 + 12 + miniRow + rows * (fit.bigWidth * 1.5 + 22) + (rows - 1) * 12).toBeLessThanOrEqual(boxes[layout].h);
+      });
+    });
+    cases.forEach(({ big, mini }) => {
+      const { w, h } = boxes.landscape;
+      const fit = fitBoard({ layout: 'landscape', box: boxes.landscape, mode: 'watch', big, mini });
+      const perColumn = fit.miniCols === 0 ? 0 : Math.ceil(mini / fit.miniCols);
+      expect(28 + 4 + fit.bigWidth * 1.5 + 22).toBeLessThanOrEqual(h);
+      expect(28 + 4 + perColumn * (60 + 22) + Math.max(0, perColumn - 1) * 8).toBeLessThanOrEqual(h);
+      const side = fit.miniCols === 0 ? 0 : fit.miniCols * 40 + (fit.miniCols - 1) * 8 + 12;
+      expect(big * fit.bigWidth + (big - 1) * 12 + side).toBeLessThanOrEqual(w);
     });
   });
 });
