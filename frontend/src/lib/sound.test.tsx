@@ -247,4 +247,26 @@ describe('카드 움직임 소리', () => {
     await playAll(['gameOverWin', 'gameOverEnd']);
     expect(noises + hz.length).toBe(0);
   });
+
+  it('시작 카운트다운: 숫자 소리와 시작 소리는 서로 다른 음이고, 시작 소리가 더 높다', async () => {
+    await playAll(['countdown']);
+    const number = [...hz];
+    await playAll(['gameStart']);
+    const start = [...hz];
+
+    expect(number).toEqual([523]);
+    expect(start).toEqual([1047, 1568]);
+    expect(Math.min(...start)).toBeGreaterThan(Math.max(...number));
+  });
+
+  it('효과음을 끄거나 음량이 0이면 카운트다운 소리도 나지 않는다', async () => {
+    writeMuted(true);
+    await playAll(['countdown', 'gameStart']);
+    expect(noises + hz.length).toBe(0);
+
+    writeMuted(false);
+    writeVolume(0);
+    await playAll(['countdown', 'gameStart']);
+    expect(noises + hz.length).toBe(0);
+  });
 });
