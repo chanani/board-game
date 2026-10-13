@@ -3,7 +3,7 @@
 - 작성일: 2026-10-13
 - 기반: feat/fruit-stack d12bcbf
 - 참고: `docs/superpowers/research/game-integration.md`(게임이 플랫폼에 붙는 구조. 코드보다 오래되어 다른 곳은 코드를 따랐다), `docs/superpowers/specs/2026-10-07-old-maid-design.md`(구조·번호 체계의 본보기, 가벼운 신호 경로의 원본)
-- 사용자 승인 설계(바꿀 수 없음): 게임 종류 `FRUIT_STACK`, 이름 "과일 쌓기"(화면 어디에도 "수박게임"이라고 쓰지 않는다), 방에서 2~5명이 각자 자기 판으로 점수를 겨룸, 컴퓨터 없음(빈자리 메뉴는 "친구 초대"만, 서버도 거절), 과일 11단계(체리~수박), 같은 과일 두 개가 닿으면 다음 단계로 합쳐지며 점수, 떨어뜨릴 과일은 작은 5단계에서, 과일이 위쪽 선을 2초 넘게 넘으면 탈락, 모두 탈락하면 최고 점수가 승리(최고 점수 동점자는 무승부, 나머지 패배), 10초 안에 안 떨어뜨리면 자동으로 떨어짐, 한 경기 최대 10분(상한이면 지금 점수로 끝), 내 판은 크게 가운데(끌어서 자리, 놓으면 떨어짐, 다음 과일 미리보기), 상대는 작은 실시간 판과 점수(초당 약 4번 갱신 + 사이 보간), 탈락하면 남은 사람의 판을 크게 봄, 시작 카운트다운·"게임 끝!"·감정 표현·결과 창은 있는 것을 씀, 물리는 브라우저마다 `matter-js`, 서버는 씨앗 하나만 보내고 모두 같은 과일 순서를 만듦, 점수는 합칠 때마다 브라우저가 보고하고 서버는 줄어들거나 말이 안 되게 뛴 점수만 거절, 상대 판은 도둑잡기 고르는 카드 신호 같은 가벼운 신호(서버는 중계만, 저장 안 함), 잠깐 끊겨도 내 판은 멈추지 않음, 판 상태를 1초마다 브라우저에 저장해 새로고침해도 이어 함, 60초 넘게 끊기면 지금처럼 기권, 전적은 승·무·패와 평균 점수.
+- 사용자 승인 설계(바꿀 수 없음): 게임 종류 `FRUIT_STACK`, 이름 "과일 쌓기"(화면 어디에도 "수박게임"이라고 쓰지 않는다), 방에서 2~5명이 각자 자기 판으로 점수를 겨룸, 컴퓨터 없음(빈자리 메뉴는 "친구 초대"만, 서버도 거절), 과일 11단계(체리~수박), 같은 과일 두 개가 닿으면 다음 단계로 합쳐지며 점수, 떨어뜨릴 과일은 작은 5단계에서, 과일이 위쪽 선을 2초 넘게 넘으면 탈락, 모두 탈락하면 최고 점수가 승리(최고 점수 동점자는 무승부, 나머지 패배), 살아 있는 사람이 한 명만 남고 그 사람 점수가 다른 모두보다 높으면 그 순간 끝(2026-10-13 사용자 결정, R26), 10초 안에 안 떨어뜨리면 자동으로 떨어짐, 한 경기 최대 10분(상한이면 지금 점수로 끝), 내 판은 크게 가운데(끌어서 자리, 놓으면 떨어짐, 다음 과일 미리보기), 상대는 작은 실시간 판과 점수(초당 약 4번 갱신 + 사이 보간), 탈락하면 남은 사람의 판을 크게 봄, 시작 카운트다운·"게임 끝!"·감정 표현·결과 창은 있는 것을 씀, 물리는 브라우저마다 `matter-js`, 서버는 씨앗 하나만 보내고 모두 같은 과일 순서를 만듦, 점수는 합칠 때마다 브라우저가 보고하고 서버는 줄어들거나 말이 안 되게 뛴 점수만 거절, 상대 판은 도둑잡기 고르는 카드 신호 같은 가벼운 신호(서버는 중계만, 저장 안 함), 잠깐 끊겨도 내 판은 멈추지 않음, 판 상태를 1초마다 브라우저에 저장해 새로고침해도 이어 함, 60초 넘게 끊기면 지금처럼 기권, 전적은 승·무·패와 평균 점수.
 - 받아들인 한계(승인됨): 점수는 브라우저가 보고하므로 조작할 수 있다. 물리 결과는 기기마다 조금 다르다. 과일이 많을 때의 휴대폰 성능은 만들면서 확인한다.
 - 승인 설계가 열어 둔 세부는 이 문서에서 정했고, 결정과 이유는 11장(`D#`)에 모았다.
 
@@ -90,7 +90,7 @@ export function levelAt(seed: number, n: number): number {
 ### 2.6 점수·탈락 보고(행동, `/app/rooms/{code}/actions`)
 
 - **R18 점수 보고(`SCORE`)**: 합쳐져 내 점수가 서버가 아는 내 점수(가장 최근 화면의 내 `score`)보다 커지면 브라우저가 `SCORE { score: 지금 총점 }`을 보낸다. 마지막으로 보낸 지 500 ms(`SCORE_REPORT_GAP_MS`)가 안 되었으면 500 ms가 될 때 그때의 총점을 한 번 보낸다(앞 가장자리 + 뒤 가장자리, 사이의 합치기는 총점 하나로 묶인다). 경기 경과 시간이 597000 ms 이상이면 묶지 않고 합칠 때마다 바로 보낸다. 보고는 늘 누적 총점이라 하나를 건너뛰어도 다음 보고가 덮는다. (D5)
-- **R19 서버 검증**: 서버는 `SCORE`·`OUT`의 `score`를 차례로 본다. 없거나 음수면 `INVALID_INPUT`. 보낸 사람이 이미 탈락했으면 `FRUIT_STACK_SCORE_REJECTED`. 서버가 아는 그 사람 점수보다 작으면(줄어듦) `FRUIT_STACK_SCORE_REJECTED`. 점수 상한 `22 × (경과 ms ÷ 500의 몫 + 5)`(경과 = 서버가 받은 시각 - 경기 시작 시각)를 넘으면 `FRUIT_STACK_SCORE_REJECTED`. 통과하면 그 사람 점수를 그 값으로 바꾼다(같은 값이면 그대로 두고 받아들인다). 거절된 보고는 점수를 바꾸지 않는다. (D6)
+- **R19 서버 검증**: 서버는 `SCORE`·`OUT`의 `score`를 차례로 본다. 없거나 음수면 `INVALID_INPUT`. 보낸 사람이 이미 탈락했으면 `FRUIT_STACK_SCORE_REJECTED`. 서버가 아는 그 사람 점수보다 작으면(줄어듦) `FRUIT_STACK_SCORE_REJECTED`. 점수 상한 `22 × (경과 ms ÷ 500의 몫 + 5)`(경과 = 서버가 받은 시각 - 경기 시작 시각)를 넘으면 `FRUIT_STACK_SCORE_REJECTED`. 통과하면 그 사람 점수를 그 값으로 바꾼다(같은 값이면 그대로 두고 받아들인다). 거절된 보고는 점수를 바꾸지 않는다. 받아들인 `SCORE` 뒤에도 끝 조건(R26)을 본다. (D6)
 - **R20 탈락 보고(`OUT`)**: 내 판이 탈락하면(R13) 브라우저가 `OUT { score: 마지막 총점 }`을 묶지 않고 바로 보낸다. 서버는 R19로 점수를 받아들인 뒤 그 사람을 탈락(`OUT`)으로 바꾸고 끝 조건(R26)을 본다.
 - **R21 맞추기와 끊김**: 브라우저는 화면을 받을 때마다 내 판과 서버를 맞춘다. (1) 내 점수 = max(내 점수, 화면의 내 점수). (2) 화면에서 내가 `OUT`인데 내 판이 살아 있으면 내 판을 탈락으로 멈춘다. (3) 내 판은 탈락인데 화면에서 내가 `PLAYING`이면 `OUT`을 보낸다(화면이 `OUT`이 될 때까지 1000 ms에 한 번까지). (4) 내 점수가 화면의 내 점수보다 크면 R18로 `SCORE`를 보낸다. 연결이 끊긴 동안에는 아무것도 보내지 않고(보내기 실패 알림을 띄우지 않는다) 판만 계속 돌리며, 다시 붙어 방 채널의 동기화 화면이 오면 (1)~(4)가 가장 최근 점수·탈락을 다시 보낸다. 보낸 보고가 거절되거나 답이 없어 `errorSeq`가 오르면 다음 `SCORE`·`OUT`을 5000 ms 미룬다.
 
@@ -107,11 +107,11 @@ export function levelAt(seed: number, n: number): number {
 
 ### 2.8 끝과 결과
 
-- **R26 끝나는 조건**: (가) 살아 있는(`PLAYING`) 참가자가 없어지면 끝(이유 `ALL_OUT`). (나) 기권하지 않은 참가자가 1명만 남았고 그 사람이 살아 있으면 곧바로 끝(이유 `FORFEIT`, 혼자 계속 쌓지 않는다). (다) 경기 상한(R17)이면 끝(이유 `TIME_UP`). (가)와 (나)는 `OUT`·기권 처리 뒤마다 본다. 살아 있는 사람이 1명이고 다른 사람이 탈락(기권 아님)해 남아 있으면 끝나지 않는다: 그 사람이 탈락하거나 상한이 될 때까지 이어진다.
+- **R26 끝나는 조건**: 받아들인 `SCORE`·`OUT`과 기권 처리 뒤마다 (가) → (나) 순서로 본다. (가) 살아 있는(`PLAYING`) 참가자가 없으면 끝(이유 `ALL_OUT`). (나) 살아 있는 참가자가 정확히 1명이고, 그 사람의 점수가 다른 겨루는 사람(기권하지 않은 다른 참가자, R27) 모두의 점수보다 엄격히 높으면 그 순간 끝이고 그 사람이 이긴다. 다른 겨루는 사람이 한 명도 없으면(모두 기권) 이유 `FORFEIT`, 있으면 이유 `DECIDED`(승부가 정해짐). 동점이거나 낮으면 끝나지 않고 이어진다: 이후 점수 보고로 엄격히 높아지는 순간 `DECIDED`로 끝나고, 그 전에 그 사람이 탈락하면 (가), 상한이면 (다)로 끝난다. (다) 경기 상한(R17)이면 끝(이유 `TIME_UP`). 기권한 사람의 점수는 승패에 쓰지 않으므로(R27) (나)의 비교에도 넣지 않는다. (D13, D23)
 - **R27 승패**: 기권하지 않은 참가자(겨루는 사람) 가운데 최고 점수가 한 명이면 그 사람이 `WIN`, 나머지는 `LOSE`. 최고 점수가 여럿이면 그 사람들끼리 `DRAW`, 나머지는 `LOSE`(페이퍼 사파리 동점과 같은 규칙). 기권한 사람은 점수와 상관없이 `LOSE`. 겨루는 사람이 1명이면 점수와 상관없이 `WIN`. 등수(`rank`)는 겨루는 사람끼리 점수 내림차순으로 매기고 동점은 같은 등수(1, 1, 3), 기권한 사람은 모두 `겨루는 사람 수 + 1`등.
 - **R28 기권**: 살아 있는 참가자가 게임 중에 방을 나가거나(로그아웃 포함) 연결이 60초 넘게 끊겨 자동 기권되면 `FORFEITED`가 된다. 그때까지 받아들여진 점수는 화면에 남지만 승패에는 쓰지 않는다(R27).
 - **R29 탈락한 사람**: 탈락한 사람은 더 이상 "게임 중"이 아니다(`isPlaying = false`). 방을 나가도, 연결이 끊겨도 기권이 아니고 탈락 때의 점수로 그대로 겨룬다(도둑잡기에서 손패를 비운 사람과 같은 처리).
-- **R30 기록**: 끝날 때 딱 한 번 결과를 낸다. 경기 기록 `GameCompleted`에는 처음 참가자 모두가 들어간다(`result` = R27, `tokens` = 0, `seat` = 세션이 받은 `memberIds` 순서). 라운드 기록 `RoundCompleted(1, …)`는 끝난 이유가 `ALL_OUT`·`TIME_UP`일 때만 내고, 겨루는 사람만 들어간다(`score` = 마지막 점수, `result` = R27). 이유가 `FORFEIT`이면 라운드 기록을 내지 않는다. 그래서 전적의 "평균 점수"는 끝까지 한 판의 점수 평균이다. (D12)
+- **R30 기록**: 끝날 때 딱 한 번 결과를 낸다. 경기 기록 `GameCompleted`에는 처음 참가자 모두가 들어간다(`result` = R27, `tokens` = 0, `seat` = 세션이 받은 `memberIds` 순서). 라운드 기록 `RoundCompleted(1, …)`는 끝난 이유가 `ALL_OUT`·`DECIDED`·`TIME_UP`일 때만 내고, 겨루는 사람만 들어간다(`score` = 마지막 점수, `result` = R27). 이유가 `FORFEIT`이면 라운드 기록을 내지 않는다. 그래서 전적의 "평균 점수"는 끝까지 한 판의 점수 평균이다. (D12)
 - **R31 다음 게임**: 끝나면 방은 대기 상태로 돌아가고 기존 "다음 게임 준비" 흐름으로 새 게임을 연다. 새 게임은 새 씨앗.
 
 ### 2.9 저장과 이어 하기
@@ -133,16 +133,17 @@ export function levelAt(seed: number, n: number): number {
 시작 ─ 씨앗 정함, 모두 PLAYING·0점, 마감 = 시작 + 10분
 
 IN_PROGRESS
- ├─ SCORE s (PLAYING인 참가자) → R19 통과면 점수 = s, 상태 그대로
- ├─ OUT s   (PLAYING인 참가자) → R19 통과면 점수 = s, 그 사람 OUT
- │     ├─ PLAYING 0명 → GAME_OVER(ALL_OUT)
- │     └─ 아니면 그대로
+ ├─ SCORE s (PLAYING인 참가자) → R19 통과면 점수 = s → 끝 판정
+ ├─ OUT s   (PLAYING인 참가자) → R19 통과면 점수 = s, 그 사람 OUT → 끝 판정
  ├─ BOARD (신호, PLAYING·OUT인 참가자) → 상태 그대로, 방에 중계만
- ├─ 기권 x (PLAYING인 참가자만 기권이 된다) → x FORFEITED
- │     ├─ PLAYING 0명 → GAME_OVER(ALL_OUT)
- │     ├─ 기권하지 않은 사람 1명이고 그 사람이 PLAYING → GAME_OVER(FORFEIT)
- │     └─ 아니면 그대로
+ ├─ 기권 x (PLAYING인 참가자만 기권이 된다) → x FORFEITED → 끝 판정
  └─ 시간 초과(마감) → GAME_OVER(TIME_UP)
+
+끝 판정(R26, 위에서부터)
+ ├─ PLAYING 0명 → GAME_OVER(ALL_OUT)
+ ├─ PLAYING 1명이고 다른 겨루는 사람이 없음 → GAME_OVER(FORFEIT)
+ ├─ PLAYING 1명이고 그 점수 > 다른 겨루는 사람 모두의 점수 → GAME_OVER(DECIDED)
+ └─ 아니면 그대로
 ```
 
 - 마감은 경기 내내 하나(시작 + 10분)이고 어떤 행동으로도 바뀌지 않는다. 게임이 끝나면 `deadline()`은 비어 있다.
@@ -199,7 +200,7 @@ public record GameAction(String type, Integer column, Integer row, Integer cardI
 | `Stackers`(일급 컬렉션, 자리 순서 `PlayerId → Stacker`: `report`, `out`, `forfeit`, `playingCount`, `contenders`) | 참가자 묶음 |
 | `MatchClock`(`Clock` + 시작 시각: `elapsed()`, `limitAt()`, `isTimeUp()`), `ScoreCeiling`(VO, 경과 시간에서 R19 상한) | 경기 시각과 점수 상한 |
 | `BoardSnapshot`(VO, R24 형식 검사 `isValid`), `SnapshotGate`(마지막으로 받아 준 시각·순번, `tryPass(now)`), `SnapshotGates`(`PlayerId → SnapshotGate`) | 판 신호 검증·속도 제한 |
-| `FruitStackEndReason`(enum `ALL_OUT`, `TIME_UP`, `FORFEIT`), `Standing`(사람·점수·결과·등수·상태), `Standings`(R27 계산), `FruitStackResult`(이유 + `Standings`) | 결과 |
+| `FruitStackEndReason`(enum `ALL_OUT`, `DECIDED`, `TIME_UP`, `FORFEIT`), `Standing`(사람·점수·결과·등수·상태), `Standings`(R27 계산), `FruitStackResult`(이유 + `Standings`) | 결과 |
 | `FruitStackMatch`(`Seed` + `MatchClock`), `Contest`(`Stackers` + 끝난 이유) | 묶음(필드 수 제한) |
 | `FruitStackGame`(`FruitStackMatch`·`Contest`·`SnapshotGates`) | 애그리거트: `report`, `out`, `forfeit`, `timeUp`, `relay`, 끝 판정(R26), 질의 |
 | `FruitStackCommand`(enum `SCORE`, `OUT`), `FruitStackSignal`(enum `BOARD`) | type → 게임 메서드 |
@@ -211,7 +212,7 @@ public record GameAction(String type, Integer column, Integer row, Integer cardI
 
 ### 4.5 `FruitStackSession` 계약
 
-- `act`: `FruitStackCommand` 실행 → 끝났으면 결과.
+- `act`: `FruitStackCommand` 실행 → 끝 판정(R26) → 끝났으면 결과.
 - `signal`: `FruitStackSignal.BOARD` → 받아 주면 `FruitStackBoardSignal`, 아니면 빈 값(R24). 점수·상태·마감·기록은 바뀌지 않는다.
 - `forfeit(memberId)`: 살아 있는 참가자면 `FORFEITED`로 바꾸고 끝 조건(R26)을 본다. 살아 있지 않으면(탈락·이미 기권) 게임에 손대지 않고 빈 결과.
 - `autoAct(random)`: 경기 상한이 지났으면 `TIME_UP`으로 끝내고 결과. 아직 아니면(이른 호출) 아무것도 하지 않고 빈 결과(방 층이 같은 마감으로 다시 건다). `random`은 쓰지 않는다.
@@ -220,7 +221,7 @@ public record GameAction(String type, Integer column, Integer row, Integer cardI
 - `isFinished()`: `status = GAME_OVER`. `roundNumber()` = 1.
 - `pendingActors()`: 기본 구현(빈 목록) 그대로. 차례가 없고 컴퓨터가 없어 쓰는 곳이 없다.
 - `viewFor(id)`: `new FruitStackSessionView(view)`. 참가자가 아니어도(관전자) 같은 화면. 컴퓨터가 없으므로 `ClockFreeView`는 구현하지 않는다.
-- 결과(끝나는 행동·기권·시간 초과에서 딱 한 번): `ALL_OUT`·`TIME_UP`이면 `[RoundCompleted(1, 겨루는 사람 등수 순 RoundEntry), GameCompleted(자리 순 MatchEntry)]`, `FORFEIT`이면 `[GameCompleted(자리 순 MatchEntry)]`(R30). 끝난 게임은 행동을 받지 않으므로 다시 내지 않는다.
+- 결과(끝나는 행동·기권·시간 초과에서 딱 한 번): `ALL_OUT`·`DECIDED`·`TIME_UP`이면 `[RoundCompleted(1, 겨루는 사람 등수 순 RoundEntry), GameCompleted(자리 순 MatchEntry)]`, `FORFEIT`이면 `[GameCompleted(자리 순 MatchEntry)]`(R30). 끝난 게임은 행동을 받지 않으므로 다시 내지 않는다.
 
 ### 4.6 화면 JSON
 
@@ -251,7 +252,7 @@ public record GameAction(String type, Integer column, Integer row, Integer cardI
 | `startedAt` | 경기 시작 시각(epoch ms). 판의 시계(R15), 저장 무효화(R33), 신호 가리기(R25), 결과 창 닫음 기억 키에 쓴다 |
 | `seed` | 씨앗(R4) |
 | `participantIds`, `players` | 처음 참가자 전체(세션이 받은 순서). 점수는 서버가 받아들인 마지막 값 |
-| `result` | 끝났을 때만: `{ "reason": "ALL_OUT" \| "TIME_UP" \| "FORFEIT", "standings": [ { "playerId", "score", "outcome": "WIN" \| "DRAW" \| "LOSE", "rank", "state" } ] }`. `standings`는 등수 순(같은 등수는 자리 순), `state`는 끝난 순간의 상태 |
+| `result` | 끝났을 때만: `{ "reason": "ALL_OUT" \| "DECIDED" \| "TIME_UP" \| "FORFEIT", "standings": [ { "playerId", "score", "outcome": "WIN" \| "DRAW" \| "LOSE", "rank", "state" } ] }`. `standings`는 등수 순(같은 등수는 자리 순), `state`는 끝난 순간의 상태 |
 | `winnerId` | 끝났고 `WIN`이 한 명이면 그 사람, 무승부거나 게임 중이면 `null` |
 | `deadline`, `serverNow` | 경기 상한 시각과 서버 시각(epoch ms). 끝나면 `deadline = null`. 다른 게임과 같은 계약(시계 차이 보정) |
 
@@ -296,7 +297,7 @@ public record GameAction(String type, Integer column, Integer row, Integer cardI
 
 ### 6.1 타입
 
-`FruitStackPlayerState = 'PLAYING' | 'OUT' | 'FORFEITED'`, `FruitStackPlayerView { playerId; score; state }`, `FruitStackStanding { playerId; score; outcome: ResultType; rank; state }`, `FruitStackResult { reason: 'ALL_OUT' | 'TIME_UP' | 'FORFEIT'; standings }`, `FruitStackView`(4.6 그대로), `FruitStackSessionView = { gameType: 'FRUIT_STACK'; game: FruitStackView }`, `FruitStackBoardSignal`(4.6).
+`FruitStackPlayerState = 'PLAYING' | 'OUT' | 'FORFEITED'`, `FruitStackPlayerView { playerId; score; state }`, `FruitStackStanding { playerId; score; outcome: ResultType; rank; state }`, `FruitStackResult { reason: 'ALL_OUT' | 'DECIDED' | 'TIME_UP' | 'FORFEIT'; standings }`, `FruitStackView`(4.6 그대로), `FruitStackSessionView = { gameType: 'FRUIT_STACK'; game: FruitStackView }`, `FruitStackBoardSignal`(4.6).
 
 ### 6.2 파일(`F/games/fruitstack/`)
 
@@ -366,9 +367,13 @@ public record GameAction(String type, Integer column, Integer row, Integer cardI
 | 상황 | PC | 좁은 화면 |
 |---|---|---|
 | 내 판이 살아 있음 | 끌어서 자리를 정하고 놓으면 떨어져요. | 끌어서 놓으면 떨어져요 |
-| 내 판이 탈락함(게임 중) | 판이 가득 찼어요. 남은 사람의 판을 지켜보세요. | 남은 판을 지켜보세요 |
-| 관전자 | 모두 과일을 쌓는 중… | 과일을 쌓는 중… |
+| 나만 살아 있고 1등이 아님 | 혼자 남았어요. {N}점만 더 얻으면 이겨요. | {N}점만 더 얻으면 이겨요 |
+| 내 판이 탈락함(게임 중), 살아 있는 사람이 둘 이상 | 판이 가득 찼어요. 남은 사람의 판을 지켜보세요. | 남은 판을 지켜보세요 |
+| 내가 탈락했거나 관전자이고 살아 있는 사람이 한 명 | {닉네임}님이 {N}점만 더 얻으면 이겨요. | {닉네임}님 {N}점 남음 |
+| 관전자, 살아 있는 사람이 둘 이상 | 모두 과일을 쌓는 중… | 과일을 쌓는 중… |
 | 끝남 | 게임이 끝났어요. | 같음 |
+
+- `{N}` = (다른 겨루는 사람의 최고 점수) - (살아 있는 한 사람의 점수) + 1. 다른 사람의 점수와 남의 판의 점수는 화면(`players[].score`)에서, 내가 그 한 사람이면 내 점수는 내 판의 점수(보고 전의 합치기까지 담긴 값)에서 읽는다. `{N}`이 1 미만이면(보고가 서버에 닿기 직전) 이 줄 대신 바로 윗줄의 보통 문구를 쓴다. 살아 있는 사람이 한 명이 되면 이 안내가 곧 "끝 조건"(R26 (나))의 남은 거리다.
 
 ### 6.7 진행 기록 문구(`describe.ts`)
 
@@ -383,6 +388,8 @@ public record GameAction(String type, Integer column, Integer row, Integer cardI
 | 끝, 무승부 | result | {닉네임}님, {닉네임}님이 {N}점으로 비겼어요 |
 | 끝, `FORFEIT` | result | 모두 나가서 {닉네임}님이 이겼어요 |
 
+- 끝 줄은 이유에 따라 하나만 쓴다: `FORFEIT`이면 마지막 줄, `TIME_UP`이면 시간 줄 다음에 승자·무승부 줄, `ALL_OUT`·`DECIDED`면 승자·무승부 줄(`DECIDED`는 늘 승자 한 명).
+
 - 기권(`FORFEITED`)은 방 채널의 나간 사람 알림·기록이 이미 쓰므로 여기서 쓰지 않는다. 점수 변화는 기록하지 않는다. 새 `LogKind`는 없다.
 
 ### 6.8 효과와 효과음
@@ -395,7 +402,7 @@ public record GameAction(String type, Integer column, Integer row, Integer cardI
 ### 6.9 결과 창(`FruitStackGameOverPanel`)
 
 - 공통 `Modal`("게임 결과"), `Confetti`(승자 본인), `HeadlineIcon`, `ReadyChips`, `FooterButton`.
-- 머리말: 내가 `WIN`이면 "내가 이겼어요!", 다른 사람이 `WIN`이면 "{닉네임}님이 이겼어요!", 무승부면 "비겼어요!". 그 아래 이유 줄: `TIME_UP`이면 "10분이 지나 지금 점수로 끝났어요", `FORFEIT`이면 "상대가 나가서 게임이 끝났어요", `ALL_OUT`이면 없음.
+- 머리말: 내가 `WIN`이면 "내가 이겼어요!", 다른 사람이 `WIN`이면 "{닉네임}님이 이겼어요!", 무승부면 "비겼어요!". 그 아래 이유 줄: `TIME_UP`이면 "10분이 지나 지금 점수로 끝났어요", `FORFEIT`이면 "상대가 나가서 게임이 끝났어요", `DECIDED`이면 "마지막 한 사람의 점수가 가장 높아 바로 끝났어요", `ALL_OUT`이면 없음.
 - 순위 표: `standings` 순으로 한 줄씩("{N}등", 프로필 그림, 닉네임, "{N}점"(천 단위 쉼표), 오른쪽 표시). 오른쪽 표시: `WIN`은 메달 아이콘, `DRAW`는 "무승부", 기권은 흐리게 "기권". 내 줄은 강조 바탕.
 
 ### 6.10 규칙 캐러셀(`rules.ts`, 6장)
@@ -406,7 +413,7 @@ public record GameAction(String type, Integer column, Integer row, Integer cardI
 2. **과일** — "체리부터 수박까지 11가지예요. 큰 과일을 합칠수록 점수가 커요.", "떨어뜨릴 과일은 작은 다섯 가지(체리·딸기·포도·귤·감) 중에서 나오고, 모두 같은 순서로 받아요." (11가지 한 줄)
 3. **떨어뜨리기** — "내 판을 끌어 자리를 정하고 손을 떼면 떨어져요.", "10초 안에 떨어뜨리지 않으면 그 자리에 저절로 떨어져요." (귤)
 4. **탈락** — "과일이 위쪽 선을 2초 넘게 넘어 있으면 판이 가득 찬 거예요.", "가득 차도 내 점수는 그대로 남고, 남은 사람들의 판을 크게 지켜봐요." (감, 사과)
-5. **끝** — "모두 가득 차거나 10분이 지나면 끝나요.", "가장 높은 점수가 이기고, 가장 높은 점수가 같으면 그 사람들끼리 비겨요." (수박)
+5. **끝** — "모두 가득 차거나 10분이 지나면 끝나요. 한 사람만 남았을 때 그 사람 점수가 가장 높으면 바로 끝나요.", "가장 높은 점수가 이기고, 가장 높은 점수가 같으면 그 사람들끼리 비겨요." (수박)
 6. **나가기와 끊김** — "게임 중에 나가면 기권이라 점수와 상관없이 져요.", "연결이 잠깐 끊겨도 내 판은 계속 움직여요. 60초 넘게 끊기면 기권이 돼요." (그림 없음)
 
 대기실 요약: "같은 과일 두 개를 합쳐 점수를 쌓아요.", "10초 안에 떨어뜨리지 않으면 저절로 떨어져요.", "과일이 선을 2초 넘게 넘으면 탈락이에요.", "가장 높은 점수가 이겨요."
@@ -429,18 +436,19 @@ public record GameAction(String type, Integer column, Integer row, Integer cardI
 
 - `Score`·`Seed`: 음수 거절. `ScoreCeiling`: 경과 0 ms → 110, 499 ms → 110, 500 ms → 132, 600000 ms → 26510(R19).
 - 점수 보고(R19): 올라가는 점수 받아들임, 같은 점수 받아들이고 그대로, 줄어든 점수 거절, 상한 초과 거절(거절 뒤 점수 그대로), `score` 없음·음수 `INVALID_INPUT`, 탈락한 사람의 보고 거절, 끝난 뒤 `GAME_ALREADY_OVER`, 참가자 아님 `NOT_A_PLAYER`.
-- 탈락(R20·R26): `OUT`이 점수를 받아들이고 탈락시킴, 마지막 사람이 탈락하면 `ALL_OUT`으로 끝, 한 명이 살아 있으면 끝나지 않음.
-- 기권(R26·R28·R29): 2명에서 한 명 기권 → `FORFEIT`으로 끝·남은 사람 `WIN`, 3명에서 한 명 기권 → 이어짐, 탈락 1명 + 살아 있는 1명에서 살아 있는 사람이 기권 → `ALL_OUT`으로 끝·탈락한 사람 `WIN`, 탈락한 사람의 `forfeit`은 손대지 않고 빈 결과, `isPlaying`은 탈락·기권·끝 뒤 false.
+- 탈락(R20·R26): `OUT`이 점수를 받아들이고 탈락시킴, 마지막 사람이 탈락하면 `ALL_OUT`으로 끝, 두 명 이상 살아 있으면 끝나지 않음.
+- 일찍 끝내기(R26 (나), `FruitStackDecidedTest`): 한 명이 탈락해 한 명만 남는 순간 남은 사람 점수가 더 높으면 `DECIDED`로 끝·남은 사람 `WIN`, 같거나 낮으면 이어짐, 이어지다 `SCORE`로 엄격히 높아지는 순간 `DECIDED`, 같은 점수가 되는 `SCORE`로는 안 끝남, 3명에서 두 번째 탈락 때 판정(첫 탈락 때는 두 명이 살아 있어 안 끝남), 탈락한 두 사람 가운데 높은 쪽과 견줌, 기권한 사람의 점수가 더 높아도 견주지 않고 끝남, 남은 사람이 못 넘고 탈락하면 `ALL_OUT`·상한이면 `TIME_UP`, `DECIDED`의 결과는 `[RoundCompleted, GameCompleted]`.
+- 기권(R26·R28·R29): 2명에서 한 명 기권 → `FORFEIT`으로 끝·남은 사람 `WIN`, 3명(모두 0점)에서 한 명 기권 → 이어짐, 탈락 1명 + 그보다 점수가 낮은 살아 있는 1명에서 살아 있는 사람이 기권 → `ALL_OUT`으로 끝·탈락한 사람 `WIN`, 탈락한 사람의 `forfeit`은 손대지 않고 빈 결과, `isPlaying`은 탈락·기권·끝 뒤 false.
 - 승패(R27, `StandingsTest`): 최고 점수 한 명 `WIN`·나머지 `LOSE`, 최고 동점 `DRAW`·나머지 `LOSE`, 모두 0점 동점 `DRAW`, 기권자는 최고 점수여도 `LOSE`, 등수 1·1·3과 기권자 마지막 등수.
 - 시간(`FruitStackSessionTimerTest`): `deadline()` = 시작 + 10분, 점수 보고·탈락·신호 뒤에도 그대로, 마감 전 `autoAct`는 빈 결과·상태 그대로, 마감 뒤 `autoAct`는 `TIME_UP`으로 끝, 끝나면 `deadline()` 빈 값.
 - 신호(R24): 형식이 맞는 `board` 중계·`seq` 증가, 200 ms 안의 두 번째는 버림, 길이 0·4·1205·5의 배수 아님·글자표 밖 글자는 버림, 탈락한 사람의 신호는 중계, 모르는 type `INVALID_INPUT`, 신호가 점수·상태·마감을 바꾸지 않음.
 - 화면(`FruitStackViewTest`, `ObjectMapper.valueToTree`): `gameType = "FRUIT_STACK"`, 칸 이름·값(4.6), 참가자와 관전자 화면이 `viewerId` 말고 같음, 끝난 화면의 `result.standings`·`winnerId`(무승부면 `null`), `deadline = null`.
-- 결과(`FruitStackSessionTest`): `ALL_OUT`·`TIME_UP`은 `[RoundCompleted, GameCompleted]`(라운드에 기권자 없음, `score` = 마지막 점수), `FORFEIT`은 `[GameCompleted]`만, `MatchEntry`의 `tokens = 0`·`seat`, 딱 한 번.
+- 결과(`FruitStackSessionTest`): `ALL_OUT`·`DECIDED`·`TIME_UP`은 `[RoundCompleted, GameCompleted]`(라운드에 기권자 없음, `score` = 마지막 점수), `FORFEIT`은 `[GameCompleted]`만, `MatchEntry`의 `tokens = 0`·`seat`, 딱 한 번.
 - 공통: `GameActionTest`(새 칸 JSON 읽기, 기존 생성자 동등성 그대로), `GameType.supportsBots`.
 
 ### 7.2 백엔드 통합
 
-- `FruitStackStompFlowTest`: 2명 방 만들기·시작 → 두 사람이 같은 `seed`·`startedAt` 화면을 받음, `SCORE` → 두 화면의 점수 갱신, 줄어든 `SCORE` → 보낸 사람에게만 `FRUIT_STACK_SCORE_REJECTED`(409), `BOARD` 신호가 상대·관전자의 `/user/queue/signal`로 감, 관전자의 `BOARD`는 아무에게도 안 감, 두 사람 `OUT` → 끝난 화면.
+- `FruitStackStompFlowTest`: 2명 방 만들기·시작 → 두 사람이 같은 `seed`·`startedAt` 화면을 받음, `SCORE` → 두 화면의 점수 갱신, 줄어든 `SCORE` → 보낸 사람에게만 `FRUIT_STACK_SCORE_REJECTED`(409), `BOARD` 신호가 상대·관전자의 `/user/queue/signal`로 감, 관전자의 `BOARD`는 아무에게도 안 감, 한 사람 `OUT` 뒤 남은 사람의 `SCORE`가 그 점수를 넘는 순간 `DECIDED`로 끝난 화면(R26).
 - `FruitStackRoomTimeoutTest`: 가짜 예약기로 10분 뒤 `TIME_UP`·방 대기 상태·타이머 취소.
 - `FruitStackRoomApiTest`: `/api/games` 4개(네 번째 `FRUIT_STACK`), 정원 5 허용·6 거절, 컴퓨터 추가 `BOTS_NOT_SUPPORTED`(409, 통일 오류 본문), 다른 게임 방의 컴퓨터 추가는 그대로 성공, 탈락한 사람이 나가도 게임이 이어지고 결과에 남음, 60초 끊긴 살아 있는 사람만 자동 기권(탈락한 사람은 아님).
 - `FruitStackRecordApiTest`: 끝나면 `game_type = 'FRUIT_STACK'`, 승·무·패 반영, 평균 점수 = 끝까지 한 판 평균, `FORFEIT` 끝은 경기만 기록.
@@ -459,7 +467,7 @@ public record GameAction(String type, Integer column, Integer row, Integer cardI
 - `fruitArt`·`FruitIcon`: 11가지, 모든 도형이 viewBox 안, 이름.
 - `paint`: 가짜 `Painter`에 선·조준선·과일·위험 표시가 그려짐.
 - `describe`: 6.7 표 전부, 같은 화면 두 번에 중복 없음.
-- `FruitStackTable`(가짜 `getContext`): 배치 3가지, `play`·`watch` 전환, 안내 문구(6.6), 점수 띠, 작은 판 상태 배지, 관전자, 탈락 안내, 결과 창(승·무승부·시간 종료·기권 끝).
+- `FruitStackTable`(가짜 `getContext`): 배치 3가지, `play`·`watch` 전환, 안내 문구(6.6, 혼자 남았을 때 "{N}점만 더 얻으면 이겨요"와 `{N}` 계산 포함), 점수 띠, 작은 판 상태 배지, 관전자, 탈락 안내, 결과 창(승·무승부·시간 종료·기권 끝·승부가 정해져 끝).
 - 상호작용: 포인터 누름·끌기·뗌, 정밀 포인터 올림, 키보드, 쿨다운 중 누름 무시, 자동 떨어뜨리기 3초 안내와 `tick`.
 - 공통 이음매: `useRoomChannel`(구독자가 있으면 구독자에게만, 없으면 기존 `signal` 상태), `RoomPage`(과일 쌓기 방은 컴퓨터 추가를 넘기지 않음), 대기실 빈자리 메뉴에 "친구 초대"만, 등록(선반·로비·규칙 6장·상자 그림·전적 탭·"평균 점수"), `noEmoji`.
 - 최종: 실제 브라우저에서 3계정(PC 1280×860, 휴대폰 세로 360, 휴대폰 가로)으로 한 판 끝까지(끌어 놓기, 자동 떨어뜨리기, 합치기 점수, 상대 판 보간, 탈락 뒤 크게 보기, 새로고침 이어 하기, 탭 가렸다 돌아오기, 연결 끊었다 붙이기, 10분 상한, 기권, 결과 창, 다음 게임), 과일이 많은 판의 휴대폰 프레임 확인, 기존 세 게임 한 판씩 회귀.
@@ -470,7 +478,6 @@ public record GameAction(String type, Integer column, Integer row, Integer cardI
 - 컴퓨터 플레이어.
 - 최고 점수 순위표(기존 승률 순위표는 다른 게임처럼 자동으로 생긴다).
 - 서버가 물리를 다시 계산해 점수를 검증하는 것, 조작 방지.
-- 살아 있는 한 명의 점수가 이미 가장 높을 때 일찍 끝내기.
 - 같은 계정으로 탭 두 개를 열었을 때 두 판을 하나로 맞추기(각 탭이 따로 돌고 서버 점수는 큰 쪽이 된다).
 - 방 옵션(경기 시간·자동 떨어뜨리기 시간 바꾸기), 다시 보기.
 
@@ -488,7 +495,7 @@ public record GameAction(String type, Integer column, Integer row, Integer cardI
 - 판 신호가 방을 채움 → 250 ms 간격·1200글자 상한·서버 200 ms 간격. 5명 방에서 초당 신호 20개 × 받는 사람 수.
 - 휴대폰에서 과일이 많으면 느려짐 → 스프라이트·해상도 배율 2 상한·작은 판 초당 30번. 그래도 못 따라가면 판이 느리게 흐르고(R16) 상한이 끝을 보장한다. 만들면서 실제 기기로 확인한다(받아들인 한계).
 - 기기마다 물리 결과가 다름 → 받아들인 한계. 같은 과일 순서(R4)만 보장한다.
-- 조작한 브라우저가 탈락을 보고하지 않거나 점수를 꾸밈 → 받아들인 한계. 상한 10분이 기다림을 끝내고, 점수 상한(R19)이 터무니없는 값만 막는다.
+- 조작한 브라우저가 탈락을 보고하지 않거나 점수를 꾸밈 → 받아들인 한계. 상한 10분이 기다림을 끝내고, 점수 상한(R19)이 터무니없는 값만 막는다. 꾸민 점수로 R26 (나)의 끝을 앞당길 수도 있지만 꾸민 점수로 이기는 것과 같은 한계다.
 - 탭을 오래 가렸다 돌아오면 한꺼번에 따라잡느라 잠깐 굳음 → 한 틱 300걸음·12 ms 상한과 "따라잡는 중…" 안내.
 - 저장이 1초 간격이라 새로고침하면 최대 1초 전 판으로 돌아가 그사이 합친 점수를 한 번 더 얻을 수 있음 → 점수 조작을 받아들인 것과 같은 수준이라 그대로 둔다.
 
@@ -508,7 +515,7 @@ public record GameAction(String type, Integer column, Integer row, Integer cardI
 | D10 | 차례 개념은 모두 비운다: 강조 테두리·사람별 타이머 없음, 플레이 순서 섞기는 참가자 순서로만, `pendingActors` 빈 목록, `stepKey`는 `status:startedAt`, 화면에 `lastAutoActorIds`·`autoActSeq`·`events` 없음. `deadline`은 경기 상한, `autoAct`는 상한에 경기를 끝낸다 | 차례가 없는 게임이다. `deadline`·`autoAct`를 경기 상한에 쓰면 방의 타이머(`TurnTimer`·`rearm`)를 고치지 않고 10분 상한이 서버에서 보장된다. `pendingActors`는 컴퓨터 구동만 쓰는데 컴퓨터가 없다. |
 | D11 | 보고를 멈춘 사람에 대한 더 촘촘한 서버 규칙은 두지 않는다(10분 상한과 60초 끊김 기권이 전부) | 정직한 브라우저는 D4로 늘 진행한다(가려도 자동으로 떨어진다). 연결이 끊기면 60초 기권이 있다. 조작한 브라우저는 판 신호·점수를 꾸밀 수 있어 "신호가 끊기면 탈락" 같은 규칙으로는 못 막고, 느린 기기의 정직한 사람만 다친다. 탈락한 사람은 기다리지 않고 나가도 점수가 남는다(R29). |
 | D12 | 탈락한 사람은 "게임 중"이 아니다(나가도·끊겨도 기권 아님). 라운드 기록은 끝까지 한 사람만, `FORFEIT` 끝은 경기만 기록한다 | 탈락한 사람은 할 일이 없어 붙잡아 둘 이유가 없다(도둑잡기 끝낸 사람과 같다). 기권이나 상대의 기권으로 잘린 점수를 "평균 점수"에 넣으면 평균이 뜻을 잃는다(페이퍼 사파리도 기권 끝은 라운드를 기록하지 않는다). |
-| D13 | 기권하지 않은 사람이 한 명만 남고 그 사람이 살아 있으면 곧바로 끝내 승리로 한다 | 다른 게임의 "혼자 남으면 승리"와 같다. 겨룰 상대가 없는데 혼자 10분을 채우게 하지 않는다. 탈락한 상대가 남아 있으면(점수로 겨루는 중) 승인 설계대로 끝까지 간다. |
+| D13 | 기권하지 않은 사람이 한 명만 남고 그 사람이 살아 있으면 곧바로 끝내 승리로 한다(이유 `FORFEIT`) | 다른 게임의 "혼자 남으면 승리"와 같다. 겨룰 상대가 없는데 혼자 10분을 채우게 하지 않는다. R26 (나)에서 견줄 사람이 없는 경우로 한 규칙에 들어간다. |
 | D14 | 저장은 `localStorage`, 키는 방 코드 + 회원 id, 무효화는 `startedAt` + `seed` + 판 번호 | 방 코드는 다음 게임에도 같아 경기를 가리려면 `startedAt`이 필요하고, 서버가 경기 id를 화면에 주지 않아 다른 게임의 결과 창 키와 같은 방식(`startedAt`)을 쓴다. 한 기기를 여러 계정이 쓸 수 있어 회원 id를 넣는다. `localStorage`라 탭을 닫았다 열어도 이어진다. |
 | D15 | 저장된 판이 없이 게임 중에 들어오면 빈 판으로 처음부터 지금까지 따라잡는다 | D4와 한 규칙이다. 저장을 지워 깨끗한 판을 얻는 길을 막고(그동안의 자동 떨어뜨리기가 쌓인다) 따로 예외를 두지 않는다. |
 | D16 | 컴퓨터 지원 여부는 `GameType.supportsBots()`(서버)와 `GameModule.supportsBots`(화면)에 둔다 | 서버 거절은 방 도메인(`Room.addBot`)에서 게임 종류에 묻는 것이 가장 가깝다. 화면은 이미 게임 모듈이 인원·이름을 갖고 있어 같은 곳에 둔다. 방 응답을 넓히지 않는다. |
@@ -518,4 +525,4 @@ public record GameAction(String type, Integer column, Integer row, Integer cardI
 | D20 | 상대 판 보간은 id 없이 "같은 단계·가장 가까운 것" 짝짓기 | 과일마다 id를 실으면 신호가 20% 넘게 길어진다. 250 ms 사이 과일은 조금만 움직이므로 가까운 것 짝짓기로 충분하고, 틀려도 한 틱 뒤에 바로잡힌다. |
 | D21 | 모든 점수·탈락 보고의 거절은 한 코드 `FRUIT_STACK_SCORE_REJECTED`이고 화면은 조용히 넘긴다 | 정직한 브라우저는 받을 일이 없고 사용자가 할 수 있는 일도 없다. 원인별 코드를 나누면 조작하는 쪽에만 도움이 된다. |
 | D22 | 내 판 탈락 뒤 1.5초 "가득 찼어요!"를 보이고 `watch` 모드로 바꾼다 | 탈락 순간을 알아챌 틈을 주고, 승인 설계의 "남은 판을 크게 본다"로 넘어간다. |
-
+| D23 | 살아 있는 사람이 한 명이고 그 점수가 다른 겨루는 사람 모두보다 엄격히 높으면 그 순간 끝낸다(이유 `DECIDED`). 견주는 대상에서 기권한 사람은 뺀다. 라운드 기록은 낸다. 마지막 사람에게는 "{N}점만 더 얻으면 이겨요"를 보인다 | 사용자 결정(2026-10-13, 승부가 정해지면 바로 끝내기). 점수는 줄지 않으므로 그 순간 승자가 바뀔 길이 없어 나머지 사람을 최대 10분 기다리게 할 이유가 없다. 동점은 아직 무승부가 될 수 있어 끝내지 않는다. 기권자는 점수와 상관없이 패배라(R27) 견주면 이미 이긴 사람이 끝나지 않는다. 탈락한 사람들의 점수는 끝까지 한 값이고 승자의 점수도 규칙이 정한 끝의 값이라(상한 종료와 같다) 평균 점수에 넣는다. 남은 거리를 보여 주지 않으면 마지막 사람이 왜 계속하는지·언제 끝나는지 알 수 없다. |
