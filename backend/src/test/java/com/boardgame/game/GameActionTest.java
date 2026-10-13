@@ -56,4 +56,17 @@ class GameActionTest {
         assertThat(new GameAction("DRAW", null, null, null, null, null, 3).cardIds()).isNull();
         assertThat(new GameAction("FLIP", 0, 1).cardIds()).isNull();
     }
+
+    @Test
+    void JSON의_score와_board_칸을_읽고_예전_생성자는_두_칸을_비워_둔다() throws Exception {
+        GameAction score = mapper.readValue("{\"type\":\"SCORE\",\"score\":128}", GameAction.class);
+        GameAction board = mapper.readValue("{\"type\":\"BOARD\",\"board\":\"WAAAAGAPqA\"}", GameAction.class);
+
+        assertThat(score.score()).isEqualTo(128);
+        assertThat(score.board()).isNull();
+        assertThat(board.board()).isEqualTo("WAAAAGAPqA");
+        assertThat(new GameAction("FLIP", 0, 1).score()).isNull();
+        assertThat(new GameAction("DRAW", null, null, null, null, null, 3, null))
+                .isEqualTo(new GameAction("DRAW", null, null, null, null, null, 3, null, null, null));
+    }
 }
