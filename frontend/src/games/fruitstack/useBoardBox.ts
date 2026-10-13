@@ -4,7 +4,7 @@ import type { TableLayout } from '../../lib/useTableLayout';
 export type Box = { w: number; h: number };
 
 /** 잴 수 없을 때(jsdom, 첫 렌더) 쓰는 배치별 기본 상자. */
-const DEFAULT_BOX: Record<TableLayout, Box> = { pc: { w: 844, h: 660 }, portrait: { w: 328, h: 500 }, landscape: { w: 632, h: 326 } };
+const DEFAULT_BOX: Record<TableLayout, Box> = { pc: { w: 844, h: 660 }, portrait: { w: 342, h: 584 }, landscape: { w: 632, h: 326 } };
 /** 판 아래에 남기는 높이. 휴대폰은 페이지 아래 여백(4px)만 남긴다. */
 const BOTTOM_MARGIN: Record<TableLayout, number> = { pc: 24, portrait: 4, landscape: 4 };
 /** 화면이 아주 낮아도 판이 사라지지 않게 하는 가장 낮은 상자 높이(그때는 페이지가 조금 스크롤된다). */

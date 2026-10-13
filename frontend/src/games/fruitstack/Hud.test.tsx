@@ -61,6 +61,21 @@ describe('Hud', () => {
     expect(within(screen.getByTestId('fruit-hud')).getByRole('button', { name: '과일 순서 보기' })).toBeInTheDocument();
   });
 
+  it('작은 판 옆 점수 칸: 남은 폭을 다 쓰고 두 칸씩 놓이며(넓으면 네 칸 한 줄) 내용은 같다', () => {
+    render(<Hud score={1234} next={5} deadline={NOW + 61_000} serverNow={NOW} block />);
+    const hud = screen.getByTestId('fruit-hud');
+
+    expect(hud).toHaveAttribute('data-block', 'true');
+    expect(hud).toHaveClass('@container', 'min-w-0', 'flex-1');
+    expect(hud.firstElementChild).toHaveClass('grid', 'grid-cols-2', '@[15rem]:grid-cols-4');
+    expect(hud.firstElementChild?.children).toHaveLength(4);
+    expect(hud).toHaveTextContent('점수');
+    expect(hud).toHaveTextContent('1,234');
+    expect(screen.getByRole('img', { name: '감' })).toBeInTheDocument();
+    expect(screen.getByTestId('match-clock')).toHaveTextContent('1:01');
+    expect(within(hud).getByRole('button', { name: '과일 순서 보기' })).toBeInTheDocument();
+  });
+
   it('세로 띠와 낮은 한 줄', () => {
     const { rerender } = render(<Hud score={0} next={1} deadline={NOW + 61_000} serverNow={NOW} vertical />);
     expect(screen.getByTestId('fruit-hud')).toHaveAttribute('data-vertical', 'true');

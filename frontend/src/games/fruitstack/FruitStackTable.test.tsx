@@ -152,14 +152,38 @@ describe('FruitStackTable', () => {
     expect(within(screen.getByTestId('fruit-hud')).getByRole('button', { name: '과일 순서 보기' })).toBeInTheDocument();
   });
 
-  it('세로 배치', () => {
+  it('세로 배치: 높이가 모자란 화면(360×640)은 점수 칸을 작은 판 옆에 두고 내 판이 폭을 거의 다 쓴다', () => {
     setMediaMatches(false);
     renderTable();
 
     expect(table()).toHaveAttribute('data-layout', 'portrait');
     expect(screen.getByText('끌어서 놓으면 떨어져요')).toBeInTheDocument();
-    expect(screen.getByTestId('my-board')).toHaveStyle({ width: '220px' });
-    expect(minis()[0]).toHaveStyle({ width: '53px' });
+    expect(screen.getByTestId('my-board')).toHaveStyle({ width: '334px' });
+    expect(minis()[0]).toHaveStyle({ width: '36px' });
+    const row = screen.getByTestId('info-row');
+    expect(row).toContainElement(screen.getByTestId('fruit-hud'));
+    expect(row).toContainElement(screen.getByTestId('mini-row'));
+    expect(screen.getByTestId('fruit-hud')).toHaveAttribute('data-block', 'true');
+    expect(row.compareDocumentPosition(screen.getByTestId('my-board')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByTestId('fruit-surface')).toHaveStyle({ padding: '4px' });
+  });
+
+  it('세로 배치: 상대 4명도 한 줄에 들어가고 내 판 크기는 그대로다', () => {
+    setMediaMatches(false);
+    renderTable({ game: five });
+
+    expect(minis()).toHaveLength(4);
+    expect(screen.getByTestId('my-board')).toHaveStyle({ width: '334px' });
+    expect(screen.getByTestId('info-row')).toContainElement(minis()[3]);
+  });
+
+  it('세로 배치: 지켜보기에서는 점수 띠가 한 줄이다(옆에 두지 않는다)', () => {
+    setMediaMatches(false);
+    renderTable({ game: { players: [fruitPlayer(1, 40, 'OUT'), fruitPlayer(2)] } });
+
+    expect(table()).toHaveAttribute('data-mode', 'watch');
+    expect(screen.queryByTestId('info-row')).toBeNull();
+    expect(screen.getByTestId('fruit-hud')).not.toHaveAttribute('data-block');
   });
 
   it('세로 배치의 맨 위 한 줄: 나가기, 안내 문구, 채팅 버튼(방 상태 바와 채팅 줄은 그리지 않는다)', () => {

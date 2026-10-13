@@ -35,7 +35,9 @@ const TICK_FROM_MS = 3000;
 /** 합치기 소리는 이 간격에 한 번까지(연쇄 합치기). */
 const MERGE_SOUND_GAP_MS = 80;
 /** 바닥 판의 안쪽 여백(px). */
-const SURFACE_PAD: Record<TableLayout, number> = { pc: 12, portrait: 8, landscape: 4 };
+const SURFACE_PAD: Record<TableLayout, number> = { pc: 12, portrait: 4, landscape: 4 };
+/** 세로 휴대폰: 감정 표현 버튼은 판 위 간격(6px)까지만 올라와 윗줄(점수 칸·작은 판 이름)을 가리지 않는다. */
+const PHONE_EMOTE_DOCK = '-top-1.5 left-1';
 const SURFACE_BORDER = 1;
 
 type BoardStatus = { hasFrame: boolean; danger: boolean };
@@ -228,7 +230,7 @@ export function FruitStackTable({ view, room, meId, receivedAt, now, errorSeq, n
   const dockInRail = layout === 'landscape';
   const myBoard = (
     <div className="relative">
-      {dockInRail ? null : <EmoteDock meId={meId} className={EMOTE_DOCK} />}
+      {dockInRail ? null : <EmoteDock meId={meId} className={layout === 'portrait' ? PHONE_EMOTE_DOCK : EMOTE_DOCK} />}
       <MyBoard width={fit.bigWidth} getFrame={fruit.getFrame} getEffects={fruit.getEffects} getAutoDropLeftMs={fruit.getAutoDropLeftMs}
         score={fruit.hud.score} held={fruit.hud.held} out={fruit.hud.out} catchingUp={fruit.hud.catchingUp}
         interactive={inProgress && !fruit.hud.out && !fruit.hud.catchingUp} onAim={fruit.aim} onDrop={fruit.drop} />
@@ -237,7 +239,8 @@ export function FruitStackTable({ view, room, meId, receivedAt, now, errorSeq, n
   // 관전자는 점수·다음 대신 "관전 중", 탈락한 사람은 점수만.
   const hud = (
     <Hud score={contender ? fruit.hud.score : null} next={contender && !fruit.hud.out && fruit.hud.next > 0 ? fruit.hud.next : null}
-      deadline={game.deadline} serverNow={game.serverNow} vertical={layout === 'landscape' && mode === 'play'} compact={layout === 'landscape' && mode === 'watch'} locked={finale !== 'playing'} />
+      deadline={game.deadline} serverNow={game.serverNow} vertical={layout === 'landscape' && mode === 'play'} compact={layout === 'landscape' && mode === 'watch'}
+      block={layout === 'portrait' && mode === 'play' && fit.hudBeside} locked={finale !== 'playing'} />
   );
 
   const playBody: Record<TableLayout, () => ReactNode> = {
@@ -252,13 +255,16 @@ export function FruitStackTable({ view, room, meId, receivedAt, now, errorSeq, n
         </div>
       );
     },
-    portrait: () => (
-      <div className="flex flex-col items-center gap-3">
-        {minis.length > 0 ? <div className="flex justify-center gap-2">{minis}</div> : null}
-        {hud}
-        {myBoard}
-      </div>
-    ),
+    // 내 판이 폭을 다 쓰게, 그 위는 한 줄(점수 칸 옆에 작은 판들)이거나 화면이 길면 두 줄(점수 띠, 작은 판 줄)이다.
+    portrait: () => {
+      const miniRow = minis.length > 0 ? <div data-testid="mini-row" className="flex shrink-0 justify-center gap-2">{minis}</div> : null;
+      return (
+        <div className="flex flex-col items-center gap-1.5">
+          {fit.hudBeside ? <div data-testid="info-row" className="flex w-full items-start gap-2">{hud}{miniRow}</div> : <>{hud}{miniRow}</>}
+          {myBoard}
+        </div>
+      );
+    },
     landscape: () => (
       <div className="flex items-start justify-center gap-3">
         {/* 판이 화면 높이를 다 써서 판 모서리 위에 걸칠 자리가 없다. 감정 표현 버튼은 점수 띠 아래에 둔다. */}
@@ -297,7 +303,7 @@ export function FruitStackTable({ view, room, meId, receivedAt, now, errorSeq, n
 
   // 테이블 바닥: 펠트 대신 테마 색의 둥근 판 위에 판들이 놓인다(스펙 6.4).
   const body = (
-    <div data-testid="fruit-surface" className="rounded-3xl border border-(--status-border) bg-(--status-bg) text-cream-50" style={{ padding: pad }}>
+    <div data-testid="fruit-surface" className={`${layout === 'portrait' ? 'rounded-2xl' : 'rounded-3xl'} border border-(--status-border) bg-(--status-bg) text-cream-50`} style={{ padding: pad }}>
       <div ref={bodyRef}>{mode === 'play' ? playBody[layout]() : watchBody()}</div>
     </div>
   );
