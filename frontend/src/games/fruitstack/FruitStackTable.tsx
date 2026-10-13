@@ -154,7 +154,13 @@ export function FruitStackTable({ view, room, meId, log, receivedAt, now, errorS
   const stateOf = new Map(game.players.map((player) => [player.playerId, player]));
   const present = (id: number) => { const player = stateOf.get(id); return player !== undefined && player.state !== 'FORFEITED'; };
   const contender = present(meId);
-  const noticeDone = useOutNoticeDone(fruit.hud.out, game.startedAt);
+  // 들어왔을 때(새로고침·다시 입장) 이미 탈락해 있었으면 안내를 다시 보이지 않고 바로 지켜본다.
+  const arrivalRef = useRef<{ startedAt: number; out: boolean } | null>(null);
+  if (arrivalRef.current?.startedAt !== game.startedAt) {
+    arrivalRef.current = { startedAt: game.startedAt, out: stateOf.get(meId)?.state === 'OUT' };
+  }
+  const noticeShown = useOutNoticeDone(fruit.hud.out, game.startedAt);
+  const noticeDone = arrivalRef.current.out || noticeShown;
   const mode = contender && !noticeDone ? 'play' : 'watch';
 
   // 기권한 사람은 방을 나갔으므로 판을 그리지 않는다(결과 창에만 나온다).

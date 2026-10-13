@@ -205,6 +205,14 @@ describe('FruitStackTable', () => {
     expect(screen.getByTestId('fruit-hud')).not.toHaveTextContent('다음');
   });
 
+  it('이미 탈락한 채로 들어오면(새로고침) 안내를 다시 보이지 않고 바로 지켜본다', () => {
+    renderTable({ game: { players: [fruitPlayer(1, 40, 'OUT'), fruitPlayer(2)] } });
+
+    expect(table()).toHaveAttribute('data-mode', 'watch');
+    expect(screen.queryByTestId('my-board')).not.toBeInTheDocument();
+    expect(players()).toEqual(['2', '1']);
+  });
+
   it('R26 혼자 남으면 남은 점수를 알려 준다', () => {
     vi.useFakeTimers();
     const alone = { players: [fruitPlayer(1, 20), fruitPlayer(2, 50, 'OUT')] };
