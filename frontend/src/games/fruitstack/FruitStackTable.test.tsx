@@ -64,6 +64,17 @@ describe('FruitStackTable', () => {
     vi.restoreAllMocks();
   });
 
+  it('스크롤된 채로 게임이 시작되면 맨 위로 올린다(판은 맨 위 화면에 맞춰 놓인다)', () => {
+    vi.stubGlobal('scrollY', 250);
+    const scrollTo = vi.fn();
+    vi.stubGlobal('scrollTo', scrollTo);
+
+    renderTable();
+
+    expect(scrollTo).toHaveBeenCalledWith(0, 0);
+    vi.unstubAllGlobals();
+  });
+
   it('PC: 내 판이 크게, 상대는 작은 판으로 보인다', () => {
     renderTable();
 

@@ -114,6 +114,13 @@ export function FruitStackTable({ view, room, meId, log, receivedAt, now, errorS
     sendSignal, subscribeSignal, startedAt: game.startedAt, meId, getFrame: fruit.getFrame, out: fruit.hud.out, active: inProgress && fruit.hasBoard,
   });
 
+  // 대기실에서 아래로 내려가 준비를 누른 채 게임이 시작되면 판이 화면 위로 밀려 있다. 판은 맨 위 화면에 맞춰 놓이므로 맨 위로 올린다.
+  useEffect(() => {
+    if (window.scrollY > 0) {
+      window.scrollTo(0, 0);
+    }
+  }, [game.startedAt]);
+
   // 판에서 일어난 일: 점수·탈락 보고를 깨우고 소리를 낸다. 떨어뜨리기는 서버에 보내지 않는다.
   const playRef = useRef(play);
   playRef.current = play;
