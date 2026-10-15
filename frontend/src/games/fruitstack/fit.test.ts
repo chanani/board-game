@@ -11,30 +11,34 @@ describe('fitBoard 확인 값(스펙 6.4)', () => {
 
   const portrait = (w: number, h: number, mini: number) => fitBoard({ layout: 'portrait', box: { w, h }, mode: 'play', big: 1, mini });
 
-  it('세로 342×584(360×640 화면): 높이가 모자라 점수 칸을 작은 판 옆에 두고, 내 판이 폭의 93%(334px)를 쓴다', () => {
-    expect(portrait(342, 584, 1)).toEqual({ bigWidth: 334, miniWidth: 36, bigCols: 1, miniCols: 1, hudBeside: true });
-    expect(portrait(342, 584, 4)).toEqual({ bigWidth: 334, miniWidth: 36, bigCols: 1, miniCols: 4, hudBeside: true });
-    // 예전 배치(작은 판 줄, 점수 띠, 내 판을 세 줄로)에서는 같은 화면에서 161px이었다.
-    expect(334 / 360).toBeGreaterThan(0.92);
+  it('세로 342×584(360×640 화면): 높이가 모자라 점수 칸을 작은 판 옆에 두고, 내 판은 들어갈 수 있는 크기(334px)의 90%인 300px이다', () => {
+    // 줄어 남은 높이(51px)는 작은 판 줄이 가져가 상대 판이 36px에서 커진다.
+    expect(portrait(342, 584, 1)).toEqual({ bigWidth: 300, miniWidth: 70, bigCols: 1, miniCols: 1, hudBeside: true });
+    expect(portrait(342, 584, 4)).toEqual({ bigWidth: 300, miniWidth: 40, bigCols: 1, miniCols: 4, hudBeside: true });
   });
 
-  it('세로 372×788(390×844 화면): 높이가 남아 점수 띠 한 줄 아래 작은 판 줄을 두고, 내 판이 상자 폭을 다 쓴다', () => {
-    expect(portrait(372, 788, 1)).toEqual({ bigWidth: 372, miniWidth: 101, bigCols: 1, miniCols: 1, hudBeside: false });
-    expect(portrait(372, 788, 4)).toEqual({ bigWidth: 372, miniWidth: 87, bigCols: 1, miniCols: 4, hudBeside: false });
+  it('세로 372×788(390×844 화면): 점수 띠 한 줄 아래 작은 판 줄을 두고, 내 판은 상자 폭(372px)의 90%인 334px이다', () => {
+    expect(portrait(372, 788, 1)).toEqual({ bigWidth: 334, miniWidth: 120, bigCols: 1, miniCols: 1, hudBeside: false });
+    expect(portrait(372, 788, 4)).toEqual({ bigWidth: 334, miniWidth: 87, bigCols: 1, miniCols: 4, hudBeside: false });
   });
 
-  it('세로 394×859(412×915 화면): 내 판이 상자 폭을 다 쓰고 작은 판은 높이 180까지만 커진다', () => {
-    expect(portrait(394, 859, 1)).toEqual({ bigWidth: 394, miniWidth: 120, bigCols: 1, miniCols: 1, hudBeside: false });
-    expect(portrait(394, 859, 4)).toEqual({ bigWidth: 394, miniWidth: 92, bigCols: 1, miniCols: 4, hudBeside: false });
+  it('세로 394×859(412×915 화면): 내 판은 상자 폭(394px)의 90%인 354px이고 작은 판은 높이 180까지만 커진다', () => {
+    expect(portrait(394, 859, 1)).toEqual({ bigWidth: 354, miniWidth: 120, bigCols: 1, miniCols: 1, hudBeside: false });
+    expect(portrait(394, 859, 4)).toEqual({ bigWidth: 354, miniWidth: 92, bigCols: 1, miniCols: 4, hudBeside: false });
   });
 
-  it('세로: 주소창이 높이를 더 가져간 화면(342×504)에서도 내 판이 가장 큰 쪽을 쓴다', () => {
-    expect(portrait(342, 504, 4)).toEqual({ bigWidth: 281, miniWidth: 36, bigCols: 1, miniCols: 4, hudBeside: true });
+  it('세로: 내 판은 언제나 줄이기 전 크기의 90%다(내림)', () => {
+    expect([[342, 584, 334], [372, 788, 372], [394, 859, 394], [342, 504, 281]].map(([w, h, before]) => [portrait(w, h, 4).bigWidth, Math.floor(before * 0.9)]))
+      .toEqual([[300, 300], [334, 334], [354, 354], [252, 252]]);
   });
 
-  it('세로: 상대 판이 없으면 점수 띠 한 줄과 내 판뿐이다', () => {
-    expect(portrait(342, 584, 0)).toEqual({ bigWidth: 342, miniWidth: 0, bigCols: 1, miniCols: 0, hudBeside: false });
-    expect(portrait(342, 500, 0)).toEqual({ bigWidth: 300, miniWidth: 0, bigCols: 1, miniCols: 0, hudBeside: false });
+  it('세로: 주소창이 높이를 더 가져간 화면(342×504)에서도 내 판이 가장 큰 쪽의 90%를 쓴다', () => {
+    expect(portrait(342, 504, 4)).toEqual({ bigWidth: 252, miniWidth: 40, bigCols: 1, miniCols: 4, hudBeside: true });
+  });
+
+  it('세로: 상대 판이 없으면 점수 띠 한 줄과 내 판(들어갈 수 있는 크기의 90%)뿐이다', () => {
+    expect(portrait(342, 584, 0)).toEqual({ bigWidth: 307, miniWidth: 0, bigCols: 1, miniCols: 0, hudBeside: false });
+    expect(portrait(342, 500, 0)).toEqual({ bigWidth: 270, miniWidth: 0, bigCols: 1, miniCols: 0, hudBeside: false });
   });
 
   it('세로: 어느 화면·인원에서도 윗줄과 내 판이 상자 안에 들어간다', () => {

@@ -19,6 +19,8 @@ const SIDE_HUD_WIDTH = 148;
 const SIDE_HUD_HEIGHT = 72;
 const PHONE_MINI_MIN = 54;
 const PHONE_MINI_MAX = 180;
+/** 세로 휴대폰에서 내 판은 들어갈 수 있는 가장 큰 크기의 90%로 둔다(가득 채우면 너무 넓다). */
+const PHONE_BOARD_SCALE = 0.9;
 const widthOf = (height: number) => Math.max(0, Math.floor((height * 2) / 3));
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
@@ -41,24 +43,40 @@ type PortraitFit = { bigWidth: number; miniWidth: number; hudBeside: boolean };
  * 세로 휴대폰의 한 가지 놓는 법. beside면 [점수 칸 | 작은 판들] 한 줄, 아니면 점수 띠 한 줄 아래 작은 판 줄. 그 아래가 내 판이다.
  * 작은 판은 내 판이 폭을 다 쓰고 남는 높이만큼만 커지고, 남는 높이가 없으면 가장 작은 크기로 줄어 내 판에 높이를 내준다.
  */
-function portraitWith({ box, mini }: FitInput, beside: boolean): PortraitFit {
+const miniRoom = ({ box, mini }: FitInput, beside: boolean) => Math.floor((box.w - (beside ? SIDE_HUD_WIDTH + MINI_GAP : 0) - (mini - 1) * MINI_GAP) / mini);
+const miniRowHeight = (miniWidth: number, beside: boolean) => Math.max(Math.ceil(miniWidth * 1.5) + LABEL, beside ? SIDE_HUD_HEIGHT : 0);
+
+function portraitWith(input: FitInput, beside: boolean): PortraitFit {
+  const { box } = input;
   const above = beside ? 0 : HUD + PHONE_GAP;
   const spare = box.h - PHONE_GAP - Math.ceil(box.w * 1.5) - above - LABEL;
-  const room = Math.floor((box.w - (beside ? SIDE_HUD_WIDTH + MINI_GAP : 0) - (mini - 1) * MINI_GAP) / mini);
-  const miniWidth = Math.min(widthOf(clamp(spare, PHONE_MINI_MIN, PHONE_MINI_MAX)), room);
-  const row = Math.max(Math.ceil(miniWidth * 1.5) + LABEL, beside ? SIDE_HUD_HEIGHT : 0);
+  const miniWidth = Math.min(widthOf(clamp(spare, PHONE_MINI_MIN, PHONE_MINI_MAX)), miniRoom(input, beside));
+  const row = miniRowHeight(miniWidth, beside);
   return { bigWidth: Math.min(box.w, widthOf(box.h - above - row - PHONE_GAP)), miniWidth, hudBeside: beside };
 }
 
-// 내 판이 더 큰 쪽을 쓰고, 같으면 점수 띠를 한 줄로 두는 쪽을 쓴다(화면이 길어 높이가 남을 때).
+/**
+ * 가장 큰 놓는 법에서 내 판만 PHONE_BOARD_SCALE로 줄인다(가로세로 비는 그대로, 가운데 정렬은 테이블이 한다).
+ * 줄어 남는 높이는 작은 판 줄이 가져가 상대 판이 커진다(높이 180·줄 폭까지). 전체 높이는 줄이기 전보다 크지 않다.
+ */
+function shrinkPortrait(input: FitInput, fit: PortraitFit): PortraitFit {
+  const bigWidth = Math.floor(fit.bigWidth * PHONE_BOARD_SCALE);
+  const freed = Math.floor((fit.bigWidth - bigWidth) * 1.5);
+  const rowBudget = miniRowHeight(fit.miniWidth, fit.hudBeside) + freed - LABEL;
+  const grown = Math.min(widthOf(Math.min(rowBudget, PHONE_MINI_MAX)), miniRoom(input, fit.hudBeside));
+  return { bigWidth, miniWidth: Math.max(fit.miniWidth, grown), hudBeside: fit.hudBeside };
+}
+
+// 내 판이 더 큰 쪽을 쓰고, 같으면 점수 띠를 한 줄로 두는 쪽을 쓴다(화면이 길어 높이가 남을 때). 그다음 내 판을 90%로 줄인다.
 function playPortrait(input: FitInput): BoardFit {
   const { box, mini } = input;
   if (mini === 0) {
-    return { bigWidth: Math.min(box.w, widthOf(box.h - HUD - PHONE_GAP)), miniWidth: 0, bigCols: 1, miniCols: 0, hudBeside: false };
+    const full = Math.min(box.w, widthOf(box.h - HUD - PHONE_GAP));
+    return { bigWidth: Math.floor(full * PHONE_BOARD_SCALE), miniWidth: 0, bigCols: 1, miniCols: 0, hudBeside: false };
   }
   const beside = portraitWith(input, true);
   const stacked = portraitWith(input, false);
-  return { ...(beside.bigWidth > stacked.bigWidth ? beside : stacked), bigCols: 1, miniCols: mini };
+  return { ...shrinkPortrait(input, beside.bigWidth > stacked.bigWidth ? beside : stacked), bigCols: 1, miniCols: mini };
 }
 
 function playLandscape({ box, mini }: FitInput): BoardFit {

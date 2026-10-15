@@ -152,14 +152,14 @@ describe('FruitStackTable', () => {
     expect(within(screen.getByTestId('fruit-hud')).getByRole('button', { name: '과일 순서 보기' })).toBeInTheDocument();
   });
 
-  it('세로 배치: 높이가 모자란 화면(360×640)은 점수 칸을 작은 판 옆에 두고 내 판이 폭을 거의 다 쓴다', () => {
+  it('세로 배치: 높이가 모자란 화면(360×640)은 점수 칸을 작은 판 옆에 두고 내 판은 들어갈 수 있는 크기의 90%다', () => {
     setMediaMatches(false);
     renderTable();
 
     expect(table()).toHaveAttribute('data-layout', 'portrait');
     expect(screen.getByText('끌어서 놓으면 떨어져요')).toBeInTheDocument();
-    expect(screen.getByTestId('my-board')).toHaveStyle({ width: '334px' });
-    expect(minis()[0]).toHaveStyle({ width: '36px' });
+    expect(screen.getByTestId('my-board')).toHaveStyle({ width: '300px' });
+    expect(minis()[0]).toHaveStyle({ width: '70px' });
     const row = screen.getByTestId('info-row');
     expect(row).toContainElement(screen.getByTestId('fruit-hud'));
     expect(row).toContainElement(screen.getByTestId('mini-row'));
@@ -173,7 +173,7 @@ describe('FruitStackTable', () => {
     renderTable({ game: five });
 
     expect(minis()).toHaveLength(4);
-    expect(screen.getByTestId('my-board')).toHaveStyle({ width: '334px' });
+    expect(screen.getByTestId('my-board')).toHaveStyle({ width: '300px' });
     expect(screen.getByTestId('info-row')).toContainElement(minis()[3]);
   });
 
