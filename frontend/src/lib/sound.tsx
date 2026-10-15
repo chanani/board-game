@@ -192,7 +192,7 @@ const RECIPES: Record<Exclude<SoundName, CardMoveSound>, Recipe> = {
   tick: (ctx, out) => { tone(ctx, out, 660, 0, 0.09, 'square', 0.06); tone(ctx, out, 660, 0.16, 0.09, 'square', 0.06); },
   // 남의 채팅 도착: 짧고 부드러운 '톡'(사인파가 살짝 올라가며 0.08초에 사라지고, 위에 아주 작은 맑은 음을 얹는다).
   chat: (ctx, out) => { glide(ctx, out, 988, 1319, 0, 0.08, 0.11); tone(ctx, out, 2637, 0.01, 0.04, 'sine', 0.025); },
-  // 과일 쌓기 합치기: 짧게 올라가는 맑은 음(사인파 520 → 780 Hz, 0.09초).
+  // 수박게임 합치기: 짧게 올라가는 맑은 음(사인파 520 → 780 Hz, 0.09초).
   merge: (ctx, out) => glide(ctx, out, 520, 780, 0, 0.09, 0.14),
   // 게임 시작 카운트다운의 숫자 하나(3·2·1): 짧고 둥근 '삐'(C5, 삼각파 0.14초).
   countdown: (ctx, out) => tone(ctx, out, 523, 0, 0.14, 'triangle', 0.16),

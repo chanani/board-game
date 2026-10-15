@@ -89,7 +89,7 @@ class BotStompFlowTest {
     }
 
     @ParameterizedTest
-    // 과일 쌓기는 컴퓨터를 받지 않는다(R35).
+    // 수박게임은 컴퓨터를 받지 않는다(R35).
     @EnumSource(value = GameType.class, names = "FRUIT_STACK", mode = EnumSource.Mode.EXCLUDE)
     void 사람_1명과_컴퓨터_2명이_게임을_끝까지_두고_기록은_남지_않는다(GameType type) throws Exception {
         long matchCount = matches.count();
@@ -140,7 +140,7 @@ class BotStompFlowTest {
             case PAPER_SAFARI -> objectMapper.treeToValue(view, PaperSafariSessionView.class);
             case UNO -> objectMapper.treeToValue(view, UnoSessionView.class);
             case OLD_MAID -> objectMapper.treeToValue(view, OldMaidSessionView.class);
-            case FRUIT_STACK -> throw new IllegalArgumentException("과일 쌓기는 컴퓨터와 하지 않는다(R35)");
+            case FRUIT_STACK -> throw new IllegalArgumentException("수박게임은 컴퓨터와 하지 않는다(R35)");
         };
     }
 

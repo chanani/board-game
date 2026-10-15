@@ -76,7 +76,7 @@ class FruitStackRecordApiTest {
         roomService.act(code, guest.id(), out(30));
 
         statsOf(host)
-                .andExpect(jsonPath("$.stats[3].gameTypeName").value("과일 쌓기"))
+                .andExpect(jsonPath("$.stats[3].gameTypeName").value("수박게임"))
                 .andExpect(jsonPath("$.stats[3].wins").value(1))
                 .andExpect(jsonPath("$.stats[3].rounds").value(1))
                 .andExpect(jsonPath("$.stats[3].averageRoundScore").value(50.0));

@@ -14,7 +14,7 @@ vi.mock('../../realtime/RealtimeContext', () => ({ useRealtime: () => ({ connect
 
 const member = (id: number, host = false) => ({ id, nickname: `P${id}`, host, connected: true, offlineSeconds: 0, ready: false });
 const room: Room = {
-  code: 'ABCDEF', name: '방', gameType: 'FRUIT_STACK', gameTypeName: '과일 쌓기', status: 'PLAYING', hostId: 1, maxPlayers: 5,
+  code: 'ABCDEF', name: '방', gameType: 'FRUIT_STACK', gameTypeName: '수박게임', status: 'PLAYING', hostId: 1, maxPlayers: 5,
   locked: false, spectators: [], theme: 'WOOD', members: [member(1, true), member(2), member(3), member(4), member(5)],
 };
 

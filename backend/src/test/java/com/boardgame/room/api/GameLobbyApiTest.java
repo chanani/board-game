@@ -72,7 +72,7 @@ class GameLobbyApiTest {
                 .andExpect(jsonPath("$[2].minPlayers").value(2))
                 .andExpect(jsonPath("$[2].maxPlayers").value(6))
                 .andExpect(jsonPath("$[3].gameType").value("FRUIT_STACK"))
-                .andExpect(jsonPath("$[3].name").value("과일 쌓기"))
+                .andExpect(jsonPath("$[3].name").value("수박게임"))
                 .andExpect(jsonPath("$[3].minPlayers").value(2))
                 .andExpect(jsonPath("$[3].maxPlayers").value(5));
     }

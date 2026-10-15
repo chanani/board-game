@@ -8,7 +8,7 @@ describe('FruitStackBoxArt', () => {
     const art = screen.getByTestId('fruit-box-art');
 
     expect(art.querySelectorAll('svg').length).toBeGreaterThanOrEqual(5);
-    expect(art).toHaveTextContent('과일 쌓기');
+    expect(art).toHaveTextContent('수박게임');
     expect(art).toHaveAttribute('aria-hidden', 'true');
   });
 });

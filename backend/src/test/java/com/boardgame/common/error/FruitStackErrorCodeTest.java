@@ -9,9 +9,9 @@ import org.springframework.http.HttpStatus;
 class FruitStackErrorCodeTest {
 
     @Test
-    void 과일_쌓기_오류_코드의_상태와_문구() {
+    void 수박게임_오류_코드의_상태와_문구() {
         assertThat(ErrorCode.FRUIT_STACK_INVALID_PLAYER_COUNT.status()).isEqualTo(HttpStatus.BAD_REQUEST);
-        assertThat(ErrorCode.FRUIT_STACK_INVALID_PLAYER_COUNT.message()).isEqualTo("과일 쌓기는 2~5명이 플레이할 수 있습니다.");
+        assertThat(ErrorCode.FRUIT_STACK_INVALID_PLAYER_COUNT.message()).isEqualTo("수박게임은 2~5명이 플레이할 수 있습니다.");
         assertThat(ErrorCode.FRUIT_STACK_SCORE_REJECTED.status()).isEqualTo(HttpStatus.CONFLICT);
         assertThat(ErrorCode.FRUIT_STACK_SCORE_REJECTED.message()).isEqualTo("점수를 반영할 수 없어요.");
         assertThat(ErrorCode.BOTS_NOT_SUPPORTED.status()).isEqualTo(HttpStatus.CONFLICT);
@@ -19,8 +19,8 @@ class FruitStackErrorCodeTest {
     }
 
     @Test
-    void 과일_쌓기는_2명에서_5명이고_컴퓨터를_받지_않는다() {
-        assertThat(GameType.FRUIT_STACK.displayName()).isEqualTo("과일 쌓기");
+    void 수박게임은_2명에서_5명이고_컴퓨터를_받지_않는다() {
+        assertThat(GameType.FRUIT_STACK.displayName()).isEqualTo("수박게임");
         assertThat(GameType.FRUIT_STACK.minPlayers()).isEqualTo(2);
         assertThat(GameType.FRUIT_STACK.maxPlayers()).isEqualTo(5);
         assertThat(GameType.FRUIT_STACK.supportsBots()).isFalse();

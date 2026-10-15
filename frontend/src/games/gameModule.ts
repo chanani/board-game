@@ -31,7 +31,7 @@ export type TableProps<V extends SessionView> = {
   /** 상태를 바꾸지 않는 가벼운 신호(도둑잡기 고르는 카드). 쓰지 않는 게임은 무시한다. */
   signal?: GameSignal | null;
   sendSignal?: (action: GameAction) => void;
-  /** 잦은 신호(과일 쌓기 판 모습)를 React 상태를 거치지 않고 바로 받는다. 구독자가 있는 동안 signal은 바뀌지 않는다. 돌려준 함수로 끊는다. */
+  /** 잦은 신호(수박게임 판 모습)를 React 상태를 거치지 않고 바로 받는다. 구독자가 있는 동안 signal은 바뀌지 않는다. 돌려준 함수로 끊는다. */
   subscribeSignal?: (listener: (signal: GameSignal) => void) => () => void;
   aside?: ReactNode;
   asideFooter?: ReactNode;
@@ -56,18 +56,18 @@ export type GameModule<V extends SessionView> = {
   tagline: string;
   minPlayers: number;
   maxPlayers: number;
-  /** 컴퓨터 플레이어를 받는지. 없으면 받는다. 과일 쌓기만 false(서버도 거절한다). */
+  /** 컴퓨터 플레이어를 받는지. 없으면 받는다. 수박게임만 false(서버도 거절한다). */
   supportsBots?: boolean;
   Table: ComponentType<TableProps<V>>;
   /**
-   * 세로 휴대폰에서도 방 상태 바(aside)와 채팅(asideFooter)을 방 화면이 그리지 않고 테이블에 넘길지(과일 쌓기).
+   * 세로 휴대폰에서도 방 상태 바(aside)와 채팅(asideFooter)을 방 화면이 그리지 않고 테이블에 넘길지(수박게임).
    * 판이 화면을 가득 써야 하는 게임이 켜고, 테이블이 onLeave·chat으로 나가기와 채팅을 작게 그린다. 없으면 방 화면이 위아래에 그린다.
    */
   ownsPhoneChrome?: boolean;
   describeChanges: (prev: V | null, next: V, nicknameOf: Nickname) => LogDraft[];
   isGameOver: (view: V) => boolean;
   wasParticipant: (view: V, meId: number) => boolean;
-  /** 그 사람이 이미 자기 판을 끝내, 게임 중에 나가도 기권이 아닌지(과일 쌓기에서 탈락한 사람). 없으면 게임 중에 나간 사람은 모두 기권으로 알린다. */
+  /** 그 사람이 이미 자기 판을 끝내, 게임 중에 나가도 기권이 아닌지(수박게임에서 탈락한 사람). 없으면 게임 중에 나간 사람은 모두 기권으로 알린다. */
   leavesWithoutForfeit?: (view: V, memberId: number) => boolean;
   gameOverKey: (code: string, view: V) => string;
   rules: GameRules;

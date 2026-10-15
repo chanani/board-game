@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { GameAction, GameSignal, SessionView } from '../../api/types';
 import { fruitPlayer, fruitSession, fruitView } from './fruitStackFixtures';
 
-describe('과일 쌓기 계약 타입과 픽스처', () => {
+describe('수박게임 계약 타입과 픽스처', () => {
   it('기본 화면은 두 사람이 0점으로 게임 중이다', () => {
     const game = fruitView();
     expect(game).toMatchObject({ viewerId: 1, status: 'IN_PROGRESS', startedAt: 1_791_900_000_000, seed: 12345, participantIds: [1, 2], result: null, winnerId: null, deadline: 1_791_900_600_000, serverNow: 1_791_900_000_000 });

@@ -538,7 +538,7 @@ describe('RoomPage 준비와 채팅', () => {
 
     expect(screen.getByTestId('chat-strip')).toBeInTheDocument();
     expect(screen.queryByTestId('game-chat-panel')).not.toBeInTheDocument();
-    // 방 상태 바도 그대로 위에 있고, 화면을 가득 쓰는 게임(과일 쌓기)의 채팅 버튼·머리줄 숨김은 쓰지 않는다.
+    // 방 상태 바도 그대로 위에 있고, 화면을 가득 쓰는 게임(수박게임)의 채팅 버튼·머리줄 숨김은 쓰지 않는다.
     expect(screen.getByTestId('room-status-bar')).toBeInTheDocument();
     expect(screen.queryByTestId('game-chat-button')).toBeNull();
     expect(document.documentElement.dataset.gameFocus).toBeUndefined();
@@ -737,8 +737,8 @@ describe('RoomPage 컴퓨터를 받지 않는 게임', () => {
     ],
   });
 
-  it('R36 과일 쌓기 방의 대기실에는 컴퓨터를 앉히는 길이 없다', async () => {
-    setChannel({ room: hostRoom('FRUIT_STACK', '과일 쌓기') });
+  it('R36 수박게임 방의 대기실에는 컴퓨터를 앉히는 길이 없다', async () => {
+    setChannel({ room: hostRoom('FRUIT_STACK', '수박게임') });
     renderRoom();
 
     // 이 테스트 화면에는 친구 목록이 없어 "친구 초대"도 없다. 컴퓨터를 앉히는 길까지 없으니 빈자리는 누를 수 없는 그냥 빈자리다.
@@ -753,11 +753,11 @@ describe('RoomPage 컴퓨터를 받지 않는 게임', () => {
     expect(screen.queryByText('컴퓨터 추가')).toBeNull();
   });
 
-  // 캐롤(3)과 앨리스(1)가 과일 쌓기를 하는 중.
-  const fruitRoom: Room = { ...hostRoom('FRUIT_STACK', '과일 쌓기'), status: 'PLAYING' };
+  // 캐롤(3)과 앨리스(1)가 수박게임을 하는 중.
+  const fruitRoom: Room = { ...hostRoom('FRUIT_STACK', '수박게임'), status: 'PLAYING' };
   const fruitGame = { gameType: 'FRUIT_STACK', game: fruitView({ viewerId: 3, participantIds: [3, 1], players: [fruitPlayer(3), fruitPlayer(1)] }) };
 
-  it('과일 쌓기는 세로 휴대폰에서 방 상태 바와 채팅 줄 대신 맨 위 한 줄(나가기·채팅 버튼)을 테이블이 그린다', async () => {
+  it('수박게임은 세로 휴대폰에서 방 상태 바와 채팅 줄 대신 맨 위 한 줄(나가기·채팅 버튼)을 테이블이 그린다', async () => {
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null);
     setMediaMatches(false);
     setChannel({ room: fruitRoom, view: fruitGame });
@@ -778,7 +778,7 @@ describe('RoomPage 컴퓨터를 받지 않는 게임', () => {
     vi.restoreAllMocks();
   });
 
-  it('과일 쌓기도 PC에서는 방 상태 바와 오른쪽 채팅 칸을 방 화면이 그린다', async () => {
+  it('수박게임도 PC에서는 방 상태 바와 오른쪽 채팅 칸을 방 화면이 그린다', async () => {
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null);
     setMediaMatches(true);
     setChannel({ room: fruitRoom, view: fruitGame });

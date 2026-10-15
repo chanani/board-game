@@ -22,7 +22,7 @@ const departureText = (member: RoomMember, finished: boolean): string => {
 
 /**
  * 게임 중이던 방에서 나를 뺀 참가자가 빠졌으면, 사람마다 알림 문구를 만든다(끊겨 있던 사람은 자동 기권 문구).
- * finished: 이미 자기 판을 끝내 나가도 기권이 아닌 사람(과일 쌓기에서 탈락한 사람). 그 사람은 "나갔어요"로만 알린다.
+ * finished: 이미 자기 판을 끝내 나가도 기권이 아닌 사람(수박게임에서 탈락한 사람). 그 사람은 "나갔어요"로만 알린다.
  */
 export function departures(prev: Room, next: Room, meId: number, finished: (memberId: number) => boolean = () => false): Departure[] {
   if (prev.status !== 'PLAYING' || wasRemoved(prev, next, meId)) {

@@ -116,7 +116,7 @@ export function RoomPage() {
   const endingGame = !playing && gameView !== null && !game.isGameOver(gameView) && (wasPlayer || spectating || watched);
   const showGame = gameView !== null && (playing || showGameOver || endingGame);
   const Table = game.Table;
-  // R36: 컴퓨터를 받지 않는 게임(과일 쌓기)의 대기실에는 컴퓨터를 앉히는 길을 넘기지 않는다.
+  // R36: 컴퓨터를 받지 않는 게임(수박게임)의 대기실에는 컴퓨터를 앉히는 길을 넘기지 않는다.
   const botsAllowed = game.supportsBots !== false;
 
   const run = async (action: () => Promise<unknown>) => {
@@ -145,7 +145,7 @@ export function RoomPage() {
 
   // 휴대폰을 눕힌 게임 화면은 상태 바를 테이블 왼쪽 칸으로 옮긴다.
   const landscapeGame = showGame && layout === 'landscape';
-  // 세로 휴대폰에서도 상태 바와 채팅을 스스로 그리는 게임(과일 쌓기)에는 눕힌 화면처럼 테이블에 넘긴다.
+  // 세로 휴대폰에서도 상태 바와 채팅을 스스로 그리는 게임(수박게임)에는 눕힌 화면처럼 테이블에 넘긴다.
   const tableChrome = landscapeGame || (showGame && layout === 'portrait' && game.ownsPhoneChrome === true);
   const statusBar = <RoomStatusBar room={room} playing={playing} onLeave={requestLeave} onSettings={canEditSettings ? () => setEditingSettings(true) : undefined} stacked={landscapeGame} />;
 

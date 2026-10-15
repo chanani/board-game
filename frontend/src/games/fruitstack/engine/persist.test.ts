@@ -89,7 +89,7 @@ describe('R32~R34 판 저장과 복원', () => {
     expect(loadBoard(window.localStorage, 'bg.fruit:NONE:1', { startedAt: STARTED_AT, seed: 12345 })).toBeNull();
   });
 
-  it('R33 지금 키가 아닌 과일 쌓기 저장만 지운다', () => {
+  it('R33 지금 키가 아닌 수박게임 저장만 지운다', () => {
     window.localStorage.setItem('bg.fruit:AAAAAA:7', '{}');
     window.localStorage.setItem('bg.fruit:BBBBBB:7', '{}');
     window.localStorage.setItem('bg.muted', '1');

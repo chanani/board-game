@@ -20,7 +20,7 @@ export function FruitStackBoxArt() {
           <FruitIcon level={level} size={size} />
         </g>
       ))}
-      <text x="60" y="140" textAnchor="middle" fontWeight={900} fontSize="19" fill="#fff" stroke="#2F5A1C" strokeWidth="4" paintOrder="stroke">과일 쌓기</text>
+      <text x="60" y="140" textAnchor="middle" fontWeight={900} fontSize="19" fill="#fff" stroke="#2F5A1C" strokeWidth="4" paintOrder="stroke">수박게임</text>
     </svg>
   );
 }

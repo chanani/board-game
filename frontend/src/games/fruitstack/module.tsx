@@ -11,7 +11,7 @@ function renderArt(slide: RuleSlideBase) {
 
 export const fruitStackModule: GameModule<FruitStackSessionView> = {
   gameType: 'FRUIT_STACK',
-  name: '과일 쌓기',
+  name: '수박게임',
   slug: 'fruit-stack',
   tagline: '2~5인 · 합쳐서 점수를 쌓아라!',
   minPlayers: 2,
@@ -29,7 +29,7 @@ export const fruitStackModule: GameModule<FruitStackSessionView> = {
   gameOverKey: (code, view) => `${code}:FRUIT_STACK:${view.game.startedAt}`,
   // 이 게임의 행동(SCORE·OUT)은 훅이 보내는 보고라 거절은 모두 조용한 코드다. 걸음은 경기 하나다.
   stepKey: ({ game }) => `${game.status}:${game.startedAt}`,
-  rules: { title: '과일 쌓기 규칙', summary: FRUIT_RULE_SUMMARY, slides: FRUIT_RULE_SLIDES, renderArt },
+  rules: { title: '수박게임 규칙', summary: FRUIT_RULE_SUMMARY, slides: FRUIT_RULE_SLIDES, renderArt },
   BoxArt: FruitStackBoxArt,
   averageScoreLabel: '평균 점수',
 };

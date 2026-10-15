@@ -16,7 +16,7 @@ import { useActionWatchdog } from './useActionWatchdog';
 // 게임이 막 끝난 순간(상대가 나감·마지막 카드)에 누른 행동은 "시작되지 않았다/이미 끝났다"로 거절된다. 곧 끝 화면이 오므로 알리지 않는다.
 // 화면이 이미 지나친 행동의 거절(마감 자동 처리에 밀린 행동 등)은 isStaleRejection이 모든 게임에서 가린다.
 // 감정 표현을 잇달아 눌러 막힌 것은 버튼이 이미 잠겨 있어 따로 알리지 않는다.
-// 과일 쌓기 점수·탈락 보고의 거절은 사용자가 누른 행동이 아니라 알리지 않는다.
+// 수박게임 점수·탈락 보고의 거절은 사용자가 누른 행동이 아니라 알리지 않는다.
 const QUIET_ERROR_CODES = new Set([
   'UNO_CATCH_CLOSED', 'UNO_CALL_NOT_ALLOWED', 'OLD_MAID_SHUFFLE_TOO_FAST', 'OLD_MAID_SHUFFLE_NOT_ALLOWED',
   'GAME_NOT_STARTED', 'GAME_ALREADY_OVER', 'EMOTE_TOO_FAST', 'FRUIT_STACK_SCORE_REJECTED',

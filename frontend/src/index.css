@@ -427,7 +427,7 @@ html[data-room-bar] .toast-stack {
   bottom: 5rem;
 }
 
-/* 휴대폰에서 판이 화면을 가득 쓰는 게임(과일 쌓기)이 게임 동안 html[data-game-focus]를 단다(useGameFocus).
+/* 휴대폰에서 판이 화면을 가득 쓰는 게임(수박게임)이 게임 동안 html[data-game-focus]를 단다(useGameFocus).
  * 사이트 머리줄을 숨기고 페이지 여백을 4px로 줄인다. 높이는 주소창·도구 막대를 뺀 지금 보이는 높이(100dvh)까지만 써서
  * 페이지가 스크롤되지 않고, 판 밖을 끌어도 당겨서 새로고침·튕김이 일어나지 않게 한다. */
 html[data-game-focus] {

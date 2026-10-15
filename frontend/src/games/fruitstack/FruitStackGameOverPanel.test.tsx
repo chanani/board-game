@@ -6,7 +6,7 @@ import { FruitStackGameOverPanel } from './FruitStackGameOverPanel';
 import { fruitView } from './fruitStackFixtures';
 
 const room: Room = {
-  code: 'ABCDEF', name: '방', gameType: 'FRUIT_STACK', gameTypeName: '과일 쌓기', status: 'WAITING', hostId: 1, maxPlayers: 5,
+  code: 'ABCDEF', name: '방', gameType: 'FRUIT_STACK', gameTypeName: '수박게임', status: 'WAITING', hostId: 1, maxPlayers: 5,
   locked: false, spectators: [], theme: 'WOOD',
   members: [
     { id: 1, nickname: 'P1', host: true, connected: true, offlineSeconds: 0, ready: false },

@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { fruitStackModule } from './module';
 import { FRUIT_RULE_SLIDES, FRUIT_RULE_SUMMARY } from './rules';
 
-describe('과일 쌓기 규칙', () => {
+describe('수박게임 규칙', () => {
   it('규칙은 6장이고 제목이 순서대로다', () => {
     expect(FRUIT_RULE_SLIDES.map((slide) => slide.title)).toEqual(['목표', '과일', '떨어뜨리기', '탈락', '끝', '나가기와 끊김']);
   });
@@ -23,10 +23,12 @@ describe('과일 쌓기 규칙', () => {
     ]);
   });
 
-  it('어디에도 "수박게임"이라고 쓰지 않는다', () => {
+  it('게임 이름은 "수박게임"이고 예전 이름 "과일 쌓기"는 어디에도 쓰지 않는다', () => {
+    expect(fruitStackModule.name).toBe('수박게임');
+    expect(fruitStackModule.rules.title).toBe('수박게임 규칙');
     const texts = [...FRUIT_RULE_SLIDES.flatMap((slide) => [slide.title, ...slide.body]), ...FRUIT_RULE_SUMMARY, fruitStackModule.name, fruitStackModule.tagline, fruitStackModule.rules.title];
 
-    texts.forEach((text) => expect(text.replace(/\s/g, '')).not.toContain('수박게임'));
+    texts.forEach((text) => expect(text.replace(/\s/g, '')).not.toContain('과일쌓기'));
   });
 
   it('모듈의 renderArt가 장의 과일 수만큼 그림을 그린다', () => {

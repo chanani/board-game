@@ -58,9 +58,9 @@ export type GameAction = {
   index?: number | null;
   /** 도둑잡기 DISCARD: 짝으로 버릴 서로 다른 두 장. */
   cardIds?: number[];
-  /** 과일 쌓기 SCORE·OUT: 지금 내 총점. */
+  /** 수박게임 SCORE·OUT: 지금 내 총점. */
   score?: number;
-  /** 과일 쌓기 BOARD: 판 모습(R23). */
+  /** 수박게임 BOARD: 판 모습(R23). */
   board?: string;
 };
 

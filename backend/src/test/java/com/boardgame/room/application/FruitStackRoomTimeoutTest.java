@@ -32,7 +32,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.ApplicationEventPublisher;
 
-// 과일 쌓기 세션도 기존 방 타이머(TurnTimer·rearm·applyTimeout)에 그대로 올라탄다. 마감은 하나뿐이다: 시작 + 10분(R17).
+// 수박게임 세션도 기존 방 타이머(TurnTimer·rearm·applyTimeout)에 그대로 올라탄다. 마감은 하나뿐이다: 시작 + 10분(R17).
 class FruitStackRoomTimeoutTest {
 
     private static final String CODE = "FRUITS";

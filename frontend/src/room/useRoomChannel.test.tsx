@@ -381,7 +381,7 @@ describe('useRoomChannel', () => {
     expect(result.current.missing).toBe(true);
   });
 
-  it('과일 쌓기에서 이미 탈락한 사람이 나가면 기권이라고 알리지 않는다', () => {
+  it('수박게임에서 이미 탈락한 사람이 나가면 기권이라고 알리지 않는다', () => {
     const member = (id: number, nickname: string) => ({ id, nickname, host: id === 1, connected: true, offlineSeconds: 0, ready: false });
     const withMembers = (ids: number[]): Room => ({
       ...room('방', 'PLAYING'), gameType: 'FRUIT_STACK',
@@ -525,7 +525,7 @@ describe('useRoomChannel', () => {
     expect(result.current.subscribeSignal).toBe(first);
   });
 
-  it('과일 쌓기 점수 거절은 알림을 띄우지 않는다', async () => {
+  it('수박게임 점수 거절은 알림을 띄우지 않는다', async () => {
     vi.spyOn(roomsApi, 'get').mockResolvedValue(room('방'));
     renderHook(() => useRoomChannel('ABCDEF'));
     await act(async () => {});

@@ -46,7 +46,7 @@ describe('departures', () => {
     expect(texts(prev, { ...prev, spectators: [] }, 1)).toEqual([]);
   });
 
-  it('이미 자기 판을 끝낸 사람(과일 쌓기 탈락)이 나가면 기권이라고 하지 않는다', () => {
+  it('이미 자기 판을 끝낸 사람(수박게임 탈락)이 나가면 기권이라고 하지 않는다', () => {
     const prev = room('PLAYING', [member(1, '앨리스'), member(2, '밥'), member(3, '캐롤')]);
     const next = room('PLAYING', [member(1, '앨리스')]);
     expect(departures(prev, next, 1, (id) => id === 2).map((d) => d.text)).toEqual(['밥님이 나갔어요', '캐롤님이 기권하고 나갔어요']);

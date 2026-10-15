@@ -32,7 +32,7 @@ class FruitStackBotApiTest {
     }
 
     @Test
-    void R35_과일_쌓기_방에_컴퓨터를_앉히면_409_BOTS_NOT_SUPPORTED() throws Exception {
+    void R35_수박게임_방에_컴퓨터를_앉히면_409_BOTS_NOT_SUPPORTED() throws Exception {
         User host = ApiUsers.create(mockMvc);
         String code = create(host, "FRUIT_STACK");
 

@@ -149,7 +149,7 @@ public class Room {
         return occupants.addBot(difficulty, avatar, profile.capacity());
     }
 
-    // 과일 쌓기 R35: 컴퓨터를 받지 않는 게임의 방에는 앉히지 않는다.
+    // 수박게임 R35: 컴퓨터를 받지 않는 게임의 방에는 앉히지 않는다.
     private void requireBotsSupported() {
         if (!gameType().supportsBots()) {
             throw new BusinessException(ErrorCode.BOTS_NOT_SUPPORTED);

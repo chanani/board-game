@@ -34,7 +34,7 @@ class FruitStackRoomApiTest {
     }
 
     @Test
-    void 과일_쌓기_방은_5명까지_만들고_6명과_1명은_거절한다() throws Exception {
+    void 수박게임_방은_5명까지_만들고_6명과_1명은_거절한다() throws Exception {
         User host = ApiUsers.create(mockMvc);
 
         create(host, 6)
@@ -46,7 +46,7 @@ class FruitStackRoomApiTest {
         ResultActions created = create(host, 5)
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.gameType").value("FRUIT_STACK"))
-                .andExpect(jsonPath("$.gameTypeName").value("과일 쌓기"));
+                .andExpect(jsonPath("$.gameTypeName").value("수박게임"));
         mockMvc.perform(post("/api/rooms/{code}/leave", codeOf(created)).session(host.session()));
     }
 
@@ -72,7 +72,7 @@ class FruitStackRoomApiTest {
     }
 
     @Test
-    void 로비_목록의_네_번째가_과일_쌓기다() throws Exception {
+    void 로비_목록의_네_번째가_수박게임이다() throws Exception {
         User viewer = ApiUsers.create(mockMvc);
 
         mockMvc.perform(get("/api/games").session(viewer.session()))
