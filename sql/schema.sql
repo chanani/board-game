@@ -86,6 +86,15 @@ CREATE TABLE IF NOT EXISTS member_game_stat (
     INDEX idx_member_game_stat_game_type (game_type)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
+-- 회원별·게임별 혼자 한 게임의 최고 점수(수박게임 혼자 하기. 승패·평균 점수에는 넣지 않는다)
+CREATE TABLE IF NOT EXISTS solo_best_score (
+    member_id   BIGINT      NOT NULL,
+    game_type   VARCHAR(30) NOT NULL,
+    best_score  INT         NOT NULL,
+    achieved_at DATETIME(6) NOT NULL,
+    PRIMARY KEY (member_id, game_type)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
+
 -- 친구 요청(아직 답하지 않은 것만 남는다. 수락·거절·취소하면 지운다)
 CREATE TABLE IF NOT EXISTS friend_request (
     id           BIGINT      NOT NULL AUTO_INCREMENT,
@@ -112,3 +121,4 @@ CREATE TABLE IF NOT EXISTS friendship (
 -- 운영은 ddl-auto: update라 서버가 뜰 때 자동으로 더해진다. 손으로 맞출 때만 아래를 실행한다.
 -- 프로필 사진(동물 얼굴 그림 키: CAT, DOG, ... PENGUIN). 비어 있으면 회원 id로 정한 기본 그림.
 -- ALTER TABLE members ADD COLUMN avatar VARCHAR(20) NULL AFTER password_hash;
+-- 혼자 한 게임의 최고 점수 테이블(solo_best_score)은 ddl-auto: update가 새 테이블로 만든다. 손으로 맞출 때는 위 CREATE TABLE을 실행한다.

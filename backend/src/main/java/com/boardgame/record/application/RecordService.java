@@ -7,6 +7,7 @@ import com.boardgame.game.RoundEntry;
 import com.boardgame.game.event.GameCompletedEvent;
 import com.boardgame.game.event.GameStartedEvent;
 import com.boardgame.game.event.RoundCompletedEvent;
+import com.boardgame.game.event.SoloCompletedEvent;
 import com.boardgame.record.domain.GameMatch;
 import com.boardgame.record.domain.GameMatchRepository;
 import com.boardgame.record.domain.MatchParticipant;
@@ -18,6 +19,8 @@ import com.boardgame.record.domain.MemberGameStatId;
 import com.boardgame.record.domain.MemberGameStatRepository;
 import com.boardgame.record.domain.RoundParticipant;
 import com.boardgame.record.domain.RoundParticipantRepository;
+import com.boardgame.record.domain.SoloBestScore;
+import com.boardgame.record.domain.SoloBestScoreRepository;
 import java.time.Clock;
 import java.util.List;
 import java.util.Map;
@@ -41,17 +44,20 @@ public class RecordService {
     private final MatchRoundRepository roundRepository;
     private final RoundParticipantRepository roundParticipantRepository;
     private final MemberGameStatRepository statRepository;
+    private final SoloBestScoreRepository bestRepository;
     private final Clock clock;
 
     public RecordService(GameMatchRepository matchRepository, MatchParticipantRepository participantRepository,
                          MatchRoundRepository roundRepository,
                          RoundParticipantRepository roundParticipantRepository,
-                         MemberGameStatRepository statRepository, Clock clock) {
+                         MemberGameStatRepository statRepository, SoloBestScoreRepository bestRepository,
+                         Clock clock) {
         this.matchRepository = matchRepository;
         this.participantRepository = participantRepository;
         this.roundRepository = roundRepository;
         this.roundParticipantRepository = roundParticipantRepository;
         this.statRepository = statRepository;
+        this.bestRepository = bestRepository;
         this.clock = clock;
     }
 
@@ -91,6 +97,19 @@ public class RecordService {
         Map<Long, MatchParticipant> participants = participantRepository.findByMatch(match).stream()
                 .collect(Collectors.toMap(MatchParticipant::memberId, Function.identity(), (first, second) -> first));
         event.result().entries().forEach(entry -> recordMatchEntry(participants, match, entry, event.gameType()));
+    }
+
+    // 수박게임 S6: 혼자 한 게임은 승패·평균 점수에 넣지 않고 최고 점수만 바꾼다(첫 판이면 그 점수가 최고 점수).
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void recordSolo(SoloCompletedEvent event) {
+        MemberGameStatId id = new MemberGameStatId(event.memberId(), event.gameType());
+        Optional<SoloBestScore> found = bestRepository.findById(id);
+        if (found.isEmpty()) {
+            bestRepository.save(SoloBestScore.first(event.memberId(), event.gameType(), event.score(), event.endedAt()));
+            return;
+        }
+        SoloBestScore best = found.get();
+        best.offer(event.score(), event.endedAt());
     }
 
     private GameMatch startFromCompletion(GameCompletedEvent event) {

@@ -16,6 +16,19 @@ export function decimal(value: number | null): string {
   return value.toFixed(1);
 }
 
+/** 점수를 천 단위 쉼표와 "점"으로. 없으면 "-". */
+export function points(value: number | null | undefined): string {
+  if (value === null || value === undefined) {
+    return '-';
+  }
+  return `${value.toLocaleString('ko-KR')}점`;
+}
+
+/** 혼자 할 수 있는 게임(최소 인원 1명, 수박게임)인지. 혼자 한 게임은 승률 대신 최고 점수만 남는다. */
+export function playsSolo(minPlayers: number | undefined): boolean {
+  return minPlayers === 1;
+}
+
 /** 최근 경기 시각. 현지 시각 24시간제 `M/D HH:mm`, 읽을 수 없는 값은 빈 문자열. */
 export function dateTime(iso: string): string {
   const date = new Date(iso);

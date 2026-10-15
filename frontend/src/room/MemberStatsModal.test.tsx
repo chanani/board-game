@@ -51,6 +51,29 @@ describe('MemberStatsModal', () => {
     expect(recordsApi.member).toHaveBeenCalledWith(2);
   });
 
+  it('수박게임을 혼자 한 적이 있으면 표 아래에 혼자 최고 점수를 보여 준다', async () => {
+    vi.mocked(recordsApi.member).mockResolvedValue(bob([stat('UNO', 2, 1), { ...stat('FRUIT_STACK', 0, 0), bestSoloScore: 1234 }]));
+    renderModal();
+
+    expect(await screen.findByTestId('solo-best-FRUIT_STACK')).toHaveTextContent('수박게임 혼자 최고 점수1,234점');
+  });
+
+  it('대결 기록이 없어도 혼자 최고 점수가 있으면 그것을 보여 주고 기록이 없다고 하지 않는다', async () => {
+    vi.mocked(recordsApi.member).mockResolvedValue(bob([stat('UNO', 0, 0), { ...stat('FRUIT_STACK', 0, 0), bestSoloScore: 80 }]));
+    renderModal();
+
+    expect(await screen.findByTestId('solo-best-FRUIT_STACK')).toHaveTextContent('80점');
+    expect(screen.queryByText('아직 기록이 없어요')).not.toBeInTheDocument();
+  });
+
+  it('혼자 한 적이 없으면 혼자 최고 점수 줄이 없다', async () => {
+    vi.mocked(recordsApi.member).mockResolvedValue(bob([stat('UNO', 2, 1), { ...stat('FRUIT_STACK', 1, 1), bestSoloScore: null }]));
+    renderModal();
+
+    expect(await screen.findByTestId('stat-UNO')).toBeInTheDocument();
+    expect(screen.queryByTestId('solo-best-FRUIT_STACK')).not.toBeInTheDocument();
+  });
+
   it('한 판도 없으면 아직 기록이 없어요', async () => {
     vi.mocked(recordsApi.member).mockResolvedValue(bob([stat('PAPER_SAFARI', 0, 0), stat('UNO', 0, 0)]));
     renderModal();

@@ -14,7 +14,8 @@ export const fruitStackModule: GameModule<FruitStackSessionView> = {
   name: '수박게임',
   slug: 'fruit-stack',
   tagline: '2~5인 · 합쳐서 점수를 쌓아라!',
-  minPlayers: 2,
+  // 혼자 하기(스펙 12장): 1명이면 혼자, 2~5명이면 대결.
+  minPlayers: 1,
   maxPlayers: 5,
   // R35·R36: 물리가 브라우저에서 돌아 컴퓨터가 대신 둘 수 없다.
   supportsBots: false,

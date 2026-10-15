@@ -6,7 +6,7 @@ import { MemberAvatar } from '../components/Avatar';
 import { Modal } from '../components/Modal';
 import { FriendAction, FriendRemoveConfirmModal } from '../friends/FriendAction';
 import { GAME_ORDER, findGame } from '../games/registry';
-import { percent } from '../lib/format';
+import { percent, playsSolo, points } from '../lib/format';
 
 /** 모달에 띄울 사람. 그림·닉네임은 전적이 오기 전에도 바로 보이게 방 정보에서 받는다. */
 export type StatsTarget = { id: number; nickname: string; avatar?: string };
@@ -14,6 +14,20 @@ export type StatsTarget = { id: number; nickname: string; avatar?: string };
 type Props = { target: StatsTarget | null; onClose: () => void };
 
 type Line = { key: string; name: string; matches: number; wins: number; winRate: number | null };
+
+type SoloBest = { key: string; name: string; score: number };
+
+/** 혼자 한 게임의 최고 점수(혼자 할 수 있는 게임만, 혼자 한 적이 있을 때만). 등록된 게임 순서. */
+export function soloBests(stats: GameStat[]): SoloBest[] {
+  return GAME_ORDER.flatMap((type) => {
+    const game = findGame(type);
+    const best = stats.find((candidate) => candidate.gameType === type)?.bestSoloScore;
+    if (!game || !playsSolo(game.minPlayers) || best === null || best === undefined) {
+      return [];
+    }
+    return [{ key: type, name: game.name, score: best }];
+  });
+}
 
 /** 등록된 게임 순서대로 한 줄씩, 끝에 전체 합계. */
 export function statLines(stats: GameStat[]): { games: Line[]; total: Line } {
@@ -95,10 +109,25 @@ function StatsBody({ state }: { state: State }) {
     return <p role="alert" className="py-6 text-center text-sm font-bold text-red-700">{state.message}</p>;
   }
   const { games, total } = statLines(state.stats.stats);
-  if (total.matches === 0) {
+  const bests = soloBests(state.stats.stats);
+  if (total.matches === 0 && bests.length === 0) {
     return <p data-testid="no-records" className="rounded-xl bg-cream-200/60 py-6 text-center text-sm font-bold text-wood-700">아직 기록이 없어요</p>;
   }
+  const bestLines = bests.length === 0 ? null : (
+    <dl className="space-y-1">
+      {bests.map((best) => (
+        <div key={best.key} data-testid={`solo-best-${best.key}`} className="flex items-baseline justify-between rounded-xl bg-cream-200/60 px-3 py-2 text-sm text-wood-800">
+          <dt className="font-bold">{best.name} 혼자 최고 점수</dt>
+          <dd className="font-black tabular-nums">{points(best.score)}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+  if (total.matches === 0) {
+    return bestLines;
+  }
   return (
+    <div className="space-y-3">
     <table className="w-full text-sm text-wood-800">
       <thead>
         <tr className="text-xs text-stone-500">
@@ -115,6 +144,8 @@ function StatsBody({ state }: { state: State }) {
         <StatRow line={total} strong />
       </tfoot>
     </table>
+    {bestLines}
+    </div>
   );
 }
 

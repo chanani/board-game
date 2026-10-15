@@ -1,5 +1,5 @@
 import type { GameStat } from '../api/types';
-import { decimal, percent } from '../lib/format';
+import { decimal, percent, playsSolo, points } from '../lib/format';
 import { findGame } from '../games/registry';
 
 function Row({ label, children }: { label: string; children: string }) {
@@ -12,6 +12,7 @@ function Row({ label, children }: { label: string; children: string }) {
 }
 
 export function StatSummary({ stat }: { stat: GameStat }) {
+  const game = findGame(stat.gameType);
   return (
     <div className="space-y-2 text-sm">
       <p className="font-bold">{stat.gameTypeName}</p>
@@ -28,7 +29,9 @@ export function StatSummary({ stat }: { stat: GameStat }) {
         <Row label="게임">{`${stat.matches}전`}</Row>
         <Row label="승·무·패">{`${stat.wins}승 ${stat.draws}무 ${stat.losses}패`}</Row>
         <Row label="승률">{percent(stat.winRate)}</Row>
-        <Row label={findGame(stat.gameType)?.averageScoreLabel ?? '평균 점수'}>{decimal(stat.averageRoundScore)}</Row>
+        <Row label={game?.averageScoreLabel ?? '평균 점수'}>{decimal(stat.averageRoundScore)}</Row>
+        {/* 혼자 한 게임은 승·무·패와 평균 점수에 들어가지 않고 최고 점수만 남는다. */}
+        {playsSolo(game?.minPlayers) ? <Row label="혼자 최고 점수">{points(stat.bestSoloScore)}</Row> : null}
       </dl>
     </div>
   );

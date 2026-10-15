@@ -241,6 +241,8 @@ export type GameStat = {
   roundLosses: number;
   roundWinRate: number | null;
   averageRoundScore: number | null;
+  /** 혼자 한 게임의 최고 점수(수박게임 혼자 하기). 혼자 한 적이 없으면 null. */
+  bestSoloScore?: number | null;
 };
 export type MemberStats = { memberId: number; nickname: string; avatar?: string; stats: GameStat[] };
 export type MatchPlayer = { memberId: number; nickname: string; result: ResultType | null; tokens: number };

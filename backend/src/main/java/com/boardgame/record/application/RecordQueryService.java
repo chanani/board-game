@@ -20,6 +20,8 @@ import com.boardgame.record.domain.MemberGameStatRepository;
 import com.boardgame.record.domain.ResultCounts;
 import com.boardgame.record.domain.RoundParticipant;
 import com.boardgame.record.domain.RoundParticipantRepository;
+import com.boardgame.record.domain.SoloBestScore;
+import com.boardgame.record.domain.SoloBestScoreRepository;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
@@ -44,14 +46,17 @@ public class RecordQueryService {
     private final MemberGameStatRepository statRepository;
     private final MatchParticipantRepository participantRepository;
     private final RoundParticipantRepository roundParticipantRepository;
+    private final SoloBestScoreRepository bestRepository;
 
     public RecordQueryService(MemberRepository memberRepository, MemberGameStatRepository statRepository,
                               MatchParticipantRepository participantRepository,
-                              RoundParticipantRepository roundParticipantRepository) {
+                              RoundParticipantRepository roundParticipantRepository,
+                              SoloBestScoreRepository bestRepository) {
         this.memberRepository = memberRepository;
         this.statRepository = statRepository;
         this.participantRepository = participantRepository;
         this.roundParticipantRepository = roundParticipantRepository;
+        this.bestRepository = bestRepository;
     }
 
     public MemberStatsResponse memberStats(long memberId) {
@@ -59,8 +64,11 @@ public class RecordQueryService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
         Map<GameType, MemberGameStat> stats = statRepository.findByIdMemberId(memberId).stream()
                 .collect(Collectors.toMap(MemberGameStat::gameType, Function.identity()));
+        Map<GameType, Integer> bests = bestRepository.findByIdMemberId(memberId).stream()
+                .collect(Collectors.toMap(SoloBestScore::gameType, SoloBestScore::score));
         List<GameStatResponse> responses = Arrays.stream(GameType.values())
-                .map(type -> GameStatResponse.from(stats.getOrDefault(type, MemberGameStat.empty(memberId, type))))
+                .map(type -> GameStatResponse.from(stats.getOrDefault(type, MemberGameStat.empty(memberId, type)),
+                        bests.get(type)))
                 .toList();
         return new MemberStatsResponse(memberId, member.nicknameValue(), member.avatar().key(), responses);
     }

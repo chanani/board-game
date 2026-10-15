@@ -3,6 +3,7 @@ package com.boardgame.record.application;
 import com.boardgame.game.event.GameCompletedEvent;
 import com.boardgame.game.event.GameStartedEvent;
 import com.boardgame.game.event.RoundCompletedEvent;
+import com.boardgame.game.event.SoloCompletedEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.event.EventListener;
@@ -32,6 +33,11 @@ public class RecordEventListener {
     @EventListener
     public void onGameCompleted(GameCompletedEvent event) {
         safely(() -> recordService.recordCompletion(event), event);
+    }
+
+    @EventListener
+    public void onSoloCompleted(SoloCompletedEvent event) {
+        safely(() -> recordService.recordSolo(event), event);
     }
 
     private void safely(Runnable action, Object event) {

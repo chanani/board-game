@@ -14,6 +14,7 @@ import com.boardgame.game.GameType;
 import com.boardgame.game.event.GameCompletedEvent;
 import com.boardgame.game.event.GameStartedEvent;
 import com.boardgame.game.event.RoundCompletedEvent;
+import com.boardgame.game.event.SoloCompletedEvent;
 import com.boardgame.member.domain.Avatar;
 import com.boardgame.room.api.CreateRoomRequest;
 import com.boardgame.room.api.RoomResponse;
@@ -55,6 +56,7 @@ class RoomServiceSoloTest {
         verify(events, never()).publishEvent(any(GameStartedEvent.class));
         verify(events, never()).publishEvent(any(RoundCompletedEvent.class));
         verify(events, never()).publishEvent(any(GameCompletedEvent.class));
+        verify(events).publishEvent(new SoloCompletedEvent(GameType.FRUIT_STACK, HOST, 0, clock.instant()));
     }
 
     @Test

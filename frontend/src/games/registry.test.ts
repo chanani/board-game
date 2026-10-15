@@ -69,7 +69,7 @@ describe('게임 등록부', () => {
   it('수박게임 모듈이 네 번째로 등록되어 있다', () => {
     expect(GAME_ORDER).toEqual(['PAPER_SAFARI', 'UNO', 'OLD_MAID', 'FRUIT_STACK']);
     const game = gameOf('FRUIT_STACK');
-    expect(game).toMatchObject({ name: '수박게임', slug: 'fruit-stack', minPlayers: 2, maxPlayers: 5, supportsBots: false, averageScoreLabel: '평균 점수' });
+    expect(game).toMatchObject({ name: '수박게임', slug: 'fruit-stack', minPlayers: 1, maxPlayers: 5, supportsBots: false, averageScoreLabel: '평균 점수' });
     expect(game.rules.title).toBe('수박게임 규칙');
     expect(game.rules.slides).toHaveLength(6);
     expect(game.roundScoreText).toBeUndefined();
