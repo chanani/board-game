@@ -48,9 +48,9 @@ export function isNewSoloBest(score: number, best: SoloBest | null): boolean {
 function Tile({ testId, label, value, highlight = false }: { testId: string; label: string; value: number; highlight?: boolean }) {
   return (
     <div data-testid={testId} data-new={highlight ? 'true' : undefined}
-      className={`flex flex-1 flex-col items-center gap-1 rounded-2xl px-4 py-3 ${highlight ? 'bg-mustard-300/60 ring-2 ring-mustard-400' : 'bg-cream-200/70'}`}>
+      className={`flex min-w-0 flex-1 flex-col items-center gap-1 rounded-2xl px-2 py-3 sm:px-4 ${highlight ? 'bg-mustard-300/60 ring-2 ring-mustard-400' : 'bg-cream-200/70'}`}>
       <span className="text-xs font-bold text-wood-700">{label}</span>
-      <span className="text-3xl font-black tabular-nums text-wood-900">{formatScore(value)}<span className="ml-0.5 text-base">점</span></span>
+      <span className="whitespace-nowrap text-2xl font-black tabular-nums text-wood-900 sm:text-3xl">{formatScore(value)}<span className="ml-0.5 text-sm sm:text-base">점</span></span>
     </div>
   );
 }
