@@ -20,7 +20,7 @@ class StandingsTest {
 
     private Standings timeUp(FruitStackGame game) {
         clock.advance(Duration.ofMinutes(10));
-        game.timeUp();
+        game.expire();
         return game.result().orElseThrow().standings();
     }
 

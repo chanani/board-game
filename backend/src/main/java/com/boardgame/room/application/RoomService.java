@@ -328,13 +328,13 @@ public class RoomService {
         presence.baseline(room.humanIds(), clock.instant());
         rearm(room);
         RoomResponse response = broadcast(room);
-        publishStartUnlessPractice(room, game);
+        publishStartIfRecorded(room, game);
         return response;
     }
 
-    // R37: 연습 경기는 경기 시작을 기록하지 않는다.
-    private void publishStartUnlessPractice(Room room, RoomGame game) {
-        if (game.isPractice()) {
+    // R37: 연습 경기는 경기 시작을 기록하지 않는다. 수박게임 S6: 혼자 하기도 경기로 남기지 않는다.
+    private void publishStartIfRecorded(Room room, RoomGame game) {
+        if (!game.recordsMatch()) {
             return;
         }
         eventPublisher.publishEvent(

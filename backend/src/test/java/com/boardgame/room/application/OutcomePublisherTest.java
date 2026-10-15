@@ -8,8 +8,10 @@ import com.boardgame.game.MatchEntry;
 import com.boardgame.game.ResultType;
 import com.boardgame.game.RoundCompleted;
 import com.boardgame.game.RoundEntry;
+import com.boardgame.game.SoloCompleted;
 import com.boardgame.game.event.GameCompletedEvent;
 import com.boardgame.game.event.RoundCompletedEvent;
+import com.boardgame.game.event.SoloCompletedEvent;
 import com.boardgame.room.domain.Capacity;
 import com.boardgame.room.domain.FakeGameSession;
 import com.boardgame.room.domain.FakeRoomPasswordHasher;
@@ -40,6 +42,13 @@ class OutcomePublisherTest {
         room.setReady(2L, true);
         room.start(1L, FakeGameSession::new, "match-1", STARTED);
         return room;
+    }
+
+    @Test
+    void 혼자_하기_결과는_게임_종류와_점수를_실은_혼자_하기_이벤트로_발행한다() {
+        publisher.publish(startedRoom(), List.of(new SoloCompleted(1L, 120)), NOW);
+
+        assertThat(published).containsExactly(new SoloCompletedEvent(GameType.PAPER_SAFARI, 1L, 120, NOW));
     }
 
     @Test

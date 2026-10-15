@@ -112,7 +112,7 @@ class FruitStackDecidedTest {
         FruitStackGame late = game(clock, A, B);
         late.out(A, score(30));
         clock.advance(Duration.ofMinutes(10));
-        assertThat(late.timeUp()).isTrue();
+        assertThat(late.expire()).isTrue();
         assertThat(reasonOf(late)).isEqualTo(FruitStackEndReason.TIME_UP);
         assertThat(late.result().orElseThrow().standings().entries().get(0).result()).isEqualTo(ResultType.WIN);
     }

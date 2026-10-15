@@ -4,7 +4,7 @@ public enum GameType {
     PAPER_SAFARI("페이퍼 사파리", 2, 5),
     UNO("우노", 2, 5),
     OLD_MAID("도둑잡기", 2, 6),
-    FRUIT_STACK("수박게임", 2, 5);
+    FRUIT_STACK("수박게임", 1, 5);
 
     private final String displayName;
     private final int minPlayers;

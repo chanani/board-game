@@ -3,8 +3,10 @@ package com.boardgame.room.application;
 import com.boardgame.game.GameCompleted;
 import com.boardgame.game.GameOutcome;
 import com.boardgame.game.RoundCompleted;
+import com.boardgame.game.SoloCompleted;
 import com.boardgame.game.event.GameCompletedEvent;
 import com.boardgame.game.event.RoundCompletedEvent;
+import com.boardgame.game.event.SoloCompletedEvent;
 import com.boardgame.room.domain.Room;
 import com.boardgame.room.domain.RoomGame;
 import java.time.Instant;
@@ -32,6 +34,7 @@ public class OutcomePublisher {
 
     private Object toEvent(Room room, RoomGame game, GameOutcome outcome, Instant now) {
         return switch (outcome) {
+            case SoloCompleted solo -> new SoloCompletedEvent(room.gameType(), solo.memberId(), solo.score(), now);
             case RoundCompleted round -> new RoundCompletedEvent(game.matchKey(), room.gameType(), round);
             case GameCompleted completed ->
                     new GameCompletedEvent(game.matchKey(), room.gameType(), game.startedAt(), now, completed);

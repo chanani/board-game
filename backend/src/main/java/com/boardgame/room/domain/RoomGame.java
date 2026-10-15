@@ -28,6 +28,11 @@ public class RoomGame {
         return stamp.practice();
     }
 
+    /** 경기 시작·결과를 전적에 남기는지. 연습 경기(R37)와 혼자 하기(수박게임 S6)는 남기지 않는다. */
+    public boolean recordsMatch() {
+        return !isPractice() && session.recordsMatch();
+    }
+
     public GameSession session() {
         return session;
     }

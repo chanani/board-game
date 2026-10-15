@@ -8,6 +8,7 @@ import com.boardgame.game.GameSession;
 import com.boardgame.game.MatchEntry;
 import com.boardgame.game.RoundCompleted;
 import com.boardgame.game.RoundEntry;
+import com.boardgame.game.SoloCompleted;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
@@ -59,10 +60,10 @@ public class FruitStackSession implements GameSession {
         return outcomesIfFinished();
     }
 
-    // R17: 방의 타이머가 경기 상한에 부른다. 이른 호출이면 아무것도 하지 않는다.
+    // R17·S4: 방의 타이머가 마감에 부른다. 이른 호출이면(혼자 하기는 그사이 보고·신호로 마감이 늦춰졌으면) 아무것도 하지 않는다.
     @Override
     public List<GameOutcome> autoAct(Random random) {
-        if (!game.timeUp()) {
+        if (!game.expire()) {
             return List.of();
         }
         return outcomesIfFinished();
@@ -79,6 +80,12 @@ public class FruitStackSession implements GameSession {
     @Override
     public Object viewFor(long memberId) {
         return new FruitStackSessionView(FruitStackViewAssembler.view(game, memberId));
+    }
+
+    // S6: 혼자 하기는 승패·평균 점수에 넣지 않고 최고 점수만 남긴다.
+    @Override
+    public boolean recordsMatch() {
+        return !game.isSolo();
     }
 
     @Override
@@ -104,13 +111,24 @@ public class FruitStackSession implements GameSession {
     }
 
     // R30: FORFEIT 끝은 경기만, 나머지는 라운드(겨루는 사람, 등수 순) + 경기(모두, 자리 순).
+    // S6: 혼자 하기는 끝난 이유와 상관없이 끝난 점수 하나만 낸다(최고 점수 후보).
     private List<GameOutcome> outcomes(FruitStackResult result) {
+        if (game.isSolo()) {
+            return List.of(soloCompleted(result.standings()));
+        }
         FruitStackEndReason reason = result.reason();
         GameCompleted match = gameCompleted(result.standings());
         if (!reason.recordsRound()) {
             return List.of(match);
         }
         return List.of(roundCompleted(result.standings()), match);
+    }
+
+    private static SoloCompleted soloCompleted(Standings standings) {
+        Standing only = standings.inSeatOrder().get(0);
+        PlayerId player = only.player();
+        Score score = only.score();
+        return new SoloCompleted(player.value(), score.value());
     }
 
     private RoundCompleted roundCompleted(Standings standings) {

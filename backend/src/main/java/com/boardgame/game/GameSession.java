@@ -31,6 +31,11 @@ public interface GameSession {
 
     boolean isFinished();
 
+    /** 끝나면 경기·판 기록(승패·평균 점수)을 남기는지. 혼자 하는 수박게임은 최고 점수만 남겨 false다. */
+    default boolean recordsMatch() {
+        return true;
+    }
+
     boolean isPlaying(long memberId);
 
     int roundNumber();

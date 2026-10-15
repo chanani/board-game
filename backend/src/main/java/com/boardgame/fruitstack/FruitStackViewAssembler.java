@@ -93,9 +93,9 @@ public final class FruitStackViewAssembler {
                 .map(PlayerId::value);
     }
 
-    // 끝났으면 null, 아니면 경기 상한(시작 + 10분)의 epoch ms.
+    // 끝났거나 상한이 없는 혼자 하기(S3)면 null, 아니면 경기 상한(시작 + 10분)의 epoch ms.
     private static Long deadlineOf(FruitStackGame game) {
-        if (game.isFinished()) {
+        if (game.isFinished() || !game.isTimed()) {
             return null;
         }
         return millisOf(game.limitAt());

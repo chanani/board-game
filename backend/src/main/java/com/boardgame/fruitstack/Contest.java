@@ -36,8 +36,8 @@ public class Contest {
         }
     }
 
-    void timeUp() {
-        reason = FruitStackEndReason.TIME_UP;
+    void end(FruitStackEndReason why) {
+        reason = why;
     }
 
     boolean isOver() {

@@ -32,9 +32,4 @@ public class MatchClock {
     public Instant limitAt() {
         return startedAt.plus(LIMIT);
     }
-
-    public boolean isTimeUp() {
-        Instant limit = limitAt();
-        return !limit.isAfter(now());
-    }
 }

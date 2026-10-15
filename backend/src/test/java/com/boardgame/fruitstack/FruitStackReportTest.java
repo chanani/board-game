@@ -34,8 +34,8 @@ class FruitStackReportTest {
     }
 
     @Test
-    void 두_명보다_적거나_다섯_명보다_많으면_시작하지_못한다() {
-        assertError(() -> game(clock, A), ErrorCode.FRUIT_STACK_INVALID_PLAYER_COUNT);
+    void 아무도_없거나_다섯_명보다_많으면_시작하지_못한다() {
+        assertError(() -> FruitStackGame.start(List.of(), new Seed(1), clock), ErrorCode.FRUIT_STACK_INVALID_PLAYER_COUNT);
         assertError(() -> FruitStackGame.start(List.of(A, B, C, new PlayerId(4), new PlayerId(5), new PlayerId(6)),
                 new Seed(1), clock), ErrorCode.FRUIT_STACK_INVALID_PLAYER_COUNT);
     }
@@ -131,16 +131,16 @@ class FruitStackReportTest {
     }
 
     @Test
-    void R17_상한_전의_timeUp은_아무것도_하지_않고_상한이_지나면_TIME_UP으로_끝낸다() {
+    void R17_상한_전의_expire는_아무것도_하지_않고_상한이_지나면_TIME_UP으로_끝낸다() {
         FruitStackGame game = game(clock, A, B);
         clock.advance(Duration.ofSeconds(599));
-        assertThat(game.timeUp()).isFalse();
+        assertThat(game.expire()).isFalse();
         assertThat(game.isFinished()).isFalse();
 
         clock.advance(Duration.ofSeconds(1));
 
-        assertThat(game.timeUp()).isTrue();
+        assertThat(game.expire()).isTrue();
         assertThat(game.result().orElseThrow().reason()).isEqualTo(FruitStackEndReason.TIME_UP);
-        assertThat(game.timeUp()).isFalse();
+        assertThat(game.expire()).isFalse();
     }
 }
