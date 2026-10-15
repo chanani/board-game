@@ -4,8 +4,21 @@ import { fruitStackModule } from './module';
 import { FRUIT_RULE_SLIDES, FRUIT_RULE_SUMMARY } from './rules';
 
 describe('수박게임 규칙', () => {
-  it('규칙은 6장이고 제목이 순서대로다', () => {
-    expect(FRUIT_RULE_SLIDES.map((slide) => slide.title)).toEqual(['목표', '과일', '떨어뜨리기', '탈락', '끝', '나가기와 끊김']);
+  it('규칙은 7장이고 제목이 순서대로다', () => {
+    expect(FRUIT_RULE_SLIDES.map((slide) => slide.title)).toEqual(['목표', '과일', '떨어뜨리기', '탈락', '끝', '혼자 하기', '나가기와 끊김']);
+  });
+
+  it('혼자 하기 장은 혼자 시작·시간 제한 없음·최고 점수를 말한다', () => {
+    const solo = FRUIT_RULE_SLIDES[5].body.join(' ');
+    expect(solo).toContain('혼자 있을 때 시작하면 혼자 해요');
+    expect(solo).toContain('시간 제한 없이');
+    expect(solo).toContain('최고 점수');
+  });
+
+  it('여럿이 할 때만 쓰는 규칙(이기기·10분·기권 패배)은 여럿이 할 때라고 밝힌다', () => {
+    expect(FRUIT_RULE_SLIDES[0].body[1]).toContain('여럿이 하면');
+    expect(FRUIT_RULE_SLIDES[4].body[0]).toContain('여럿이 하면');
+    expect(FRUIT_RULE_SLIDES[6].body[0]).toContain('여럿이 할 때');
   });
 
   it('본문은 장마다 두 줄이다', () => {
@@ -16,11 +29,17 @@ describe('수박게임 규칙', () => {
     expect(FRUIT_RULE_SLIDES[4].body[0]).toContain('한 사람만 남았을 때 그 사람 점수가 가장 높으면 바로 끝나요');
   });
 
-  it('요약은 4줄이다', () => {
+  it('요약은 5줄이다', () => {
     expect(FRUIT_RULE_SUMMARY).toEqual([
       '같은 과일 두 개를 합쳐 점수를 쌓아요.', '10초 안에 떨어뜨리지 않으면 저절로 떨어져요.',
-      '과일이 선을 2초 넘게 넘으면 탈락이에요.', '가장 높은 점수가 이겨요.',
+      '과일이 선을 2초 넘게 넘으면 탈락이에요.', '혼자 하면 시간 제한 없이 최고 점수에 도전해요.', '여럿이 하면 가장 높은 점수가 이겨요.',
     ]);
+  });
+
+  it('소개 문구는 혼자부터 다섯 명까지라고 알린다', () => {
+    expect(fruitStackModule.tagline).toBe('1~5인 · 합쳐서 점수를 쌓아라!');
+    expect(fruitStackModule.minPlayers).toBe(1);
+    expect(fruitStackModule.maxPlayers).toBe(5);
   });
 
   it('게임 이름은 "수박게임"이고 예전 이름 "과일 쌓기"는 어디에도 쓰지 않는다', () => {
@@ -35,7 +54,7 @@ describe('수박게임 규칙', () => {
     const { container } = render(<>{fruitStackModule.rules.renderArt(FRUIT_RULE_SLIDES[1])}</>);
     expect(container.querySelectorAll('svg')).toHaveLength(11);
 
-    const none = render(<>{fruitStackModule.rules.renderArt(FRUIT_RULE_SLIDES[5])}</>);
+    const none = render(<>{fruitStackModule.rules.renderArt(FRUIT_RULE_SLIDES[6])}</>);
     expect(none.container.querySelectorAll('svg')).toHaveLength(0);
   });
 });

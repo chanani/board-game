@@ -71,7 +71,7 @@ describe('게임 등록부', () => {
     const game = gameOf('FRUIT_STACK');
     expect(game).toMatchObject({ name: '수박게임', slug: 'fruit-stack', minPlayers: 1, maxPlayers: 5, supportsBots: false, averageScoreLabel: '평균 점수' });
     expect(game.rules.title).toBe('수박게임 규칙');
-    expect(game.rules.slides).toHaveLength(6);
+    expect(game.rules.slides).toHaveLength(7);
     expect(game.roundScoreText).toBeUndefined();
     const view = { gameType: 'FRUIT_STACK', game: { status: 'GAME_OVER', startedAt: 77, participantIds: [1, 2] } };
     expect(game.isGameOver(view)).toBe(true);

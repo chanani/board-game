@@ -14,7 +14,7 @@ describe('catalog', () => {
   it('우노 로비 주소와 소개', () => {
     expect(lobbyPath('UNO')).toBe('/games/uno');
     expect(entryBySlug('uno')?.gameType).toBe('UNO');
-    expect(CATALOG.map((entry) => entry.tagline)).toEqual(['2~5인 · 낮은 점수를 노려라!', '2~5인 · 손패를 먼저 비워라!', '2~6인 · 조커를 피해라!', '2~5인 · 합쳐서 점수를 쌓아라!']);
+    expect(CATALOG.map((entry) => entry.tagline)).toEqual(['2~5인 · 낮은 점수를 노려라!', '2~5인 · 손패를 먼저 비워라!', '2~6인 · 조커를 피해라!', '1~5인 · 합쳐서 점수를 쌓아라!']);
   });
 
   it('수박게임 로비 주소', () => {

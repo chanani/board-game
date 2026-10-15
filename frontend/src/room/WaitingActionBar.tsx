@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { Room } from '../api/types';
 import { BinocularsIcon } from '../components/icons';
 import { Button } from '../components/ui';
+import { findGame } from '../games/registry';
 
 type Props = {
   room: Room;
@@ -16,13 +17,20 @@ type Props = {
 
 const MAIN_BUTTON = 'shrink-0 px-4 py-2 sm:px-5 sm:py-2.5 sm:text-base';
 
+/** 게임이 받는 가장 적은 인원(수박게임은 혼자 할 수 있어 1명). */
+const minPlayersOf = (room: Room) => findGame(room.gameType)?.minPlayers ?? 2;
+
+/** 혼자 할 수 있는 게임 방에 방장 혼자 앉아 있어 시작하면 혼자 하기가 되는지(수박게임 혼자 하기). */
+const startsAlone = (room: Room) => minPlayersOf(room) === 1 && room.members.length === 1;
+
 function startBlocker(room: Room): string | null {
   const { members } = room;
   if (room.startsAt) {
     return '곧 게임이 시작돼요';
   }
-  if (members.length < 2) {
-    return '2명 이상 모여야 해요';
+  const min = minPlayersOf(room);
+  if (members.length < min) {
+    return `${min}명 이상 모여야 해요`;
   }
   if (members.some((member) => !member.host && !member.bot && !member.ready)) {
     return '모두 준비하면 시작할 수 있어요';
@@ -34,7 +42,7 @@ function startBlocker(room: Room): string | null {
 export function WaitingActionBar(props: Props) {
   if (!props.spectating) {
     return (
-      <div data-testid="waiting-action-bar" className="flex w-full max-w-[640px] items-center justify-center">
+      <div data-testid="waiting-action-bar" className="flex w-full max-w-[640px] flex-col items-center justify-center gap-1.5">
         <ActionContent {...props} />
       </div>
     );
@@ -68,15 +76,26 @@ function ActionContent({ room, meId, spectating, onStart, onReady, onSeat }: Pro
   if (me.host) {
     const blocker = startBlocker(room);
     const reasonId = 'start-blocker-reason';
+    const alone = startsAlone(room);
     return (
       <>
         <Button onClick={onStart} disabled={blocker !== null} title={blocker ?? undefined}
-          aria-describedby={blocker ? reasonId : undefined} className={MAIN_BUTTON}>게임 시작</Button>
+          aria-describedby={blocker ? reasonId : undefined} className={MAIN_BUTTON}>{alone ? '혼자 시작' : '게임 시작'}</Button>
         {blocker ? <span id={reasonId} className="sr-only">{blocker}</span> : null}
+        {alone ? <SoloHint canInvite={room.maxPlayers > 1} /> : null}
       </>
     );
   }
   return <ReadyButton ready={me.ready} onReady={onReady} locked={Boolean(room.startsAt)} />;
+}
+
+/** 혼자 시작 버튼 아래 한 줄. 자리가 남아 있으면 친구를 부르면 대결이 된다고 알린다. */
+function SoloHint({ canInvite }: { canInvite: boolean }) {
+  return (
+    <p data-testid="solo-hint" className="pill rounded-full px-3 py-1 text-center text-xs font-semibold leading-snug sm:text-sm">
+      {canInvite ? '혼자 최고 점수에 도전해요. 친구가 들어오면 함께 겨뤄요.' : '혼자 최고 점수에 도전해요.'}
+    </p>
+  );
 }
 
 // locked: 시작 카운트다운 중에는 준비를 바꿀 수 없다.

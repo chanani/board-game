@@ -109,6 +109,34 @@ describe('WaitingActionBar', () => {
     expect(reason).toHaveTextContent('2명 이상 모여야 해요');
   });
 
+  it('수박게임 방에 방장 혼자면 혼자 시작 버튼이 켜져 있고 친구가 오면 함께 겨룬다고 알려 준다', () => {
+    const onStart = vi.fn();
+    const fruit: Room = { ...room, gameType: 'FRUIT_STACK', gameTypeName: '수박게임', members: [room.members[0]] };
+    render(<WaitingActionBar room={fruit} meId={1} spectating={false} onStart={onStart} onReady={vi.fn()} onSeat={vi.fn()} />);
+    const start = screen.getByRole('button', { name: '혼자 시작' });
+
+    expect(start).toBeEnabled();
+    expect(start).not.toHaveAttribute('title');
+    expect(screen.getByTestId('solo-hint')).toHaveTextContent('혼자 최고 점수에 도전해요. 친구가 들어오면 함께 겨뤄요.');
+    expect(screen.queryByText(/2명 이상/)).not.toBeInTheDocument();
+    start.click();
+    expect(onStart).toHaveBeenCalledTimes(1);
+  });
+
+  it('수박게임 방도 두 명부터는 예전처럼 게임 시작이고 혼자 안내가 없다', () => {
+    renderBar(1, { ...room, gameType: 'FRUIT_STACK', gameTypeName: '수박게임' });
+
+    expect(screen.getByRole('button', { name: '게임 시작' })).toBeEnabled();
+    expect(screen.queryByTestId('solo-hint')).not.toBeInTheDocument();
+  });
+
+  it('혼자 방(정원 1명)의 혼자 시작 안내는 친구 이야기를 하지 않는다', () => {
+    const fruit: Room = { ...room, gameType: 'FRUIT_STACK', gameTypeName: '수박게임', maxPlayers: 1, members: [room.members[0]] };
+    renderBar(1, fruit);
+
+    expect(screen.getByTestId('solo-hint')).toHaveTextContent(/^혼자 최고 점수에 도전해요\.$/);
+  });
+
   it('시작할 수 있으면 title이 없다', () => {
     renderBar(1);
     const start = screen.getByRole('button', { name: '게임 시작' });
