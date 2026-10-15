@@ -18,3 +18,12 @@ export function fruitView(overrides: Partial<FruitStackView> = {}): FruitStackVi
 export function fruitSession(overrides: Partial<FruitStackView> = {}): FruitStackSessionView {
   return { gameType: 'FRUIT_STACK', game: fruitView(overrides) };
 }
+
+/** 혼자 하기(스펙 12장): 한 사람(1)이 0점으로 게임 중인 화면. 상한이 없어 deadline이 비어 있다. 보는 사람은 1. */
+export function soloView(overrides: Partial<FruitStackView> = {}): FruitStackView {
+  return fruitView({ participantIds: [1], players: [fruitPlayer(1)], deadline: null, ...overrides });
+}
+
+export function soloSession(overrides: Partial<FruitStackView> = {}): FruitStackSessionView {
+  return { gameType: 'FRUIT_STACK', game: soloView(overrides) };
+}

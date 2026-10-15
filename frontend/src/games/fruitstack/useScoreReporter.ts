@@ -30,6 +30,8 @@ export function useScoreReporter(options: ScoreReporterOptions): { poke: () => v
       connected, gameOver: game.status === 'GAME_OVER', now: at, elapsedMs: elapsedMs(), local,
       server: mine ? { score: mine.score, state: mine.state } : null,
       lastScoreSentAt: lastScoreSentAtRef.current, lastOutSentAt: lastOutSentAtRef.current, holdUntil: holdUntilRef.current,
+      // 혼자 하기는 상한이 없어 화면의 deadline이 비어 있다(S3).
+      timed: game.deadline !== null,
     });
     if (plan.send) {
       send(plan.send);

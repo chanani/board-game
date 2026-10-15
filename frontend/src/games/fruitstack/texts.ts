@@ -43,6 +43,11 @@ export function instructionOf(game: FruitStackView, meId: number, nicknameOf: Ni
     }
     return wide ? '끌어서 자리를 정하고 놓으면 떨어져요.' : '끌어서 놓으면 떨어져요';
   }
+  // 혼자 하기(스펙 12장)를 지켜보는 사람.
+  if (game.participantIds.length === 1 && !mine) {
+    const name = nicknameOf(game.participantIds[0]);
+    return wide ? `${name}님이 혼자 과일을 쌓는 중이에요.` : `${name}님 혼자 하는 중`;
+  }
   const left = pointsToWin(game);
   if (left) {
     const name = nicknameOf(left.playerId);

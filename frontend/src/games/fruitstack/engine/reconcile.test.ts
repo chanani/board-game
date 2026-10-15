@@ -22,6 +22,11 @@ describe('R18·R20·R21 보고 계획', () => {
     expect(planReport(input({ elapsedMs: 596_999, lastScoreSentAt: 9_990 }))).toEqual({ send: null, wakeAt: 10_490 });
   });
 
+  it('S3 상한이 없는 혼자 하기는 10분이 지나도 계속 500ms로 묶는다', () => {
+    expect(planReport(input({ timed: false, elapsedMs: 900_000, lastScoreSentAt: 9_990 }))).toEqual({ send: null, wakeAt: 10_490 });
+    expect(planReport(input({ timed: false, elapsedMs: 900_000, lastScoreSentAt: 9_400 }))).toEqual({ send: { type: 'SCORE', score: 30 }, wakeAt: null });
+  });
+
   it('점수가 같거나 서버가 더 크면 보내지 않는다', () => {
     expect(planReport(input({ local: { score: 10, out: false } }))).toEqual(NOTHING);
     expect(planReport(input({ local: { score: 5, out: false } }))).toEqual(NOTHING);

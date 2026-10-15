@@ -1,6 +1,7 @@
 import { render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { fruitStackModule } from './module';
+import { fruitPlayer, fruitSession, soloSession } from './fruitStackFixtures';
 import { FRUIT_RULE_SLIDES, FRUIT_RULE_SUMMARY } from './rules';
 
 describe('수박게임 규칙', () => {
@@ -56,5 +57,12 @@ describe('수박게임 규칙', () => {
 
     const none = render(<>{fruitStackModule.rules.renderArt(FRUIT_RULE_SLIDES[6])}</>);
     expect(none.container.querySelectorAll('svg')).toHaveLength(0);
+  });
+
+  it('나간 사람 알림: 탈락한 사람과 혼자 하던 사람은 기권이 아니라 그냥 나간 것이다', () => {
+    const leaves = fruitStackModule.leavesWithoutForfeit!;
+    expect(leaves(fruitSession({ players: [fruitPlayer(1, 0, 'OUT'), fruitPlayer(2)] }), 1)).toBe(true);
+    expect(leaves(fruitSession(), 2)).toBe(false);
+    expect(leaves(soloSession(), 1)).toBe(true);
   });
 });

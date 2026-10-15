@@ -202,7 +202,8 @@ export type OldMaidPeekSignal = {
 };
 export type FruitStackPlayerState = 'PLAYING' | 'OUT' | 'FORFEITED';
 export type FruitStackPlayerView = { playerId: number; score: number; state: FruitStackPlayerState };
-export type FruitStackEndReason = 'ALL_OUT' | 'DECIDED' | 'TIME_UP' | 'FORFEIT';
+/** ABANDONED: 혼자 하기가 5분 동안 아무 보고 없이 버려져 서버가 끝냄(스펙 12장 S4). */
+export type FruitStackEndReason = 'ALL_OUT' | 'DECIDED' | 'TIME_UP' | 'FORFEIT' | 'ABANDONED';
 export type FruitStackStanding = { playerId: number; score: number; outcome: ResultType; rank: number; state: FruitStackPlayerState };
 export type FruitStackResult = { reason: FruitStackEndReason; standings: FruitStackStanding[] };
 export type FruitStackView = {

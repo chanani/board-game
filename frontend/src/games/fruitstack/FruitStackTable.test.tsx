@@ -7,9 +7,12 @@ import { SILENT_SOUND, SoundContext } from '../../lib/sound';
 import { LANDSCAPE_PHONE_QUERY } from '../../lib/useTableLayout';
 import { setMediaMatches } from '../../test/media';
 import type { TableChat, ViewTransition } from '../gameModule';
-import { FRUIT_STARTED_AT, fruitPlayer, fruitSession, fruitView } from './fruitStackFixtures';
+import { recordsApi } from '../../api/records';
+import { FRUIT_STARTED_AT, fruitPlayer, fruitSession, fruitView, soloView } from './fruitStackFixtures';
 import { FruitStackTable } from './FruitStackTable';
 
+// 혼자 하기의 최고 점수는 답이 오지 않는 채로 둔다(결과 창의 최고 점수는 SoloGameOverPanel 테스트가 본다).
+vi.mock('../../api/records', () => ({ recordsApi: { me: vi.fn(() => new Promise(() => {})) } }));
 vi.mock('../../realtime/RealtimeContext', () => ({ useRealtime: () => ({ connected: true, realtime: {} }) }));
 
 const member = (id: number, host = false) => ({ id, nickname: `P${id}`, host, connected: true, offlineSeconds: 0, ready: false });
@@ -401,4 +404,83 @@ describe('FruitStackTable', () => {
     expect(screen.getByTestId('fruit-game-over')).toBeInTheDocument();
     expect(screen.queryByTestId('game-end-banner')).not.toBeInTheDocument();
   });
+
+  describe('혼자 하기(스펙 12장)', () => {
+    const SOLO_OVER: Partial<FruitStackView> = {
+      status: 'GAME_OVER', deadline: null, winnerId: 1, players: [fruitPlayer(1, 320, 'OUT')],
+      result: { reason: 'ALL_OUT', standings: [{ playerId: 1, score: 320, outcome: 'WIN', rank: 1, state: 'OUT' }] },
+    };
+
+    it('PC: 작은 판 없이 내 판만 크게, 점수 띠에 남은 시간이 없고 내 최고 점수를 불러온다', () => {
+      vi.mocked(recordsApi.me).mockClear();
+      renderTable({ full: soloView() });
+
+      expect(table()).toHaveAttribute('data-mode', 'play');
+      expect(minis()).toHaveLength(0);
+      expect(screen.getByTestId('my-board')).toBeInTheDocument();
+      expect(screen.queryByTestId('match-clock')).not.toBeInTheDocument();
+      expect(screen.getByTestId('fruit-hud')).toHaveTextContent('점수');
+      expect(screen.getByTestId('instruction')).toHaveTextContent('끌어서 자리를 정하고 놓으면 떨어져요.');
+      expect(recordsApi.me).toHaveBeenCalledTimes(1);
+    });
+
+    it('세로 휴대폰: 작은 판 줄이 없고 점수 띠 아래 내 판이다', () => {
+      setMediaMatches(false);
+      renderTable({ full: soloView() });
+
+      expect(table()).toHaveAttribute('data-layout', 'portrait');
+      expect(screen.queryByTestId('mini-row')).toBeNull();
+      expect(screen.queryByTestId('info-row')).toBeNull();
+      expect(screen.getByTestId('fruit-hud')).not.toHaveAttribute('data-block');
+      expect(screen.getByTestId('instruction')).toHaveTextContent('끌어서 놓으면 떨어져요');
+    });
+
+    it('남은 점수 안내("혼자 남았어요")는 혼자 하기에 나오지 않는다', () => {
+      renderTable({ full: soloView({ players: [fruitPlayer(1, 500)] }) });
+
+      expect(table()).not.toHaveTextContent('혼자 남았어요');
+      expect(table()).not.toHaveTextContent('이겨요');
+    });
+
+    it('지켜보는 사람은 그 사람의 판 하나를 크게 보고, 최고 점수를 불러오지 않는다', () => {
+      vi.mocked(recordsApi.me).mockClear();
+      renderTable({ full: soloView({ viewerId: 9 }), meId: 9 });
+
+      expect(table()).toHaveAttribute('data-mode', 'watch');
+      expect(players()).toEqual(['1']);
+      expect(within(screen.getByTestId('big-boards')).getAllByTestId('mini-board')).toHaveLength(1);
+      expect(screen.getByTestId('instruction')).toHaveTextContent('P1님이 혼자 과일을 쌓는 중이에요.');
+      expect(screen.queryByTestId('match-clock')).not.toBeInTheDocument();
+      expect(recordsApi.me).not.toHaveBeenCalled();
+    });
+
+    it('대결에서는 최고 점수를 불러오지 않는다', () => {
+      vi.mocked(recordsApi.me).mockClear();
+      renderTable();
+
+      expect(recordsApi.me).not.toHaveBeenCalled();
+      expect(screen.getByTestId('match-clock')).toBeInTheDocument();
+    });
+
+    it('끝나면 승패 없는 혼자 하기 결과 창이다', () => {
+      renderTable({ full: soloView(SOLO_OVER) });
+
+      expect(screen.getByTestId('solo-game-over')).toBeInTheDocument();
+      expect(screen.queryByTestId('standing-row')).not.toBeInTheDocument();
+      expect(screen.getByTestId('solo-score')).toHaveTextContent('320점');
+    });
+
+    it('게임 끝 알림의 아랫줄은 이번 점수다', () => {
+      vi.useFakeTimers();
+      const before = soloView();
+      const after = soloView(SOLO_OVER);
+      const { rerender } = renderTable({ full: before });
+
+      rerender({ full: after, transition: { seq: 2, from: before, to: after, animate: true } });
+      pass(450);
+
+      expect(screen.getByTestId('game-end-banner')).toHaveTextContent('320점으로 끝났어요');
+    });
+  });
 });
+

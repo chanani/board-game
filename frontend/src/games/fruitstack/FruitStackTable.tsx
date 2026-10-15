@@ -21,11 +21,13 @@ import { Hud } from './Hud';
 import { MiniBoard } from './MiniBoard';
 import { MyBoard } from './MyBoard';
 import { PhoneBar } from './PhoneBar';
-import { instructionOf } from './texts';
+import { isNewSoloBest } from './SoloGameOverPanel';
+import { formatScore, instructionOf } from './texts';
 import { useBoardBox } from './useBoardBox';
 import { useBoardSignals } from './useBoardSignals';
 import { useFruitGame } from './useFruitGame';
 import { useScoreReporter } from './useScoreReporter';
+import { useSoloBest } from './useSoloBest';
 
 /** D22: 내 판이 탈락한 뒤 "가득 찼어요!"를 보이는 시간. 그 뒤 지켜보기 모드로 바뀐다. */
 const OUT_NOTICE_MS = 1500;
@@ -112,6 +114,9 @@ export function FruitStackTable({ view, room, meId, receivedAt, now, errorSeq, n
   const { connected } = useRealtime();
   const { play } = useSound();
   const inProgress = game.status === 'IN_PROGRESS';
+  // 혼자 하기(스펙 12장): 참가자가 한 명. 상대 판·남은 시간이 없고, 내 게임이면 최고 점수를 보인다.
+  const solo = game.participantIds.length === 1;
+  const soloBest = useSoloBest({ active: solo && game.participantIds.includes(meId), startedAt: game.startedAt, inProgress });
 
   const fruit = useFruitGame({ code: room.code, meId, game });
   const reporter = useScoreReporter({ send, connected, game, meId, errorSeq, getLocal: fruit.getLocal, elapsedMs: fruit.elapsedMs });
@@ -200,10 +205,13 @@ export function FruitStackTable({ view, room, meId, receivedAt, now, errorSeq, n
   const { ref: bodyRef, box } = useBoardBox(layout, pad + SURFACE_BORDER);
   const fit = fitBoard({ layout, box, mode, big: bigIds.length, mini: miniIds.length });
 
-  useGameOverCue(liveGameEnd(game, transition), finale === 'banner' || finale === 'done', game.winnerId === meId);
+  // 혼자 하기에는 이긴 사람이 없다. 새 최고 점수일 때 밝은 소리를 낸다.
+  const finalScore = game.result?.standings[0]?.score ?? 0;
+  const cheered = solo ? isNewSoloBest(finalScore, soloBest) : game.winnerId === meId;
+  useGameOverCue(liveGameEnd(game, transition), finale === 'banner' || finale === 'done', cheered);
 
   if (showPanel) {
-    const panel = <FruitStackGameOverPanel game={game} room={room} meId={meId} nicknameOf={nicknameOf} onReady={onReadyNext} onClose={onCloseGameOver} />;
+    const panel = <FruitStackGameOverPanel game={game} room={room} meId={meId} nicknameOf={nicknameOf} onReady={onReadyNext} onClose={onCloseGameOver} best={soloBest} />;
     // 세로 휴대폰은 방 화면이 그리던 대로 결과 창 위에 방 상태 바, 아래에 채팅 줄을 둔다(게임 동안에는 맨 위 한 줄이 대신했다).
     return layout === 'portrait' && aside ? <div className="space-y-4">{aside}{panel}{asideFooter}</div> : panel;
   }
@@ -236,11 +244,13 @@ export function FruitStackTable({ view, room, meId, receivedAt, now, errorSeq, n
         interactive={inProgress && !fruit.hud.out && !fruit.hud.catchingUp} onAim={fruit.aim} onDrop={fruit.drop} />
     </div>
   );
-  // 관전자는 점수·다음 대신 "관전 중", 탈락한 사람은 점수만.
+  // 관전자는 점수·다음 대신 "관전 중", 탈락한 사람은 점수만. 혼자 하기는 남은 시간 대신 최고 점수(내 게임일 때, 넘으면 지금 점수).
+  const previousBest = soloBest?.previous ?? null;
+  const shownBest = previousBest === null ? null : Math.max(previousBest, fruit.hud.score);
   const hud = (
     <Hud score={contender ? fruit.hud.score : null} next={contender && !fruit.hud.out && fruit.hud.next > 0 ? fruit.hud.next : null}
       deadline={game.deadline} serverNow={game.serverNow} vertical={layout === 'landscape' && mode === 'play'} compact={layout === 'landscape' && mode === 'watch'}
-      block={layout === 'portrait' && mode === 'play' && fit.hudBeside} locked={finale !== 'playing'} />
+      block={layout === 'portrait' && mode === 'play' && fit.hudBeside} locked={finale !== 'playing'} best={solo ? shownBest : undefined} />
   );
 
   const playBody: Record<TableLayout, () => ReactNode> = {
@@ -326,7 +336,7 @@ export function FruitStackTable({ view, room, meId, receivedAt, now, errorSeq, n
       ) : (
         <div>{turnBar}{body}</div>
       )}
-      {finale === 'banner' ? <GameEndBanner /> : null}
+      {finale === 'banner' ? <GameEndBanner subtitle={solo ? `${formatScore(finalScore)}점으로 끝났어요` : undefined} /> : null}
     </div>
   );
 }

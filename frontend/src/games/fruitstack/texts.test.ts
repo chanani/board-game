@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fruitPlayer, fruitView } from './fruitStackFixtures';
+import { fruitPlayer, fruitView, soloView } from './fruitStackFixtures';
 import { aliveIds, formatClock, formatScore, instructionOf, pointsToWin } from './texts';
 
 const nick = (id: number) => `P${id}`;
@@ -71,5 +71,26 @@ describe('안내 문구(스펙 6.6)', () => {
     expect(formatClock(0)).toBe('0:00');
     expect(formatClock(null)).toBe('0:00');
     expect(formatClock(-5)).toBe('0:00');
+  });
+});
+
+describe('혼자 하기 안내(스펙 12장)', () => {
+  it('혼자 하는 사람에게는 견줄 사람이 없어 "혼자 남았어요"나 남은 점수를 말하지 않는다', () => {
+    const solo = soloView({ players: [fruitPlayer(1, 300)] });
+
+    expect(pointsToWin(solo)).toBeNull();
+    expect(instructionOf(solo, 1, nick, true, 300)).toBe('끌어서 자리를 정하고 놓으면 떨어져요.');
+    expect(instructionOf(solo, 1, nick, false, 300)).toBe('끌어서 놓으면 떨어져요');
+  });
+
+  it('혼자 하는 게임을 지켜보는 사람에게는 누가 혼자 하는지 알린다', () => {
+    const solo = soloView({ viewerId: 9 });
+
+    expect(instructionOf(solo, 9, nick, true, null)).toBe('P1님이 혼자 과일을 쌓는 중이에요.');
+    expect(instructionOf(solo, 9, nick, false, null)).toBe('P1님 혼자 하는 중');
+  });
+
+  it('끝나면 대결과 같이 게임이 끝났어요', () => {
+    expect(instructionOf(soloView({ status: 'GAME_OVER' }), 1, nick, true, 0)).toBe('게임이 끝났어요.');
   });
 });

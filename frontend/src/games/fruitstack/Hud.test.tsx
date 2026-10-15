@@ -83,4 +83,20 @@ describe('Hud', () => {
     rerender(<Hud score={0} next={null} deadline={NOW + 61_000} serverNow={NOW} compact />);
     expect(screen.getByTestId('fruit-hud')).toHaveAttribute('data-compact', 'true');
   });
+
+  it('혼자 하기는 남은 시간 대신 최고 점수를 보인다', () => {
+    render(<Hud score={128} next={5} deadline={null} serverNow={NOW} best={2345} />);
+    const hud = screen.getByTestId('fruit-hud');
+
+    expect(screen.queryByTestId('match-clock')).not.toBeInTheDocument();
+    expect(hud).not.toHaveTextContent('남은 시간');
+    expect(screen.getByTestId('solo-best')).toHaveTextContent('최고2,345');
+  });
+
+  it('혼자 하기에서 최고 점수를 모르면(첫 판·불러오기 전) 남은 시간도 최고 점수도 없다', () => {
+    render(<Hud score={128} next={5} deadline={null} serverNow={NOW} best={null} />);
+
+    expect(screen.queryByTestId('match-clock')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('solo-best')).not.toBeInTheDocument();
+  });
 });

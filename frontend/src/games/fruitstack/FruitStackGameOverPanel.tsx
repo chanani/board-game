@@ -6,15 +6,19 @@ import { Modal } from '../../components/Modal';
 import { roomAvatarOf } from '../../lib/avatars';
 import { FooterButton, HeadlineIcon, ReadyChips } from '../../table/gameOver';
 import type { Nickname } from '../gameModule';
+import { SoloGameOverPanel } from './SoloGameOverPanel';
 import { formatScore } from './texts';
+import type { SoloBest } from './useSoloBest';
 
-type Props = { game: FruitStackView; room: Room; meId: number; nicknameOf: Nickname; onReady: () => void; onClose: () => void };
+/** best: 혼자 하기에서 이번 판 전의 내 최고 점수(모르면 null). 대결에서는 쓰지 않는다. */
+type Props = { game: FruitStackView; room: Room; meId: number; nicknameOf: Nickname; onReady: () => void; onClose: () => void; best?: SoloBest | null };
 
 const REASON_LINES: Record<FruitStackEndReason, string | null> = {
   ALL_OUT: null,
   TIME_UP: '10분이 지나 지금 점수로 끝났어요',
   FORFEIT: '상대가 나가서 게임이 끝났어요',
   DECIDED: '마지막 한 사람의 점수가 가장 높아 바로 끝났어요',
+  ABANDONED: null,
 };
 
 function Mark({ standing }: { standing: FruitStackStanding }) {
@@ -48,7 +52,11 @@ function headlineOf(game: FruitStackView, nicknameOf: Nickname, won: boolean): s
 }
 
 /** 게임 결과: 머리말, 끝난 이유, 순위 표, 다음 게임 준비(스펙 6.9). */
-export function FruitStackGameOverPanel({ game, room, meId, nicknameOf, onReady, onClose }: Props) {
+export function FruitStackGameOverPanel({ game, room, meId, nicknameOf, onReady, onClose, best = null }: Props) {
+  // 혼자 하기(스펙 12장)는 순위·승패 대신 이번 점수와 최고 점수.
+  if (game.participantIds.length === 1) {
+    return <SoloGameOverPanel game={game} room={room} meId={meId} nicknameOf={nicknameOf} onReady={onReady} onClose={onClose} best={best} />;
+  }
   const standings = game.result?.standings ?? [];
   const won = standings.some((standing) => standing.playerId === meId && standing.outcome === 'WIN');
   const reasonLine = game.result ? REASON_LINES[game.result.reason] : null;
