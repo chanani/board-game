@@ -542,6 +542,7 @@ public record GameAction(String type, Integer column, Integer row, Integer cardI
 - **S5 나가기·기권**: 게임 중에 나가거나(로그아웃 포함) 60초 넘게 끊겨 자동 기권되면 그때까지 받아들인 점수로 끝난다(이유 `FORFEIT`, 상태 `FORFEITED`). 이 점수도 최고 점수 후보다(S6). 방의 나간 사람 알림은 "기권하고 나갔어요"가 아니라 "나갔어요"로 쓴다.
 - **S6 기록**: 혼자 하기 세션은 `recordsMatch() = false`라 경기 시작(`GameStartedEvent`)·라운드·경기 기록을 내지 않는다(전적의 판 수·승·무·패·평균 점수·최근 경기에 나오지 않는다). 끝나면(이유와 상관없이) 결과 `SoloCompleted(memberId, score)` 하나를 내고, 방 층이 `SoloCompletedEvent(gameType, memberId, score, endedAt)`로 발행한다. 전적은 그 회원의 최고 점수보다 엄격히 높을 때만 바꾼다(처음이면 그 점수).
 - **S7 대결은 그대로**: 2~5명 게임의 규칙·기록·화면은 바뀌지 않는다.
+- **S8 저절로 떨어지지 않음**: 혼자 하기에서는 R7(10초 뒤 저절로 떨어뜨리기)을 끈다. 들고 있는 과일은 직접 떨어뜨릴 때까지 기다리고, 판 위 3·2·1 숫자와 째깍 소리도 없다. 대결은 R7 그대로다.
 
 ### 12.2 백엔드
 

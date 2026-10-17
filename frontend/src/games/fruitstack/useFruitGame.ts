@@ -95,14 +95,14 @@ export function runTick(game: FruitGame, elapsedMs: number, limits: { maxSteps: 
 }
 
 // 저장된 판이 깨져 있으면 빈 판으로 처음부터 따라잡는다(D15).
-function boardFrom(saved: SavedBoard | null, seed: number): FruitGame {
+function boardFrom(saved: SavedBoard | null, seed: number, autoDrop: boolean): FruitGame {
   if (!saved) {
-    return createGame(seed);
+    return createGame(seed, autoDrop);
   }
   try {
-    return restore(saved);
+    return restore(saved, autoDrop);
   } catch {
-    return createGame(seed);
+    return createGame(seed, autoDrop);
   }
 }
 
@@ -188,7 +188,9 @@ export function useFruitGame({ code, meId, game, storage, ticker, now }: FruitGa
     if (!mine || mine.state === 'FORFEITED') {
       boardRef.current = null;
     } else if (!boardRef.current && game.status === 'IN_PROGRESS') {
-      boardRef.current = boardFrom(loadBoard(store, key, { startedAt: game.startedAt, seed: game.seed }), game.seed);
+      // S8: 혼자 하기는 저절로 떨어지지 않는다.
+      const autoDrop = game.participantIds.length > 1;
+      boardRef.current = boardFrom(loadBoard(store, key, { startedAt: game.startedAt, seed: game.seed }), game.seed, autoDrop);
     }
     const board = boardRef.current;
     if (board && mine) {

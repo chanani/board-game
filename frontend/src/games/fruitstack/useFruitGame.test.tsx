@@ -2,7 +2,7 @@ import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { FruitStackView } from '../../api/types';
 import { createGame, type GameEvent } from './engine/game';
-import { FRUIT_STARTED_AT, fruitPlayer, fruitView } from './fruitStackFixtures';
+import { FRUIT_STARTED_AT, fruitPlayer, fruitView, soloView } from './fruitStackFixtures';
 import { runTick, useFruitGame } from './useFruitGame';
 
 const KEY = 'bg.fruit:ABCDEF:1';
@@ -119,6 +119,20 @@ describe('useFruitGame', () => {
 
     expect(listener.mock.calls.flat(2)).toContainEqual({ type: 'autoDrop', level: 5 });
     expect(result.current.hud.held).toBe(5);
+  });
+
+  it('S8 혼자 하기는 오래 들고 있어도 저절로 떨어지지 않고 남은 시간도 없다', () => {
+    const { result } = open(soloView());
+    const listener = vi.fn();
+    result.current.onEvents(listener);
+
+    pass(60_000);
+    pass(0);
+    pass(0);
+
+    expect(listener.mock.calls.flat(2)).not.toContainEqual({ type: 'autoDrop', level: 5 });
+    expect(result.current.hud.held).toBe(5);
+    expect(result.current.getAutoDropLeftMs()).toBeNull();
   });
 
   it('R21 화면의 내 점수가 더 크면 내 점수를 올린다', () => {

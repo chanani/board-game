@@ -66,6 +66,16 @@ describe('들기와 떨어뜨리기', () => {
     expect(heldLevel(game)).toBe(5);
     expect(autoDropLeftMs(game)).toBeCloseTo(10000, 5);
   });
+
+  it('S8 혼자 하기 판(autoDrop 끔)은 아무리 들고 있어도 저절로 떨어지지 않고 남은 시간도 없다', () => {
+    const game = createGame(SEED, false);
+
+    expect(autoDropLeftMs(game)).toBeNull();
+    expect(types(advance(game, 60000, ALL))).toEqual([]);
+    expect(game.dropIndex).toBe(0);
+    expect(heldLevel(game)).toBe(5);
+    expect(types(drop(game))).toEqual(['drop']);
+  });
 });
 
 describe('점수와 탈락', () => {

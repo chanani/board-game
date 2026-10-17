@@ -24,8 +24,8 @@ export function serialize(game: FruitGame, startedAt: number): SavedBoard {
   };
 }
 
-export function restore(saved: SavedBoard): FruitGame {
-  const game = createGame(saved.seed);
+export function restore(saved: SavedBoard, autoDrop = true): FruitGame {
+  const game = createGame(saved.seed, autoDrop);
   game.steps = toSteps(saved.simMs);
   game.dropIndex = saved.dropIndex;
   game.score = saved.score;

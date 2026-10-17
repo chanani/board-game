@@ -10,10 +10,12 @@ export type GameEvent =
 export type FruitGame = {
   seed: number; world: World; steps: number; dropIndex: number; score: number; aimX: number;
   heldSinceStep: number | null; lastDropStep: number | null; overSteps: number; out: boolean;
+  /** R7 10초 저절로 떨어지기. 혼자 하기(S8)는 꺼서 시간 제한이 없다. */
+  autoDrop: boolean;
 };
 
-export function createGame(seed: number): FruitGame {
-  return { seed, world: createWorld(), steps: 0, dropIndex: 0, score: 0, aimX: BOARD_W / 2, heldSinceStep: 0, lastDropStep: null, overSteps: 0, out: false };
+export function createGame(seed: number, autoDrop = true): FruitGame {
+  return { seed, world: createWorld(), steps: 0, dropIndex: 0, score: 0, aimX: BOARD_W / 2, heldSinceStep: 0, lastDropStep: null, overSteps: 0, out: false, autoDrop };
 }
 
 const upcoming = (game: FruitGame) => levelAt(game.seed, game.dropIndex);
@@ -69,7 +71,7 @@ function stepOnce(game: FruitGame, events: GameEvent[]): void {
   if (game.heldSinceStep === null && game.lastDropStep !== null && game.steps - game.lastDropStep >= DROP_COOLDOWN_STEPS) {
     game.heldSinceStep = game.steps; // R6
   }
-  if (game.heldSinceStep !== null && game.steps - game.heldSinceStep >= AUTO_DROP_STEPS) {
+  if (game.autoDrop && game.heldSinceStep !== null && game.steps - game.heldSinceStep >= AUTO_DROP_STEPS) {
     events.push(release(game, 'autoDrop')); // R7
   }
   game.overSteps = isOverLine(game) ? game.overSteps + 1 : 0; // R12
@@ -96,7 +98,7 @@ export function simMs(game: FruitGame): number {
 }
 
 export function autoDropLeftMs(game: FruitGame): number | null {
-  if (game.out || game.heldSinceStep === null) {
+  if (!game.autoDrop || game.out || game.heldSinceStep === null) {
     return null;
   }
   return (AUTO_DROP_STEPS - (game.steps - game.heldSinceStep)) * STEP_MS;

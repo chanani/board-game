@@ -12,7 +12,8 @@ describe('수박게임 규칙', () => {
   it('혼자 하기 장은 혼자 시작·시간 제한 없음·최고 점수를 말한다', () => {
     const solo = FRUIT_RULE_SLIDES[5].body.join(' ');
     expect(solo).toContain('혼자 있을 때 시작하면 혼자 해요');
-    expect(solo).toContain('시간 제한 없이');
+    expect(solo).toContain('시간 제한이 없고');
+    expect(solo).toContain('저절로 떨어지지 않아요');
     expect(solo).toContain('최고 점수');
   });
 
@@ -32,7 +33,7 @@ describe('수박게임 규칙', () => {
 
   it('요약은 5줄이다', () => {
     expect(FRUIT_RULE_SUMMARY).toEqual([
-      '같은 과일 두 개를 합쳐 점수를 쌓아요.', '10초 안에 떨어뜨리지 않으면 저절로 떨어져요.',
+      '같은 과일 두 개를 합쳐 점수를 쌓아요.', '여럿이 하면 10초 안에 떨어뜨려야 해요.',
       '과일이 선을 2초 넘게 넘으면 탈락이에요.', '혼자 하면 시간 제한 없이 최고 점수에 도전해요.', '여럿이 하면 가장 높은 점수가 이겨요.',
     ]);
   });

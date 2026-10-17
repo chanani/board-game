@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { advance, aim, createGame, drop, heldLevel } from './game';
+import { advance, aim, autoDropLeftMs, createGame, drop, heldLevel } from './game';
 import { boardKey, clearOtherBoards, loadBoard, removeBoard, restore, saveBoard, serialize, type BoardStorage } from './persist';
 import { fruitsOf } from './world';
 
@@ -116,5 +116,12 @@ describe('R32~R34 판 저장과 복원', () => {
     expect(loadBoard(broken, 'bg.fruit:A:1', { startedAt: STARTED_AT, seed: 12345 })).toBeNull();
     expect(() => clearOtherBoards(broken, null)).not.toThrow();
     expect(() => removeBoard(broken, 'bg.fruit:A:1')).not.toThrow();
+  });
+
+  it('S8 혼자 하기 판은 되살려도 저절로 떨어지지 않는다', () => {
+    const again = restore(serialize(createGame(7, false), STARTED_AT), false);
+
+    expect(again.autoDrop).toBe(false);
+    expect(autoDropLeftMs(again)).toBeNull();
   });
 });
